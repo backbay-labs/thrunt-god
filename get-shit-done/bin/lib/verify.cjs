@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { safeReadFile, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, output, error } = require('./core.cjs');
+const { safeReadFile, loadConfig, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, output, error } = require('./core.cjs');
 const { extractFrontmatter, parseMustHavesBlock } = require('./frontmatter.cjs');
 const { writeStateMd } = require('./state.cjs');
 
@@ -445,15 +445,18 @@ function cmdValidateConsistency(cwd, raw) {
     }
   }
 
-  // Check: sequential phase numbers (integers only)
-  const integerPhases = [...diskPhases]
-    .filter(p => !p.includes('.'))
-    .map(p => parseInt(p, 10))
-    .sort((a, b) => a - b);
+  // Check: sequential phase numbers (integers only, skip in custom naming mode)
+  const config = loadConfig(cwd);
+  if (config.phase_naming !== 'custom') {
+    const integerPhases = [...diskPhases]
+      .filter(p => !p.includes('.'))
+      .map(p => parseInt(p, 10))
+      .sort((a, b) => a - b);
 
-  for (let i = 1; i < integerPhases.length; i++) {
-    if (integerPhases[i] !== integerPhases[i - 1] + 1) {
-      warnings.push(`Gap in phase numbering: ${integerPhases[i - 1]} → ${integerPhases[i]}`);
+    for (let i = 1; i < integerPhases.length; i++) {
+      if (integerPhases[i] !== integerPhases[i - 1] + 1) {
+        warnings.push(`Gap in phase numbering: ${integerPhases[i - 1]} → ${integerPhases[i]}`);
+      }
     }
   }
 
