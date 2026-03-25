@@ -35,18 +35,9 @@
 
 Every hunt follows five phases. No shortcuts, no hand-waving.
 
-```mermaid
-flowchart LR
-    S[Signal] --> H[Hunt]
-    H --> W[Swarm]
-    W --> R[Receipt]
-    R --> P[Publish]
-    style S fill:#7aa2f7,stroke:#3d59a1,color:#1a1b26
-    style H fill:#bb9af7,stroke:#9d7cd8,color:#1a1b26
-    style W fill:#ff9e64,stroke:#ff7a00,color:#1a1b26
-    style R fill:#9ece6a,stroke:#73daca,color:#1a1b26
-    style P fill:#f7768e,stroke:#db4b4b,color:#1a1b26
-```
+<p align="center">
+  <img src="assets/phases.png" alt="Signal → Hunt → Swarm → Receipt → Publish" width="820" />
+</p>
 
 | Phase       |                                                                             |
 | ----------- | --------------------------------------------------------------------------- |
