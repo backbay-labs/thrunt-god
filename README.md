@@ -91,7 +91,7 @@ Bootstrap the hunt command surface into your local IDE environment.
 
 <table>
 <tr>
-<td width="50%">
+<td width="33%">
 
 ### Single signal
 
@@ -105,7 +105,7 @@ Bootstrap the hunt command surface into your local IDE environment.
 ```
 
 </td>
-<td width="50%">
+<td width="34%">
 
 ### Long-lived program
 
@@ -115,6 +115,17 @@ Bootstrap the hunt command surface into your local IDE environment.
 /hunt:new-case
   ... repeat per signal ...
 ```
+
+</td>
+<td width="33%">
+
+### Autonomous
+
+```text
+/thrunt:autonomous
+```
+
+Runs all remaining phases end-to-end: discuss, plan, execute. Pauses only for operator decisions.
 
 </td>
 </tr>
