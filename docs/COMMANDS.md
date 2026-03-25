@@ -172,6 +172,27 @@ Execute all plans in a phase with wave-based parallelization, or run a specific 
 **Prerequisites:** Phase has PLAN.md files
 **Produces:** per-plan `{phase}-{N}-SUMMARY.md`, git commits, and `{phase}-FINDINGS.md` when the phase is fully complete
 
+For connector-backed local execution and diagnostics, THRUNT also exposes:
+- `node thrunt-tools.cjs runtime list-connectors`
+- `node thrunt-tools.cjs runtime doctor [<connector-id>] [--profile <name>] [--live]`
+- `node thrunt-tools.cjs runtime smoke [<connector-id>] [--profile <name>]`
+- `node thrunt-tools.cjs runtime execute --connector <id> --query "..." --profile <name>`
+- `node thrunt-tools.cjs runtime execute --pack <pack-id> --target "<target-name>" --param key=value`
+
+`runtime doctor` scores readiness from the real connector profile, secret references, preflight requirements, and optional live smoke execution.
+
+`runtime smoke` runs a live read-only smoke query without emitting hunt query-log or receipt artifacts. For connectors that do not ship a built-in safe smoke query, provide `connector_profiles.<connector>.<profile>.smoke_test` or pass `--query`, `--dataset`, and `--language`.
+
+For pack-registry inspection and dry validation, THRUNT also exposes:
+- `node thrunt-tools.cjs pack list`
+- `node thrunt-tools.cjs pack show <pack-id>` for the fully resolved pack, including composed content
+- `node thrunt-tools.cjs pack bootstrap <pack-id> --param key=value`
+- `node thrunt-tools.cjs pack validate <pack-id> --param key=value`
+- `node thrunt-tools.cjs pack render-targets <pack-id> --param key=value`
+- `node thrunt-tools.cjs pack lint [<pack-id>]`
+- `node thrunt-tools.cjs pack test [<pack-id>]`
+- `node thrunt-tools.cjs pack init <pack-id> --kind <kind>`
+
 ```bash
 /hunt:run 1                # Execute phase 1
 /hunt:run 1 --wave 2       # Execute only Wave 2

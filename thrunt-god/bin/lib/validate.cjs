@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 const { safeReadFile, loadConfig, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, planningDir, planningRoot, getMissionDocInfo, getHuntmapDocInfo, output, error, checkAgentsInstalled } = require('./core.cjs');
 const { extractFrontmatter, parseMustHavesBlock } = require('./frontmatter.cjs');
-const { writeStateMd } = require('./state.cjs');
+const { writeStateMd, stateExtractField } = require('./state.cjs');
 
 function cmdValidateSummary(cwd, summaryPath, checkFileCount, raw) {
   if (!summaryPath) {
@@ -602,8 +602,18 @@ function cmdValidateHealth(cwd, options, raw) {
     repairs.push('regenerateState');
   } else {
     const stateContent = fs.readFileSync(statePath, 'utf-8');
-    // Extract phase references from STATE.md
-    const phaseRefs = [...stateContent.matchAll(/[Pp]hase\s+(\d+(?:\.\d+)*)/g)].map(m => m[1]);
+    // Extract only the active phase reference fields, not historical notes or decision logs.
+    const phaseRefs = [
+      stateContent.match(/^current_phase:\s*"?([^"\n]+)"?\s*$/m)?.[1] || null,
+      stateExtractField(stateContent, 'Current Phase'),
+      stateExtractField(stateContent, 'Phase'),
+    ]
+      .map(value => {
+        const match = typeof value === 'string' ? value.match(/\d+(?:\.\d+)*/) : null;
+        return match ? match[0] : null;
+      })
+      .filter(Boolean);
+
     // Get disk phases
     const diskPhases = new Set();
     try {
@@ -615,10 +625,34 @@ function cmdValidateHealth(cwd, options, raw) {
         }
       }
     } catch { /* intentionally empty */ }
+
+    const huntmapPhases = new Set();
+    if (huntmapDoc.exists) {
+      try {
+        const huntmapContent = fs.readFileSync(huntmapDoc.path, 'utf-8');
+        const currentMilestone = extractCurrentMilestone(huntmapContent, cwd);
+        const phaseMatches = currentMilestone.matchAll(/#{2,4}\s*Phase\s+(\d+(?:\.\d+)*)\s*:/gi);
+        for (const match of phaseMatches) {
+          const numericRef = String(parseInt(match[1], 10));
+          huntmapPhases.add(match[1]);
+          huntmapPhases.add(numericRef.padStart(2, '0'));
+          huntmapPhases.add(numericRef);
+        }
+      } catch { /* intentionally empty */ }
+    }
+
     // Check for invalid references
     for (const ref of phaseRefs) {
-      const normalizedRef = String(parseInt(ref, 10)).padStart(2, '0');
-      if (!diskPhases.has(ref) && !diskPhases.has(normalizedRef) && !diskPhases.has(String(parseInt(ref, 10)))) {
+      const compactRef = String(parseInt(ref, 10));
+      const normalizedRef = compactRef.padStart(2, '0');
+      if (
+        !diskPhases.has(ref) &&
+        !diskPhases.has(normalizedRef) &&
+        !diskPhases.has(compactRef) &&
+        !huntmapPhases.has(ref) &&
+        !huntmapPhases.has(normalizedRef) &&
+        !huntmapPhases.has(compactRef)
+      ) {
         // Only warn if phases dir has any content (not just an empty project)
         if (diskPhases.size > 0) {
           addIssue(

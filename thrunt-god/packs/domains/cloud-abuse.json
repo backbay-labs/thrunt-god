@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "id": "domain.cloud-abuse",
+  "kind": "domain",
+  "title": "Cloud Abuse Hunt",
+  "description": "Opinionated cloud-abuse hunt pack for suspicious principal use, policy changes, and resource tampering across cloud control planes.",
+  "stability": "preview",
+  "extends": [
+    "foundation.cloud-core"
+  ],
+  "metadata": {
+    "domains": ["cloud"],
+    "coverage": ["cloud control plane abuse", "principal misuse", "resource tampering"]
+  },
+  "hypothesis_templates": [
+    "A compromised or misused cloud principal is modifying identity, policy, or resource state outside expected operational patterns.",
+    "Cross-account or cross-project control-plane activity indicates unauthorized cloud abuse rather than routine administration."
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "cloud_identity_and_policy_changes",
+      "description": "Audit logs for role assignments, IAM policy changes, token generation, and service-account use.",
+      "connectors": ["aws", "gcp"],
+      "datasets": ["cloud", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Cloud services without centralized audit logging or short-lived ephemeral workload context will limit attribution quality."
+  ],
+  "execution_targets": [
+    {
+      "name": "AWS CloudTrail principal abuse sweep",
+      "description": "Review CloudTrail for unusual principal activity, policy changes, or sensitive API usage.",
+      "connector": "aws",
+      "dataset": "cloud",
+      "language": "cloudtrail",
+      "query_template": "eventSource=* userIdentity.arn=*{{focus_principal}}* eventTime>=-{{lookback_hours}}h"
+    },
+    {
+      "name": "GCP audit log privilege and resource sweep",
+      "description": "Review GCP audit activity for suspicious service-account, IAM, or resource actions.",
+      "connector": "gcp",
+      "dataset": "cloud",
+      "language": "logging",
+      "query_template": "protoPayload.authenticationInfo.principalEmail:{{focus_principal}} timestamp>=-{{lookback_hours}}h"
+    },
+    {
+      "name": "Splunk cloud control-plane correlation",
+      "description": "Correlate cloud audit activity into one operational timeline.",
+      "connector": "splunk",
+      "dataset": "events",
+      "language": "spl",
+      "query_template": "index=cloud tenant={{tenant}} earliest=-{{lookback_hours}}h principal={{focus_principal}} resource={{focus_resource}}"
+    }
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_principal": "svc-analytics@example-tenant",
+      "focus_resource": "critical-bucket"
+    }
+  },
+  "publish": {
+    "finding_type": "cloud_abuse_hunt",
+    "expected_outcomes": [
+      "cloud_abuse_story",
+      "principal_and_resource_timeline",
+      "hardening_recommendations"
+    ],
+    "receipt_tags": [
+      "pack:domain.cloud-abuse"
+    ]
+  }
+}

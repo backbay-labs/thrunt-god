@@ -17,6 +17,12 @@ Documented flags are available behaviors, not implied active behaviors.
 Treat `--wave N`, `--gaps-only`, and `--interactive` as active only when the literal token appears in `$ARGUMENTS`.
 If none of these tokens appear, run the standard full-phase execution flow.
 
+The execution boundary is the shared THRUNT runtime contract:
+- each material hunt action is shaped as a `QuerySpec`
+- connectors return one normalized result envelope
+- query logs and receipts are emitted from runtime metadata, not connector-specific ad hoc blobs
+- connector-backed execution can be inspected locally with `thrunt-tools runtime list-connectors`, `thrunt-tools runtime doctor`, `thrunt-tools runtime smoke`, `thrunt-tools pack render-targets`, and `thrunt-tools runtime execute`
+
 `--wave N` executes only a single wave and must not mark the whole phase complete until no incomplete plans remain.
 
 **Creates or updates:**
@@ -52,4 +58,7 @@ If none of these tokens appear, run the standard full-phase execution flow.
 <process>
 Execute the hunt run workflow from @~/.claude/thrunt-god/workflows/hunt-run.md.
 Every non-trivial claim must cite receipts. Parallelize by telemetry domain when it helps.
+When query execution occurs, treat `/hunt:run` as a `QuerySpec` producer and normalized-result consumer.
+When onboarding or debugging a real connector, use `thrunt-tools runtime doctor [<connector-id>]` before running hunts, and use `thrunt-tools runtime smoke [<connector-id>]` for a live read-only certification query.
+When a phase is explicitly pack-backed, prefer `thrunt-tools runtime execute --pack <id>` or inspect the generated specs with `thrunt-tools pack render-targets <id>` before running.
 </process>

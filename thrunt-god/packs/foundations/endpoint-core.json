@@ -1,0 +1,80 @@
+{
+  "version": "1.0",
+  "id": "foundation.endpoint-core",
+  "kind": "custom",
+  "title": "Endpoint Hunt Foundation",
+  "description": "Shared endpoint-hunt building blocks for suspicious process and host activity.",
+  "stability": "stable",
+  "metadata": {
+    "domains": ["endpoint"]
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "required_connectors": ["crowdstrike", "splunk"],
+  "supported_datasets": ["endpoint", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, environment, or business unit selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of endpoint and SIEM telemetry to review."
+    },
+    {
+      "name": "focus_host",
+      "type": "string",
+      "required": false,
+      "description": "Optional hostname or asset identifier to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    },
+    {
+      "name": "focus_user",
+      "type": "string",
+      "required": false,
+      "description": "Optional user context to correlate against endpoint activity.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "endpoint_process_lineage",
+      "description": "Process creation, parent-child lineage, command line, and host context.",
+      "connectors": ["crowdstrike", "splunk"],
+      "datasets": ["endpoint", "events"]
+    }
+  ],
+  "blind_spots": [
+    "Hosts without endpoint telemetry or with aggressive command-line truncation will reduce the quality of endpoint hunts."
+  ],
+  "scope_defaults": {
+    "entities": ["host", "user", "process", "ip"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_host": "ws-01",
+      "focus_user": "alice@example.com"
+    }
+  },
+  "publish": {
+    "finding_type": "endpoint_hunt_foundation",
+    "expected_outcomes": ["endpoint_triage"],
+    "receipt_tags": ["pack:foundation.endpoint-core"]
+  }
+}

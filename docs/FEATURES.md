@@ -271,6 +271,16 @@
 - **Pre-commit hooks**: Skipped by parallel agents (`--no-verify`), run once by orchestrator after each wave
 - **STATE.md locking**: File-level lockfile prevents concurrent write corruption across agents
 
+**Connector-backed execution substrate:**
+- `/hunt:run` now has a concrete runtime handoff through `thrunt-tools runtime execute`
+- Built-in adapters cover Splunk, Elastic, Sentinel, Okta, M365, CrowdStrike, AWS, and GCP
+- Query logs and receipts are emitted from the shared runtime regardless of connector family
+- Connector capability and limitation reporting is available through `thrunt-tools runtime list-connectors`
+- `thrunt-tools runtime doctor` scores per-connector readiness from config, secrets, preflight checks, and smoke coverage
+- `thrunt-tools runtime smoke` runs live read-only smoke tests against configured connectors
+- Connectors can declare a profile-level `smoke_test` query when THRUNT should not ship a generic built-in one
+- Readiness scores distinguish static configuration readiness from live verification against real backends
+
 ---
 
 ### 6. Work Validation
@@ -854,8 +864,24 @@ fix(03-01): correct auth token expiry
 - HYP-CLI-03: System MUST support `--raw` flag for machine-readable output
 - HYP-CLI-04: System MUST support `--cwd` flag for sandboxed subagent operation
 - HYP-CLI-05: All operations MUST use forward-slash paths on Windows
+- HYP-CLI-06: CLI tools MUST expose pack inspection and validation so ATT&CK-oriented hunt packs and composed domain packs can be reviewed before pack-driven workflow UX exists
 
 **Command Categories:** State (11 subcommands), Phase (5), Huntmap (3), Verify (8), Template (2), Frontmatter (4), Scaffold (4), Init (12), Validate (2), Progress, Stats, Todo
+
+**Pack Registry Support:**
+- `node thrunt-tools.cjs pack list` lists built-in and local packs with source provenance
+- `node thrunt-tools.cjs pack show <pack-id>` prints the resolved pack definition
+- `node thrunt-tools.cjs pack bootstrap <pack-id> --param key=value` materializes case bootstrap content from a pack
+- `node thrunt-tools.cjs pack validate <pack-id> --param key=value` dry-validates pack parameters before execution
+- `node thrunt-tools.cjs pack render-targets <pack-id> --param key=value` turns pack execution targets into concrete `QuerySpec` objects
+- `node thrunt-tools.cjs runtime execute --pack <pack-id> --target "<target-name>" --param key=value` executes pack-backed queries through the shared runtime
+- `node thrunt-tools.cjs pack lint [<pack-id>]` audits pack authoring policy, including example parameters and template usage
+- `node thrunt-tools.cjs pack test [<pack-id>]` smoke-tests pack bootstrap and target rendering using `examples.parameters`
+- `node thrunt-tools.cjs pack init <pack-id> --kind <kind>` scaffolds a local pack under `.planning/packs/`
+
+THRUNT now ships ATT&CK-oriented hunt packs for `T1059`, `T1078`, `T1098`, `T1110`, and `T1566`. Each starter technique pack declares hypothesis templates, telemetry requirements, blind spots, and execution targets on top of the shared runtime contract.
+
+THRUNT also now ships composed domain packs for identity abuse, email intrusion, insider risk, cloud abuse, and ransomware precursors, plus a first family-level pack for OAuth phishing and session hijack. Pack composition lets those higher-order packs reuse shared foundations and lower-level technique playbooks without copy-paste drift.
 
 ---
 

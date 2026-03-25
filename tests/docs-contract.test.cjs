@@ -80,4 +80,75 @@ describe('public docs contract', () => {
       }
     }
   });
+
+  test('pack docs describe the registry layout, precedence, and CLI surface', () => {
+    const architecture = readRepoFile('docs', 'ARCHITECTURE.md');
+    const commands = readRepoFile('docs', 'COMMANDS.md');
+    const features = readRepoFile('docs', 'FEATURES.md');
+    const registryReadme = readRepoFile('thrunt-god', 'packs', 'README.md');
+
+    assert.match(architecture, /### Pack Registry Layer/);
+    assert.match(architecture, /`thrunt-god\/packs\/`/);
+    assert.match(architecture, /`\.planning\/packs\/`/);
+    assert.match(architecture, /Local packs override built-in packs/i);
+    assert.match(architecture, /ATT&CK mapping through `attack` ids/);
+    assert.match(architecture, /pack composition/i);
+    assert.match(architecture, /foundations\/?/i);
+
+    assert.match(commands, /node thrunt-tools\.cjs pack list/);
+    assert.match(commands, /node thrunt-tools\.cjs pack show <pack-id>/);
+    assert.match(commands, /node thrunt-tools\.cjs pack bootstrap <pack-id>/);
+    assert.match(commands, /node thrunt-tools\.cjs pack validate <pack-id>/);
+    assert.match(commands, /node thrunt-tools\.cjs pack render-targets <pack-id>/);
+    assert.match(commands, /node thrunt-tools\.cjs pack lint/);
+    assert.match(commands, /node thrunt-tools\.cjs pack test/);
+    assert.match(commands, /node thrunt-tools\.cjs pack init <pack-id>/);
+
+    assert.match(features, /ATT&CK-oriented hunt packs/i);
+    assert.match(features, /domain packs/i);
+    assert.match(features, /family/i);
+    assert.match(features, /pack lint/i);
+    assert.match(features, /pack test/i);
+    assert.match(features, /pack init/i);
+    assert.match(features, /T1059/);
+    assert.match(features, /pack list/);
+
+    assert.match(registryReadme, /`thrunt-god\/packs\/`/);
+    assert.match(registryReadme, /`\.planning\/packs\/`/);
+    assert.match(registryReadme, /foundations\//i);
+    assert.match(registryReadme, /domain packs/i);
+    assert.match(registryReadme, /family/i);
+    assert.match(registryReadme, /example parameters/i);
+    assert.match(registryReadme, /pack lint/i);
+    assert.match(registryReadme, /pack test/i);
+    assert.match(registryReadme, /pack init/i);
+    assert.match(registryReadme, /override built-in packs/i);
+    assert.match(registryReadme, /T1078/);
+  });
+
+  test('runtime certification docs describe doctor, smoke, and profile smoke specs', () => {
+    const commands = readRepoFile('docs', 'COMMANDS.md');
+    const architecture = readRepoFile('docs', 'ARCHITECTURE.md');
+    const features = readRepoFile('docs', 'FEATURES.md');
+    const configuration = readRepoFile('docs', 'CONFIGURATION.md');
+    const huntRun = readRepoFile('commands', 'hunt', 'run.md');
+
+    assert.match(commands, /node thrunt-tools\.cjs runtime doctor/);
+    assert.match(commands, /node thrunt-tools\.cjs runtime smoke/);
+    assert.match(commands, /smoke_test/i);
+
+    assert.match(architecture, /connector certification/i);
+    assert.match(architecture, /readiness score/i);
+    assert.match(architecture, /smoke test/i);
+
+    assert.match(features, /runtime doctor/i);
+    assert.match(features, /runtime smoke/i);
+    assert.match(features, /readiness score/i);
+
+    assert.match(configuration, /smoke_test/i);
+    assert.match(configuration, /FROM logs-\* \| LIMIT 1/);
+    assert.match(configuration, /runtime doctor/i);
+
+    assert.match(huntRun, /runtime doctor/i);
+  });
 });

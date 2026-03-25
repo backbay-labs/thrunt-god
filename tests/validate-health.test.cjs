@@ -227,10 +227,10 @@ describe('validate health command', () => {
     writeMinimalMissionMd(tmpDir);
     writeMinimalHuntmap(tmpDir, ['1']);
     writeValidConfigJson(tmpDir);
-    // STATE.md mentions Phase 99 but only 01-a dir exists
+    // STATE.md points at Phase 99 but only 01-a dir exists
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
-      '# Session State\n\nPhase 99 is the current phase.\n'
+      '# Session State\n\n## Current Position\n\nCurrent Phase: 99\n'
     );
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-a'), { recursive: true });
 
@@ -241,6 +241,72 @@ describe('validate health command', () => {
     const w002 = output.warnings.find(w => w.code === 'W002');
     assert.ok(w002, `Expected W002 in warnings: ${JSON.stringify(output.warnings)}`);
     assert.strictEqual(w002.repairable, false, 'W002 should not be auto-repairable');
+  });
+
+  test('ignores historical phase mentions when the active state points at a valid phase', () => {
+    writeMinimalMissionMd(tmpDir);
+    writeMinimalHuntmap(tmpDir, ['1']);
+    writeValidConfigJson(tmpDir);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `---
+current_phase: 1
+---
+
+# Hunt State
+
+## Current Position
+
+Current Phase: 1
+Current Phase Name: baseline hunt
+
+## Accumulated Context
+
+### Decisions
+
+- [Phase 99]: Historical note that should not be treated as the active phase
+`
+    );
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '01-a'), { recursive: true });
+
+    const result = runThruntTools('validate health', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok(
+      !output.warnings.some(w => w.code === 'W002'),
+      `Did not expect W002 for historical phase mentions: ${JSON.stringify(output.warnings)}`
+    );
+  });
+
+  test('accepts active phase references that exist in HUNTMAP.md before the phase directory is scaffolded', () => {
+    writeMinimalMissionMd(tmpDir);
+    writeMinimalHuntmap(tmpDir, ['7', '8']);
+    writeValidConfigJson(tmpDir);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `---
+current_phase: 8
+---
+
+# Hunt State
+
+## Current Position
+
+Current Phase: 8
+Current Phase Name: mitre technique pack library
+`
+    );
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '07-pack-schema-registry'), { recursive: true });
+
+    const result = runThruntTools('validate health', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.ok(
+      !output.warnings.some(w => w.code === 'W002'),
+      `Did not expect W002 when phase exists in HUNTMAP.md: ${JSON.stringify(output.warnings)}`
+    );
   });
 
   // ─── Check 5: config.json valid JSON + valid schema ───────────────────────

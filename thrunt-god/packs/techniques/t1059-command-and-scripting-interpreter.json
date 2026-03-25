@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "id": "technique.t1059-command-and-scripting-interpreter",
+  "kind": "technique",
+  "title": "Command and Scripting Interpreter",
+  "description": "Hunt for suspicious shell, script, and interpreter execution that suggests hands-on-keyboard activity or staged execution.",
+  "stability": "preview",
+  "attack": ["T1059"],
+  "metadata": {
+    "domains": ["endpoint", "siem"],
+    "severity": "high"
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "hypothesis_templates": [
+    "An adversary used a command or scripting interpreter to execute suspicious actions on a monitored host.",
+    "Encoded or parent-process-anomalous shell execution indicates post-compromise activity."
+  ],
+  "required_connectors": ["crowdstrike", "splunk", "elastic"],
+  "supported_datasets": ["endpoint", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of endpoint and SIEM telemetry to review."
+    },
+    {
+      "name": "focus_host",
+      "type": "string",
+      "required": false,
+      "description": "Optional hostname or endpoint identifier to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "endpoint_process_telemetry",
+      "description": "Process creation, command-line, parent-child lineage, and host context.",
+      "connectors": ["crowdstrike"],
+      "datasets": ["endpoint"]
+    },
+    {
+      "surface": "siem_process_and_alert_correlation",
+      "description": "SIEM-level command execution events and correlated detections.",
+      "connectors": ["splunk", "elastic"],
+      "datasets": ["events", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Hosts without endpoint sensors or with truncated command-line logging can hide interpreter abuse.",
+    "Living-off-the-land activity that never emits distinct process telemetry may blend into normal automation."
+  ],
+  "execution_targets": [
+    {
+      "name": "CrowdStrike suspicious interpreter process hunt",
+      "description": "Search endpoint process telemetry for suspicious shells, interpreters, and encoded command patterns.",
+      "connector": "crowdstrike",
+      "dataset": "endpoint",
+      "language": "falcon",
+      "query_template": "event_simpleName=ProcessRollup2 aid:* CommandLine=*{{focus_host}}* OR CommandLine=*powershell* OR CommandLine=*cmd.exe*"
+    },
+    {
+      "name": "Splunk interpreter execution pivot",
+      "description": "Correlate suspicious interpreter launches and alert context in SIEM telemetry.",
+      "connector": "splunk",
+      "dataset": "events",
+      "language": "spl",
+      "query_template": "index=endpoint tenant={{tenant}} (process_name=powershell.exe OR process_name=cmd.exe OR process_name=wscript.exe) earliest=-{{lookback_hours}}h"
+    },
+    {
+      "name": "Elastic ES|QL interpreter sweep",
+      "description": "Use ES|QL to find anomalous interpreter execution with parent or command-line pivots.",
+      "connector": "elastic",
+      "dataset": "events",
+      "language": "esql",
+      "query_template": "FROM logs-endpoint-* | WHERE tenant == \"{{tenant}}\" AND process.name IN (\"powershell.exe\", \"cmd.exe\", \"wscript.exe\")"
+    }
+  ],
+  "scope_defaults": {
+    "entities": ["host", "user", "process"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_host": "ws-01"
+    }
+  },
+  "publish": {
+    "finding_type": "endpoint_execution_hunt",
+    "expected_outcomes": [
+      "process_execution_story",
+      "affected_hosts_summary"
+    ],
+    "receipt_tags": [
+      "pack:technique.t1059-command-and-scripting-interpreter",
+      "attack:T1059"
+    ]
+  },
+  "notes": [
+    "Use this pack when initial telemetry suggests suspicious scripting or shell execution."
+  ]
+}

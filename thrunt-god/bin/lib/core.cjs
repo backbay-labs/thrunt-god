@@ -217,6 +217,7 @@ function loadConfig(cwd) {
     resolve_model_ids: false, // false: return alias as-is | true: map to full Claude model ID | "omit": return '' (runtime uses its default)
     context_window: 200000, // default 200k; set to 1000000 for Opus/Sonnet 4.6 1M models
     phase_naming: 'sequential', // 'sequential' (default, auto-increment) or 'custom' (arbitrary string IDs)
+    connector_profiles: {},
   };
 
   try {
@@ -314,6 +315,7 @@ function loadConfig(cwd) {
       resolve_model_ids: get('resolve_model_ids') ?? defaults.resolve_model_ids,
       context_window: get('context_window') ?? defaults.context_window,
       phase_naming: get('phase_naming') ?? defaults.phase_naming,
+      connector_profiles: parsed.connector_profiles || {},
       model_overrides: parsed.model_overrides || null,
       agent_skills: parsed.agent_skills || {},
     };

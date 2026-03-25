@@ -128,6 +128,23 @@ describe('loadConfig', () => {
     assert.strictEqual(config.parallelization, false);
   });
 
+  test('returns connector_profiles when present', () => {
+    writeConfig({
+      connector_profiles: {
+        splunk: {
+          default: {
+            auth_type: 'api_key',
+            secret_refs: {
+              api_key: { type: 'env', value: 'SPLUNK_TOKEN' },
+            },
+          },
+        },
+      },
+    });
+    const config = loadConfig(tmpDir);
+    assert.strictEqual(config.connector_profiles.splunk.default.auth_type, 'api_key');
+  });
+
   test('prefers top-level keys over nested keys', () => {
     writeConfig({ commit_docs: false, planning: { commit_docs: true } });
     const config = loadConfig(tmpDir);

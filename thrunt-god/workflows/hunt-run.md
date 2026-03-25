@@ -22,6 +22,11 @@ If Task is unavailable in the active runtime, fall back to sequential inline exe
 Do not start hunting from memory.
 Read the phase `CONTEXT.md` and each `PLAN.md` file.
 
+Every material telemetry action should be representable as a shared runtime `QuerySpec`.
+Backend-specific request shapes belong inside connector adapters, not in the workflow narrative.
+When a connector-backed execution path is needed, hand off through `thrunt-tools runtime execute` rather than inventing ad hoc request code in the workflow.
+When the phase is driven by a selected hunt pack, use `thrunt-tools pack render-targets <id>` to inspect the generated `QuerySpec` set and `thrunt-tools runtime execute --pack <id>` to execute it through the shared runtime contract.
+
 ## 1a. Parse Active Flags
 
 Optional `--wave N` restricts execution to a single wave.
@@ -49,11 +54,13 @@ For each meaningful query or search:
 
 - Create or update a file in `.planning/QUERIES/`
 - Record intent, target source, query text or procedure, time window, and observed result
+- Include the runtime metadata that produced the query: connector id, dataset, execution profile, pagination mode, and result status
 
 For each material claim or evidence item:
 
 - Create a receipt in `.planning/RECEIPTS/`
 - Record identifiers, timestamps, source, claim, confidence, and chain-of-custody details
+- Include the runtime metadata needed to reconstruct or audit the execution later
 
 Never summarize a claim without a receipt.
 

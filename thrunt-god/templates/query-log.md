@@ -7,7 +7,10 @@ Template for files in `.planning/QUERIES/`.
 ```markdown
 ---
 query_id: QRY-[timestamp-or-seq]
+query_spec_version: "1.0"
 source: [EDR | SIEM | Identity | Cloud | Email | Other]
+connector_id: [splunk | elastic | sentinel | okta | m365 | crowdstrike | aws | gcp | other]
+dataset: [events | alerts | identity | endpoint | cloud | email | entities | other]
 executed_at: [ISO timestamp]
 author: [analyst or agent]
 related_hypotheses:
@@ -31,6 +34,15 @@ related_hypotheses:
 - **Time window:** [range]
 - **Entities:** [list]
 - **Filters:** [list]
+
+## Runtime Metadata
+
+- **Profile:** [default | named profile]
+- **Pagination:** [mode, limit, cursor/page if relevant]
+- **Execution hints:** [timeout, consistency, dry-run, priority]
+- **Result status:** [ok | partial | error | empty]
+- **Warnings:** [count or summary]
+- **Errors:** [count or summary]
 
 ## Result Summary
 

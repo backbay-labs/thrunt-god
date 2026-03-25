@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "id": "domain.identity-abuse",
+  "kind": "domain",
+  "title": "Identity Abuse Hunt",
+  "description": "Opinionated identity-abuse hunt pack that composes valid-account, brute-force, and account-manipulation playbooks.",
+  "stability": "preview",
+  "extends": [
+    "foundation.identity-core",
+    "technique.t1078-valid-accounts",
+    "technique.t1098-account-manipulation",
+    "technique.t1110-brute-force"
+  ],
+  "metadata": {
+    "domains": ["identity"],
+    "coverage": ["session abuse", "credential misuse", "account manipulation"]
+  },
+  "hypothesis_templates": [
+    "Multiple identity-control signals combine into a coherent account-takeover or persistence story for the same user or identity set."
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "privileged_change_audit",
+      "description": "Identity and admin audit logs showing password resets, MFA changes, group membership edits, and application consent.",
+      "connectors": ["okta", "m365"],
+      "datasets": ["identity", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Helpdesk-assisted account recovery performed outside centralized identity telemetry can obscure the earliest takeover steps."
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_ip": "203.0.113.10",
+      "source_ip": "203.0.113.10"
+    }
+  },
+  "publish": {
+    "finding_type": "identity_abuse_hunt",
+    "expected_outcomes": [
+      "identity_abuse_story",
+      "validated_account_timeline",
+      "containment_recommendations"
+    ],
+    "receipt_tags": [
+      "pack:domain.identity-abuse"
+    ]
+  },
+  "notes": [
+    "This pack is intended as the default starting point for suspicious login, password reset, MFA bypass, or session hijack leads."
+  ]
+}

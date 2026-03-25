@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "id": "domain.ransomware-precursors",
+  "kind": "domain",
+  "title": "Ransomware Precursors Hunt",
+  "description": "Opinionated ransomware-precursor hunt pack that composes suspicious execution and identity misuse into a pre-impact investigation path.",
+  "stability": "preview",
+  "extends": [
+    "foundation.endpoint-core",
+    "foundation.identity-core",
+    "technique.t1059-command-and-scripting-interpreter",
+    "technique.t1078-valid-accounts"
+  ],
+  "metadata": {
+    "domains": ["endpoint", "identity"],
+    "coverage": ["hands-on-keyboard execution", "staging", "ransomware precursors"]
+  },
+  "hypothesis_templates": [
+    "Suspicious shell execution and anomalous identity activity indicate an operator preparing for lateral movement or encryption impact."
+  ],
+  "blind_spots": [
+    "Early precursor activity on unmanaged hosts or identities can still escape this pack even when later stages are visible."
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_host": "ws-01",
+      "focus_user": "alice@example.com"
+    }
+  },
+  "publish": {
+    "finding_type": "ransomware_precursor_hunt",
+    "expected_outcomes": [
+      "ransomware_precursor_story",
+      "operator_timeline",
+      "containment_priorities"
+    ],
+    "receipt_tags": [
+      "pack:domain.ransomware-precursors"
+    ]
+  }
+}

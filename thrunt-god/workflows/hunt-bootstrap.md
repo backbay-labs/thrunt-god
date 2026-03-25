@@ -33,6 +33,12 @@ Collect:
 
 If `--auto` is present, use the supplied brief as the primary source of truth and ask only where ambiguity would materially change the hunt.
 
+If `--pack <id>` is present:
+
+- inspect the pack first with `node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" pack bootstrap <id> ...`
+- use the pack bootstrap output as the default mission, hypothesis, success-criteria, and phase seed structure
+- ask only for missing pack parameters or signal-specific overrides before writing the case artifacts
+
 ## 3. Create Directory Layout
 
 Create these paths if they do not exist:
@@ -78,6 +84,11 @@ Case mode defaults:
   3. Swarm Execution
   4. Evidence Correlation
   5. Publish
+
+Pack-backed case mode defaults:
+
+- Let the selected pack seed the case title, hypotheses, success criteria, and default phase structure
+- Preserve the pack id and provided parameters in `MISSION.md` and `STATE.md` so later `/hunt:run` phases can re-materialize the same pack intent
 
 ## 5. Initialize State
 

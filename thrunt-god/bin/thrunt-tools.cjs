@@ -26,6 +26,20 @@
  *   current-timestamp [format]         Get timestamp (full|date|filename)
  *   list-todos [area]                  Count and enumerate pending todos
  *   check-path-exists <path>           Check file/directory existence
+ *   pack list                          List packs from the built-in and local registries
+ *   pack show <pack-id>                Show a resolved pack definition
+ *   pack bootstrap <pack-id>           Build pack-driven hunt bootstrap content
+ *   pack validate <pack-id>            Validate pack parameters
+ *   pack render-targets <pack-id>      Render pack execution targets into QuerySpecs
+ *   pack lint [<pack-id>]              Lint shipped or local packs against authoring policy
+ *   pack test [<pack-id>]              Smoke-test packs using example parameters
+ *   pack init <pack-id>                Scaffold a local pack under .planning/packs/
+ *     [--param key=value] [--params '{json}']
+ *   runtime list-connectors            List built-in runtime connector capabilities
+ *   runtime doctor [<connector-id>]    Score connector readiness and preflight config
+ *   runtime smoke [<connector-id>]     Run live connector smoke tests
+ *   runtime execute --connector ID --query "..."   Execute a connector-backed hunt query
+ *   runtime execute --pack <pack-id>   Execute one or more pack-backed hunt targets
  *   config-ensure-section              Initialize .planning/config.json
  *   history-digest                     Aggregate all SUMMARY.md data
  *   summary-extract <path> [--fields]  Extract structured data from SUMMARY.md
@@ -277,7 +291,7 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, config-ensure-section, config-new-program, init, workstream');
+    error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, pack, runtime, config-ensure-section, config-new-program, init, workstream');
   }
 
   // Multi-repo guard: resolve project root for commands that read/write .planning/.
@@ -504,6 +518,46 @@ async function runCommand(command, args, cwd, raw) {
 
     case 'check-path-exists': {
       commands.cmdCheckPathExists(cwd, args[1], raw);
+      break;
+    }
+
+    case 'pack': {
+      const subcommand = args[1];
+      if (subcommand === 'list') {
+        await commands.cmdPackList(cwd, raw);
+      } else if (subcommand === 'show') {
+        await commands.cmdPackShow(cwd, args[2], raw);
+      } else if (subcommand === 'bootstrap') {
+        await commands.cmdPackBootstrap(cwd, args.slice(2), raw);
+      } else if (subcommand === 'validate') {
+        await commands.cmdPackValidate(cwd, args.slice(2), raw);
+      } else if (subcommand === 'render-targets') {
+        await commands.cmdPackRenderTargets(cwd, args.slice(2), raw);
+      } else if (subcommand === 'lint') {
+        await commands.cmdPackLint(cwd, args.slice(2), raw);
+      } else if (subcommand === 'test') {
+        await commands.cmdPackTest(cwd, args.slice(2), raw);
+      } else if (subcommand === 'init') {
+        await commands.cmdPackInit(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown pack subcommand. Available: list, show, bootstrap, validate, render-targets, lint, test, init');
+      }
+      break;
+    }
+
+    case 'runtime': {
+      const subcommand = args[1];
+      if (subcommand === 'list-connectors') {
+        await commands.cmdRuntimeListConnectors(cwd, raw);
+      } else if (subcommand === 'doctor') {
+        await commands.cmdRuntimeDoctor(cwd, args.slice(2), raw);
+      } else if (subcommand === 'smoke') {
+        await commands.cmdRuntimeSmoke(cwd, args.slice(2), raw);
+      } else if (subcommand === 'execute') {
+        await commands.cmdRuntimeExecute(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown runtime subcommand. Available: list-connectors, doctor, smoke, execute');
+      }
       break;
     }
 

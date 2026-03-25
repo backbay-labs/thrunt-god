@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "id": "technique.t1566-phishing",
+  "kind": "technique",
+  "title": "Phishing",
+  "description": "Hunt suspicious inbound email and downstream identity or alert activity that suggests phishing-driven access attempts.",
+  "stability": "preview",
+  "attack": ["T1566"],
+  "metadata": {
+    "domains": ["email", "identity", "siem"],
+    "severity": "high"
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "hypothesis_templates": [
+    "A phishing message initiated suspicious downstream identity or alert activity in the tenant.",
+    "Malicious email indicators correlate with unusual account access or user-reported compromise."
+  ],
+  "required_connectors": ["m365", "sentinel", "splunk"],
+  "supported_datasets": ["email", "alerts", "events"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 48,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of email and downstream telemetry to review."
+    },
+    {
+      "name": "focus_sender",
+      "type": "string",
+      "required": false,
+      "description": "Optional sender or domain to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "email_alert_and_message_telemetry",
+      "description": "Email delivery, malicious message, or user-reported phish visibility.",
+      "connectors": ["m365"],
+      "datasets": ["email", "alerts"]
+    },
+    {
+      "surface": "siem_follow_on_alerts",
+      "description": "Downstream alerts or events tied to users or infrastructure touched by a suspected phish.",
+      "connectors": ["sentinel", "splunk"],
+      "datasets": ["alerts", "events"]
+    }
+  ],
+  "blind_spots": [
+    "Email content or trace fidelity may depend on tenant licensing and mailbox-level logging features.",
+    "User-reported phishing without preserved message context can limit message-to-session correlation."
+  ],
+  "execution_targets": [
+    {
+      "name": "M365 phishing alert and message review",
+      "description": "Inspect email-related alerts and suspicious sender activity in Microsoft telemetry.",
+      "connector": "m365",
+      "dataset": "email",
+      "language": "graph",
+      "query_template": "/security/alerts_v2?$filter=createdDateTime ge {{lookback_hours}}h and vendorInformation/provider eq 'Microsoft Defender'"
+    },
+    {
+      "name": "Sentinel downstream phishing correlation",
+      "description": "Pivot from email-associated alerts into downstream user and host activity.",
+      "connector": "sentinel",
+      "dataset": "alerts",
+      "language": "kql",
+      "query_template": "SecurityAlert | where TimeGenerated > ago({{lookback_hours}}h) | where AlertName contains \"phish\" or Entities has \"{{focus_sender}}\""
+    },
+    {
+      "name": "Splunk email-to-access pivot",
+      "description": "Correlate suspicious email indicators with downstream access or alert activity in SIEM data.",
+      "connector": "splunk",
+      "dataset": "events",
+      "language": "spl",
+      "query_template": "index=email tenant={{tenant}} earliest=-{{lookback_hours}}h sender={{focus_sender}}"
+    }
+  ],
+  "scope_defaults": {
+    "entities": ["user", "sender", "domain", "message"],
+    "time_window": {
+      "lookback_minutes": 2880
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_sender": "evil.example"
+    }
+  },
+  "publish": {
+    "finding_type": "email_intrusion_hunt",
+    "expected_outcomes": [
+      "message_to_access_timeline",
+      "phishing_impact_summary"
+    ],
+    "receipt_tags": [
+      "pack:technique.t1566-phishing",
+      "attack:T1566"
+    ]
+  },
+  "notes": [
+    "Use this pack when suspicious inbound email may have led to identity or endpoint follow-on activity."
+  ]
+}

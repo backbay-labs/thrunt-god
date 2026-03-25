@@ -11,8 +11,8 @@
 
 <p align="center">
   <em>
-    From signal, a hunt. From hunt, a swarm.<br/>
-    If the evidence will not sign, the story dies.
+    From signal, to swarm.<br/>
+    No gods. Only Thrunt.
   </em>
 </p>
 
@@ -33,19 +33,19 @@
 
 ## The Five Phases
 
-Every hunt follows five phases. No shortcuts, no hand-waving.
+Every hunt resolves through five phases. Each step is explicit.
 
 <p align="center">
   <img src="assets/phases.png" alt="Signal → Hunt → Swarm → Receipt → Publish" width="820" />
 </p>
 
-| Phase       |                                                                             |
-| ----------- | --------------------------------------------------------------------------- |
-| **Signal**  | A detection, anomaly, lead, or intel input opens the case                   |
-| **Hunt**    | Hypotheses are formed, scoped, and made testable                            |
-| **Swarm**   | Parallel agents execute structured investigations across available sources  |
-| **Receipt** | Every claim is bound to exact queries, timestamps, and evidence lineage     |
-| **Publish** | Only validated findings are packaged for downstream consumers               |
+| Phase       |                                                                            |
+| ----------- | -------------------------------------------------------------------------- |
+| **Signal**  | A detection, anomaly, lead, or intel input opens the case                  |
+| **Hunt**    | Hypotheses are formed, scoped, and made testable                           |
+| **Swarm**   | Parallel agents execute structured investigations across available sources |
+| **Receipt** | Every claim is bound to exact queries, timestamps, and evidence lineage    |
+| **Publish** | Only validated findings are packaged for downstream consumers              |
 
 ---
 
@@ -104,6 +104,14 @@ Bootstrap the hunt command surface into your local IDE environment.
 /hunt:publish
 ```
 
+### Pack-seeded signal
+
+```text
+/hunt:new-case --pack domain.identity-abuse
+/hunt:run 1
+/hunt:validate-findings 1
+```
+
 </td>
 <td width="34%">
 
@@ -135,7 +143,7 @@ Runs all remaining phases end-to-end: discuss, plan, execute. Pauses only for op
 
 ## Canonical Artifacts
 
-Every hunt produces a structured artifact tree. This is the system of record — not prose, not summaries.
+Every hunt produces a structured artifact tree. These are the canonical hunt artifacts and the system of record — not prose, not summaries.
 
 ```text
 .planning/

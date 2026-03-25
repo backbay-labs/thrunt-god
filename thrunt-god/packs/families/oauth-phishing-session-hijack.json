@@ -1,0 +1,56 @@
+{
+  "version": "1.0",
+  "id": "family.oauth-phishing-session-hijack",
+  "kind": "family",
+  "title": "OAuth Phishing and Session Hijack Campaign",
+  "description": "Threat-family style pack that composes email intrusion and identity abuse playbooks into one campaign-level hunt.",
+  "stability": "preview",
+  "extends": [
+    "domain.email-intrusion",
+    "domain.identity-abuse"
+  ],
+  "metadata": {
+    "domains": ["email", "identity"],
+    "coverage": ["oauth phishing", "session hijack", "account takeover"]
+  },
+  "hypothesis_templates": [
+    "Phishing delivery, mailbox tampering, and abnormal session activity are part of a single account-takeover campaign."
+  ],
+  "execution_targets": [
+    {
+      "name": "M365 consent grant and risky app review",
+      "description": "Review suspicious application consent and delegated permission grants tied to the focus user.",
+      "connector": "m365",
+      "dataset": "identity",
+      "language": "graph",
+      "query_template": "/auditLogs/directoryAudits?$filter=activityDisplayName eq 'Consent to application' and initiatedBy/user/displayName eq '{{focus_user}}'"
+    }
+  ],
+  "blind_spots": [
+    "Session-token theft that never reuses the mailbox or identity surfaces covered here may still require browser or proxy telemetry outside the pack."
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_sender": "evil.example",
+      "focus_ip": "203.0.113.10",
+      "source_ip": "203.0.113.10"
+    }
+  },
+  "publish": {
+    "finding_type": "campaign_hunt",
+    "expected_outcomes": [
+      "campaign_story",
+      "cross_surface_timeline",
+      "detection_candidates"
+    ],
+    "receipt_tags": [
+      "pack:family.oauth-phishing-session-hijack"
+    ]
+  },
+  "notes": [
+    "This is the first family-level pack and is intentionally composed from lower-level domain playbooks rather than restating them."
+  ]
+}

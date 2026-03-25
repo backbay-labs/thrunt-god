@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { output, error, planningRoot } = require('./core.cjs');
+const { validateAuthProfile } = require('./runtime.cjs');
 const {
   VALID_PROFILES,
   getAgentToModelMapForProfile,
@@ -26,6 +27,7 @@ const VALID_CONFIG_KEYS = new Set([
   'git.branching_strategy', 'git.phase_branch_template', 'git.milestone_branch_template', 'git.quick_branch_template',
   'planning.commit_docs', 'planning.search_gitignored',
   'hooks.context_warnings', 'hooks.workflow_guard',
+  'connector_profiles',
 ]);
 
 /**
@@ -37,6 +39,8 @@ function isValidConfigKey(keyPath) {
   if (VALID_CONFIG_KEYS.has(keyPath)) return true;
   // Allow agent_skills.<agent-type> with any agent type string
   if (/^agent_skills\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
+  // Allow connector_profiles.<connector-id>.<profile-name> as full profile writes
+  if (/^connector_profiles\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
   return false;
 }
 
@@ -144,6 +148,22 @@ function formatValidValues(values) {
 }
 
 function normalizeAndValidateConfigValue(keyPath, value) {
+  if (/^connector_profiles\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(keyPath)) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      error(`Invalid value for ${keyPath}: expected object auth profile, received ${JSON.stringify(value)}`);
+    }
+    const [, connectorId, profileName] = keyPath.split('.');
+    const validation = validateAuthProfile({
+      name: profileName,
+      connector_id: connectorId,
+      ...value,
+    });
+    if (!validation.valid) {
+      error(`Invalid value for ${keyPath}: ${validation.errors.join('; ')}`);
+    }
+    return value;
+  }
+
   if (keyPath === 'workflow.discuss_mode' && value === 'standard') {
     value = 'discuss';
   }
@@ -217,6 +237,22 @@ function validateMaterializedConfig(config) {
   for (const [keyPath, value] of checks) {
     if (value !== undefined) {
       normalizeAndValidateConfigValue(keyPath, value);
+    }
+  }
+
+  if (config.connector_profiles !== undefined) {
+    if (!config.connector_profiles || typeof config.connector_profiles !== 'object' || Array.isArray(config.connector_profiles)) {
+      error('Invalid value for connector_profiles: expected object');
+    }
+
+    for (const [connectorId, profiles] of Object.entries(config.connector_profiles)) {
+      if (!profiles || typeof profiles !== 'object' || Array.isArray(profiles)) {
+        error(`Invalid value for connector_profiles.${connectorId}: expected object of profiles`);
+      }
+
+      for (const [profileName, profile] of Object.entries(profiles)) {
+        normalizeAndValidateConfigValue(`connector_profiles.${connectorId}.${profileName}`, profile);
+      }
     }
   }
 }
@@ -308,6 +344,7 @@ function buildNewProgramConfig(userChoices) {
     hooks: {
       context_warnings: true,
     },
+    connector_profiles: {},
     agent_skills: {},
   };
 
@@ -330,6 +367,11 @@ function buildNewProgramConfig(userChoices) {
       ...hardcoded.hooks,
       ...(userDefaults.hooks || {}),
       ...(choices.hooks || {}),
+    },
+    connector_profiles: {
+      ...hardcoded.connector_profiles,
+      ...(userDefaults.connector_profiles || {}),
+      ...(choices.connector_profiles || {}),
     },
     agent_skills: {
       ...hardcoded.agent_skills,

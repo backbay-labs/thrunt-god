@@ -8,6 +8,10 @@ const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, com
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
+function isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
 function cmdGenerateSlug(text, raw) {
   if (!text) {
     error('text required for slug generation');
@@ -217,6 +221,748 @@ function cmdResolveModel(cwd, agentType, raw) {
     ? { model, profile }
     : { model, profile, unknown_agent: true };
   output(result, raw, model);
+}
+
+function parseRuntimeArgs(args = []) {
+  const options = {
+    parameters: {},
+    hypothesis_ids: [],
+    tags: [],
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i];
+    if (!token.startsWith('--')) continue;
+    const key = token.slice(2);
+
+    if (key === 'dry-run') {
+      options.dry_run = true;
+      continue;
+    }
+
+    if (key === 'param' && args[i + 1] && !args[i + 1].startsWith('--')) {
+      const rawPair = args[i + 1];
+      const eq = rawPair.indexOf('=');
+      if (eq === -1) {
+        error(`runtime execute --param requires key=value, received ${rawPair}`);
+      }
+      const name = rawPair.slice(0, eq);
+      const value = rawPair.slice(eq + 1);
+      if (!name) {
+        error(`runtime execute --param requires key=value, received ${rawPair}`);
+      }
+      options.parameters[name] = value;
+      i += 1;
+      continue;
+    }
+
+    if ((key === 'hypothesis' || key === 'tag') && args[i + 1] && !args[i + 1].startsWith('--')) {
+      const target = key === 'hypothesis' ? options.hypothesis_ids : options.tags;
+      target.push(args[i + 1]);
+      i += 1;
+      continue;
+    }
+
+    if (args[i + 1] && !args[i + 1].startsWith('--')) {
+      options[key.replace(/-/g, '_')] = args[i + 1];
+      i += 1;
+      continue;
+    }
+
+    options[key.replace(/-/g, '_')] = true;
+  }
+
+  return options;
+}
+
+function coerceRuntimeValue(value) {
+  if (value === undefined || value === null) return value;
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (/^-?\d+$/.test(value)) return parseInt(value, 10);
+  if (/^-?\d+\.\d+$/.test(value)) return parseFloat(value);
+  if ((value.startsWith('{') && value.endsWith('}')) || (value.startsWith('[') && value.endsWith(']'))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
+function parsePackArgs(args = []) {
+  const options = {
+    parameters: {},
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i];
+    if (!token.startsWith('--')) continue;
+    const key = token.slice(2);
+
+    if (key === 'param' && args[i + 1] && !args[i + 1].startsWith('--')) {
+      const rawPair = args[i + 1];
+      const eq = rawPair.indexOf('=');
+      if (eq === -1) {
+        error(`pack validate --param requires key=value, received ${rawPair}`);
+      }
+      const name = rawPair.slice(0, eq);
+      const value = rawPair.slice(eq + 1);
+      if (!name) {
+        error(`pack validate --param requires key=value, received ${rawPair}`);
+      }
+      options.parameters[name] = value;
+      i += 1;
+      continue;
+    }
+
+    if (args[i + 1] && !args[i + 1].startsWith('--')) {
+      options[key.replace(/-/g, '_')] = args[i + 1];
+      i += 1;
+      continue;
+    }
+  }
+
+  return options;
+}
+
+function extractPackProvidedParameters(options = {}) {
+  let extraParameters = {};
+  if (options.params) {
+    const { safeJsonParse } = require('./security.cjs');
+    const result = safeJsonParse(options.params, { label: '--params' });
+    if (!result.ok) error(result.error);
+    if (!isPlainObject(result.value)) {
+      error('--params must be a JSON object');
+    }
+    extraParameters = result.value;
+  }
+
+  return {
+    ...extraParameters,
+    ...Object.fromEntries(
+      Object.entries(options.parameters || {}).map(([key, value]) => [key, coerceRuntimeValue(value)])
+    ),
+  };
+}
+
+function getRuntimeConnectorArg(args = []) {
+  return args[0] && !args[0].startsWith('--') ? args[0] : null;
+}
+
+function getTypedRuntimeParameters(options = {}) {
+  return Object.fromEntries(
+    Object.entries(options.parameters || {}).map(([key, value]) => [key, coerceRuntimeValue(value)])
+  );
+}
+
+function buildRuntimeCertificationOptions(args = [], options = {}) {
+  return {
+    connectorId: getRuntimeConnectorArg(args) || options.connector || null,
+    profile: options.profile || null,
+    dataset: options.dataset || null,
+    language: options.language || null,
+    query: options.query || null,
+    start: options.start || null,
+    end: options.end || null,
+    lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : undefined,
+    lookback_hours: options.lookback_hours ? parseInt(options.lookback_hours, 10) : undefined,
+    pagination_mode: options.pagination_mode || null,
+    limit: options.limit ? parseInt(options.limit, 10) : undefined,
+    max_pages: options.max_pages ? parseInt(options.max_pages, 10) : undefined,
+    parameters: getTypedRuntimeParameters(options),
+  };
+}
+
+async function cmdRuntimeListConnectors(cwd, raw) {
+  const runtime = require('./runtime.cjs');
+  const registry = runtime.createBuiltInConnectorRegistry();
+  output({ connectors: registry.list() }, raw);
+}
+
+async function cmdRuntimeDoctor(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const config = loadConfig(cwd);
+  const parsed = parseRuntimeArgs(args);
+  const options = buildRuntimeCertificationOptions(args, parsed);
+  const configuredConnectorIds = Object.keys(config.connector_profiles || {});
+
+  if (parsed.live === true && !options.connectorId && configuredConnectorIds.length === 0) {
+    error('runtime doctor --live requires at least one configured connector profile or an explicit connector id');
+  }
+
+  const report = await runtime.assessRuntimeReadiness(config, {
+    connector_ids: options.connectorId ? [options.connectorId] : null,
+    configured_only: parsed.live === true && !options.connectorId,
+    live: parsed.live === true,
+    profile: options.profile,
+    dataset: options.dataset,
+    language: options.language,
+    query: options.query,
+    start: options.start,
+    end: options.end,
+    lookback_minutes: options.lookback_minutes,
+    lookback_hours: options.lookback_hours,
+    pagination_mode: options.pagination_mode,
+    limit: options.limit,
+    max_pages: options.max_pages,
+    parameters: options.parameters,
+    env: process.env,
+    cwd,
+  });
+
+  output(report, raw);
+}
+
+async function cmdRuntimeSmoke(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const config = loadConfig(cwd);
+  const parsed = parseRuntimeArgs(args);
+  const options = buildRuntimeCertificationOptions(args, parsed);
+  const configuredConnectorIds = Object.keys(config.connector_profiles || {});
+
+  if (!options.connectorId && configuredConnectorIds.length === 0) {
+    error('runtime smoke requires an explicit connector id or at least one configured connector profile');
+  }
+
+  const report = await runtime.assessRuntimeReadiness(config, {
+    connector_ids: options.connectorId ? [options.connectorId] : null,
+    configured_only: !options.connectorId,
+    live: true,
+    profile: options.profile,
+    dataset: options.dataset,
+    language: options.language,
+    query: options.query,
+    start: options.start,
+    end: options.end,
+    lookback_minutes: options.lookback_minutes,
+    lookback_hours: options.lookback_hours,
+    pagination_mode: options.pagination_mode,
+    limit: options.limit,
+    max_pages: options.max_pages,
+    parameters: options.parameters,
+    env: process.env,
+    cwd,
+  });
+
+  output(report, raw);
+}
+
+async function cmdRuntimeExecute(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  if (options.pack) {
+    const packLib = require('./pack.cjs');
+    const executionPlan = packLib.buildPackExecutionTargets(
+      cwd,
+      options.pack,
+      options.parameters || {},
+      {
+        target: options.target || null,
+        profile: options.profile || 'default',
+        tenant: options.tenant || null,
+        region: options.region || null,
+        start: options.start || null,
+        end: options.end || null,
+        lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : undefined,
+        lookback_hours: options.lookback_hours ? parseInt(options.lookback_hours, 10) : undefined,
+        pagination_mode: options.pagination_mode || 'auto',
+        limit: options.limit ? parseInt(options.limit, 10) : undefined,
+        max_pages: options.max_pages ? parseInt(options.max_pages, 10) : undefined,
+        timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+        max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+        backoff_ms: options.backoff_ms ? parseInt(options.backoff_ms, 10) : undefined,
+        consistency: options.consistency || undefined,
+        receipt_policy: options.receipt_policy || undefined,
+        dry_run: options.dry_run === true,
+      }
+    );
+
+    const registry = runtime.createBuiltInConnectorRegistry();
+    const results = [];
+
+    for (const target of executionPlan.targets) {
+      const result = await runtime.executeQuerySpec(target.query_spec, registry, { cwd, config });
+      results.push({
+        target: target.name,
+        connector: target.connector,
+        dataset: target.dataset,
+        query_spec: target.query_spec,
+        result: result.envelope,
+        artifacts: result.artifacts,
+        pagination: result.pagination,
+      });
+    }
+
+    output({
+      pack: {
+        id: executionPlan.pack.id,
+        title: executionPlan.pack.title,
+        path: executionPlan.pack.path,
+        target_count: executionPlan.targets.length,
+      },
+      parameters: executionPlan.parameters,
+      results,
+    }, raw);
+    return;
+  }
+
+  if (!options.connector) {
+    error('runtime execute requires --connector <id>');
+  }
+  if (!options.query) {
+    error('runtime execute requires --query "<statement>"');
+  }
+
+  const parameters = getTypedRuntimeParameters(options);
+
+  const spec = runtime.createQuerySpec({
+    connector: {
+      id: options.connector,
+      profile: options.profile || 'default',
+      tenant: options.tenant || null,
+      region: options.region || null,
+    },
+    dataset: {
+      kind: options.dataset || 'events',
+      name: options.dataset_name || null,
+    },
+    time_window: options.start || options.end
+      ? { start: options.start, end: options.end }
+      : { lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : 60 },
+    parameters,
+    pagination: {
+      mode: options.pagination_mode || 'auto',
+      limit: options.limit ? parseInt(options.limit, 10) : undefined,
+      max_pages: options.max_pages ? parseInt(options.max_pages, 10) : undefined,
+    },
+    execution: {
+      profile: options.profile || 'default',
+      timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+      max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      backoff_ms: options.backoff_ms ? parseInt(options.backoff_ms, 10) : undefined,
+      consistency: options.consistency || undefined,
+      dry_run: options.dry_run === true,
+    },
+    query: {
+      language: options.language || 'native',
+      statement: options.query,
+    },
+    evidence: {
+      hypothesis_ids: options.hypothesis_ids,
+      tags: options.tags,
+      receipt_policy: options.receipt_policy || undefined,
+    },
+  });
+
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const result = await runtime.executeQuerySpec(spec, registry, { cwd, config });
+  output({
+    connector: options.connector,
+    profile: options.profile || 'default',
+    result: result.envelope,
+    artifacts: result.artifacts,
+    pagination: result.pagination,
+  }, raw);
+}
+
+async function cmdPackList(cwd, raw) {
+  const pack = require('./pack.cjs');
+  const registry = pack.loadPackRegistry(cwd);
+  output({
+    packs: registry.packs.map(item => ({
+      id: item.id,
+      kind: item.kind,
+      title: item.title,
+      stability: item.stability,
+      source: item.source,
+      required_connectors: item.required_connectors,
+      supported_datasets: item.supported_datasets,
+    })),
+    overrides: registry.overrides,
+    paths: registry.paths,
+  }, raw);
+}
+
+async function cmdPackShow(cwd, packId, raw) {
+  if (!packId) {
+    error('pack show requires <pack-id>');
+  }
+
+  const pack = require('./pack.cjs');
+  const resolved = pack.resolvePack(cwd, packId);
+  if (!resolved.pack) {
+    output({ found: false, pack_id: packId }, raw, '');
+    return;
+  }
+
+  output({
+    found: true,
+    pack: resolved.pack,
+  }, raw);
+}
+
+async function cmdPackBootstrap(cwd, args, raw) {
+  const packId = args[0];
+  if (!packId) {
+    error('pack bootstrap requires <pack-id>');
+  }
+
+  const packLib = require('./pack.cjs');
+  const options = parsePackArgs(args.slice(1));
+  const resolved = packLib.resolvePack(cwd, packId);
+  if (!resolved.pack) {
+    output({ found: false, pack_id: packId }, raw, '');
+    return;
+  }
+
+  const providedParameters = extractPackProvidedParameters(options);
+  const bootstrap = packLib.buildPackBootstrap(cwd, packId, providedParameters);
+  output({
+    found: true,
+    valid: bootstrap.validation.valid,
+    pack_id: bootstrap.pack.id,
+    pack_path: bootstrap.pack.path,
+    parameters: bootstrap.parameters,
+    errors: bootstrap.validation.errors,
+    missing_template_parameters: bootstrap.validation.missing_template_parameters,
+    template_usage: bootstrap.validation.template_usage,
+    bootstrap: bootstrap.bootstrap,
+  }, raw);
+}
+
+async function cmdPackValidate(cwd, args, raw) {
+  const packId = args[0];
+  if (!packId) {
+    error('pack validate requires <pack-id>');
+  }
+
+  const packLib = require('./pack.cjs');
+  const options = parsePackArgs(args.slice(1));
+  const resolved = packLib.resolvePack(cwd, packId);
+  if (!resolved.pack) {
+    output({ valid: false, found: false, pack_id: packId, errors: ['Pack not found'] }, raw, 'false');
+    return;
+  }
+
+  const providedParameters = extractPackProvidedParameters(options);
+
+  const validation = packLib.validatePackParameters(resolved.pack, providedParameters);
+  output({
+    valid: validation.valid,
+    found: true,
+    pack_id: resolved.pack.id,
+    pack_path: resolved.pack.path,
+    parameters: validation.parameters,
+    errors: validation.errors,
+    warnings: validation.warnings,
+  }, raw, validation.valid ? 'true' : 'false');
+}
+
+async function cmdPackRenderTargets(cwd, args, raw) {
+  const packId = args[0];
+  if (!packId) {
+    error('pack render-targets requires <pack-id>');
+  }
+
+  const packLib = require('./pack.cjs');
+  const options = parsePackArgs(args.slice(1));
+  const resolved = packLib.resolvePack(cwd, packId);
+  if (!resolved.pack) {
+    output({ valid: false, found: false, pack_id: packId, errors: ['Pack not found'] }, raw, 'false');
+    return;
+  }
+
+  const providedParameters = extractPackProvidedParameters(options);
+
+  try {
+    const rendered = packLib.buildPackExecutionTargets(cwd, packId, providedParameters, {
+      target: options.target || null,
+      profile: options.profile || 'default',
+      tenant: options.tenant || null,
+      region: options.region || null,
+      start: options.start || null,
+      end: options.end || null,
+      lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : undefined,
+      lookback_hours: options.lookback_hours ? parseInt(options.lookback_hours, 10) : undefined,
+      pagination_mode: options.pagination_mode || 'auto',
+      limit: options.limit ? parseInt(options.limit, 10) : undefined,
+      max_pages: options.max_pages ? parseInt(options.max_pages, 10) : undefined,
+      timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+      max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      backoff_ms: options.backoff_ms ? parseInt(options.backoff_ms, 10) : undefined,
+      consistency: options.consistency || undefined,
+      receipt_policy: options.receipt_policy || undefined,
+      dry_run: options.dry_run === true,
+    });
+
+    output({
+      valid: true,
+      found: true,
+      pack_id: rendered.pack.id,
+      pack_path: rendered.pack.path,
+      parameters: rendered.parameters,
+      query_specs: rendered.targets,
+    }, raw, 'true');
+  } catch (err) {
+    output({
+      valid: false,
+      found: true,
+      pack_id: resolved.pack.id,
+      pack_path: resolved.pack.path,
+      parameters: err.validation?.parameters || {},
+      errors: err.validation?.errors || [err.message],
+      missing_template_parameters: err.validation?.missing_template_parameters || [],
+    }, raw, 'false');
+  }
+}
+
+function getPackFolderForKind(kind) {
+  switch (kind) {
+    case 'technique':
+      return 'techniques';
+    case 'domain':
+      return 'domains';
+    case 'family':
+      return 'families';
+    case 'campaign':
+      return 'campaigns';
+    case 'example':
+      return 'examples';
+    case 'custom':
+    default:
+      return 'custom';
+  }
+}
+
+function formatPackTitle(packId) {
+  return packId
+    .split('.')
+    .slice(1)
+    .join(' ')
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ') || packId;
+}
+
+async function cmdPackLint(cwd, args, raw) {
+  const packLib = require('./pack.cjs');
+  const packId = args[0] && !args[0].startsWith('--') ? args[0] : null;
+
+  let registry;
+  try {
+    registry = packLib.loadPackRegistry(cwd);
+  } catch (err) {
+    output({ valid: false, found: true, errors: [err.message], packs: [] }, raw, 'false');
+    return;
+  }
+
+  const selectedPacks = packId
+    ? registry.packs.filter(item => item.id === packId)
+    : registry.packs;
+
+  if (packId && selectedPacks.length === 0) {
+    output({ valid: false, found: false, pack_id: packId, errors: ['Pack not found'] }, raw, 'false');
+    return;
+  }
+
+  const results = selectedPacks.map(pack => {
+    const errors = [];
+    const templateUsage = packLib.getPackTemplateUsage(pack);
+    const exampleParameters = pack.examples?.parameters || {};
+
+    if (templateUsage.undeclared.length > 0) {
+      errors.push(`Undeclared template parameters: ${templateUsage.undeclared.join(', ')}`);
+    }
+    if (!isPlainObject(exampleParameters) || Object.keys(exampleParameters).length === 0) {
+      errors.push('Missing examples.parameters');
+    }
+
+    return {
+      id: pack.id,
+      source: pack.source,
+      path: pack.path,
+      valid: errors.length === 0,
+      errors,
+    };
+  });
+
+  const valid = results.every(item => item.valid);
+  output({
+    valid,
+    found: true,
+    pack_id: packId,
+    packs: results,
+  }, raw, valid ? 'true' : 'false');
+}
+
+async function cmdPackTest(cwd, args, raw) {
+  const packLib = require('./pack.cjs');
+  const packId = args[0] && !args[0].startsWith('--') ? args[0] : null;
+
+  let registry;
+  try {
+    registry = packLib.loadPackRegistry(cwd);
+  } catch (err) {
+    output({ valid: false, found: true, errors: [err.message], packs: [] }, raw, 'false');
+    return;
+  }
+
+  const selectedPacks = packId
+    ? registry.packs.filter(item => item.id === packId)
+    : registry.packs;
+
+  if (packId && selectedPacks.length === 0) {
+    output({ valid: false, found: false, pack_id: packId, errors: ['Pack not found'] }, raw, 'false');
+    return;
+  }
+
+  const results = [];
+  for (const pack of selectedPacks) {
+    const errors = [];
+    const exampleParameters = pack.examples?.parameters || {};
+    let bootstrap_ok = false;
+    let render_ok = pack.execution_targets.length === 0;
+
+    if (!isPlainObject(exampleParameters) || Object.keys(exampleParameters).length === 0) {
+      errors.push('Missing examples.parameters');
+    } else {
+      try {
+        packLib.buildPackBootstrap(cwd, pack.id, exampleParameters);
+        bootstrap_ok = true;
+      } catch (err) {
+        errors.push(`bootstrap: ${err.message}`);
+      }
+
+      if (pack.execution_targets.length > 0) {
+        try {
+          packLib.buildPackExecutionTargets(cwd, pack.id, exampleParameters, {
+            profile: 'default',
+          });
+          render_ok = true;
+        } catch (err) {
+          errors.push(`render-targets: ${err.message}`);
+        }
+      }
+    }
+
+    results.push({
+      id: pack.id,
+      source: pack.source,
+      valid: errors.length === 0,
+      bootstrap_ok,
+      render_ok,
+      errors,
+    });
+  }
+
+  const valid = results.every(item => item.valid);
+  output({
+    valid,
+    found: true,
+    pack_id: packId,
+    packs: results,
+  }, raw, valid ? 'true' : 'false');
+}
+
+async function cmdPackInit(cwd, args, raw) {
+  const packId = args[0];
+  if (!packId) {
+    error('pack init requires <pack-id>');
+  }
+
+  const packLib = require('./pack.cjs');
+  const options = parsePackArgs(args.slice(1));
+  const kind = options.kind || 'custom';
+
+  if (!packLib.PACK_KINDS.includes(kind)) {
+    error(`pack init kind must be one of: ${packLib.PACK_KINDS.join(', ')}`);
+  }
+
+  const templatePath = path.join(packLib.getBuiltInPackRegistryDir(), 'templates', '_pack-template.json');
+  const template = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+  const title = options.title || formatPackTitle(packId);
+  const slugSource = packId.includes('.') ? packId.split('.').slice(1).join('-') : packId;
+  const slug = generateSlugInternal(slugSource) || 'new-pack';
+  const packDir = path.join(packLib.getProjectPackRegistryDir(cwd), getPackFolderForKind(kind));
+  const outputPath = path.join(packDir, `${slug}.json`);
+
+  if (fs.existsSync(outputPath)) {
+    error(`pack init target already exists: ${toPosixPath(path.relative(cwd, outputPath))}`);
+  }
+
+  const scaffold = {
+    ...template,
+    id: packId,
+    kind,
+    title,
+    description: options.description || `Local ${kind} pack for ${title}.`,
+    stability: options.stability || 'experimental',
+    metadata: {
+      ...(isPlainObject(template.metadata) ? template.metadata : {}),
+      generated_by: 'pack init',
+    },
+    publish: {
+      ...(isPlainObject(template.publish) ? template.publish : {}),
+      finding_type: options.finding_type || slug.replace(/-/g, '_'),
+      expected_outcomes: [options.expected_outcome || `${slug.replace(/-/g, '_')}_outcome`],
+      receipt_tags: [`pack:${packId}`],
+    },
+    notes: [
+      `Generated by pack init on ${new Date().toISOString()}. Replace placeholder content before publication.`,
+    ],
+  };
+
+  if (options.extends) {
+    scaffold.extends = String(options.extends).split(',').map(item => item.trim()).filter(Boolean);
+  }
+
+  if (kind === 'technique') {
+    const attackId = options.attack || 'T1078';
+    scaffold.attack = [attackId];
+    scaffold.hypothesis_templates = [
+      `Suspicious activity matching ATT&CK technique ${attackId} warrants investigation.`,
+    ];
+    scaffold.telemetry_requirements = [
+      {
+        surface: 'replace_me',
+        description: 'Replace with the required telemetry surface.',
+        connectors: scaffold.required_connectors,
+        datasets: scaffold.supported_datasets,
+      },
+    ];
+    scaffold.blind_spots = ['Replace with the known blind spots for this technique pack.'];
+    scaffold.execution_targets = [
+      {
+        name: 'Replace Me',
+        description: 'Replace with the first execution target.',
+        connector: scaffold.required_connectors[0],
+        dataset: scaffold.supported_datasets[0],
+        language: 'native',
+        query_template: 'replace_me {{tenant}}',
+      },
+    ];
+  } else {
+    scaffold.attack = [];
+    scaffold.hypothesis_templates = [];
+    scaffold.telemetry_requirements = [];
+    scaffold.blind_spots = [];
+    scaffold.execution_targets = [];
+  }
+
+  fs.mkdirSync(packDir, { recursive: true });
+  fs.writeFileSync(outputPath, `${JSON.stringify(scaffold, null, 2)}\n`);
+
+  output({
+    created: true,
+    pack_id: packId,
+    path: toPosixPath(path.relative(cwd, outputPath)),
+    pack: scaffold,
+  }, raw);
 }
 
 function cmdCommit(cwd, message, files, raw, amend, noVerify) {
@@ -948,6 +1694,18 @@ module.exports = {
   cmdCheckPathExists,
   cmdHistoryDigest,
   cmdResolveModel,
+  cmdPackList,
+  cmdPackShow,
+  cmdPackBootstrap,
+  cmdPackValidate,
+  cmdPackRenderTargets,
+  cmdPackLint,
+  cmdPackTest,
+  cmdPackInit,
+  cmdRuntimeListConnectors,
+  cmdRuntimeDoctor,
+  cmdRuntimeSmoke,
+  cmdRuntimeExecute,
   cmdCommit,
   cmdCommitToSubrepo,
   cmdSummaryExtract,

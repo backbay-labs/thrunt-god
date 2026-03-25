@@ -39,6 +39,19 @@ THRUNT stores project settings in `.planning/config.json`. Created during `/hunt
     "context_warnings": true,
     "workflow_guard": false
   },
+  "connector_profiles": {
+    "splunk": {
+      "default": {
+        "auth_type": "bearer",
+        "base_url": "https://splunk.example.com",
+        "tenant": "prod",
+        "region": "us-east-1",
+        "secret_refs": {
+          "access_token": { "type": "env", "value": "SPLUNK_TOKEN" }
+        }
+      }
+    }
+  },
   "parallelization": {
     "enabled": true,
     "plan_level": true,
@@ -125,6 +138,141 @@ All workflow toggles follow the **absent = enabled** pattern. If a key is missin
 ### Auto-Detection
 
 If `.planning/` is in `.gitignore`, `commit_docs` is automatically `false` regardless of config.json. This prevents git errors.
+
+---
+
+## Connector Profiles
+
+Connector auth and tenant context live under `connector_profiles`. THRUNT treats these as local execution settings, not portable evidence artifacts.
+
+### Schema
+
+```json
+{
+  "connector_profiles": {
+    "splunk": {
+      "default": {
+        "auth_type": "bearer",
+        "base_url": "https://splunk.example.com",
+        "tenant": "prod",
+        "region": "us-east-1",
+        "secret_refs": {
+          "access_token": { "type": "env", "value": "SPLUNK_TOKEN" }
+        },
+        "default_parameters": {
+          "index": "main"
+        },
+        "smoke_test": {
+          "dataset": "events",
+          "language": "spl",
+          "query": "search index=main | head 1",
+          "lookback_minutes": 30
+        }
+      }
+    },
+    "sentinel": {
+      "prod": {
+        "auth_type": "oauth_client_credentials",
+        "base_url": "https://api.loganalytics.azure.com/v1",
+        "token_url": "https://login.microsoftonline.com/contoso.onmicrosoft.com/oauth2/v2.0/token",
+        "tenant": "contoso.onmicrosoft.com",
+        "secret_refs": {
+          "client_id": { "type": "env", "value": "AZURE_CLIENT_ID" },
+          "client_secret": { "type": "env", "value": "AZURE_CLIENT_SECRET" }
+        },
+        "scopes": [
+          "https://api.loganalytics.azure.com/.default"
+        ],
+        "default_parameters": {
+          "workspace_id": "00000000-0000-0000-0000-000000000000"
+        }
+      }
+    },
+    "gcp": {
+      "prod": {
+        "auth_type": "service_account",
+        "base_url": "https://logging.googleapis.com",
+        "token_url": "https://oauth2.googleapis.com/token",
+        "secret_refs": {
+          "service_account_json": { "type": "env", "value": "GCP_SERVICE_ACCOUNT_JSON" }
+        },
+        "default_parameters": {
+          "resource_names": ["projects/demo-project"]
+        },
+        "scopes": [
+          "https://www.googleapis.com/auth/logging.read"
+        ]
+      }
+    }
+  }
+}
+```
+
+### Supported Auth Types
+
+- `api_key`
+- `basic`
+- `bearer`
+- `oauth_client_credentials`
+- `oauth_refresh`
+- `sigv4`
+- `service_account`
+- `session`
+
+### Supported Secret Reference Types
+
+- `env` — read from an environment variable
+- `file` — read from a local file path
+- `command` — execute a local command and trim stdout
+
+### Design Rules
+
+- Secrets are referenced, not embedded. THRUNT should never require raw secrets to be stored in `.planning/config.json`.
+- Profiles are named per connector: `connector_profiles.<connector>.<profile>`.
+- Profiles can capture tenant, region, base URL, token URL, scopes, headers, and default query parameters.
+- Profiles can optionally capture `smoke_test` so connectors without a shipped safe smoke query still support `runtime smoke` and `runtime doctor --live`.
+- OAuth connectors can override `token_url` when they need a sovereign cloud, local test harness, or non-default identity endpoint.
+- Invalid profile shapes are rejected at config write time and during config materialization.
+
+### Smoke-Test Example
+
+For connectors like Elastic or Sentinel, a profile-scoped smoke query is the clean way to certify a real tenant without baking environment-specific queries into THRUNT itself:
+
+```json
+{
+  "connector_profiles": {
+    "elastic": {
+      "prod": {
+        "auth_type": "api_key",
+        "base_url": "https://elastic.example.com",
+        "secret_refs": {
+          "api_key": { "type": "env", "value": "ELASTIC_API_KEY" }
+        },
+        "smoke_test": {
+          "dataset": "events",
+          "language": "esql",
+          "query": "FROM logs-* | LIMIT 1",
+          "lookback_minutes": 60
+        }
+      }
+    }
+  }
+}
+```
+
+Use it with:
+
+```bash
+node thrunt-tools.cjs runtime doctor elastic --profile prod
+node thrunt-tools.cjs runtime doctor elastic --profile prod --live
+node thrunt-tools.cjs runtime smoke elastic --profile prod
+```
+
+### CLI Example
+
+```bash
+node thrunt-tools.cjs config-set connector_profiles.splunk.default '{"auth_type":"bearer","base_url":"https://splunk.example.com","secret_refs":{"access_token":{"type":"env","value":"SPLUNK_TOKEN"}}}'
+```
 
 ---
 

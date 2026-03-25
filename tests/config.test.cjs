@@ -201,6 +201,19 @@ describe('config-set command', () => {
     assert.strictEqual(config.workflow.research, false);
   });
 
+  test('sets connector profiles as canonical runtime auth config', () => {
+    const result = runThruntTools([
+      'config-set',
+      'connector_profiles.splunk.default',
+      '{"auth_type":"api_key","base_url":"https://splunk.example.com","secret_refs":{"api_key":{"type":"env","value":"SPLUNK_TOKEN"}}}',
+    ], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.connector_profiles.splunk.default.auth_type, 'api_key');
+    assert.strictEqual(config.connector_profiles.splunk.default.secret_refs.api_key.value, 'SPLUNK_TOKEN');
+  });
+
   test('auto-creates nested objects for dot-notation', () => {
     // Start with empty config
     writeConfig(tmpDir, {});
@@ -265,6 +278,17 @@ describe('config-set command', () => {
     const result = runThruntTools('config-set model_profile hello', tmpDir);
     assert.strictEqual(result.success, false);
     assert.match(result.error, /Invalid value for model_profile/);
+  });
+
+  test('rejects malformed connector auth profiles', () => {
+    const result = runThruntTools([
+      'config-set',
+      'connector_profiles.splunk.default',
+      '{"auth_type":"unknown","secret_refs":{"api_key":{"type":"env","value":"SPLUNK_TOKEN"}}}',
+    ], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.match(result.error, /Invalid value for connector_profiles\.splunk\.default/);
+    assert.match(result.error, /auth_type/);
   });
 
   test('migrates legacy workflow.discuss_mode standard to discuss', () => {

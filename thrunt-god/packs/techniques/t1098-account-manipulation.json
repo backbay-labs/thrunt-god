@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "id": "technique.t1098-account-manipulation",
+  "kind": "technique",
+  "title": "Account Manipulation",
+  "description": "Hunt for suspicious account changes that improve persistence, privilege, or access durability.",
+  "stability": "preview",
+  "attack": ["T1098"],
+  "metadata": {
+    "domains": ["identity", "siem"],
+    "severity": "high"
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "hypothesis_templates": [
+    "An adversary modified account settings or permissions to preserve or expand access.",
+    "Administrative changes to an identity object are inconsistent with the user or operator's normal behavior."
+  ],
+  "required_connectors": ["okta", "m365", "splunk"],
+  "supported_datasets": ["identity", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 72,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of identity audit telemetry to review."
+    },
+    {
+      "name": "focus_user",
+      "type": "string",
+      "required": false,
+      "description": "Optional user or admin account to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "identity_audit_change_logs",
+      "description": "Directory and IAM audit logs for role, password, MFA, or group changes.",
+      "connectors": ["okta", "m365"],
+      "datasets": ["identity", "alerts"]
+    },
+    {
+      "surface": "siem_change_correlation",
+      "description": "Correlate account changes with alerts, admin sessions, or follow-on activity.",
+      "connectors": ["splunk"],
+      "datasets": ["events", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Identity changes executed through unmanaged admin planes may not be fully captured.",
+    "Bulk sync or provisioning jobs can produce noisy changes that need business context to resolve."
+  ],
+  "execution_targets": [
+    {
+      "name": "Okta admin-change sweep",
+      "description": "Review System Log events that modify users, factors, groups, or policies.",
+      "connector": "okta",
+      "dataset": "identity",
+      "language": "system_log",
+      "query_template": "eventType co \"user\" and outcome.result eq \"SUCCESS\" and actor.alternateId co \"{{focus_user}}\""
+    },
+    {
+      "name": "M365 identity change sweep",
+      "description": "Inspect Microsoft identity audit surfaces for suspicious account or role changes.",
+      "connector": "m365",
+      "dataset": "identity",
+      "language": "graph",
+      "query_template": "/auditLogs/directoryAudits?$filter=activityDateTime ge {{lookback_hours}}h"
+    },
+    {
+      "name": "Splunk persistence-change correlation",
+      "description": "Correlate account changes with unusual follow-on activity or detections.",
+      "connector": "splunk",
+      "dataset": "events",
+      "language": "spl",
+      "query_template": "index=identity_changes tenant={{tenant}} earliest=-{{lookback_hours}}h user={{focus_user}}"
+    }
+  ],
+  "scope_defaults": {
+    "entities": ["user", "admin", "group", "policy"],
+    "time_window": {
+      "lookback_minutes": 4320
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "admin@example.com"
+    }
+  },
+  "publish": {
+    "finding_type": "identity_persistence_hunt",
+    "expected_outcomes": [
+      "account_change_timeline",
+      "persistence_risk_summary"
+    ],
+    "receipt_tags": [
+      "pack:technique.t1098-account-manipulation",
+      "attack:T1098"
+    ]
+  },
+  "notes": [
+    "Use this pack when suspicious role, MFA, password, or group changes are in scope."
+  ]
+}
