@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 describe('release workflow', () => {
-  test('release workflow publishes from tags with NPM_TOKEN and version guard', () => {
+  test('release workflow publishes from tags with NPM_TOKEN and metadata guards', () => {
     const workflow = fs.readFileSync(
       path.join(__dirname, '..', '.github', 'workflows', 'release.yml'),
       'utf-8'
@@ -25,6 +25,7 @@ describe('release workflow', () => {
     assert.match(workflow, /npm run test:coverage/);
     assert.match(workflow, /npm publish --access public --provenance/);
     assert.match(workflow, /Tag .* does not match package\.json version/);
+    assert.match(workflow, /package\.json repository\.url must be/);
     assert.match(workflow, /gh release create/);
   });
 });

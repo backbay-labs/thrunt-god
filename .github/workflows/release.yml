@@ -75,6 +75,17 @@ jobs:
             exit 1
           fi
 
+      - name: Verify package metadata matches release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_REPOSITORY_URL="https://github.com/${GITHUB_REPOSITORY}"
+          ACTUAL_REPOSITORY_URL="$(node -p "const pkg=require('./package.json'); (pkg.repository && (pkg.repository.url || pkg.repository)) || ''")"
+          if [ "${ACTUAL_REPOSITORY_URL}" != "${EXPECTED_REPOSITORY_URL}" ]; then
+            echo "package.json repository.url must be ${EXPECTED_REPOSITORY_URL}, found ${ACTUAL_REPOSITORY_URL}" >&2
+            exit 1
+          fi
+
       - name: Run tests with coverage
         run: npm run test:coverage
 

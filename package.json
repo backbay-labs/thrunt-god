@@ -30,6 +30,14 @@
   ],
   "author": "TÂCHES",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/backbay-labs/thrunt-god"
+  },
+  "homepage": "https://github.com/backbay-labs/thrunt-god#readme",
+  "bugs": {
+    "url": "https://github.com/backbay-labs/thrunt-god/issues"
+  },
   "engines": {
     "node": ">=20.0.0"
   },
