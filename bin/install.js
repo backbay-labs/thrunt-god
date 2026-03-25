@@ -14,25 +14,25 @@ const dim = '\x1b[2m';
 const reset = '\x1b[0m';
 
 // Codex config.toml constants
-const GSD_CODEX_MARKER = '# GSD Agent Configuration \u2014 managed by get-shit-done installer';
-const GSD_CODEX_HOOKS_OWNERSHIP_PREFIX = '# GSD codex_hooks ownership: ';
+const THRUNT_CODEX_MARKER = '# THRUNT Agent Configuration \u2014 managed by thrunt-god installer';
+const THRUNT_CODEX_HOOKS_OWNERSHIP_PREFIX = '# THRUNT codex_hooks ownership: ';
 
 // Copilot instructions marker constants
-const GSD_COPILOT_INSTRUCTIONS_MARKER = '<!-- GSD Configuration \u2014 managed by get-shit-done installer -->';
-const GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER = '<!-- /GSD Configuration -->';
+const THRUNT_COPILOT_INSTRUCTIONS_MARKER = '<!-- THRUNT Configuration \u2014 managed by thrunt-god installer -->';
+const THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER = '<!-- /THRUNT Configuration -->';
 
 const CODEX_AGENT_SANDBOX = {
-  'gsd-executor': 'workspace-write',
-  'gsd-planner': 'workspace-write',
-  'gsd-phase-researcher': 'workspace-write',
-  'gsd-project-researcher': 'workspace-write',
-  'gsd-research-synthesizer': 'workspace-write',
-  'gsd-verifier': 'workspace-write',
-  'gsd-codebase-mapper': 'workspace-write',
-  'gsd-roadmapper': 'workspace-write',
-  'gsd-debugger': 'workspace-write',
-  'gsd-plan-checker': 'read-only',
-  'gsd-integration-checker': 'read-only',
+  'thrunt-telemetry-executor': 'workspace-write',
+  'thrunt-hunt-planner': 'workspace-write',
+  'thrunt-query-writer': 'workspace-write',
+  'thrunt-signal-triager': 'workspace-write',
+  'thrunt-intel-synthesizer': 'workspace-write',
+  'thrunt-findings-validator': 'workspace-write',
+  'thrunt-environment-mapper': 'workspace-write',
+  'thrunt-huntmap-builder': 'workspace-write',
+  'thrunt-incident-debugger': 'workspace-write',
+  'thrunt-hunt-checker': 'read-only',
+  'thrunt-evidence-correlator': 'read-only',
 };
 
 // Copilot tool name mapping — Claude Code tools to GitHub Copilot tools
@@ -54,6 +54,7 @@ const claudeToCopilotTools = {
 
 // Get version from package.json
 const pkg = require('../package.json');
+const PACKAGE_COMMAND = pkg.name || 'thrunt-god';
 
 // Parse args
 const args = process.argv.slice(2);
@@ -116,7 +117,7 @@ Please install a Linux-native Node.js inside WSL:
   curl -fsSL https://fnm.vercel.app/install | bash
   fnm install --lts
 
-Then re-run: npx get-shit-done-cc@latest
+Then re-run: npx ${PACKAGE_COMMAND}@latest
 `);
     process.exit(1);
   }
@@ -287,9 +288,9 @@ const banner = '\n' +
   '  ╚██████╔╝███████║██████╔╝\n' +
   '   ╚═════╝ ╚══════╝╚═════╝' + reset + '\n' +
   '\n' +
-  '  Get Shit Done ' + dim + 'v' + pkg.version + reset + '\n' +
-  '  A meta-prompting, context engineering and spec-driven\n' +
-  '  development system for Claude Code, OpenCode, Gemini, Codex, Copilot, Antigravity, Cursor, and Windsurf by TÂCHES.\n';
+  '  THRUNT GOD ' + dim + 'v' + pkg.version + reset + '\n' +
+  '  Threat-hunting orchestration, hunt-state continuity, and multi-runtime workflow support\n' +
+  '  for Claude Code, OpenCode, Gemini, Codex, Copilot, Antigravity, Cursor, and Windsurf by TÂCHES.\n';
 
 // Parse --config-dir argument
 function parseConfigDirArg() {
@@ -322,12 +323,12 @@ const forceStatusline = args.includes('--force-statusline');
 console.log(banner);
 
 if (hasUninstall) {
-  console.log('  Mode: Uninstall\n');
+  console.log('  Mode: Uninstall THRUNT\n');
 }
 
 // Show help if requested
 if (hasHelp) {
-  console.log(`  ${yellow}Usage:${reset} npx get-shit-done-cc [options]\n\n  ${yellow}Options:${reset}\n    ${cyan}-g, --global${reset}              Install globally (to config directory)\n    ${cyan}-l, --local${reset}               Install locally (to current directory)\n    ${cyan}--claude${reset}                  Install for Claude Code only\n    ${cyan}--opencode${reset}                Install for OpenCode only\n    ${cyan}--gemini${reset}                  Install for Gemini only\n    ${cyan}--codex${reset}                   Install for Codex only\n    ${cyan}--copilot${reset}                 Install for Copilot only\n    ${cyan}--antigravity${reset}             Install for Antigravity only\n    ${cyan}--cursor${reset}                  Install for Cursor only\n    ${cyan}--windsurf${reset}                Install for Windsurf only\n    ${cyan}--all${reset}                     Install for all runtimes\n    ${cyan}-u, --uninstall${reset}           Uninstall GSD (remove all GSD files)\n    ${cyan}-c, --config-dir <path>${reset}   Specify custom config directory\n    ${cyan}-h, --help${reset}                Show this help message\n    ${cyan}--force-statusline${reset}        Replace existing statusline config\n\n  ${yellow}Examples:${reset}\n    ${dim}# Interactive install (prompts for runtime and location)${reset}\n    npx get-shit-done-cc\n\n    ${dim}# Install for Claude Code globally${reset}\n    npx get-shit-done-cc --claude --global\n\n    ${dim}# Install for Gemini globally${reset}\n    npx get-shit-done-cc --gemini --global\n\n    ${dim}# Install for Codex globally${reset}\n    npx get-shit-done-cc --codex --global\n\n    ${dim}# Install for Copilot globally${reset}\n    npx get-shit-done-cc --copilot --global\n\n    ${dim}# Install for Copilot locally${reset}\n    npx get-shit-done-cc --copilot --local\n\n    ${dim}# Install for Antigravity globally${reset}\n    npx get-shit-done-cc --antigravity --global\n\n    ${dim}# Install for Antigravity locally${reset}\n    npx get-shit-done-cc --antigravity --local\n\n    ${dim}# Install for Cursor globally${reset}\n    npx get-shit-done-cc --cursor --global\n\n    ${dim}# Install for Cursor locally${reset}\n    npx get-shit-done-cc --cursor --local\n\n    ${dim}# Install for Windsurf globally${reset}\n    npx get-shit-done-cc --windsurf --global\n\n    ${dim}# Install for Windsurf locally${reset}\n    npx get-shit-done-cc --windsurf --local\n\n    ${dim}# Install for all runtimes globally${reset}\n    npx get-shit-done-cc --all --global\n\n    ${dim}# Install to custom config directory${reset}\n    npx get-shit-done-cc --codex --global --config-dir ~/.codex-work\n\n    ${dim}# Install to current project only${reset}\n    npx get-shit-done-cc --claude --local\n\n    ${dim}# Uninstall GSD from Cursor globally${reset}\n    npx get-shit-done-cc --cursor --global --uninstall\n\n  ${yellow}Notes:${reset}\n    The --config-dir option is useful when you have multiple configurations.\n    It takes priority over CLAUDE_CONFIG_DIR / GEMINI_CONFIG_DIR / CODEX_HOME / COPILOT_CONFIG_DIR / ANTIGRAVITY_CONFIG_DIR / CURSOR_CONFIG_DIR / WINDSURF_CONFIG_DIR environment variables.\n`);
+  console.log(`  ${yellow}Usage:${reset} npx ${PACKAGE_COMMAND} [options]\n\n  ${yellow}Options:${reset}\n    ${cyan}-g, --global${reset}              Install globally (to config directory)\n    ${cyan}-l, --local${reset}               Install locally (to current directory)\n    ${cyan}--claude${reset}                  Install for Claude Code only\n    ${cyan}--opencode${reset}                Install for OpenCode only\n    ${cyan}--gemini${reset}                  Install for Gemini only\n    ${cyan}--codex${reset}                   Install for Codex only\n    ${cyan}--copilot${reset}                 Install for Copilot only\n    ${cyan}--antigravity${reset}             Install for Antigravity only\n    ${cyan}--cursor${reset}                  Install for Cursor only\n    ${cyan}--windsurf${reset}                Install for Windsurf only\n    ${cyan}--all${reset}                     Install for all runtimes\n    ${cyan}-u, --uninstall${reset}           Uninstall THRUNT assets\n    ${cyan}-c, --config-dir <path>${reset}   Specify custom config directory\n    ${cyan}-h, --help${reset}                Show this help message\n    ${cyan}--force-statusline${reset}        Replace existing statusline config\n\n  ${yellow}Examples:${reset}\n    ${dim}# Interactive install (prompts for runtime and location)${reset}\n    npx ${PACKAGE_COMMAND}\n\n    ${dim}# Install for Claude Code globally${reset}\n    npx ${PACKAGE_COMMAND} --claude --global\n\n    ${dim}# Install for Gemini globally${reset}\n    npx ${PACKAGE_COMMAND} --gemini --global\n\n    ${dim}# Install for Codex globally${reset}\n    npx ${PACKAGE_COMMAND} --codex --global\n\n    ${dim}# Install for Copilot globally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --global\n\n    ${dim}# Install for Copilot locally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --local\n\n    ${dim}# Install for Antigravity globally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --global\n\n    ${dim}# Install for Antigravity locally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --local\n\n    ${dim}# Install for Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global\n\n    ${dim}# Install for Cursor locally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --local\n\n    ${dim}# Install for Windsurf globally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --global\n\n    ${dim}# Install for Windsurf locally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --local\n\n    ${dim}# Install for all runtimes globally${reset}\n    npx ${PACKAGE_COMMAND} --all --global\n\n    ${dim}# Install to custom config directory${reset}\n    npx ${PACKAGE_COMMAND} --codex --global --config-dir ~/.codex-work\n\n    ${dim}# Install to current project only${reset}\n    npx ${PACKAGE_COMMAND} --claude --local\n\n    ${dim}# Uninstall from Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global --uninstall\n\n  ${yellow}Notes:${reset}\n    The --config-dir option is useful when you have multiple configurations.\n    It takes priority over CLAUDE_CONFIG_DIR / GEMINI_CONFIG_DIR / CODEX_HOME / COPILOT_CONFIG_DIR / ANTIGRAVITY_CONFIG_DIR / CURSOR_CONFIG_DIR / WINDSURF_CONFIG_DIR environment variables.\n`);
   process.exit(0);
 }
 
@@ -581,8 +582,9 @@ function convertClaudeToCopilotContent(content, isGlobal = false) {
   }
   c = c.replace(/\.\/\.claude\//g, './.github/');
   c = c.replace(/\.claude\//g, '.github/');
-  // CONV-07: Command name conversion (all gsd: references → gsd-)
-  c = c.replace(/gsd:/g, 'gsd-');
+  // CONV-07: Command name conversion for both utility and hunt namespaces
+  c = c.replace(/thrunt:/g, 'thrunt-');
+  c = c.replace(/hunt:/g, 'hunt-');
   // Runtime-neutral agent name replacement (#766)
   c = neutralizeAgentReferences(c, 'copilot-instructions.md');
   return c;
@@ -673,8 +675,9 @@ function convertClaudeToAntigravityContent(content, isGlobal = false) {
   }
   c = c.replace(/\.\/\.claude\//g, './.agent/');
   c = c.replace(/\.claude\//g, '.agent/');
-  // Command name conversion (all gsd: references → gsd-)
-  c = c.replace(/gsd:/g, 'gsd-');
+  // Command name conversion for both utility and hunt namespaces
+  c = c.replace(/thrunt:/g, 'thrunt-');
+  c = c.replace(/hunt:/g, 'hunt-');
   // Runtime-neutral agent name replacement (#766)
   c = neutralizeAgentReferences(c, 'GEMINI.md');
   return c;
@@ -786,9 +789,10 @@ function convertCursorToolName(claudeTool) {
 }
 
 function convertSlashCommandsToCursorSkillMentions(content) {
-  // Keep leading "/" for slash commands; only normalize gsd: -> gsd-.
-  // This preserves rendered "next step" commands like "/gsd-execute-phase 17".
-  return content.replace(/gsd:/gi, 'gsd-');
+  // Keep leading "/" for slash commands while normalizing both namespaces.
+  return content
+    .replace(/thrunt:/gi, 'thrunt-')
+    .replace(/hunt:/gi, 'hunt-');
 }
 
 function convertClaudeToCursorMarkdown(content) {
@@ -799,7 +803,7 @@ function convertClaudeToCursorMarkdown(content) {
   converted = converted.replace(/\bAskUserQuestion\b/g, 'conversational prompting');
   // Replace subagent_type from Claude to Cursor format
   converted = converted.replace(/subagent_type="general-purpose"/g, 'subagent_type="generalPurpose"');
-  converted = converted.replace(/\$ARGUMENTS\b/g, '{{GSD_ARGS}}');
+  converted = converted.replace(/\$ARGUMENTS\b/g, '{{THRUNT_ARGS}}');
   // Replace project-level Claude conventions with Cursor equivalents
   converted = converted.replace(/`\.\/CLAUDE\.md`/g, '`.cursor/rules/`');
   converted = converted.replace(/\.\/CLAUDE\.md/g, '.cursor/rules/');
@@ -818,8 +822,8 @@ function getCursorSkillAdapterHeader(skillName) {
   return `<cursor_skill_adapter>
 ## A. Skill Invocation
 - This skill is invoked when the user mentions \`${skillName}\` or describes a task matching this skill.
-- Treat all user text after the skill mention as \`{{GSD_ARGS}}\`.
-- If no arguments are present, treat \`{{GSD_ARGS}}\` as empty.
+- Treat all user text after the skill mention as \`{{THRUNT_ARGS}}\`.
+- If no arguments are present, treat \`{{THRUNT_ARGS}}\` as empty.
 
 ## B. User Prompting
 When the workflow needs user input, prompt the user conversationally:
@@ -828,7 +832,7 @@ When the workflow needs user input, prompt the user conversationally:
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
-Use these Cursor tools when executing GSD workflows:
+Use these Cursor tools when executing THRUNT workflows:
 - \`Shell\` for running commands (terminal operations)
 - \`StrReplace\` for editing existing files
 - \`Read\`, \`Write\`, \`Glob\`, \`Grep\`, \`Task\`, \`WebSearch\`, \`WebFetch\`, \`TodoWrite\` as needed
@@ -843,7 +847,7 @@ When the workflow needs to spawn a subagent:
 function convertClaudeCommandToCursorSkill(content, skillName) {
   const converted = convertClaudeToCursorMarkdown(content);
   const { frontmatter, body } = extractFrontmatterAndBody(converted);
-  let description = `Run GSD workflow ${skillName}.`;
+  let description = `Run THRUNT workflow ${skillName}.`;
   if (frontmatter) {
     const maybeDescription = extractFrontmatterField(frontmatter, 'description');
     if (maybeDescription) {
@@ -905,8 +909,10 @@ function convertWindsurfToolName(claudeTool) {
 }
 
 function convertSlashCommandsToWindsurfSkillMentions(content) {
-  // Keep leading "/" for slash commands; only normalize gsd: -> gsd-.
-  return content.replace(/gsd:/gi, 'gsd-');
+  // Keep leading "/" for slash commands while normalizing both namespaces.
+  return content
+    .replace(/thrunt:/gi, 'thrunt-')
+    .replace(/hunt:/gi, 'hunt-');
 }
 
 function convertClaudeToWindsurfMarkdown(content) {
@@ -917,7 +923,7 @@ function convertClaudeToWindsurfMarkdown(content) {
   converted = converted.replace(/\bAskUserQuestion\b/g, 'conversational prompting');
   // Replace subagent_type from Claude to Windsurf format
   converted = converted.replace(/subagent_type="general-purpose"/g, 'subagent_type="generalPurpose"');
-  converted = converted.replace(/\$ARGUMENTS\b/g, '{{GSD_ARGS}}');
+  converted = converted.replace(/\$ARGUMENTS\b/g, '{{THRUNT_ARGS}}');
   // Replace project-level Claude conventions with Windsurf equivalents
   converted = converted.replace(/`\.\/CLAUDE\.md`/g, '`.windsurf/rules/`');
   converted = converted.replace(/\.\/CLAUDE\.md/g, '.windsurf/rules/');
@@ -936,8 +942,8 @@ function getWindsurfSkillAdapterHeader(skillName) {
   return `<windsurf_skill_adapter>
 ## A. Skill Invocation
 - This skill is invoked when the user mentions \`${skillName}\` or describes a task matching this skill.
-- Treat all user text after the skill mention as \`{{GSD_ARGS}}\`.
-- If no arguments are present, treat \`{{GSD_ARGS}}\` as empty.
+- Treat all user text after the skill mention as \`{{THRUNT_ARGS}}\`.
+- If no arguments are present, treat \`{{THRUNT_ARGS}}\` as empty.
 
 ## B. User Prompting
 When the workflow needs user input, prompt the user conversationally:
@@ -946,7 +952,7 @@ When the workflow needs user input, prompt the user conversationally:
 - For multi-select, ask for comma-separated numbers
 
 ## C. Tool Usage
-Use these Windsurf tools when executing GSD workflows:
+Use these Windsurf tools when executing THRUNT workflows:
 - \`Shell\` for running commands (terminal operations)
 - \`StrReplace\` for editing existing files
 - \`Read\`, \`Write\`, \`Glob\`, \`Grep\`, \`Task\`, \`WebSearch\`, \`WebFetch\`, \`TodoWrite\` as needed
@@ -961,7 +967,7 @@ When the workflow needs to spawn a subagent:
 function convertClaudeCommandToWindsurfSkill(content, skillName) {
   const converted = convertClaudeToWindsurfMarkdown(content);
   const { frontmatter, body } = extractFrontmatterAndBody(converted);
-  let description = `Run GSD workflow ${skillName}.`;
+  let description = `Run THRUNT workflow ${skillName}.`;
   if (frontmatter) {
     const maybeDescription = extractFrontmatterField(frontmatter, 'description');
     if (maybeDescription) {
@@ -995,16 +1001,19 @@ function convertClaudeAgentToWindsurfAgent(content) {
 }
 
 function convertSlashCommandsToCodexSkillMentions(content) {
-  let converted = content.replace(/\/gsd:([a-z0-9-]+)/gi, (_, commandName) => {
-    return `$gsd-${String(commandName).toLowerCase()}`;
+  let converted = content.replace(/\/thrunt:([a-z0-9-]+)/gi, (_, commandName) => {
+    return `$thrunt-${String(commandName).toLowerCase()}`;
   });
-  converted = converted.replace(/\/gsd-help\b/g, '$gsd-help');
+  converted = converted.replace(/\/hunt:([a-z0-9-]+)/gi, (_, commandName) => {
+    return `$hunt-${String(commandName).toLowerCase()}`;
+  });
+  converted = converted.replace(/\/thrunt-help\b/g, '$thrunt-help');
   return converted;
 }
 
 function convertClaudeToCodexMarkdown(content) {
   let converted = convertSlashCommandsToCodexSkillMentions(content);
-  converted = converted.replace(/\$ARGUMENTS\b/g, '{{GSD_ARGS}}');
+  converted = converted.replace(/\$ARGUMENTS\b/g, '{{THRUNT_ARGS}}');
   // Runtime-neutral agent name replacement (#766)
   converted = neutralizeAgentReferences(converted, 'AGENTS.md');
   return converted;
@@ -1015,11 +1024,11 @@ function getCodexSkillAdapterHeader(skillName) {
   return `<codex_skill_adapter>
 ## A. Skill Invocation
 - This skill is invoked by mentioning \`${invocation}\`.
-- Treat all user text after \`${invocation}\` as \`{{GSD_ARGS}}\`.
-- If no arguments are present, treat \`{{GSD_ARGS}}\` as empty.
+- Treat all user text after \`${invocation}\` as \`{{THRUNT_ARGS}}\`.
+- If no arguments are present, treat \`{{THRUNT_ARGS}}\` as empty.
 
 ## B. AskUserQuestion → request_user_input Mapping
-GSD workflows use \`AskUserQuestion\` (Claude Code syntax). Translate to Codex \`request_user_input\`:
+THRUNT workflows use \`AskUserQuestion\` (Claude Code syntax). Translate to Codex \`request_user_input\`:
 
 Parameter mapping:
 - \`header\` → \`header\`
@@ -1037,12 +1046,12 @@ Execute mode fallback:
 - When \`request_user_input\` is rejected (Execute mode), present a plain-text numbered list and pick a reasonable default.
 
 ## C. Task() → spawn_agent Mapping
-GSD workflows use \`Task(...)\` (Claude Code syntax). Translate to Codex collaboration tools:
+THRUNT workflows use \`Task(...)\` (Claude Code syntax). Translate to Codex collaboration tools:
 
 Direct mapping:
 - \`Task(subagent_type="X", prompt="Y")\` → \`spawn_agent(agent_type="X", message="Y")\`
 - \`Task(model="...")\` → omit (Codex uses per-role config, not inline model selection)
-- \`fork_context: false\` by default — GSD agents load their own context via \`<files_to_read>\` blocks
+- \`fork_context: false\` by default — THRUNT agents load their own context via \`<files_to_read>\` blocks
 
 Parallel fan-out:
 - Spawn multiple agents → collect agent IDs → \`wait(ids)\` for all to complete
@@ -1056,7 +1065,7 @@ Result parsing:
 function convertClaudeCommandToCodexSkill(content, skillName) {
   const converted = convertClaudeToCodexMarkdown(content);
   const { frontmatter, body } = extractFrontmatterAndBody(converted);
-  let description = `Run GSD workflow ${skillName}.`;
+  let description = `Run THRUNT workflow ${skillName}.`;
   if (frontmatter) {
     const maybeDescription = extractFrontmatterField(frontmatter, 'description');
     if (maybeDescription) {
@@ -1107,7 +1116,7 @@ function generateCodexAgentToml(agentName, agentContent) {
   const frontmatterText = frontmatter || '';
   const resolvedName = extractFrontmatterField(frontmatterText, 'name') || agentName;
   const resolvedDescription = toSingleLine(
-    extractFrontmatterField(frontmatterText, 'description') || `GSD agent ${resolvedName}`
+    extractFrontmatterField(frontmatterText, 'description') || `THRUNT agent ${resolvedName}`
   );
   const instructions = body.trim();
 
@@ -1125,7 +1134,7 @@ function generateCodexAgentToml(agentName, agentContent) {
 }
 
 /**
- * Generate the GSD config block for Codex config.toml.
+ * Generate the THRUNT config block for Codex config.toml.
  * @param {Array<{name: string, description: string}>} agents
  */
 function generateCodexConfigBlock(agents, targetDir) {
@@ -1135,7 +1144,7 @@ function generateCodexConfigBlock(agents, targetDir) {
     ? path.join(targetDir, 'agents').replace(/\\/g, '/')
     : 'agents';
   const lines = [
-    GSD_CODEX_MARKER,
+    THRUNT_CODEX_MARKER,
     '',
   ];
 
@@ -1149,24 +1158,24 @@ function generateCodexConfigBlock(agents, targetDir) {
   return lines.join('\n');
 }
 
-function stripCodexGsdAgentSections(content) {
-  return content.replace(/^\[agents\.gsd-[^\]]+\]\n(?:(?!\[)[^\n]*\n?)*/gm, '');
+function stripCodexThruntAgentSections(content) {
+  return content.replace(/^\[agents\.thrunt-[^\]]+\]\n(?:(?!\[)[^\n]*\n?)*/gm, '');
 }
 
 /**
- * Strip GSD sections from Codex config.toml content.
+ * Strip THRUNT sections from Codex config.toml content.
  * Returns cleaned content, or null if file would be empty.
  */
-function stripGsdFromCodexConfig(content) {
+function stripThruntFromCodexConfig(content) {
   const eol = detectLineEnding(content);
-  const markerIndex = content.indexOf(GSD_CODEX_MARKER);
+  const markerIndex = content.indexOf(THRUNT_CODEX_MARKER);
   const codexHooksOwnership = getManagedCodexHooksOwnership(content);
 
   if (markerIndex !== -1) {
-    // Has GSD marker — remove everything from marker to EOF
+    // Has THRUNT marker — remove everything from marker to EOF
     let before = content.substring(0, markerIndex);
     before = stripCodexHooksFeatureAssignments(before, codexHooksOwnership);
-    // Also strip GSD-injected feature keys above the marker (Case 3 inject)
+    // Also strip THRUNT-injected feature keys above the marker (Case 3 inject)
     before = before.replace(/^multi_agent\s*=\s*true\s*(?:\r?\n)?/m, '');
     before = before.replace(/^default_mode_request_user_input\s*=\s*true\s*(?:\r?\n)?/m, '');
     before = before.replace(/^\[features\]\s*\n(?=\[|$)/m, '');
@@ -1176,14 +1185,14 @@ function stripGsdFromCodexConfig(content) {
     return before + eol;
   }
 
-  // No marker but may have GSD-injected feature keys
+  // No marker but may have THRUNT-injected feature keys
   let cleaned = content;
   cleaned = stripCodexHooksFeatureAssignments(cleaned, codexHooksOwnership);
   cleaned = cleaned.replace(/^multi_agent\s*=\s*true\s*(?:\r?\n)?/m, '');
   cleaned = cleaned.replace(/^default_mode_request_user_input\s*=\s*true\s*(?:\r?\n)?/m, '');
 
-  // Remove [agents.gsd-*] sections (from header to next section or EOF)
-  cleaned = stripCodexGsdAgentSections(cleaned);
+  // Remove [agents.thrunt-*] sections (from header to next section or EOF)
+  cleaned = stripCodexThruntAgentSections(cleaned);
 
   // Remove [features] section if now empty (only header, no keys before next section)
   cleaned = cleaned.replace(/^\[features\]\s*\n(?=\[|$)/m, '');
@@ -1782,27 +1791,27 @@ function stripCodexHooksFeatureAssignments(content, ownership = null) {
 }
 
 function getManagedCodexHooksOwnership(content) {
-  const markerIndex = content.indexOf(GSD_CODEX_MARKER);
+  const markerIndex = content.indexOf(THRUNT_CODEX_MARKER);
   if (markerIndex === -1) {
     return null;
   }
 
-  const afterMarker = content.slice(markerIndex + GSD_CODEX_MARKER.length);
-  const match = afterMarker.match(/^\r?\n# GSD codex_hooks ownership: (section|root_dotted)\r?\n/);
+  const afterMarker = content.slice(markerIndex + THRUNT_CODEX_MARKER.length);
+  const match = afterMarker.match(/^\r?\n# THRUNT codex_hooks ownership: (section|root_dotted)\r?\n/);
   return match ? match[1] : null;
 }
 
 function setManagedCodexHooksOwnership(content, ownership) {
-  const markerIndex = content.indexOf(GSD_CODEX_MARKER);
+  const markerIndex = content.indexOf(THRUNT_CODEX_MARKER);
   if (markerIndex === -1) {
     return content;
   }
 
   const eol = detectLineEnding(content);
-  const markerEnd = markerIndex + GSD_CODEX_MARKER.length;
+  const markerEnd = markerIndex + THRUNT_CODEX_MARKER.length;
   const afterMarker = content.slice(markerEnd);
   const normalizedAfterMarker = afterMarker.replace(
-    /^\r?\n# GSD codex_hooks ownership: (?:section|root_dotted)\r?\n/,
+    /^\r?\n# THRUNT codex_hooks ownership: (?:section|root_dotted)\r?\n/,
     eol
   );
 
@@ -1813,13 +1822,13 @@ function setManagedCodexHooksOwnership(content, ownership) {
   const remainder = normalizedAfterMarker.replace(/^\r?\n/, '');
   return content.slice(0, markerEnd) +
     eol +
-    `${GSD_CODEX_HOOKS_OWNERSHIP_PREFIX}${ownership}${eol}` +
+    `${THRUNT_CODEX_HOOKS_OWNERSHIP_PREFIX}${ownership}${eol}` +
     remainder;
 }
 
-function isLegacyGsdAgentsSection(body) {
+function isOlderThruntAgentsSection(body) {
   const lineRecords = getTomlLineRecords(body);
-  const legacyKeys = new Set(['max_threads', 'max_depth']);
+  const previousFormatKeys = new Set(['max_threads', 'max_depth']);
   let sawLegacyKey = false;
 
   for (const record of lineRecords) {
@@ -1836,7 +1845,7 @@ function isLegacyGsdAgentsSection(body) {
       continue;
     }
 
-    if (!record.keySegments || record.keySegments.length !== 1 || !legacyKeys.has(record.keySegments[0])) {
+    if (!record.keySegments || record.keySegments.length !== 1 || !previousFormatKeys.has(record.keySegments[0])) {
       return false;
     }
 
@@ -1846,13 +1855,13 @@ function isLegacyGsdAgentsSection(body) {
   return sawLegacyKey;
 }
 
-function stripLeakedGsdCodexSections(content) {
+function stripLeakedThruntCodexSections(content) {
   const leakedSections = getTomlTableSections(content)
     .filter((section) =>
-      section.path.startsWith('agents.gsd-') ||
+      section.path.startsWith('agents.thrunt-') ||
       (
         section.path === 'agents' &&
-        isLegacyGsdAgentsSection(content.slice(section.headerEnd, section.end))
+        isOlderThruntAgentsSection(content.slice(section.headerEnd, section.end))
       )
     );
 
@@ -2010,41 +2019,41 @@ function rewriteTomlKeyLines(content, matches, key) {
 }
 
 /**
- * Merge GSD config block into an existing or new config.toml.
- * Three cases: new file, existing with GSD marker, existing without marker.
+ * Merge THRUNT config block into an existing or new config.toml.
+ * Three cases: new file, existing with THRUNT marker, existing without marker.
  */
-function mergeCodexConfig(configPath, gsdBlock) {
+function mergeCodexConfig(configPath, thruntBlock) {
   // Case 1: No config.toml — create fresh
   if (!fs.existsSync(configPath)) {
-    fs.writeFileSync(configPath, gsdBlock + '\n');
+    fs.writeFileSync(configPath, thruntBlock + '\n');
     return;
   }
 
   const existing = fs.readFileSync(configPath, 'utf8');
   const eol = detectLineEnding(existing);
-  const normalizedGsdBlock = gsdBlock.replace(/\r?\n/g, eol);
-  const markerIndex = existing.indexOf(GSD_CODEX_MARKER);
+  const normalizedThruntBlock = thruntBlock.replace(/\r?\n/g, eol);
+  const markerIndex = existing.indexOf(THRUNT_CODEX_MARKER);
 
-  // Case 2: Has GSD marker — truncate and re-append
+  // Case 2: Has THRUNT marker — truncate and re-append
   if (markerIndex !== -1) {
     let before = existing.substring(0, markerIndex).trimEnd();
     if (before) {
-      // Strip any GSD-managed sections that leaked above the marker from previous installs
-      before = stripLeakedGsdCodexSections(before).trimEnd();
+      // Strip any THRUNT-managed sections that leaked above the marker from previous installs
+      before = stripLeakedThruntCodexSections(before).trimEnd();
 
-      fs.writeFileSync(configPath, before + eol + eol + normalizedGsdBlock + eol);
+      fs.writeFileSync(configPath, before + eol + eol + normalizedThruntBlock + eol);
     } else {
-      fs.writeFileSync(configPath, normalizedGsdBlock + eol);
+      fs.writeFileSync(configPath, normalizedThruntBlock + eol);
     }
     return;
   }
 
-  // Case 3: No marker — append GSD block
-  let content = stripLeakedGsdCodexSections(existing).trimEnd();
+  // Case 3: No marker — append THRUNT block
+  let content = stripLeakedThruntCodexSections(existing).trimEnd();
   if (content) {
-    content = content + eol + eol + normalizedGsdBlock + eol;
+    content = content + eol + eol + normalizedThruntBlock + eol;
   } else {
-    content = normalizedGsdBlock + eol;
+    content = normalizedThruntBlock + eol;
   }
 
   fs.writeFileSync(configPath, content);
@@ -2178,33 +2187,33 @@ function hasEnabledCodexHooksFeature(configContent) {
 }
 
 /**
- * Merge GSD instructions into copilot-instructions.md.
+ * Merge THRUNT instructions into copilot-instructions.md.
  * Three cases: new file, existing with markers, existing without markers.
  * @param {string} filePath - Full path to copilot-instructions.md
- * @param {string} gsdContent - Template content (without markers)
+ * @param {string} thruntContent - Template content (without markers)
  */
-function mergeCopilotInstructions(filePath, gsdContent) {
-  const gsdBlock = GSD_COPILOT_INSTRUCTIONS_MARKER + '\n' +
-    gsdContent.trim() + '\n' +
-    GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER;
+function mergeCopilotInstructions(filePath, thruntContent) {
+  const thruntBlock = THRUNT_COPILOT_INSTRUCTIONS_MARKER + '\n' +
+    thruntContent.trim() + '\n' +
+    THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER;
 
   // Case 1: No file — create fresh
   if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, gsdBlock + '\n');
+    fs.writeFileSync(filePath, thruntBlock + '\n');
     return;
   }
 
   const existing = fs.readFileSync(filePath, 'utf8');
-  const openIndex = existing.indexOf(GSD_COPILOT_INSTRUCTIONS_MARKER);
-  const closeIndex = existing.indexOf(GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER);
+  const openIndex = existing.indexOf(THRUNT_COPILOT_INSTRUCTIONS_MARKER);
+  const closeIndex = existing.indexOf(THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER);
 
-  // Case 2: Has GSD markers — replace between markers
+  // Case 2: Has THRUNT markers — replace between markers
   if (openIndex !== -1 && closeIndex !== -1) {
     const before = existing.substring(0, openIndex).trimEnd();
-    const after = existing.substring(closeIndex + GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER.length).trimStart();
+    const after = existing.substring(closeIndex + THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER.length).trimStart();
     let newContent = '';
     if (before) newContent += before + '\n\n';
-    newContent += gsdBlock;
+    newContent += thruntBlock;
     if (after) newContent += '\n\n' + after;
     newContent += '\n';
     fs.writeFileSync(filePath, newContent);
@@ -2212,23 +2221,23 @@ function mergeCopilotInstructions(filePath, gsdContent) {
   }
 
   // Case 3: No markers — append at end
-  const content = existing.trimEnd() + '\n\n' + gsdBlock + '\n';
+  const content = existing.trimEnd() + '\n\n' + thruntBlock + '\n';
   fs.writeFileSync(filePath, content);
 }
 
 /**
- * Strip GSD section from copilot-instructions.md content.
- * Returns cleaned content, or null if file should be deleted (was GSD-only).
+ * Strip THRUNT section from copilot-instructions.md content.
+ * Returns cleaned content, or null if file should be deleted (was THRUNT-only).
  * @param {string} content - File content
  * @returns {string|null} - Cleaned content or null if empty
  */
-function stripGsdFromCopilotInstructions(content) {
-  const openIndex = content.indexOf(GSD_COPILOT_INSTRUCTIONS_MARKER);
-  const closeIndex = content.indexOf(GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER);
+function stripThruntFromCopilotInstructions(content) {
+  const openIndex = content.indexOf(THRUNT_COPILOT_INSTRUCTIONS_MARKER);
+  const closeIndex = content.indexOf(THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER);
 
   if (openIndex !== -1 && closeIndex !== -1) {
     const before = content.substring(0, openIndex).trimEnd();
-    const after = content.substring(closeIndex + GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER.length).trimStart();
+    const after = content.substring(closeIndex + THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER.length).trimStart();
     const cleaned = (before + (before && after ? '\n\n' : '') + after).trim();
     if (!cleaned) return null;
     return cleaned + '\n';
@@ -2247,17 +2256,17 @@ function installCodexConfig(targetDir, agentsSrc) {
   const agentsTomlDir = path.join(targetDir, 'agents');
   fs.mkdirSync(agentsTomlDir, { recursive: true });
 
-  const agentEntries = fs.readdirSync(agentsSrc).filter(f => f.startsWith('gsd-') && f.endsWith('.md'));
+  const agentEntries = fs.readdirSync(agentsSrc).filter(f => f.startsWith('thrunt-') && f.endsWith('.md'));
   const agents = [];
 
-  // Compute the Codex GSD install path (absolute, so subagents with empty $HOME work — #820)
-  const codexGsdPath = `${path.resolve(targetDir, 'get-shit-done').replace(/\\/g, '/')}/`;
+  // Compute the Codex THRUNT install path (absolute, so subagents with empty $HOME work — #820)
+  const codexThruntPath = `${path.resolve(targetDir, 'thrunt-god').replace(/\\/g, '/')}/`;
 
   for (const file of agentEntries) {
     let content = fs.readFileSync(path.join(agentsSrc, file), 'utf8');
-    // Replace full .claude/get-shit-done prefix so path resolves to codex GSD install
-    content = content.replace(/~\/\.claude\/get-shit-done\//g, codexGsdPath);
-    content = content.replace(/\$HOME\/\.claude\/get-shit-done\//g, codexGsdPath);
+    // Replace full .claude/thrunt-god prefix so path resolves to codex THRUNT install
+    content = content.replace(/~\/\.claude\/thrunt-god\//g, codexThruntPath);
+    content = content.replace(/\$HOME\/\.claude\/thrunt-god\//g, codexThruntPath);
     const { frontmatter } = extractFrontmatterAndBody(content);
     const name = extractFrontmatterField(frontmatter, 'name') || file.replace('.md', '');
     const description = extractFrontmatterField(frontmatter, 'description') || '';
@@ -2268,8 +2277,8 @@ function installCodexConfig(targetDir, agentsSrc) {
     fs.writeFileSync(path.join(agentsTomlDir, `${name}.toml`), tomlContent);
   }
 
-  const gsdBlock = generateCodexConfigBlock(agents, targetDir);
-  mergeCodexConfig(configPath, gsdBlock);
+  const thruntBlock = generateCodexConfigBlock(agents, targetDir);
+  mergeCodexConfig(configPath, thruntBlock);
 
   return agents.length;
 }
@@ -2408,7 +2417,7 @@ function convertClaudeToGeminiAgent(content) {
   // Escape ${VAR} patterns in agent body for Gemini CLI compatibility.
   // Gemini's templateString() treats all ${word} patterns as template variables
   // and throws "Template validation failed: Missing required input parameters"
-  // when they can't be resolved. GSD agents use ${PHASE}, ${PLAN}, etc. as
+  // when they can't be resolved. THRUNT agents use ${PHASE}, ${PLAN}, etc. as
   // shell variables in bash code blocks — convert to $VAR (no braces) which
   // is equivalent bash and invisible to Gemini's /\$\{(\w+)\}/g regex.
   const escapedBody = body.replace(/\$\{(\w+)\}/g, '$$$1');
@@ -2424,8 +2433,8 @@ function convertClaudeToOpencodeFrontmatter(content, { isAgent = false } = {}) {
   convertedContent = convertedContent.replace(/\bAskUserQuestion\b/g, 'question');
   convertedContent = convertedContent.replace(/\bSlashCommand\b/g, 'skill');
   convertedContent = convertedContent.replace(/\bTodoWrite\b/g, 'todowrite');
-  // Replace /gsd:command with /gsd-command for opencode (flat command structure)
-  convertedContent = convertedContent.replace(/\/gsd:/g, '/gsd-');
+  // Replace /thrunt:command with /thrunt-command for opencode (flat command structure)
+  convertedContent = convertedContent.replace(/\/thrunt:/g, '/thrunt-');
   // Replace ~/.claude and $HOME/.claude with OpenCode's config location
   convertedContent = convertedContent.replace(/~\/\.claude\b/g, '~/.config/opencode');
   convertedContent = convertedContent.replace(/\$HOME\/\.claude\b/g, '$HOME/.config/opencode');
@@ -2611,12 +2620,12 @@ function convertClaudeToGeminiToml(content) {
 
 /**
  * Copy commands to a flat structure for OpenCode
- * OpenCode expects: command/gsd-help.md (invoked as /gsd-help)
- * Source structure: commands/gsd/help.md
+ * OpenCode expects: command/thrunt-help.md (invoked as /thrunt-help)
+ * Source structure: commands/thrunt/help.md
  * 
- * @param {string} srcDir - Source directory (e.g., commands/gsd/)
+ * @param {string} srcDir - Source directory (e.g., commands/thrunt/)
  * @param {string} destDir - Destination directory (e.g., command/)
- * @param {string} prefix - Prefix for filenames (e.g., 'gsd')
+ * @param {string} prefix - Prefix for filenames (e.g., 'thrunt')
  * @param {string} pathPrefix - Path prefix for file references
  * @param {string} runtime - Target runtime ('claude' or 'opencode')
  */
@@ -2625,7 +2634,7 @@ function copyFlattenedCommands(srcDir, destDir, prefix, pathPrefix, runtime) {
     return;
   }
   
-  // Remove old gsd-*.md files before copying new ones
+  // Remove old thrunt-*.md files before copying new ones
   if (fs.existsSync(destDir)) {
     for (const file of fs.readdirSync(destDir)) {
       if (file.startsWith(`${prefix}-`) && file.endsWith('.md')) {
@@ -2643,10 +2652,10 @@ function copyFlattenedCommands(srcDir, destDir, prefix, pathPrefix, runtime) {
     
     if (entry.isDirectory()) {
       // Recurse into subdirectories, adding to prefix
-      // e.g., commands/gsd/debug/start.md -> command/gsd-debug-start.md
+      // e.g., commands/thrunt/debug/start.md -> command/thrunt-debug-start.md
       copyFlattenedCommands(srcPath, destDir, `${prefix}-${entry.name}`, pathPrefix, runtime);
     } else if (entry.name.endsWith('.md')) {
-      // Flatten: help.md -> gsd-help.md
+      // Flatten: help.md -> thrunt-help.md
       const baseName = entry.name.replace('.md', '');
       const destName = `${prefix}-${baseName}.md`;
       const destPath = path.join(destDir, destName);
@@ -2668,7 +2677,7 @@ function copyFlattenedCommands(srcDir, destDir, prefix, pathPrefix, runtime) {
   }
 }
 
-function listCodexSkillNames(skillsDir, prefix = 'gsd-') {
+function listCodexSkillNames(skillsDir, prefix = 'thrunt-') {
   if (!fs.existsSync(skillsDir)) return [];
   const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
   return entries
@@ -2678,6 +2687,48 @@ function listCodexSkillNames(skillsDir, prefix = 'gsd-') {
     .sort();
 }
 
+function listSkillNamesForPrefixes(skillsDir, prefixes = ['thrunt-', 'hunt-']) {
+  return prefixes.flatMap(prefix => listCodexSkillNames(skillsDir, prefix));
+}
+
+function countPrefixedMarkdownFiles(dir, prefixes = ['thrunt-', 'hunt-']) {
+  if (!fs.existsSync(dir)) return 0;
+  return fs.readdirSync(dir)
+    .filter(file => file.endsWith('.md') && prefixes.some(prefix => file.startsWith(prefix)))
+    .length;
+}
+
+function countPrefixedSkillDirs(dir, prefixes = ['thrunt-', 'hunt-']) {
+  if (!fs.existsSync(dir)) return 0;
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter(entry => entry.isDirectory() && prefixes.some(prefix => entry.name.startsWith(prefix)))
+    .length;
+}
+
+function removePrefixedMarkdownFiles(dir, prefixes = ['thrunt-', 'hunt-']) {
+  if (!fs.existsSync(dir)) return 0;
+  let removed = 0;
+  for (const file of fs.readdirSync(dir)) {
+    if (!file.endsWith('.md')) continue;
+    if (!prefixes.some(prefix => file.startsWith(prefix))) continue;
+    fs.unlinkSync(path.join(dir, file));
+    removed++;
+  }
+  return removed;
+}
+
+function removePrefixedSkillDirs(dir, prefixes = ['thrunt-', 'hunt-']) {
+  if (!fs.existsSync(dir)) return 0;
+  let removed = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    if (!prefixes.some(prefix => entry.name.startsWith(prefix))) continue;
+    fs.rmSync(path.join(dir, entry.name), { recursive: true });
+    removed++;
+  }
+  return removed;
+}
+
 function copyCommandsAsCodexSkills(srcDir, skillsDir, prefix, pathPrefix, runtime) {
   if (!fs.existsSync(srcDir)) {
     return;
@@ -2685,7 +2736,7 @@ function copyCommandsAsCodexSkills(srcDir, skillsDir, prefix, pathPrefix, runtim
 
   fs.mkdirSync(skillsDir, { recursive: true });
 
-  // Remove previous GSD Codex skills to avoid stale command skills.
+  // Remove previous THRUNT Codex skills to avoid stale command skills.
   const existing = fs.readdirSync(skillsDir, { withFileTypes: true });
   for (const entry of existing) {
     if (entry.isDirectory() && entry.name.startsWith(`${prefix}-`)) {
@@ -2738,7 +2789,7 @@ function copyCommandsAsCursorSkills(srcDir, skillsDir, prefix, pathPrefix, runti
 
   fs.mkdirSync(skillsDir, { recursive: true });
 
-  // Remove previous GSD Cursor skills to avoid stale command skills
+  // Remove previous THRUNT Cursor skills to avoid stale command skills
   const existing = fs.readdirSync(skillsDir, { withFileTypes: true });
   for (const entry of existing) {
     if (entry.isDirectory() && entry.name.startsWith(`${prefix}-`)) {
@@ -2795,7 +2846,7 @@ function copyCommandsAsWindsurfSkills(srcDir, skillsDir, prefix, pathPrefix, run
 
   fs.mkdirSync(skillsDir, { recursive: true });
 
-  // Remove previous GSD Windsurf skills to avoid stale command skills
+  // Remove previous THRUNT Windsurf skills to avoid stale command skills
   const existing = fs.readdirSync(skillsDir, { withFileTypes: true });
   for (const entry of existing) {
     if (entry.isDirectory() && entry.name.startsWith(`${prefix}-`)) {
@@ -2852,7 +2903,7 @@ function copyCommandsAsCopilotSkills(srcDir, skillsDir, prefix, isGlobal = false
 
   fs.mkdirSync(skillsDir, { recursive: true });
 
-  // Remove previous GSD Copilot skills
+  // Remove previous THRUNT Copilot skills
   const existing = fs.readdirSync(skillsDir, { withFileTypes: true });
   for (const entry of existing) {
     if (entry.isDirectory() && entry.name.startsWith(`${prefix}-`)) {
@@ -2891,12 +2942,12 @@ function copyCommandsAsCopilotSkills(srcDir, skillsDir, prefix, isGlobal = false
 }
 
 /**
- * Recursively install GSD commands as Antigravity skills.
+ * Recursively install THRUNT commands as Antigravity skills.
  * Each command becomes a skill-name/ folder containing SKILL.md.
  * Mirrors copyCommandsAsCopilotSkills but uses Antigravity converters.
  * @param {string} srcDir - Source commands directory
  * @param {string} skillsDir - Target skills directory
- * @param {string} prefix - Skill name prefix (e.g. 'gsd')
+ * @param {string} prefix - Skill name prefix (e.g. 'thrunt')
  * @param {boolean} isGlobal - Whether this is a global install
  */
 function copyCommandsAsAntigravitySkills(srcDir, skillsDir, prefix, isGlobal = false) {
@@ -2906,7 +2957,7 @@ function copyCommandsAsAntigravitySkills(srcDir, skillsDir, prefix, isGlobal = f
 
   fs.mkdirSync(skillsDir, { recursive: true });
 
-  // Remove previous GSD Antigravity skills
+  // Remove previous THRUNT Antigravity skills
   const existing = fs.readdirSync(skillsDir, { withFileTypes: true });
   for (const entry of existing) {
     if (entry.isDirectory() && entry.name.startsWith(`${prefix}-`)) {
@@ -3037,7 +3088,8 @@ function copyWithPathReplacement(srcDir, destDir, pathPrefix, runtime, isCommand
     } else if (isCursor && (entry.name.endsWith('.cjs') || entry.name.endsWith('.js'))) {
       // For Cursor, also convert Claude references in JS/CJS utility scripts
       let jsContent = fs.readFileSync(srcPath, 'utf8');
-      jsContent = jsContent.replace(/gsd:/gi, 'gsd-');
+      jsContent = jsContent.replace(/thrunt:/gi, 'thrunt-');
+      jsContent = jsContent.replace(/hunt:/gi, 'hunt-');
       jsContent = jsContent.replace(/\.claude\/skills\//g, '.cursor/skills/');
       jsContent = jsContent.replace(/CLAUDE\.md/g, '.cursor/rules/');
       jsContent = jsContent.replace(/\bClaude Code\b/g, 'Cursor');
@@ -3045,7 +3097,8 @@ function copyWithPathReplacement(srcDir, destDir, pathPrefix, runtime, isCommand
     } else if (isWindsurf && (entry.name.endsWith('.cjs') || entry.name.endsWith('.js'))) {
       // For Windsurf, also convert Claude references in JS/CJS utility scripts
       let jsContent = fs.readFileSync(srcPath, 'utf8');
-      jsContent = jsContent.replace(/gsd:/gi, 'gsd-');
+      jsContent = jsContent.replace(/thrunt:/gi, 'thrunt-');
+      jsContent = jsContent.replace(/hunt:/gi, 'hunt-');
       jsContent = jsContent.replace(/\.claude\/skills\//g, '.windsurf/skills/');
       jsContent = jsContent.replace(/CLAUDE\.md/g, '.windsurf/rules/');
       jsContent = jsContent.replace(/\bClaude Code\b/g, 'Windsurf');
@@ -3057,12 +3110,12 @@ function copyWithPathReplacement(srcDir, destDir, pathPrefix, runtime, isCommand
 }
 
 /**
- * Clean up orphaned files from previous GSD versions
+ * Clean up orphaned files from previous THRUNT versions
  */
 function cleanupOrphanedFiles(configDir) {
   const orphanedFiles = [
-    'hooks/gsd-notify.sh',  // Removed in v1.6.x
-    'hooks/statusline.js',  // Renamed to gsd-statusline.js in v1.9.0
+    'hooks/thrunt-notify.sh',  // Removed in v1.6.x
+    'hooks/statusline.js',  // Renamed to thrunt-statusline.js in v1.9.0
   ];
 
   for (const relPath of orphanedFiles) {
@@ -3079,11 +3132,11 @@ function cleanupOrphanedFiles(configDir) {
  */
 function cleanupOrphanedHooks(settings) {
   const orphanedHookPatterns = [
-    'gsd-notify.sh',  // Removed in v1.6.x
-    'hooks/statusline.js',  // Renamed to gsd-statusline.js in v1.9.0
-    'gsd-intel-index.js',  // Removed in v1.9.2
-    'gsd-intel-session.js',  // Removed in v1.9.2
-    'gsd-intel-prune.js',  // Removed in v1.9.2
+    'thrunt-notify.sh',  // Removed in v1.6.x
+    'hooks/statusline.js',  // Renamed to thrunt-statusline.js in v1.9.0
+    'thrunt-intel-index.js',  // Removed in v1.9.2
+    'thrunt-intel-session.js',  // Removed in v1.9.2
+    'thrunt-intel-prune.js',  // Removed in v1.9.2
   ];
 
   let cleanedHooks = false;
@@ -3116,16 +3169,16 @@ function cleanupOrphanedHooks(settings) {
     console.log(`  ${green}✓${reset} Removed orphaned hook registrations`);
   }
 
-  // Fix #330: Update statusLine if it points to old GSD statusline.js path
-  // Only match the specific old GSD path pattern (hooks/statusline.js),
+  // Fix #330: Update statusLine if it points to old THRUNT statusline.js path
+  // Only match the specific old THRUNT path pattern (hooks/statusline.js),
   // not third-party statusline scripts that happen to contain 'statusline.js'
   if (settings.statusLine && settings.statusLine.command &&
       /hooks[\/\\]statusline\.js/.test(settings.statusLine.command)) {
     settings.statusLine.command = settings.statusLine.command.replace(
       /hooks([\/\\])statusline\.js/,
-      'hooks$1gsd-statusline.js'
+      'hooks$1thrunt-statusline.js'
     );
-    console.log(`  ${green}✓${reset} Updated statusline path (hooks/statusline.js → hooks/gsd-statusline.js)`);
+    console.log(`  ${green}✓${reset} Updated statusline path (hooks/statusline.js → hooks/thrunt-statusline.js)`);
   }
 
   return settings;
@@ -3211,8 +3264,8 @@ function validateHookFields(settings) {
 }
 
 /**
- * Uninstall GSD from the specified directory for a specific runtime
- * Removes only GSD-specific files/directories, preserves user content
+ * Uninstall THRUNT from the specified directory for a specific runtime.
+ * Removes THRUNT-managed assets and preserves user content.
  * @param {boolean} isGlobal - Whether to uninstall from global or local
  * @param {string} runtime - Target runtime ('claude', 'opencode', 'gemini', 'codex', 'copilot')
  */
@@ -3243,7 +3296,7 @@ function uninstall(isGlobal, runtime = 'claude') {
   if (runtime === 'cursor') runtimeLabel = 'Cursor';
   if (runtime === 'windsurf') runtimeLabel = 'Windsurf';
 
-  console.log(`  Uninstalling GSD from ${cyan}${runtimeLabel}${reset} at ${cyan}${locationLabel}${reset}\n`);
+  console.log(`  Uninstalling THRUNT from ${cyan}${runtimeLabel}${reset} at ${cyan}${locationLabel}${reset}\n`);
 
   // Check if target directory exists
   if (!fs.existsSync(targetDir)) {
@@ -3254,46 +3307,32 @@ function uninstall(isGlobal, runtime = 'claude') {
 
   let removedCount = 0;
 
-  // 1. Remove GSD commands/skills
+  // 1. Remove THRUNT commands/skills
   if (isOpencode) {
-    // OpenCode: remove command/gsd-*.md files
+    // OpenCode: remove command/thrunt-*.md and command/hunt-*.md files
     const commandDir = path.join(targetDir, 'command');
-    if (fs.existsSync(commandDir)) {
-      const files = fs.readdirSync(commandDir);
-      for (const file of files) {
-        if (file.startsWith('gsd-') && file.endsWith('.md')) {
-          fs.unlinkSync(path.join(commandDir, file));
-          removedCount++;
-        }
-      }
-      console.log(`  ${green}✓${reset} Removed GSD commands from command/`);
+    const removed = removePrefixedMarkdownFiles(commandDir);
+    if (removed > 0) {
+      removedCount += removed;
+      console.log(`  ${green}✓${reset} Removed command/ entries`);
     }
   } else if (isCodex || isCursor || isWindsurf) {
-    // Codex/Cursor/Windsurf: remove skills/gsd-*/SKILL.md skill directories
+    // Codex/Cursor/Windsurf: remove skills/thrunt-* and skills/hunt-* directories
     const skillsDir = path.join(targetDir, 'skills');
-    if (fs.existsSync(skillsDir)) {
-      let skillCount = 0;
-      const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('gsd-')) {
-          fs.rmSync(path.join(skillsDir, entry.name), { recursive: true });
-          skillCount++;
-        }
-      }
-      if (skillCount > 0) {
-        removedCount++;
-        console.log(`  ${green}✓${reset} Removed ${skillCount} ${runtimeLabel} skills`);
-      }
+    const skillCount = removePrefixedSkillDirs(skillsDir);
+    if (skillCount > 0) {
+      removedCount++;
+      console.log(`  ${green}✓${reset} Removed ${skillCount} ${runtimeLabel} skills`);
     }
 
-    // Codex-only: remove GSD agent .toml config files and config.toml sections
+    // Codex-only: remove THRUNT agent .toml config files and config.toml sections
     if (isCodex) {
     const codexAgentsDir = path.join(targetDir, 'agents');
     if (fs.existsSync(codexAgentsDir)) {
       const tomlFiles = fs.readdirSync(codexAgentsDir);
       let tomlCount = 0;
       for (const file of tomlFiles) {
-        if (file.startsWith('gsd-') && file.endsWith('.toml')) {
+        if (file.startsWith('thrunt-') && file.endsWith('.toml')) {
           fs.unlinkSync(path.join(codexAgentsDir, file));
           tomlCount++;
         }
@@ -3304,147 +3343,117 @@ function uninstall(isGlobal, runtime = 'claude') {
       }
     }
 
-    // Codex: clean GSD sections from config.toml
+    // Codex: clean THRUNT sections from config.toml
     const configPath = path.join(targetDir, 'config.toml');
     if (fs.existsSync(configPath)) {
       const content = fs.readFileSync(configPath, 'utf8');
-      const cleaned = stripGsdFromCodexConfig(content);
+      const cleaned = stripThruntFromCodexConfig(content);
       if (cleaned === null) {
         // File is empty after stripping — delete it
         fs.unlinkSync(configPath);
         removedCount++;
-        console.log(`  ${green}✓${reset} Removed config.toml (was GSD-only)`);
+        console.log(`  ${green}✓${reset} Removed config.toml (was THRUNT-only)`);
       } else if (cleaned !== content) {
         fs.writeFileSync(configPath, cleaned);
         removedCount++;
-        console.log(`  ${green}✓${reset} Cleaned GSD sections from config.toml`);
+        console.log(`  ${green}✓${reset} Cleaned THRUNT sections from config.toml`);
       }
     }
     }
   } else if (isCopilot) {
-    // Copilot: remove skills/gsd-*/ directories (same layout as Codex skills)
+    // Copilot: remove skills/thrunt-* and skills/hunt-* directories
     const skillsDir = path.join(targetDir, 'skills');
-    if (fs.existsSync(skillsDir)) {
-      let skillCount = 0;
-      const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('gsd-')) {
-          fs.rmSync(path.join(skillsDir, entry.name), { recursive: true });
-          skillCount++;
-        }
-      }
-      if (skillCount > 0) {
-        removedCount++;
-        console.log(`  ${green}✓${reset} Removed ${skillCount} Copilot skills`);
-      }
+    const skillCount = removePrefixedSkillDirs(skillsDir);
+    if (skillCount > 0) {
+      removedCount++;
+      console.log(`  ${green}✓${reset} Removed ${skillCount} Copilot skills`);
     }
 
-    // Copilot: clean GSD section from copilot-instructions.md
+    // Copilot: clean THRUNT section from copilot-instructions.md
     const instructionsPath = path.join(targetDir, 'copilot-instructions.md');
     if (fs.existsSync(instructionsPath)) {
       const content = fs.readFileSync(instructionsPath, 'utf8');
-      const cleaned = stripGsdFromCopilotInstructions(content);
+      const cleaned = stripThruntFromCopilotInstructions(content);
       if (cleaned === null) {
         fs.unlinkSync(instructionsPath);
         removedCount++;
-        console.log(`  ${green}✓${reset} Removed copilot-instructions.md (was GSD-only)`);
+        console.log(`  ${green}✓${reset} Removed copilot-instructions.md (was THRUNT-only)`);
       } else if (cleaned !== content) {
         fs.writeFileSync(instructionsPath, cleaned);
         removedCount++;
-        console.log(`  ${green}✓${reset} Cleaned GSD section from copilot-instructions.md`);
+        console.log(`  ${green}✓${reset} Cleaned THRUNT section from copilot-instructions.md`);
       }
     }
   } else if (isAntigravity) {
-    // Antigravity: remove skills/gsd-*/ directories (same layout as Copilot skills)
+    // Antigravity: remove skills/thrunt-* and skills/hunt-* directories
     const skillsDir = path.join(targetDir, 'skills');
-    if (fs.existsSync(skillsDir)) {
-      let skillCount = 0;
-      const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('gsd-')) {
-          fs.rmSync(path.join(skillsDir, entry.name), { recursive: true });
-          skillCount++;
-        }
-      }
-      if (skillCount > 0) {
-        removedCount++;
-        console.log(`  ${green}✓${reset} Removed ${skillCount} Antigravity skills`);
-      }
+    const skillCount = removePrefixedSkillDirs(skillsDir);
+    if (skillCount > 0) {
+      removedCount++;
+      console.log(`  ${green}✓${reset} Removed ${skillCount} Antigravity skills`);
     }
   } else if (isCursor) {
-    // Cursor: remove skills/gsd-*/ directories (same layout as Codex skills)
+    // Cursor: remove skills/thrunt-* and skills/hunt-* directories
     const skillsDir = path.join(targetDir, 'skills');
-    if (fs.existsSync(skillsDir)) {
-      let skillCount = 0;
-      const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('gsd-')) {
-          fs.rmSync(path.join(skillsDir, entry.name), { recursive: true });
-          skillCount++;
-        }
-      }
-      if (skillCount > 0) {
-        removedCount++;
-        console.log(`  ${green}✓${reset} Removed ${skillCount} Cursor skills`);
-      }
+    const skillCount = removePrefixedSkillDirs(skillsDir);
+    if (skillCount > 0) {
+      removedCount++;
+      console.log(`  ${green}✓${reset} Removed ${skillCount} Cursor skills`);
     }
   } else if (isWindsurf) {
-    // Windsurf: remove skills/gsd-*/ directories (same layout as Cursor skills)
+    // Windsurf: remove skills/thrunt-* and skills/hunt-* directories
     const skillsDir = path.join(targetDir, 'skills');
-    if (fs.existsSync(skillsDir)) {
-      let skillCount = 0;
-      const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name.startsWith('gsd-')) {
-          fs.rmSync(path.join(skillsDir, entry.name), { recursive: true });
-          skillCount++;
-        }
-      }
-      if (skillCount > 0) {
-        removedCount++;
-        console.log(`  ${green}✓${reset} Removed ${skillCount} Windsurf skills`);
-      }
+    const skillCount = removePrefixedSkillDirs(skillsDir);
+    if (skillCount > 0) {
+      removedCount++;
+      console.log(`  ${green}✓${reset} Removed ${skillCount} Windsurf skills`);
     }
   } else {
-    const gsdCommandsDir = path.join(targetDir, 'commands', 'gsd');
-    if (fs.existsSync(gsdCommandsDir)) {
-      fs.rmSync(gsdCommandsDir, { recursive: true });
+    const thruntCommandsDir = path.join(targetDir, 'commands', 'thrunt');
+    const huntCommandsDir = path.join(targetDir, 'commands', 'hunt');
+    if (fs.existsSync(thruntCommandsDir)) {
+      fs.rmSync(thruntCommandsDir, { recursive: true });
       removedCount++;
-      console.log(`  ${green}✓${reset} Removed commands/gsd/`);
+      console.log(`  ${green}✓${reset} Removed commands/thrunt/`);
+    }
+    if (fs.existsSync(huntCommandsDir)) {
+      fs.rmSync(huntCommandsDir, { recursive: true });
+      removedCount++;
+      console.log(`  ${green}✓${reset} Removed commands/hunt/`);
     }
   }
 
-  // 2. Remove get-shit-done directory
-  const gsdDir = path.join(targetDir, 'get-shit-done');
-  if (fs.existsSync(gsdDir)) {
-    fs.rmSync(gsdDir, { recursive: true });
+  // 2. Remove thrunt-god directory
+  const thruntDir = path.join(targetDir, 'thrunt-god');
+  if (fs.existsSync(thruntDir)) {
+    fs.rmSync(thruntDir, { recursive: true });
     removedCount++;
-    console.log(`  ${green}✓${reset} Removed get-shit-done/`);
+    console.log(`  ${green}✓${reset} Removed thrunt-god/`);
   }
 
-  // 3. Remove GSD agents (gsd-*.md files only)
+  // 3. Remove THRUNT agents (thrunt-*.md files only)
   const agentsDir = path.join(targetDir, 'agents');
   if (fs.existsSync(agentsDir)) {
     const files = fs.readdirSync(agentsDir);
     let agentCount = 0;
     for (const file of files) {
-      if (file.startsWith('gsd-') && file.endsWith('.md')) {
+      if (file.startsWith('thrunt-') && file.endsWith('.md')) {
         fs.unlinkSync(path.join(agentsDir, file));
         agentCount++;
       }
     }
     if (agentCount > 0) {
       removedCount++;
-      console.log(`  ${green}✓${reset} Removed ${agentCount} GSD agents`);
+      console.log(`  ${green}✓${reset} Removed ${agentCount} THRUNT agents`);
     }
   }
 
-  // 4. Remove GSD hooks
+  // 4. Remove THRUNT hooks
   const hooksDir = path.join(targetDir, 'hooks');
   if (fs.existsSync(hooksDir)) {
-    const gsdHooks = ['gsd-statusline.js', 'gsd-check-update.js', 'gsd-check-update.sh', 'gsd-context-monitor.js', 'gsd-prompt-guard.js'];
+    const thruntHooks = ['thrunt-statusline.js', 'thrunt-check-update.js', 'thrunt-check-update.sh', 'thrunt-context-monitor.js', 'thrunt-prompt-guard.js'];
     let hookCount = 0;
-    for (const hook of gsdHooks) {
+    for (const hook of thruntHooks) {
       const hookPath = path.join(hooksDir, hook);
       if (fs.existsSync(hookPath)) {
         fs.unlinkSync(hookPath);
@@ -3453,11 +3462,11 @@ function uninstall(isGlobal, runtime = 'claude') {
     }
     if (hookCount > 0) {
       removedCount++;
-      console.log(`  ${green}✓${reset} Removed ${hookCount} GSD hooks`);
+      console.log(`  ${green}✓${reset} Removed ${hookCount} THRUNT hooks`);
     }
   }
 
-  // 5. Remove GSD package.json (CommonJS mode marker)
+  // 5. Remove THRUNT package.json (CommonJS mode marker)
   const pkgJsonPath = path.join(targetDir, 'package.json');
   if (fs.existsSync(pkgJsonPath)) {
     try {
@@ -3466,43 +3475,43 @@ function uninstall(isGlobal, runtime = 'claude') {
       if (content === '{"type":"commonjs"}') {
         fs.unlinkSync(pkgJsonPath);
         removedCount++;
-        console.log(`  ${green}✓${reset} Removed GSD package.json`);
+        console.log(`  ${green}✓${reset} Removed THRUNT package.json marker`);
       }
     } catch (e) {
       // Ignore read errors
     }
   }
 
-  // 6. Clean up settings.json (remove GSD hooks and statusline)
+  // 6. Clean up settings.json (remove THRUNT hooks and statusline)
   const settingsPath = path.join(targetDir, 'settings.json');
   if (fs.existsSync(settingsPath)) {
     let settings = readSettings(settingsPath);
     let settingsModified = false;
 
-    // Remove GSD statusline if it references our hook
+    // Remove THRUNT statusline if it references our hook
     if (settings.statusLine && settings.statusLine.command &&
-        settings.statusLine.command.includes('gsd-statusline')) {
+        settings.statusLine.command.includes('thrunt-statusline')) {
       delete settings.statusLine;
       settingsModified = true;
-      console.log(`  ${green}✓${reset} Removed GSD statusline from settings`);
+      console.log(`  ${green}✓${reset} Removed THRUNT statusline from settings`);
     }
 
-    // Remove GSD hooks from SessionStart
+    // Remove THRUNT hooks from SessionStart
     if (settings.hooks && settings.hooks.SessionStart) {
       const before = settings.hooks.SessionStart.length;
       settings.hooks.SessionStart = settings.hooks.SessionStart.filter(entry => {
         if (entry.hooks && Array.isArray(entry.hooks)) {
-          // Filter out GSD hooks
-          const hasGsdHook = entry.hooks.some(h =>
-            h.command && (h.command.includes('gsd-check-update') || h.command.includes('gsd-statusline'))
+          // Filter out THRUNT hooks
+          const hasThruntHook = entry.hooks.some(h =>
+            h.command && (h.command.includes('thrunt-check-update') || h.command.includes('thrunt-statusline'))
           );
-          return !hasGsdHook;
+          return !hasThruntHook;
         }
         return true;
       });
       if (settings.hooks.SessionStart.length < before) {
         settingsModified = true;
-        console.log(`  ${green}✓${reset} Removed GSD hooks from settings`);
+        console.log(`  ${green}✓${reset} Removed THRUNT hooks from settings`);
       }
       // Clean up empty array
       if (settings.hooks.SessionStart.length === 0) {
@@ -3510,16 +3519,16 @@ function uninstall(isGlobal, runtime = 'claude') {
       }
     }
 
-    // Remove GSD hooks from PostToolUse and AfterTool (Gemini uses AfterTool)
+    // Remove THRUNT hooks from PostToolUse and AfterTool (Gemini uses AfterTool)
     for (const eventName of ['PostToolUse', 'AfterTool']) {
       if (settings.hooks && settings.hooks[eventName]) {
         const before = settings.hooks[eventName].length;
         settings.hooks[eventName] = settings.hooks[eventName].filter(entry => {
           if (entry.hooks && Array.isArray(entry.hooks)) {
-            const hasGsdHook = entry.hooks.some(h =>
-              h.command && h.command.includes('gsd-context-monitor')
+            const hasThruntHook = entry.hooks.some(h =>
+              h.command && h.command.includes('thrunt-context-monitor')
             );
-            return !hasGsdHook;
+            return !hasThruntHook;
           }
           return true;
         });
@@ -3533,16 +3542,16 @@ function uninstall(isGlobal, runtime = 'claude') {
       }
     }
 
-    // Remove GSD hooks from PreToolUse and BeforeTool (Gemini uses BeforeTool)
+    // Remove THRUNT hooks from PreToolUse and BeforeTool (Gemini uses BeforeTool)
     for (const eventName of ['PreToolUse', 'BeforeTool']) {
       if (settings.hooks && settings.hooks[eventName]) {
         const before = settings.hooks[eventName].length;
         settings.hooks[eventName] = settings.hooks[eventName].filter(entry => {
           if (entry.hooks && Array.isArray(entry.hooks)) {
-            const hasGsdHook = entry.hooks.some(h =>
-              h.command && h.command.includes('gsd-prompt-guard')
+            const hasThruntHook = entry.hooks.some(h =>
+              h.command && h.command.includes('thrunt-prompt-guard')
             );
-            return !hasGsdHook;
+            return !hasThruntHook;
           }
           return true;
         });
@@ -3578,13 +3587,13 @@ function uninstall(isGlobal, runtime = 'claude') {
         const config = parseJsonc(fs.readFileSync(configPath, 'utf8'));
         let modified = false;
 
-        // Remove GSD permission entries
+        // Remove THRUNT permission entries
         if (config.permission) {
           for (const permType of ['read', 'external_directory']) {
             if (config.permission[permType]) {
               const keys = Object.keys(config.permission[permType]);
               for (const key of keys) {
-                if (key.includes('get-shit-done')) {
+                if (key.includes('thrunt-god')) {
                   delete config.permission[permType][key];
                   modified = true;
                 }
@@ -3603,7 +3612,7 @@ function uninstall(isGlobal, runtime = 'claude') {
         if (modified) {
           fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
           removedCount++;
-          console.log(`  ${green}✓${reset} Removed GSD permissions from ${path.basename(configPath)}`);
+          console.log(`  ${green}✓${reset} Removed THRUNT permissions from ${path.basename(configPath)}`);
         }
       } catch (e) {
         // Ignore JSON parse errors
@@ -3612,11 +3621,11 @@ function uninstall(isGlobal, runtime = 'claude') {
   }
 
   if (removedCount === 0) {
-    console.log(`  ${yellow}⚠${reset} No GSD files found to remove.`);
+    console.log(`  ${yellow}⚠${reset} No THRUNT files found to remove.`);
   }
 
   console.log(`
-  ${green}Done!${reset} GSD has been uninstalled from ${runtimeLabel}.
+  ${green}Done!${reset} THRUNT has been uninstalled from ${runtimeLabel}.
   Your other files and settings have been preserved.
 `);
 }
@@ -3683,8 +3692,8 @@ function parseJsonc(content) {
 }
 
 /**
- * Configure OpenCode permissions to allow reading GSD reference docs
- * This prevents permission prompts when GSD accesses the get-shit-done directory
+ * Configure OpenCode permissions to allow reading THRUNT reference docs
+ * This prevents permission prompts when THRUNT accesses the thrunt-god directory
  * @param {boolean} isGlobal - Whether this is a global or local install
  */
 function configureOpencodePermissions(isGlobal = true) {
@@ -3719,12 +3728,12 @@ function configureOpencodePermissions(isGlobal = true) {
     config.permission = {};
   }
 
-  // Build the GSD path using the actual config directory
+  // Build the THRUNT path using the actual config directory
   // Use ~ shorthand if it's in the default location, otherwise use full path
   const defaultConfigDir = path.join(os.homedir(), '.config', 'opencode');
-  const gsdPath = opencodeConfigDir === defaultConfigDir
-    ? '~/.config/opencode/get-shit-done/*'
-    : `${opencodeConfigDir.replace(/\\/g, '/')}/get-shit-done/*`;
+  const thruntPath = opencodeConfigDir === defaultConfigDir
+    ? '~/.config/opencode/thrunt-god/*'
+    : `${opencodeConfigDir.replace(/\\/g, '/')}/thrunt-god/*`;
   
   let modified = false;
 
@@ -3732,8 +3741,8 @@ function configureOpencodePermissions(isGlobal = true) {
   if (!config.permission.read || typeof config.permission.read !== 'object') {
     config.permission.read = {};
   }
-  if (config.permission.read[gsdPath] !== 'allow') {
-    config.permission.read[gsdPath] = 'allow';
+  if (config.permission.read[thruntPath] !== 'allow') {
+    config.permission.read[thruntPath] = 'allow';
     modified = true;
   }
 
@@ -3741,8 +3750,8 @@ function configureOpencodePermissions(isGlobal = true) {
   if (!config.permission.external_directory || typeof config.permission.external_directory !== 'object') {
     config.permission.external_directory = {};
   }
-  if (config.permission.external_directory[gsdPath] !== 'allow') {
-    config.permission.external_directory[gsdPath] = 'allow';
+  if (config.permission.external_directory[thruntPath] !== 'allow') {
+    config.permission.external_directory[thruntPath] = 'allow';
     modified = true;
   }
 
@@ -3752,7 +3761,7 @@ function configureOpencodePermissions(isGlobal = true) {
 
   // Write config back
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
-  console.log(`  ${green}✓${reset} Configured read permission for GSD docs`);
+  console.log(`  ${green}✓${reset} Configured read permission for THRUNT docs`);
 }
 
 /**
@@ -3797,8 +3806,8 @@ function verifyFileInstalled(filePath, description) {
 // Local Patch Persistence
 // ──────────────────────────────────────────────────────
 
-const PATCHES_DIR_NAME = 'gsd-local-patches';
-const MANIFEST_NAME = 'gsd-file-manifest.json';
+const PATCHES_DIR_NAME = 'thrunt-local-patches';
+const MANIFEST_NAME = 'thrunt-file-manifest.json';
 
 /**
  * Compute SHA256 hash of file contents
@@ -3838,32 +3847,39 @@ function writeManifest(configDir, runtime = 'claude') {
   const isAntigravity = runtime === 'antigravity';
   const isCursor = runtime === 'cursor';
   const isWindsurf = runtime === 'windsurf';
-  const gsdDir = path.join(configDir, 'get-shit-done');
-  const commandsDir = path.join(configDir, 'commands', 'gsd');
+  const thruntDir = path.join(configDir, 'thrunt-god');
+  const commandsDir = path.join(configDir, 'commands', 'thrunt');
+  const huntCommandsDir = path.join(configDir, 'commands', 'hunt');
   const opencodeCommandDir = path.join(configDir, 'command');
   const codexSkillsDir = path.join(configDir, 'skills');
   const agentsDir = path.join(configDir, 'agents');
   const manifest = { version: pkg.version, timestamp: new Date().toISOString(), files: {} };
 
-  const gsdHashes = generateManifest(gsdDir);
-  for (const [rel, hash] of Object.entries(gsdHashes)) {
-    manifest.files['get-shit-done/' + rel] = hash;
+  const thruntHashes = generateManifest(thruntDir);
+  for (const [rel, hash] of Object.entries(thruntHashes)) {
+    manifest.files['thrunt-god/' + rel] = hash;
   }
   if (!isOpencode && !isCodex && !isCopilot && !isAntigravity && !isCursor && !isWindsurf && fs.existsSync(commandsDir)) {
     const cmdHashes = generateManifest(commandsDir);
     for (const [rel, hash] of Object.entries(cmdHashes)) {
-      manifest.files['commands/gsd/' + rel] = hash;
+      manifest.files['commands/thrunt/' + rel] = hash;
+    }
+  }
+  if (!isOpencode && !isCodex && !isCopilot && !isAntigravity && !isCursor && !isWindsurf && fs.existsSync(huntCommandsDir)) {
+    const cmdHashes = generateManifest(huntCommandsDir);
+    for (const [rel, hash] of Object.entries(cmdHashes)) {
+      manifest.files['commands/hunt/' + rel] = hash;
     }
   }
   if (isOpencode && fs.existsSync(opencodeCommandDir)) {
     for (const file of fs.readdirSync(opencodeCommandDir)) {
-      if (file.startsWith('gsd-') && file.endsWith('.md')) {
+      if ((file.startsWith('thrunt-') || file.startsWith('hunt-')) && file.endsWith('.md')) {
         manifest.files['command/' + file] = fileHash(path.join(opencodeCommandDir, file));
       }
     }
   }
   if ((isCodex || isCopilot || isAntigravity || isCursor || isWindsurf) && fs.existsSync(codexSkillsDir)) {
-    for (const skillName of listCodexSkillNames(codexSkillsDir)) {
+    for (const skillName of listSkillNamesForPrefixes(codexSkillsDir)) {
       const skillRoot = path.join(codexSkillsDir, skillName);
       const skillHashes = generateManifest(skillRoot);
       for (const [rel, hash] of Object.entries(skillHashes)) {
@@ -3873,7 +3889,7 @@ function writeManifest(configDir, runtime = 'claude') {
   }
   if (fs.existsSync(agentsDir)) {
     for (const file of fs.readdirSync(agentsDir)) {
-      if (file.startsWith('gsd-') && file.endsWith('.md')) {
+      if (file.startsWith('thrunt-') && file.endsWith('.md')) {
         manifest.files['agents/' + file] = fileHash(path.join(agentsDir, file));
       }
     }
@@ -3884,7 +3900,7 @@ function writeManifest(configDir, runtime = 'claude') {
     const hooksDir = path.join(configDir, 'hooks');
     if (fs.existsSync(hooksDir)) {
       for (const file of fs.readdirSync(hooksDir)) {
-        if (file.startsWith('gsd-') && file.endsWith('.js')) {
+        if (file.startsWith('thrunt-') && file.endsWith('.js')) {
           manifest.files['hooks/' + file] = fileHash(path.join(hooksDir, file));
         }
       }
@@ -3896,8 +3912,8 @@ function writeManifest(configDir, runtime = 'claude') {
 }
 
 /**
- * Detect user-modified GSD files by comparing against install manifest.
- * Backs up modified files to gsd-local-patches/ for reapply after update.
+ * Detect user-modified THRUNT files by comparing against install manifest.
+ * Backs up modified files to thrunt-local-patches/ for reapply after update.
  */
 function saveLocalPatches(configDir) {
   const manifestPath = path.join(configDir, MANIFEST_NAME);
@@ -3928,7 +3944,7 @@ function saveLocalPatches(configDir) {
       files: modified
     };
     fs.writeFileSync(path.join(patchesDir, 'backup-meta.json'), JSON.stringify(meta, null, 2));
-    console.log('  ' + yellow + 'i' + reset + '  Found ' + modified.length + ' locally modified GSD file(s) — backed up to ' + PATCHES_DIR_NAME + '/');
+    console.log('  ' + yellow + 'i' + reset + '  Found ' + modified.length + ' locally modified THRUNT file(s) — backed up to ' + PATCHES_DIR_NAME + '/');
     for (const f of modified) {
       console.log('     ' + dim + f + reset);
     }
@@ -3949,12 +3965,12 @@ function reportLocalPatches(configDir, runtime = 'claude') {
 
   if (meta.files && meta.files.length > 0) {
     const reapplyCommand = (runtime === 'opencode' || runtime === 'copilot')
-      ? '/gsd-reapply-patches'
+      ? '/thrunt-reapply-patches'
       : runtime === 'codex'
-        ? '$gsd-reapply-patches'
+        ? '$thrunt-reapply-patches'
         : runtime === 'cursor'
-          ? 'gsd-reapply-patches (mention the skill name)'
-          : '/gsd:reapply-patches';
+          ? 'thrunt-reapply-patches (mention the skill name)'
+          : '/thrunt:reapply-patches';
     console.log('');
     console.log('  ' + yellow + 'Local patches detected' + reset + ' (from v' + meta.from_version + '):');
     for (const f of meta.files) {
@@ -3989,8 +4005,8 @@ function install(isGlobal, runtime = 'claude') {
     ? targetDir.replace(os.homedir(), '~')
     : targetDir.replace(process.cwd(), '.');
 
-  // Path prefix for file references in markdown content (e.g. gsd-tools.cjs).
-  // Replaces $HOME/.claude/ or ~/.claude/ so the result is <pathPrefix>get-shit-done/bin/...
+  // Path prefix for file references in markdown content (e.g. thrunt-tools.cjs).
+  // Replaces $HOME/.claude/ or ~/.claude/ so the result is <pathPrefix>thrunt-god/bin/...
   // For global installs: use $HOME/ so paths expand correctly inside double-quoted
   // shell commands (~ does NOT expand inside double quotes, causing MODULE_NOT_FOUND).
   // For local installs: use resolved absolute path (may be outside $HOME).
@@ -4009,115 +4025,125 @@ function install(isGlobal, runtime = 'claude') {
   if (isCursor) runtimeLabel = 'Cursor';
   if (isWindsurf) runtimeLabel = 'Windsurf';
 
-  console.log(`  Installing for ${cyan}${runtimeLabel}${reset} to ${cyan}${locationLabel}${reset}\n`);
+  console.log(`  Installing THRUNT for ${cyan}${runtimeLabel}${reset} to ${cyan}${locationLabel}${reset}\n`);
 
   // Track installation failures
   const failures = [];
 
-  // Save any locally modified GSD files before they get wiped
+  // Save any locally modified THRUNT files before they get wiped
   saveLocalPatches(targetDir);
 
   // Clean up orphaned files from previous versions
   cleanupOrphanedFiles(targetDir);
 
-  // OpenCode uses command/ (flat), Codex uses skills/, Claude/Gemini use commands/gsd/
+  // OpenCode uses command/ (flat), Codex uses skills/, Claude/Gemini use commands/thrunt/
+  const thruntSrc = path.join(src, 'commands', 'thrunt');
+  const huntSrc = path.join(src, 'commands', 'hunt');
   if (isOpencode) {
     // OpenCode: flat structure in command/ directory
     const commandDir = path.join(targetDir, 'command');
     fs.mkdirSync(commandDir, { recursive: true });
     
-    // Copy commands/gsd/*.md as command/gsd-*.md (flatten structure)
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    copyFlattenedCommands(gsdSrc, commandDir, 'gsd', pathPrefix, runtime);
-    if (verifyInstalled(commandDir, 'command/gsd-*')) {
-      const count = fs.readdirSync(commandDir).filter(f => f.startsWith('gsd-')).length;
+    // Copy commands/thrunt/*.md as command/thrunt-*.md (flatten structure)
+    copyFlattenedCommands(thruntSrc, commandDir, 'thrunt', pathPrefix, runtime);
+    copyFlattenedCommands(huntSrc, commandDir, 'hunt', pathPrefix, runtime);
+    if (verifyInstalled(commandDir, 'command/thrunt-*') && verifyInstalled(commandDir, 'command/hunt-*')) {
+      const count = countPrefixedMarkdownFiles(commandDir);
       console.log(`  ${green}✓${reset} Installed ${count} commands to command/`);
     } else {
-      failures.push('command/gsd-*');
+      failures.push('command/thrunt-*');
+      failures.push('command/hunt-*');
     }
   } else if (isCodex) {
     const skillsDir = path.join(targetDir, 'skills');
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    copyCommandsAsCodexSkills(gsdSrc, skillsDir, 'gsd', pathPrefix, runtime);
-    const installedSkillNames = listCodexSkillNames(skillsDir);
+    copyCommandsAsCodexSkills(thruntSrc, skillsDir, 'thrunt', pathPrefix, runtime);
+    copyCommandsAsCodexSkills(huntSrc, skillsDir, 'hunt', pathPrefix, runtime);
+    const installedSkillNames = listSkillNamesForPrefixes(skillsDir);
     if (installedSkillNames.length > 0) {
       console.log(`  ${green}✓${reset} Installed ${installedSkillNames.length} skills to skills/`);
     } else {
-      failures.push('skills/gsd-*');
+      failures.push('skills/thrunt-*');
+      failures.push('skills/hunt-*');
     }
   } else if (isCopilot) {
     const skillsDir = path.join(targetDir, 'skills');
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    copyCommandsAsCopilotSkills(gsdSrc, skillsDir, 'gsd', isGlobal);
+    copyCommandsAsCopilotSkills(thruntSrc, skillsDir, 'thrunt', isGlobal);
+    copyCommandsAsCopilotSkills(huntSrc, skillsDir, 'hunt', isGlobal);
     if (fs.existsSync(skillsDir)) {
-      const count = fs.readdirSync(skillsDir, { withFileTypes: true })
-        .filter(e => e.isDirectory() && e.name.startsWith('gsd-')).length;
+      const count = countPrefixedSkillDirs(skillsDir);
       if (count > 0) {
         console.log(`  ${green}✓${reset} Installed ${count} skills to skills/`);
       } else {
-        failures.push('skills/gsd-*');
+        failures.push('skills/thrunt-*');
+        failures.push('skills/hunt-*');
       }
     } else {
-      failures.push('skills/gsd-*');
+      failures.push('skills/thrunt-*');
+      failures.push('skills/hunt-*');
     }
   } else if (isAntigravity) {
     const skillsDir = path.join(targetDir, 'skills');
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    copyCommandsAsAntigravitySkills(gsdSrc, skillsDir, 'gsd', isGlobal);
+    copyCommandsAsAntigravitySkills(thruntSrc, skillsDir, 'thrunt', isGlobal);
+    copyCommandsAsAntigravitySkills(huntSrc, skillsDir, 'hunt', isGlobal);
     if (fs.existsSync(skillsDir)) {
-      const count = fs.readdirSync(skillsDir, { withFileTypes: true })
-        .filter(e => e.isDirectory() && e.name.startsWith('gsd-')).length;
+      const count = countPrefixedSkillDirs(skillsDir);
       if (count > 0) {
         console.log(`  ${green}✓${reset} Installed ${count} skills to skills/`);
       } else {
-        failures.push('skills/gsd-*');
+        failures.push('skills/thrunt-*');
+        failures.push('skills/hunt-*');
       }
     } else {
-      failures.push('skills/gsd-*');
+      failures.push('skills/thrunt-*');
+      failures.push('skills/hunt-*');
     }
   } else if (isCursor) {
     const skillsDir = path.join(targetDir, 'skills');
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    copyCommandsAsCursorSkills(gsdSrc, skillsDir, 'gsd', pathPrefix, runtime);
-    const installedSkillNames = listCodexSkillNames(skillsDir); // reuse — same dir structure
+    copyCommandsAsCursorSkills(thruntSrc, skillsDir, 'thrunt', pathPrefix, runtime);
+    copyCommandsAsCursorSkills(huntSrc, skillsDir, 'hunt', pathPrefix, runtime);
+    const installedSkillNames = listSkillNamesForPrefixes(skillsDir); // reuse — same dir structure
     if (installedSkillNames.length > 0) {
       console.log(`  ${green}✓${reset} Installed ${installedSkillNames.length} skills to skills/`);
     } else {
-      failures.push('skills/gsd-*');
+      failures.push('skills/thrunt-*');
+      failures.push('skills/hunt-*');
     }
   } else if (isWindsurf) {
     const skillsDir = path.join(targetDir, 'skills');
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    copyCommandsAsWindsurfSkills(gsdSrc, skillsDir, 'gsd', pathPrefix, runtime);
-    const installedSkillNames = listCodexSkillNames(skillsDir); // reuse — same dir structure
+    copyCommandsAsWindsurfSkills(thruntSrc, skillsDir, 'thrunt', pathPrefix, runtime);
+    copyCommandsAsWindsurfSkills(huntSrc, skillsDir, 'hunt', pathPrefix, runtime);
+    const installedSkillNames = listSkillNamesForPrefixes(skillsDir); // reuse — same dir structure
     if (installedSkillNames.length > 0) {
       console.log(`  ${green}✓${reset} Installed ${installedSkillNames.length} skills to skills/`);
     } else {
-      failures.push('skills/gsd-*');
+      failures.push('skills/thrunt-*');
+      failures.push('skills/hunt-*');
     }
   } else {
     // Claude Code & Gemini: nested structure in commands/ directory
     const commandsDir = path.join(targetDir, 'commands');
     fs.mkdirSync(commandsDir, { recursive: true });
     
-    const gsdSrc = path.join(src, 'commands', 'gsd');
-    const gsdDest = path.join(commandsDir, 'gsd');
-    copyWithPathReplacement(gsdSrc, gsdDest, pathPrefix, runtime, true, isGlobal);
-    if (verifyInstalled(gsdDest, 'commands/gsd')) {
-      console.log(`  ${green}✓${reset} Installed commands/gsd`);
+    const thruntDest = path.join(commandsDir, 'thrunt');
+    const huntDest = path.join(commandsDir, 'hunt');
+    copyWithPathReplacement(thruntSrc, thruntDest, pathPrefix, runtime, true, isGlobal);
+    copyWithPathReplacement(huntSrc, huntDest, pathPrefix, runtime, true, isGlobal);
+    if (verifyInstalled(thruntDest, 'commands/thrunt') && verifyInstalled(huntDest, 'commands/hunt')) {
+      console.log(`  ${green}✓${reset} Installed commands/thrunt and commands/hunt`);
     } else {
-      failures.push('commands/gsd');
+      failures.push('commands/thrunt');
+      failures.push('commands/hunt');
     }
   }
 
-  // Copy get-shit-done skill with path replacement
-  const skillSrc = path.join(src, 'get-shit-done');
-  const skillDest = path.join(targetDir, 'get-shit-done');
+  // Copy thrunt-god skill with path replacement
+  const skillSrc = path.join(src, 'thrunt-god');
+  const skillDest = path.join(targetDir, 'thrunt-god');
   copyWithPathReplacement(skillSrc, skillDest, pathPrefix, runtime, false, isGlobal);
-  if (verifyInstalled(skillDest, 'get-shit-done')) {
-    console.log(`  ${green}✓${reset} Installed get-shit-done`);
+  if (verifyInstalled(skillDest, 'thrunt-god')) {
+    console.log(`  ${green}✓${reset} Installed thrunt-god`);
   } else {
-    failures.push('get-shit-done');
+    failures.push('thrunt-god');
   }
 
   // Copy agents to agents directory
@@ -4126,10 +4152,10 @@ function install(isGlobal, runtime = 'claude') {
     const agentsDest = path.join(targetDir, 'agents');
     fs.mkdirSync(agentsDest, { recursive: true });
 
-    // Remove old GSD agents (gsd-*.md) before copying new ones
+    // Remove old THRUNT agents (thrunt-*.md) before copying new ones
     if (fs.existsSync(agentsDest)) {
       for (const file of fs.readdirSync(agentsDest)) {
-        if (file.startsWith('gsd-') && file.endsWith('.md')) {
+        if (file.startsWith('thrunt-') && file.endsWith('.md')) {
           fs.unlinkSync(path.join(agentsDest, file));
         }
       }
@@ -4177,7 +4203,7 @@ function install(isGlobal, runtime = 'claude') {
 
   // Copy CHANGELOG.md
   const changelogSrc = path.join(src, 'CHANGELOG.md');
-  const changelogDest = path.join(targetDir, 'get-shit-done', 'CHANGELOG.md');
+  const changelogDest = path.join(targetDir, 'thrunt-god', 'CHANGELOG.md');
   if (fs.existsSync(changelogSrc)) {
     fs.copyFileSync(changelogSrc, changelogDest);
     if (verifyFileInstalled(changelogDest, 'CHANGELOG.md')) {
@@ -4188,7 +4214,7 @@ function install(isGlobal, runtime = 'claude') {
   }
 
   // Write VERSION file
-  const versionDest = path.join(targetDir, 'get-shit-done', 'VERSION');
+  const versionDest = path.join(targetDir, 'thrunt-god', 'VERSION');
   fs.writeFileSync(versionDest, pkg.version);
   if (verifyFileInstalled(versionDest, 'VERSION')) {
     console.log(`  ${green}✓${reset} Wrote VERSION (${pkg.version})`);
@@ -4197,7 +4223,7 @@ function install(isGlobal, runtime = 'claude') {
   }
 
   if (!isCodex && !isCopilot && !isCursor && !isWindsurf) {
-    // Write package.json to force CommonJS mode for GSD scripts
+    // Write package.json to force CommonJS mode for THRUNT scripts
     // Prevents "require is not defined" errors when project has "type": "module"
     // Node.js walks up looking for package.json - this stops inheritance from project
     const pkgJsonDest = path.join(targetDir, 'package.json');
@@ -4217,11 +4243,11 @@ function install(isGlobal, runtime = 'claude') {
         if (fs.statSync(srcFile).isFile()) {
           const destFile = path.join(hooksDest, entry);
           // Template .js files to replace '.claude' with runtime-specific config dir
-          // and stamp the current GSD version into the hook version header
+          // and stamp the current THRUNT version into the hook version header
           if (entry.endsWith('.js')) {
             let content = fs.readFileSync(srcFile, 'utf8');
             content = content.replace(/'\.claude'/g, configDirReplacement);
-            content = content.replace(/\{\{GSD_VERSION\}\}/g, pkg.version);
+            content = content.replace(/\{\{THRUNT_VERSION\}\}/g, pkg.version);
             fs.writeFileSync(destFile, content);
             // Ensure hook files are executable (fixes #1162 — missing +x permission)
             try { fs.chmodSync(destFile, 0o755); } catch (e) { /* Windows doesn't support chmod */ }
@@ -4239,8 +4265,8 @@ function install(isGlobal, runtime = 'claude') {
   }
 
   // Clear stale update cache so next session re-evaluates hook versions
-  // targetDir is e.g. ~/.claude/get-shit-done/, parent is the config dir
-  const updateCacheFile = path.join(path.dirname(targetDir), 'cache', 'gsd-update-check.json');
+  // targetDir is e.g. ~/.claude/thrunt-god/, parent is the config dir
+  const updateCacheFile = path.join(path.dirname(targetDir), 'cache', 'thrunt-update-check.json');
   try { fs.unlinkSync(updateCacheFile); } catch (e) { /* cache may not exist yet */ }
 
   if (failures.length > 0) {
@@ -4319,14 +4345,14 @@ function install(isGlobal, runtime = 'claude') {
       configContent = setManagedCodexHooksOwnership(codexHooksFeature.content, codexHooksFeature.ownership);
 
       // Add SessionStart hook for update checking
-      const updateCheckScript = path.resolve(targetDir, 'get-shit-done', 'hooks', 'gsd-update-check.js').replace(/\\/g, '/');
+      const updateCheckScript = path.resolve(targetDir, 'thrunt-god', 'hooks', 'thrunt-update-check.js').replace(/\\/g, '/');
       const hookBlock =
-        `${eol}# GSD Hooks${eol}` +
+        `${eol}# THRUNT Hooks${eol}` +
         `[[hooks]]${eol}` +
         `event = "SessionStart"${eol}` +
         `command = "node ${updateCheckScript}"${eol}`;
 
-      if (hasEnabledCodexHooksFeature(configContent) && !configContent.includes('gsd-update-check')) {
+      if (hasEnabledCodexHooksFeature(configContent) && !configContent.includes('thrunt-update-check')) {
         configContent += hookBlock;
       }
 
@@ -4341,7 +4367,7 @@ function install(isGlobal, runtime = 'claude') {
 
   if (isCopilot) {
     // Generate copilot-instructions.md
-    const templatePath = path.join(targetDir, 'get-shit-done', 'templates', 'copilot-instructions.md');
+    const templatePath = path.join(targetDir, 'thrunt-god', 'templates', 'copilot-instructions.md');
     const instructionsPath = path.join(targetDir, 'copilot-instructions.md');
     if (fs.existsSync(templatePath)) {
       const template = fs.readFileSync(templatePath, 'utf8');
@@ -4368,17 +4394,17 @@ function install(isGlobal, runtime = 'claude') {
   const settingsPath = path.join(targetDir, 'settings.json');
   const settings = validateHookFields(cleanupOrphanedHooks(readSettings(settingsPath)));
   const statuslineCommand = isGlobal
-    ? buildHookCommand(targetDir, 'gsd-statusline.js')
-    : 'node ' + dirName + '/hooks/gsd-statusline.js';
+    ? buildHookCommand(targetDir, 'thrunt-statusline.js')
+    : 'node ' + dirName + '/hooks/thrunt-statusline.js';
   const updateCheckCommand = isGlobal
-    ? buildHookCommand(targetDir, 'gsd-check-update.js')
-    : 'node ' + dirName + '/hooks/gsd-check-update.js';
+    ? buildHookCommand(targetDir, 'thrunt-check-update.js')
+    : 'node ' + dirName + '/hooks/thrunt-check-update.js';
   const contextMonitorCommand = isGlobal
-    ? buildHookCommand(targetDir, 'gsd-context-monitor.js')
-    : 'node ' + dirName + '/hooks/gsd-context-monitor.js';
+    ? buildHookCommand(targetDir, 'thrunt-context-monitor.js')
+    : 'node ' + dirName + '/hooks/thrunt-context-monitor.js';
   const promptGuardCommand = isGlobal
-    ? buildHookCommand(targetDir, 'gsd-prompt-guard.js')
-    : 'node ' + dirName + '/hooks/gsd-prompt-guard.js';
+    ? buildHookCommand(targetDir, 'thrunt-prompt-guard.js')
+    : 'node ' + dirName + '/hooks/thrunt-prompt-guard.js';
 
   // Enable experimental agents for Gemini CLI (required for custom sub-agents)
   if (isGemini) {
@@ -4400,11 +4426,11 @@ function install(isGlobal, runtime = 'claude') {
       settings.hooks.SessionStart = [];
     }
 
-    const hasGsdUpdateHook = settings.hooks.SessionStart.some(entry =>
-      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-check-update'))
+    const hasThruntUpdateHook = settings.hooks.SessionStart.some(entry =>
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('thrunt-check-update'))
     );
 
-    if (!hasGsdUpdateHook) {
+    if (!hasThruntUpdateHook) {
       settings.hooks.SessionStart.push({
         hooks: [
           {
@@ -4422,7 +4448,7 @@ function install(isGlobal, runtime = 'claude') {
     }
 
     const hasContextMonitorHook = settings.hooks[postToolEvent].some(entry =>
-      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-context-monitor'))
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('thrunt-context-monitor'))
     );
 
     if (!hasContextMonitorHook) {
@@ -4440,14 +4466,14 @@ function install(isGlobal, runtime = 'claude') {
     } else {
       // Migrate existing context monitor hooks: add matcher and timeout if missing
       for (const entry of settings.hooks[postToolEvent]) {
-        if (entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-context-monitor'))) {
+        if (entry.hooks && entry.hooks.some(h => h.command && h.command.includes('thrunt-context-monitor'))) {
           let migrated = false;
           if (!entry.matcher) {
             entry.matcher = 'Bash|Edit|Write|MultiEdit|Agent|Task';
             migrated = true;
           }
           for (const h of entry.hooks) {
-            if (h.command && h.command.includes('gsd-context-monitor') && !h.timeout) {
+            if (h.command && h.command.includes('thrunt-context-monitor') && !h.timeout) {
               h.timeout = 10;
               migrated = true;
             }
@@ -4467,7 +4493,7 @@ function install(isGlobal, runtime = 'claude') {
     }
 
     const hasPromptGuardHook = settings.hooks[preToolEvent].some(entry =>
-      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('gsd-prompt-guard'))
+      entry.hooks && entry.hooks.some(h => h.command && h.command.includes('thrunt-prompt-guard'))
     );
 
     if (!hasPromptGuardHook) {
@@ -4516,24 +4542,24 @@ function finishInstall(settingsPath, settings, statuslineCommand, shouldInstallS
     configureOpencodePermissions(isGlobal);
   }
 
-  // For non-Claude runtimes, set resolve_model_ids: "omit" in ~/.gsd/defaults.json
+  // For non-Claude runtimes, set resolve_model_ids: "omit" in ~/.thrunt/defaults.json
   // so resolveModelInternal() returns '' instead of Claude aliases (opus/sonnet/haiku)
   // that the runtime can't resolve. Users can still use model_overrides for explicit IDs.
   // See #1156.
   if (runtime !== 'claude') {
-    const gsdDir = path.join(os.homedir(), '.gsd');
-    const defaultsPath = path.join(gsdDir, 'defaults.json');
+    const thruntDir = path.join(os.homedir(), '.thrunt');
+    const defaultsPath = path.join(thruntDir, 'defaults.json');
     try {
-      fs.mkdirSync(gsdDir, { recursive: true });
+      fs.mkdirSync(thruntDir, { recursive: true });
       let defaults = {};
       try { defaults = JSON.parse(fs.readFileSync(defaultsPath, 'utf8')); } catch { /* new file */ }
       if (defaults.resolve_model_ids !== 'omit') {
         defaults.resolve_model_ids = 'omit';
         fs.writeFileSync(defaultsPath, JSON.stringify(defaults, null, 2) + '\n');
-        console.log(`  ${green}✓${reset} Set resolve_model_ids: "omit" in ~/.gsd/defaults.json`);
+        console.log(`  ${green}✓${reset} Set resolve_model_ids: "omit" in ~/.thrunt/defaults.json`);
       }
     } catch (e) {
-      console.log(`  ${yellow}⚠${reset} Could not write ~/.gsd/defaults.json: ${e.message}`);
+      console.log(`  ${yellow}⚠${reset} Could not write ~/.thrunt/defaults.json: ${e.message}`);
     }
   }
 
@@ -4545,16 +4571,16 @@ function finishInstall(settingsPath, settings, statuslineCommand, shouldInstallS
   if (runtime === 'antigravity') program = 'Antigravity';
   if (runtime === 'cursor') program = 'Cursor';
 
-  let command = '/gsd:new-project';
-  if (runtime === 'opencode') command = '/gsd-new-project';
-  if (runtime === 'codex') command = '$gsd-new-project';
-  if (runtime === 'copilot') command = '/gsd-new-project';
-  if (runtime === 'antigravity') command = '/gsd-new-project';
-  if (runtime === 'cursor') command = 'gsd-new-project (mention the skill name)';
+  let command = '/hunt:new-case';
+  if (runtime === 'opencode') command = '/hunt-new-case';
+  if (runtime === 'codex') command = '$hunt-new-case';
+  if (runtime === 'copilot') command = '/hunt-new-case';
+  if (runtime === 'antigravity') command = '/hunt-new-case';
+  if (runtime === 'cursor') command = 'hunt-new-case (mention the skill name)';
   console.log(`
   ${green}Done!${reset} Open a blank directory in ${program} and run ${cyan}${command}${reset}.
 
-  ${cyan}Join the community:${reset} https://discord.gg/gsd
+  ${cyan}Community:${reset} run /thrunt:join-discord for the current invite
 `);
 }
 
@@ -4593,13 +4619,13 @@ function handleStatusline(settings, isInteractive, callback) {
   Your current statusline:
     ${dim}command: ${existingCmd}${reset}
 
-  GSD includes a statusline showing:
+  THRUNT includes a statusline showing:
     • Model name
     • Current task (from todo list)
     • Context window usage (color-coded)
 
   ${cyan}1${reset}) Keep existing
-  ${cyan}2${reset}) Replace with GSD statusline
+  ${cyan}2${reset}) Replace with THRUNT statusline
 `);
 
   rl.question(`  Choice ${dim}[1]${reset}: `, (answer) => {
@@ -4724,7 +4750,7 @@ function promptLocation(runtimes) {
 }
 
 /**
- * Install GSD for all selected runtimes
+ * Install THRUNT for all selected runtimes
  */
 function installAllRuntimes(runtimes, isGlobal, isInteractive) {
   const results = [];
@@ -4759,7 +4785,7 @@ function installAllRuntimes(runtimes, isGlobal, isInteractive) {
 }
 
 // Test-only exports — skip main logic when loaded as a module for testing
-if (process.env.GSD_TEST_MODE) {
+if (process.env.THRUNT_TEST_MODE) {
   module.exports = {
     yamlIdentifier,
     getCodexSkillAdapterHeader,
@@ -4769,14 +4795,14 @@ if (process.env.GSD_TEST_MODE) {
     convertClaudeAgentToCodexAgent,
     generateCodexAgentToml,
     generateCodexConfigBlock,
-    stripGsdFromCodexConfig,
+    stripThruntFromCodexConfig,
     mergeCodexConfig,
     installCodexConfig,
     install,
     convertClaudeCommandToCodexSkill,
     convertClaudeToOpencodeFrontmatter,
     neutralizeAgentReferences,
-    GSD_CODEX_MARKER,
+    THRUNT_CODEX_MARKER,
     CODEX_AGENT_SANDBOX,
     getDirName,
     getGlobalDir,
@@ -4787,10 +4813,10 @@ if (process.env.GSD_TEST_MODE) {
     convertClaudeCommandToCopilotSkill,
     convertClaudeAgentToCopilotAgent,
     copyCommandsAsCopilotSkills,
-    GSD_COPILOT_INSTRUCTIONS_MARKER,
-    GSD_COPILOT_INSTRUCTIONS_CLOSE_MARKER,
+    THRUNT_COPILOT_INSTRUCTIONS_MARKER,
+    THRUNT_COPILOT_INSTRUCTIONS_CLOSE_MARKER,
     mergeCopilotInstructions,
-    stripGsdFromCopilotInstructions,
+    stripThruntFromCopilotInstructions,
     convertClaudeToAntigravityContent,
     convertClaudeCommandToAntigravitySkill,
     convertClaudeAgentToAntigravityAgent,
@@ -4842,4 +4868,4 @@ if (hasGlobal && hasLocal) {
   }
 }
 
-} // end of else block for GSD_TEST_MODE
+} // end of else block for THRUNT_TEST_MODE

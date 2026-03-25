@@ -1,0 +1,355 @@
+/**
+ * Evidence Audit — Cross-phase EVIDENCE_REVIEW/FINDINGS scanner
+ *
+ * Reads all evidence review and findings files across all phases.
+ * Extracts unresolved items. Returns structured JSON for workflow consumption.
+ */
+
+const fs = require('fs');
+const path = require('path');
+const { output, error, getMilestonePhaseFilter, planningDir, toPosixPath } = require('./core.cjs');
+const { extractFrontmatter } = require('./frontmatter.cjs');
+const { requireSafePath, sanitizeForDisplay } = require('./security.cjs');
+
+function cmdAuditEvidence(cwd, raw) {
+  const phasesDir = path.join(planningDir(cwd), 'phases');
+  if (!fs.existsSync(phasesDir)) {
+    error('No phases directory found in planning directory');
+  }
+
+  const isDirInMilestone = getMilestonePhaseFilter(cwd);
+  const results = [];
+
+  // Scan all phase directories
+  const dirs = fs.readdirSync(phasesDir, { withFileTypes: true })
+    .filter(e => e.isDirectory())
+    .map(e => e.name)
+    .filter(isDirInMilestone)
+    .sort();
+
+  for (const dir of dirs) {
+    const phaseMatch = dir.match(/^(\d+[A-Z]?(?:\.\d+)*)/i);
+    const phaseNum = phaseMatch ? phaseMatch[1] : dir;
+    const phaseDir = path.join(phasesDir, dir);
+    const files = fs.readdirSync(phaseDir);
+
+    for (const file of files.filter(f => f.includes('EVIDENCE_REVIEW') && f.endsWith('.md'))) {
+      const content = fs.readFileSync(path.join(phaseDir, file), 'utf-8');
+      const items = parseEvidenceReviewItems(content);
+      if (items.length > 0) {
+        results.push({
+          phase: phaseNum,
+          phase_dir: dir,
+          file,
+          file_path: toPosixPath(path.relative(cwd, path.join(phaseDir, file))),
+          type: 'evidence_review',
+          status: (extractFrontmatter(content).status || 'unknown'),
+          items,
+        });
+      }
+    }
+
+    for (const file of files.filter(f => f.includes('FINDINGS') && f.endsWith('.md'))) {
+      const content = fs.readFileSync(path.join(phaseDir, file), 'utf-8');
+      const items = parseFindingsItems(content);
+      if (items.length > 0) {
+        results.push({
+          phase: phaseNum,
+          phase_dir: dir,
+          file,
+          file_path: toPosixPath(path.relative(cwd, path.join(phaseDir, file))),
+          type: 'findings',
+          status: (extractFrontmatter(content).status || 'unknown'),
+          items,
+        });
+      }
+    }
+  }
+
+  // Compute summary
+  const summary = {
+    total_files: results.length,
+    total_items: results.reduce((sum, r) => sum + r.items.length, 0),
+    by_category: {},
+    by_phase: {},
+  };
+
+  for (const r of results) {
+    if (!summary.by_phase[r.phase]) summary.by_phase[r.phase] = 0;
+    for (const item of r.items) {
+      summary.by_phase[r.phase]++;
+      const cat = item.category || 'unknown';
+      summary.by_category[cat] = (summary.by_category[cat] || 0) + 1;
+    }
+  }
+
+  output({ results, summary }, raw);
+}
+
+function cmdRenderEvidenceCheckpoint(cwd, options = {}, raw) {
+  const filePath = options.file;
+  if (!filePath) {
+    error('evidence review file required: use evidence render-checkpoint --file <path>');
+  }
+
+  const resolvedPath = requireSafePath(filePath, cwd, 'evidence review file', { allowAbsolute: true });
+  if (!fs.existsSync(resolvedPath)) {
+    error(`evidence review file not found: ${filePath}`);
+  }
+
+  const content = fs.readFileSync(resolvedPath, 'utf-8');
+  const currentTest = parseCurrentTest(content);
+
+  if (currentTest.complete) {
+    error('evidence session is already complete; no pending checkpoint to render');
+  }
+
+  const checkpoint = buildCheckpoint(currentTest);
+  output({
+    file_path: toPosixPath(path.relative(cwd, resolvedPath)),
+    test_number: currentTest.number,
+    test_name: currentTest.name,
+    checkpoint,
+  }, raw, checkpoint);
+}
+
+function parseCurrentTest(content) {
+  const currentTestMatch = content.match(/##\s*Current Test\s*(?:\n<!--[\s\S]*?-->)?\n([\s\S]*?)(?=\n##\s|$)/i);
+  if (!currentTestMatch) {
+    error('evidence review file is missing a Current Test section');
+  }
+
+  const section = currentTestMatch[1].trimEnd();
+  if (!section.trim()) {
+    error('Current Test section is empty');
+  }
+
+  if (/\[testing complete\]/i.test(section)) {
+    return { complete: true };
+  }
+
+  const numberMatch = section.match(/^number:\s*(\d+)\s*$/m);
+  const nameMatch = section.match(/^name:\s*(.+)\s*$/m);
+  const expectedBlockMatch = section.match(/^expected:\s*\|\n([\s\S]*?)(?=^\w[\w-]*:\s)/m)
+    || section.match(/^expected:\s*\|\n([\s\S]+)/m);
+  const expectedInlineMatch = section.match(/^expected:\s*(.+)\s*$/m);
+
+  if (!numberMatch || !nameMatch || (!expectedBlockMatch && !expectedInlineMatch)) {
+    error('Current Test section is malformed');
+  }
+
+  let expected;
+  if (expectedBlockMatch) {
+    expected = expectedBlockMatch[1]
+      .split('\n')
+      .map(line => line.replace(/^ {2}/, ''))
+      .join('\n')
+      .trim();
+  } else {
+    expected = expectedInlineMatch[1].trim();
+  }
+
+  return {
+    complete: false,
+    number: parseInt(numberMatch[1], 10),
+    name: sanitizeForDisplay(nameMatch[1].trim()),
+    expected: sanitizeForDisplay(expected),
+  };
+}
+
+function buildCheckpoint(currentTest) {
+  return [
+    '╔══════════════════════════════════════════════════════════════╗',
+    '║  CHECKPOINT: Evidence Review Required                        ║',
+    '╚══════════════════════════════════════════════════════════════╝',
+    '',
+    `**Test ${currentTest.number}: ${currentTest.name}**`,
+    '',
+    currentTest.expected,
+    '',
+    '──────────────────────────────────────────────────────────────',
+    'Type `pass` or describe what\'s wrong.',
+    '──────────────────────────────────────────────────────────────',
+  ].join('\n');
+}
+
+function parseEvidenceReviewChecklistItems(content) {
+  const items = [];
+  // Match test blocks: ### N. Name\nexpected: ...\nresult: ...\n
+  const testPattern = /###\s*(\d+)\.\s*([^\n]+)\nexpected:\s*([^\n]+)\nresult:\s*(\w+)(?:\n(?:reported|reason|blocked_by):\s*[^\n]*)?/g;
+  let match;
+  while ((match = testPattern.exec(content)) !== null) {
+    const [, num, name, expected, result] = match;
+    if (result === 'pending' || result === 'skipped' || result === 'blocked') {
+      // Extract optional fields — limit to current test block (up to next ### or EOF)
+      const afterMatch = content.slice(match.index);
+      const nextHeading = afterMatch.indexOf('\n###', 1);
+      const blockText = nextHeading > 0 ? afterMatch.slice(0, nextHeading) : afterMatch;
+      const reasonMatch = blockText.match(/reason:\s*(.+)/);
+      const blockedByMatch = blockText.match(/blocked_by:\s*(.+)/);
+
+      const item = {
+        test: parseInt(num, 10),
+        name: name.trim(),
+        expected: expected.trim(),
+        result,
+        category: categorizeItem(result, reasonMatch?.[1], blockedByMatch?.[1]),
+      };
+      if (reasonMatch) item.reason = reasonMatch[1].trim();
+      if (blockedByMatch) item.blocked_by = blockedByMatch[1].trim();
+      items.push(item);
+    }
+  }
+  return items;
+}
+
+function parseFindingsHumanVerificationItems(content, status) {
+  const items = [];
+  if (status === 'human_needed') {
+    // Extract from human_verification section — look for numbered items or table rows
+    const hvSection = content.match(/##\s*Human Verification.*?\n([\s\S]*?)(?=\n##\s|\n---\s|$)/i);
+    if (hvSection) {
+      const lines = hvSection[1].split('\n');
+      for (const line of lines) {
+        // Match table rows: | N | description | ... |
+        const tableMatch = line.match(/\|\s*(\d+)\s*\|\s*([^|]+)/);
+        // Match bullet items: - description
+        const bulletMatch = line.match(/^[-*]\s+(.+)/);
+        // Match numbered items: 1. description
+        const numberedMatch = line.match(/^(\d+)\.\s+(.+)/);
+
+        if (tableMatch) {
+          items.push({
+            test: parseInt(tableMatch[1], 10),
+            name: tableMatch[2].trim(),
+            result: 'human_needed',
+            category: 'human_evidence_review',
+          });
+        } else if (numberedMatch) {
+          items.push({
+            test: parseInt(numberedMatch[1], 10),
+            name: numberedMatch[2].trim(),
+            result: 'human_needed',
+            category: 'human_evidence_review',
+          });
+        } else if (bulletMatch && bulletMatch[1].length > 10) {
+          items.push({
+            name: bulletMatch[1].trim(),
+            result: 'human_needed',
+            category: 'human_evidence_review',
+          });
+        }
+      }
+    }
+  }
+  // gaps_found items are already handled by hunt planning gap-closure.
+  return items;
+}
+
+function parseEvidenceReviewItems(content) {
+  const items = parseEvidenceReviewChecklistItems(content);
+  const verdictMatch = content.match(/##\s*Publishability Verdict\s*\n+([^\n]+)/i);
+  if (verdictMatch && !/ready to publish/i.test(verdictMatch[1])) {
+    items.push({
+      name: 'Publishability verdict',
+      result: verdictMatch[1].trim(),
+      category: 'needs_evidence',
+    });
+  }
+
+  const checkMatches = [...content.matchAll(/^\|\s*([^|]+?)\s*\|\s*(Pass|Fail)\s*\|\s*([^|]*)\|?$/gmi)];
+  for (const match of checkMatches) {
+    if (match[2].toLowerCase() !== 'fail') continue;
+    items.push({
+      name: match[1].trim(),
+      result: 'fail',
+      notes: match[3].trim(),
+      category: 'evidence_gap',
+    });
+  }
+
+  const followUpSection = content.match(/##\s*Follow-Up Needed\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  if (followUpSection) {
+    const followUps = followUpSection[1]
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => /^-\s+/.test(line))
+      .map(line => line.replace(/^-\s+/, '').trim())
+      .filter(Boolean);
+    for (const followUp of followUps) {
+      items.push({
+        name: followUp,
+        result: 'pending',
+        category: 'follow_up',
+      });
+    }
+  }
+
+  return items;
+}
+
+function parseFindingsItems(content) {
+  const items = [];
+  const status = extractFrontmatter(content).status || 'unknown';
+  items.push(...parseFindingsHumanVerificationItems(content, status));
+  const verdictMatches = [...content.matchAll(/^\|\s*([^|]+?)\s*\|\s*(Supported|Disproved|Inconclusive)\s*\|\s*([^|]+?)\s*\|\s*([^|]+?)\s*\|?$/gmi)];
+  for (const match of verdictMatches) {
+    if (match[2].toLowerCase() !== 'inconclusive') continue;
+    items.push({
+      name: match[1].trim(),
+      result: 'inconclusive',
+      confidence: match[3].trim(),
+      evidence: match[4].trim(),
+      category: 'inconclusive_hypothesis',
+    });
+  }
+
+  const unknownSection = content.match(/##\s*What We Do Not Know\s*\n([\s\S]*?)(?=\n##\s|$)/i);
+  if (unknownSection) {
+    const unknowns = unknownSection[1]
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => /^-\s+/.test(line))
+      .map(line => line.replace(/^-\s+/, '').trim())
+      .filter(Boolean);
+    for (const unknown of unknowns) {
+      items.push({
+        name: unknown,
+        result: 'unknown',
+        category: 'knowledge_gap',
+      });
+    }
+  }
+
+  return items;
+}
+
+function categorizeItem(result, reason, blockedBy) {
+  if (result === 'blocked' || blockedBy) {
+    if (blockedBy) {
+      if (/server/i.test(blockedBy)) return 'server_blocked';
+      if (/device|physical/i.test(blockedBy)) return 'device_needed';
+      if (/build|release|preview/i.test(blockedBy)) return 'build_needed';
+      if (/third.party|twilio|stripe/i.test(blockedBy)) return 'third_party';
+    }
+    return 'blocked';
+  }
+  if (result === 'skipped') {
+    if (reason) {
+      if (/server|not running|not available/i.test(reason)) return 'server_blocked';
+      if (/simulator|physical|device/i.test(reason)) return 'device_needed';
+      if (/build|release|preview/i.test(reason)) return 'build_needed';
+    }
+    return 'skipped_unresolved';
+  }
+  if (result === 'pending') return 'pending';
+  if (result === 'human_needed') return 'human_evidence_review';
+  return 'unknown';
+}
+
+module.exports = {
+  cmdAuditEvidence,
+  cmdRenderEvidenceCheckpoint,
+  parseCurrentTest,
+  buildCheckpoint,
+};

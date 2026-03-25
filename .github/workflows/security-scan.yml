@@ -46,7 +46,7 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           # Ensure .planning/ runtime data is not committed in PRs
-          # (The GSD repo itself has .planning/ in .gitignore, but PRs
+          # (The THRUNT repo itself has .planning/ in .gitignore, but PRs
           # from forks or misconfigured clones might include it)
           PLANNING_FILES=$(git diff --name-only --diff-filter=ACMR "origin/$BASE_REF"...HEAD | grep '^\.planning/' || true)
           if [ -n "$PLANNING_FILES" ]; then

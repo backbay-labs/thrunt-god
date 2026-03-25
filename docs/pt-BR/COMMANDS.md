@@ -1,6 +1,6 @@
-# Referência de Comandos do GSD
+# Referência de Comandos do THRUNT
 
-Este documento descreve os comandos principais do GSD em Português.  
+Este documento descreve os comandos principais do THRUNT em Português.  
 Para detalhes completos de flags avançadas e mudanças recentes, consulte também a [versão em inglês](../COMMANDS.md).
 
 ---
@@ -9,74 +9,74 @@ Para detalhes completos de flags avançadas e mudanças recentes, consulte tamb�
 
 | Comando | Finalidade | Quando usar |
 |---------|------------|-------------|
-| `/gsd:new-project` | Inicialização completa: perguntas, pesquisa, requisitos e roadmap | Início de projeto |
-| `/gsd:discuss-phase [N]` | Captura decisões de implementação | Antes do planejamento |
-| `/gsd:ui-phase [N]` | Gera contrato de UI (`UI-SPEC.md`) | Fases com frontend |
-| `/gsd:plan-phase [N]` | Pesquisa + planejamento + verificação | Antes de executar uma fase |
-| `/gsd:execute-phase <N>` | Executa planos em ondas paralelas | Após planejamento aprovado |
-| `/gsd:verify-work [N]` | UAT manual com diagnóstico automático | Após execução |
-| `/gsd:ship [N]` | Cria PR da fase validada | Ao concluir a fase |
-| `/gsd:next` | Detecta e executa o próximo passo lógico | Qualquer momento |
-| `/gsd:fast <texto>` | Tarefa curta sem planejamento completo | Ajustes triviais |
+| `/hunt:new-program` | Inicialização completa: perguntas, pesquisa, requisitos e huntmap | Início de projeto |
+| `/hunt:shape-hypothesis [N]` | Captura decisões de implementação | Antes do planejamento |
+| `/thrunt:ui-phase [N]` | Gera contrato de UI (`UI-SPEC.md`) | Fases com frontend |
+| `/hunt:plan [N]` | Pesquisa + planejamento + verificação | Antes de executar uma fase |
+| `/hunt:run <N>` | Executa planos em ondas paralelas | Após planejamento aprovado |
+| `/hunt:validate-findings [N]` | Evidence Review manual com diagnóstico automático | Após execução |
+| `/hunt:publish [N]` | Cria PR da fase validada | Ao concluir a fase |
+| `/thrunt:next` | Detecta e executa o próximo passo lógico | Qualquer momento |
+| `/thrunt:fast <texto>` | Tarefa curta sem planejamento completo | Ajustes triviais |
 
 ## Navegação e Sessão
 
 | Comando | Finalidade |
 |---------|------------|
-| `/gsd:progress` | Mostra status atual e próximos passos |
-| `/gsd:resume-work` | Retoma contexto da sessão anterior |
-| `/gsd:pause-work` | Salva handoff estruturado |
-| `/gsd:session-report` | Gera resumo da sessão |
-| `/gsd:help` | Lista comandos e uso |
-| `/gsd:update` | Atualiza o GSD |
+| `/thrunt:progress` | Mostra status atual e próximos passos |
+| `/thrunt:resume-work` | Retoma contexto da sessão anterior |
+| `/thrunt:pause-work` | Salva handoff estruturado |
+| `/thrunt:session-report` | Gera resumo da sessão |
+| `/thrunt:help` | Lista comandos e uso |
+| `/thrunt:update` | Atualiza o THRUNT |
 
 ## Gestão de Fases
 
 | Comando | Finalidade |
 |---------|------------|
-| `/gsd:add-phase` | Adiciona fase no roadmap |
-| `/gsd:insert-phase [N]` | Insere trabalho urgente entre fases |
-| `/gsd:remove-phase [N]` | Remove fase futura e reenumera |
-| `/gsd:list-phase-assumptions [N]` | Mostra abordagem assumida pelo Claude |
-| `/gsd:plan-milestone-gaps` | Cria fases para fechar lacunas de auditoria |
+| `/thrunt:add-phase` | Adiciona fase no huntmap |
+| `/thrunt:insert-phase [N]` | Insere trabalho urgente entre fases |
+| `/thrunt:remove-phase [N]` | Remove fase futura e reenumera |
+| `/thrunt:list-phase-assumptions [N]` | Mostra abordagem assumida pelo Claude |
+| `/thrunt:plan-milestone-gaps` | Cria fases para fechar lacunas de auditoria |
 
 ## Brownfield e Utilidades
 
 | Comando | Finalidade |
 |---------|------------|
-| `/gsd:map-codebase` | Mapeia base existente antes de novo projeto |
-| `/gsd:quick` | Tarefas ad-hoc com garantias do GSD |
-| `/gsd:debug [desc]` | Debug sistemático com estado persistente |
-| `/gsd:forensics` | Diagnóstico de falhas no workflow |
-| `/gsd:settings` | Configuração de agentes, perfil e toggles |
-| `/gsd:set-profile <perfil>` | Troca rápida de perfil de modelo |
+| `/hunt:map-environment` | Mapeia base existente antes de novo projeto |
+| `/thrunt:quick` | Tarefas ad-hoc com garantias do THRUNT |
+| `/thrunt:debug [desc]` | Debug sistemático com estado persistente |
+| `/thrunt:forensics` | Diagnóstico de falhas no workflow |
+| `/thrunt:settings` | Configuração de agentes, perfil e toggles |
+| `/thrunt:set-profile <perfil>` | Troca rápida de perfil de modelo |
 
 ## Qualidade de Código
 
 | Comando | Finalidade |
 |---------|------------|
-| `/gsd:review` | Peer review com múltiplas IAs |
-| `/gsd:pr-branch` | Cria branch limpa sem commits de planejamento |
-| `/gsd:audit-uat` | Audita dívida de validação/UAT |
+| `/thrunt:review` | Peer review com múltiplas IAs |
+| `/thrunt:pr-branch` | Cria branch limpa sem commits de planejamento |
+| `/thrunt:audit-evidence` | Audita dívida de validação/Evidence Review |
 
 ## Backlog e Threads
 
 | Comando | Finalidade |
 |---------|------------|
-| `/gsd:add-backlog <desc>` | Adiciona item no backlog (999.x) |
-| `/gsd:review-backlog` | Promove, mantém ou remove itens |
-| `/gsd:plant-seed <ideia>` | Registra ideia com gatilho futuro |
-| `/gsd:thread [nome]` | Gerencia threads persistentes |
+| `/thrunt:add-backlog <desc>` | Adiciona item no backlog (999.x) |
+| `/thrunt:review-backlog` | Promove, mantém ou remove itens |
+| `/thrunt:plant-seed <ideia>` | Registra ideia com gatilho futuro |
+| `/thrunt:thread [nome]` | Gerencia threads persistentes |
 
 ---
 
 ## Exemplo rápido
 
 ```bash
-/gsd:new-project
-/gsd:discuss-phase 1
-/gsd:plan-phase 1
-/gsd:execute-phase 1
-/gsd:verify-work 1
-/gsd:ship 1
+/hunt:new-program
+/hunt:shape-hypothesis 1
+/hunt:plan 1
+/hunt:run 1
+/hunt:validate-findings 1
+/hunt:publish 1
 ```

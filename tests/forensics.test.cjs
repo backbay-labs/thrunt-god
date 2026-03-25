@@ -1,5 +1,5 @@
 /**
- * GSD Forensics Tests
+ * THRUNT Forensics Tests
  *
  * Validates the forensics command and workflow files exist,
  * follow expected patterns, and cover all anomaly detection types.
@@ -12,17 +12,17 @@ const path = require('path');
 const os = require('os');
 
 const repoRoot = path.resolve(__dirname, '..');
-const commandPath = path.join(repoRoot, 'commands', 'gsd', 'forensics.md');
-const workflowPath = path.join(repoRoot, 'get-shit-done', 'workflows', 'forensics.md');
+const commandPath = path.join(repoRoot, 'commands', 'thrunt', 'forensics.md');
+const workflowPath = path.join(repoRoot, 'thrunt-god', 'workflows', 'forensics.md');
 
 describe('forensics command', () => {
   test('command file exists', () => {
-    assert.ok(fs.existsSync(commandPath), 'commands/gsd/forensics.md should exist');
+    assert.ok(fs.existsSync(commandPath), 'commands/thrunt/forensics.md should exist');
   });
 
   test('command has correct frontmatter', () => {
     const content = fs.readFileSync(commandPath, 'utf-8');
-    assert.ok(content.includes('name: gsd:forensics'), 'should have correct command name');
+    assert.ok(content.includes('name: thrunt:forensics'), 'should have correct command name');
     assert.ok(content.includes('type: prompt'), 'should have type: prompt');
     assert.ok(content.includes('argument-hint'), 'should have argument-hint');
   });
@@ -73,10 +73,10 @@ describe('forensics workflow', () => {
       'git log',
       'git status',
       'STATE.md',
-      'ROADMAP.md',
+      'HUNTMAP.md',
       'PLAN.md',
       'SUMMARY.md',
-      'VERIFICATION.md',
+      'FINDINGS.md',
       'SESSION_REPORT',
       'worktree',
     ];
@@ -142,7 +142,7 @@ describe('forensics workflow', () => {
     const content = fs.readFileSync(workflowPath, 'utf-8');
     assert.ok(
       content.includes('state record-session'),
-      'should update STATE.md via gsd-tools'
+      'should update STATE.md via thrunt-tools'
     );
   });
 
@@ -189,7 +189,7 @@ describe('forensics fixture-based tests', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-forensics-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-forensics-test-'));
   });
 
   afterEach(() => {
@@ -202,9 +202,9 @@ describe('forensics fixture-based tests', () => {
     fs.mkdirSync(phase1, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-PLAN-A.md'), 'plan');
     fs.writeFileSync(path.join(phase1, '01-SUMMARY.md'), 'summary');
-    fs.writeFileSync(path.join(phase1, '01-VERIFICATION.md'), 'verification');
+    fs.writeFileSync(path.join(phase1, '01-FINDINGS.md'), 'verification');
 
-    // Phase 2: missing SUMMARY and VERIFICATION (anomaly)
+    // Phase 2: missing SUMMARY and FINDINGS (anomaly)
     const phase2 = path.join(tmpDir, '.planning', 'phases', '02-core');
     fs.mkdirSync(phase2, { recursive: true });
     fs.writeFileSync(path.join(phase2, '02-PLAN-A.md'), 'plan');
@@ -214,9 +214,9 @@ describe('forensics fixture-based tests', () => {
     const p2Files = fs.readdirSync(phase2);
 
     assert.ok(p1Files.some(f => f.includes('SUMMARY')), 'phase 1 has SUMMARY');
-    assert.ok(p1Files.some(f => f.includes('VERIFICATION')), 'phase 1 has VERIFICATION');
+    assert.ok(p1Files.some(f => f.includes('FINDINGS')), 'phase 1 has FINDINGS');
     assert.ok(!p2Files.some(f => f.includes('SUMMARY')), 'phase 2 missing SUMMARY (anomaly)');
-    assert.ok(!p2Files.some(f => f.includes('VERIFICATION')), 'phase 2 missing VERIFICATION (anomaly)');
+    assert.ok(!p2Files.some(f => f.includes('FINDINGS')), 'phase 2 missing FINDINGS (anomaly)');
   });
 
   test('forensics report directory can be created', () => {

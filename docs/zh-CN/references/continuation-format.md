@@ -27,7 +27,7 @@
 ## 格式规则
 
 1. **始终展示它是什么** — 名称 + 描述，绝不仅仅是一个命令路径
-2. **从源文件拉取上下文** — ROADMAP.md 用于阶段，PLAN.md `<objective>` 用于计划
+2. **从源文件拉取上下文** — HUNTMAP.md 用于阶段，PLAN.md `<objective>` 用于计划
 3. **命令用内联代码** — 反引号，易于复制粘贴，渲染为可点击链接
 4. **`/clear` 说明** — 始终包含，保持简洁但解释原因
 5. **用"也可选"而非"其他选项"** — 听起来更像应用
@@ -44,7 +44,7 @@
 
 **02-03: 刷新令牌轮换** — 添加带滑动过期的 /api/auth/refresh
 
-`/gsd:execute-phase 2`
+`/hunt:run 2`
 
 <sub>`/clear` 优先 → 全新上下文窗口</sub>
 
@@ -52,7 +52,7 @@
 
 **也可选：**
 - 执行前审查计划
-- `/gsd:list-phase-assumptions 2` — 检查假设
+- `/thrunt:list-phase-assumptions 2` — 检查假设
 
 ---
 ```
@@ -69,7 +69,7 @@
 **02-03: 刷新令牌轮换** — 添加带滑动过期的 /api/auth/refresh
 <sub>阶段 2 的最后一个计划</sub>
 
-`/gsd:execute-phase 2`
+`/hunt:run 2`
 
 <sub>`/clear` 优先 → 全新上下文窗口</sub>
 
@@ -91,15 +91,15 @@
 
 **阶段 2: 认证** — 带刷新令牌的 JWT 登录流程
 
-`/gsd:plan-phase 2`
+`/hunt:plan 2`
 
 <sub>`/clear` 优先 → 全新上下文窗口</sub>
 
 ---
 
 **也可选：**
-- `/gsd:discuss-phase 2` — 先收集上下文
-- `/gsd:research-phase 2` — 调查未知项
+- `/hunt:shape-hypothesis 2` — 先收集上下文
+- `/hunt:shape-hypothesis 2` — 调查未知项
 - 审查路线图
 
 ---
@@ -120,15 +120,15 @@
 
 **阶段 3: 核心功能** — 用户仪表板、设置和数据导出
 
-`/gsd:plan-phase 3`
+`/hunt:plan 3`
 
 <sub>`/clear` 优先 → 全新上下文窗口</sub>
 
 ---
 
 **也可选：**
-- `/gsd:discuss-phase 3` — 先收集上下文
-- `/gsd:research-phase 3` — 调查未知项
+- `/hunt:shape-hypothesis 3` — 先收集上下文
+- `/hunt:shape-hypothesis 3` — 调查未知项
 - 回顾阶段 2 构建的内容
 
 ---
@@ -145,11 +145,11 @@
 
 **阶段 3: 核心功能** — 用户仪表板、设置和数据导出
 
-**直接规划：** `/gsd:plan-phase 3`
+**直接规划：** `/hunt:plan 3`
 
-**先讨论上下文：** `/gsd:discuss-phase 3`
+**先讨论上下文：** `/hunt:shape-hypothesis 3`
 
-**研究未知项：** `/gsd:research-phase 3`
+**研究未知项：** `/hunt:shape-hypothesis 3`
 
 <sub>`/clear` 优先 → 全新上下文窗口</sub>
 
@@ -169,7 +169,7 @@
 
 **开始 v1.1** — 提问 → 研究 → 需求 → 路线图
 
-`/gsd:new-milestone`
+`/hunt:new-program`
 
 <sub>`/clear` 优先 → 全新上下文窗口</sub>
 
@@ -178,7 +178,7 @@
 
 ## 拉取上下文
 
-### 用于阶段（从 ROADMAP.md）：
+### 用于阶段（从 HUNTMAP.md）：
 
 ```markdown
 ### 阶段 2: 认证
@@ -187,7 +187,7 @@
 
 提取：`**阶段 2: 认证** — 带刷新令牌的 JWT 登录流程`
 
-### 用于计划（从 ROADMAP.md）：
+### 用于计划（从 HUNTMAP.md）：
 
 ```markdown
 计划:
@@ -214,7 +214,7 @@
 ## 继续
 
 运行 `/clear`，然后粘贴：
-/gsd:execute-phase 2
+/hunt:run 2
 ```
 
 用户不知道 02-03 是关于什么的。
@@ -222,7 +222,7 @@
 ### 不要：缺少 /clear 说明
 
 ```
-`/gsd:plan-phase 3`
+`/hunt:plan 3`
 
 先运行 /clear。
 ```
@@ -242,7 +242,7 @@
 
 ```
 ```
-/gsd:plan-phase 3
+/hunt:plan 3
 ```
 ```
 

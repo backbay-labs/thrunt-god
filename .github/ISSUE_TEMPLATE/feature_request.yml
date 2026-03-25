@@ -23,7 +23,7 @@ body:
       label: Proposed solution
       description: How do you think this should work? Include example commands or workflows if possible.
       placeholder: |
-        A new command `/gsd:example` that...
+        A new command `/thrunt:example` that...
     validations:
       required: true
 

@@ -16,8 +16,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: GSD Version
-      description: "Run: `npm list -g get-shit-done-cc` or check `npx get-shit-done-cc --version`"
+      label: THRUNT Version
+      description: "Run: `npm list -g thrunt-god` or check `npx thrunt-god --version`"
       placeholder: "e.g., 1.18.0"
     validations:
       required: true
@@ -26,7 +26,7 @@ body:
     id: runtime
     attributes:
       label: Runtime
-      description: Which AI coding tool are you using GSD with?
+      description: Which AI coding tool are you using THRUNT with?
       options:
         - Claude Code
         - Gemini CLI
@@ -78,8 +78,8 @@ body:
     attributes:
       label: Installation Method
       options:
-        - npx get-shit-done-cc@latest (fresh run)
-        - npm install -g get-shit-done-cc
+        - npx thrunt-god@latest (fresh run)
+        - npm install -g thrunt-god
         - Updated from a previous version
     validations:
       required: true
@@ -88,9 +88,9 @@ body:
     id: description
     attributes:
       label: What happened?
-      description: Describe what went wrong. Be specific about which GSD command you were running.
+      description: Describe what went wrong. Be specific about which hunt or THRUNT command you were running.
       placeholder: |
-        When I ran `/gsd:plan`, the system...
+        When I ran `/hunt:plan 1`, the system...
     validations:
       required: true
 
@@ -107,12 +107,12 @@ body:
     attributes:
       label: Steps to reproduce
       description: |
-        Exact steps to reproduce the issue. Include the GSD command used.
+        Exact steps to reproduce the issue. Include the hunt or THRUNT command used.
       placeholder: |
-        1. Install GSD with `npx get-shit-done-cc@latest`
+        1. Install THRUNT with `npx thrunt-god@latest`
         2. Select runtime: Claude Code
-        3. Run `/gsd:init` with a new project
-        4. Run `/gsd:plan`
+        3. Run `/hunt:new-case`
+        4. Run `/hunt:plan 1`
         5. Error appears at step...
     validations:
       required: true
@@ -132,7 +132,7 @@ body:
   - type: textarea
     id: config
     attributes:
-      label: GSD Configuration
+      label: THRUNT Configuration
       description: |
         If the bug is related to planning, phases, or workflow behavior, paste your `.planning/config.json`.
 
@@ -146,7 +146,7 @@ body:
   - type: textarea
     id: state
     attributes:
-      label: GSD State (if relevant)
+      label: Hunt State (if relevant)
       description: |
         If the bug involves incorrect state tracking or phase progression, include your `.planning/STATE.md`.
 
@@ -192,7 +192,7 @@ body:
       label: Impact
       description: How much does this affect your workflow?
       options:
-        - Blocker — Cannot use GSD at all
+        - Blocker — Cannot use THRUNT at all
         - Major — Core feature is broken, no workaround
         - Moderate — Feature is broken but I have a workaround
         - Minor — Cosmetic or edge case
@@ -215,9 +215,9 @@ body:
         Anything else — screenshots, screen recordings, related issues, or links.
 
         **Useful diagnostics to include (if applicable):**
-        - `npm list -g get-shit-done-cc` — confirms installed version
-        - `ls -la ~/.claude/get-shit-done/` — confirms installation files (Claude Code)
-        - `cat ~/.claude/get-shit-done/gsd-file-manifest.json` — file manifest for debugging install issues
+        - `npm list -g thrunt-god` — confirms installed version
+        - `ls -la ~/.claude/thrunt-god/` — confirms installation files (Claude Code)
+        - `cat ~/.claude/thrunt-god/thrunt-file-manifest.json` — file manifest for debugging install issues
         - `ls -la .planning/` — confirms planning directory state
 
         **⚠️ PII Warning:** File listings and manifests contain your home directory path. Replace your username with `REDACTED`.

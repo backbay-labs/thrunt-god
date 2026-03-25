@@ -9,12 +9,12 @@
 - 提取标志（以 `--` 为前缀）
 - 剩余文本为描述（用于 insert/add 命令）
 
-## 使用 gsd-tools
+## 使用 thrunt-tools
 
 `find-phase` 命令一步完成规范化和验证：
 
 ```bash
-PHASE_INFO=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" find-phase "${PHASE}")
+PHASE_INFO=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" find-phase "${PHASE}")
 ```
 
 返回 JSON 包含：
@@ -42,12 +42,12 @@ fi
 
 ## 验证
 
-使用 `roadmap get-phase` 验证阶段存在：
+使用 `huntmap get-phase` 验证阶段存在：
 
 ```bash
-PHASE_CHECK=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" roadmap get-phase "${PHASE}")
+PHASE_CHECK=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" huntmap get-phase "${PHASE}")
 if [ "$(printf '%s\n' "$PHASE_CHECK" | jq -r '.found')" = "false" ]; then
-  echo "ERROR: Phase ${PHASE} not found in roadmap"
+  echo "ERROR: Phase ${PHASE} not found in huntmap"
   exit 1
 fi
 ```
@@ -57,5 +57,5 @@ fi
 使用 `find-phase` 进行目录查找：
 
 ```bash
-PHASE_DIR=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" find-phase "${PHASE}" --raw)
+PHASE_DIR=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" find-phase "${PHASE}" --raw)
 ```

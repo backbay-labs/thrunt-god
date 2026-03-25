@@ -1,5 +1,5 @@
 /**
- * GSD Agent Frontmatter Tests
+ * THRUNT Agent Frontmatter Tests
  *
  * Validates that all agent .md files have correct frontmatter fields:
  * - Anti-heredoc instruction present in file-writing agents
@@ -14,11 +14,11 @@ const fs = require('fs');
 const path = require('path');
 
 const AGENTS_DIR = path.join(__dirname, '..', 'agents');
-const WORKFLOWS_DIR = path.join(__dirname, '..', 'get-shit-done', 'workflows');
-const COMMANDS_DIR = path.join(__dirname, '..', 'commands', 'gsd');
+const WORKFLOWS_DIR = path.join(__dirname, '..', 'thrunt-god', 'workflows');
+const COMMANDS_DIR = path.join(__dirname, '..', 'commands', 'thrunt');
 
 const ALL_AGENTS = fs.readdirSync(AGENTS_DIR)
-  .filter(f => f.startsWith('gsd-') && f.endsWith('.md'))
+  .filter(f => f.startsWith('thrunt-') && f.endsWith('.md'))
   .map(f => f.replace('.md', ''));
 
 const FILE_WRITING_AGENTS = ALL_AGENTS.filter(name => {
@@ -109,7 +109,7 @@ describe('SPAWN: spawn type consistency', () => {
       const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
       for (const file of files) {
         const content = fs.readFileSync(path.join(dir, file), 'utf-8');
-        const hasWorkaround = content.includes('First, read ~/.claude/agents/gsd-');
+        const hasWorkaround = content.includes('First, read ~/.claude/agents/thrunt-');
         assert.ok(
           !hasWorkaround,
           `${file} still has "First, read agent .md" workaround — use named subagent_type instead`
@@ -142,13 +142,13 @@ describe('SPAWN: spawn type consistency', () => {
     }
   });
 
-  test('diagnose-issues uses gsd-debugger (not general-purpose)', () => {
+  test('diagnose-issues uses thrunt-incident-debugger (not general-purpose)', () => {
     const content = fs.readFileSync(
       path.join(WORKFLOWS_DIR, 'diagnose-issues.md'), 'utf-8'
     );
     assert.ok(
-      content.includes('subagent_type="gsd-debugger"'),
-      'diagnose-issues should spawn gsd-debugger, not general-purpose'
+      content.includes('subagent_type="thrunt-incident-debugger"'),
+      'diagnose-issues should spawn thrunt-incident-debugger, not general-purpose'
     );
   });
 
@@ -156,8 +156,8 @@ describe('SPAWN: spawn type consistency', () => {
     // After /clear, Claude Code re-reads workflow instructions but loses agent
     // context. Without an <available_agent_types> section, the orchestrator may
     // fall back to general-purpose, silently breaking agent capabilities.
-    // PR #1139 added this to plan-phase and execute-phase but missed all other
-    // workflows that spawn named GSD agents.
+    // PR #1139 added this to hunt-plan and hunt-run but missed all other
+    // workflows that spawn named THRUNT agents.
     const dirs = [WORKFLOWS_DIR, COMMANDS_DIR];
     for (const dir of dirs) {
       if (!fs.existsSync(dir)) continue;
@@ -198,17 +198,17 @@ describe('SPAWN: spawn type consistency', () => {
     }
   });
 
-  test('execute-phase has Copilot sequential fallback in runtime_compatibility', () => {
+  test('hunt-run has Copilot sequential fallback in runtime_compatibility', () => {
     const content = fs.readFileSync(
-      path.join(WORKFLOWS_DIR, 'execute-phase.md'), 'utf-8'
+      path.join(WORKFLOWS_DIR, 'hunt-run.md'), 'utf-8'
     );
     assert.ok(
       content.includes('sequential inline execution'),
-      'execute-phase must document sequential inline execution as Copilot fallback'
+      'hunt-run must document sequential inline execution as Copilot fallback'
     );
     assert.ok(
       content.includes('spot-check'),
-      'execute-phase must have spot-check fallback for completion detection'
+      'hunt-run must have spot-check fallback for completion detection'
     );
   });
 });
@@ -231,44 +231,44 @@ describe('AGENT: required frontmatter fields', () => {
 // ─── CLAUDE.md Compliance ───────────────────────────────────────────────────
 
 describe('CLAUDEMD: CLAUDE.md compliance enforcement', () => {
-  test('gsd-plan-checker has Dimension 10: CLAUDE.md Compliance', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-plan-checker.md'), 'utf-8');
+  test('thrunt-hunt-checker has Dimension 10: CLAUDE.md Compliance', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-hunt-checker.md'), 'utf-8');
     assert.ok(
       content.includes('Dimension 10: CLAUDE.md Compliance'),
-      'gsd-plan-checker must have Dimension 10 for CLAUDE.md compliance checking'
+      'thrunt-hunt-checker must have Dimension 10 for CLAUDE.md compliance checking'
     );
     assert.ok(
       content.includes('claude_md_compliance'),
-      'gsd-plan-checker must use claude_md_compliance as dimension identifier'
+      'thrunt-hunt-checker must use claude_md_compliance as dimension identifier'
     );
   });
 
-  test('gsd-phase-researcher has CLAUDE.md enforcement directive', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-phase-researcher.md'), 'utf-8');
+  test('thrunt-query-writer has CLAUDE.md enforcement directive', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-query-writer.md'), 'utf-8');
     assert.ok(
       content.includes('CLAUDE.md enforcement'),
-      'gsd-phase-researcher must enforce CLAUDE.md directives during research'
+      'thrunt-query-writer must enforce CLAUDE.md directives during research'
     );
     assert.ok(
-      content.includes('Project Constraints (from CLAUDE.md)'),
-      'gsd-phase-researcher must output a Project Constraints section from CLAUDE.md'
+      content.includes('Mission Constraints (from CLAUDE.md)'),
+      'thrunt-query-writer must output a Project Constraints section from CLAUDE.md'
     );
   });
 
-  test('gsd-executor has CLAUDE.md enforcement directive', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-executor.md'), 'utf-8');
+  test('thrunt-telemetry-executor has CLAUDE.md enforcement directive', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-telemetry-executor.md'), 'utf-8');
     assert.ok(
       content.includes('CLAUDE.md enforcement'),
-      'gsd-executor must enforce CLAUDE.md directives during execution'
+      'thrunt-telemetry-executor must enforce CLAUDE.md directives during execution'
     );
     assert.ok(
       content.includes('CLAUDE.md rule — it takes precedence over plan instructions'),
-      'gsd-executor must specify CLAUDE.md precedence over plan instructions'
+      'thrunt-telemetry-executor must specify CLAUDE.md precedence over plan instructions'
     );
   });
 
   test('all three agents read CLAUDE.md in project_context', () => {
-    const agents = ['gsd-plan-checker', 'gsd-phase-researcher', 'gsd-executor'];
+    const agents = ['thrunt-hunt-checker', 'thrunt-query-writer', 'thrunt-telemetry-executor'];
     for (const agent of agents) {
       const content = fs.readFileSync(path.join(AGENTS_DIR, agent + '.md'), 'utf-8');
       assert.ok(
@@ -282,48 +282,48 @@ describe('CLAUDEMD: CLAUDE.md compliance enforcement', () => {
 // ─── Verification Data-Flow and Environment Audit (#1245) ────────────────────
 
 describe('VERIFY: data-flow trace, environment audit, and behavioral spot-checks', () => {
-  test('gsd-verifier has Step 4b: Data-Flow Trace', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-verifier.md'), 'utf-8');
+  test('thrunt-findings-validator has Step 4b: Data-Flow Trace', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-findings-validator.md'), 'utf-8');
     assert.ok(
       content.includes('Step 4b: Data-Flow Trace'),
-      'gsd-verifier must have Step 4b for data-flow tracing'
+      'thrunt-findings-validator must have Step 4b for data-flow tracing'
     );
     assert.ok(
       content.includes('HOLLOW'),
-      'gsd-verifier must define HOLLOW status for wired-but-disconnected artifacts'
+      'thrunt-findings-validator must define HOLLOW status for wired-but-disconnected artifacts'
     );
     assert.ok(
       content.includes('DISCONNECTED'),
-      'gsd-verifier must define DISCONNECTED status for missing data sources'
+      'thrunt-findings-validator must define DISCONNECTED status for missing data sources'
     );
   });
 
-  test('gsd-verifier has Step 7b: Behavioral Spot-Checks', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-verifier.md'), 'utf-8');
+  test('thrunt-findings-validator has Step 7b: Behavioral Spot-Checks', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-findings-validator.md'), 'utf-8');
     assert.ok(
       content.includes('Step 7b: Behavioral Spot-Checks'),
-      'gsd-verifier must have Step 7b for behavioral spot-checks'
+      'thrunt-findings-validator must have Step 7b for behavioral spot-checks'
     );
     assert.ok(
       content.includes('SKIP'),
-      'gsd-verifier spot-checks must support SKIP status for untestable items'
+      'thrunt-findings-validator spot-checks must support SKIP status for untestable items'
     );
   });
 
-  test('gsd-verifier VERIFICATION.md template includes data-flow and spot-check sections', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-verifier.md'), 'utf-8');
+  test('thrunt-findings-validator FINDINGS.md template includes data-flow and spot-check sections', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-findings-validator.md'), 'utf-8');
     assert.ok(
       content.includes('Data-Flow Trace (Level 4)'),
-      'VERIFICATION.md template must include Data-Flow Trace section'
+      'FINDINGS.md template must include Data-Flow Trace section'
     );
     assert.ok(
       content.includes('Behavioral Spot-Checks'),
-      'VERIFICATION.md template must include Behavioral Spot-Checks section'
+      'FINDINGS.md template must include Behavioral Spot-Checks section'
     );
   });
 
-  test('gsd-verifier success criteria include data-flow and spot-checks', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-verifier.md'), 'utf-8');
+  test('thrunt-findings-validator success criteria include data-flow and spot-checks', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-findings-validator.md'), 'utf-8');
     assert.ok(
       content.includes('Data-flow trace (Level 4)'),
       'success criteria must include data-flow trace step'
@@ -334,20 +334,20 @@ describe('VERIFY: data-flow trace, environment audit, and behavioral spot-checks
     );
   });
 
-  test('gsd-phase-researcher has Step 2.6: Environment Availability Audit', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-phase-researcher.md'), 'utf-8');
+  test('thrunt-query-writer has Step 2.6: Environment Availability Audit', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-query-writer.md'), 'utf-8');
     assert.ok(
       content.includes('Step 2.6: Environment Availability Audit'),
-      'gsd-phase-researcher must have Step 2.6 for environment availability auditing'
+      'thrunt-query-writer must have Step 2.6 for environment availability auditing'
     );
     assert.ok(
       content.includes('Environment Availability'),
-      'gsd-phase-researcher must include Environment Availability section in RESEARCH.md template'
+      'thrunt-query-writer must include Environment Availability section in RESEARCH.md template'
     );
   });
 
-  test('gsd-phase-researcher success criteria include environment audit', () => {
-    const content = fs.readFileSync(path.join(AGENTS_DIR, 'gsd-phase-researcher.md'), 'utf-8');
+  test('thrunt-query-writer success criteria include environment audit', () => {
+    const content = fs.readFileSync(path.join(AGENTS_DIR, 'thrunt-query-writer.md'), 'utf-8');
     assert.ok(
       content.includes('Environment availability audited'),
       'success criteria must include environment availability audit step'
@@ -358,22 +358,22 @@ describe('VERIFY: data-flow trace, environment audit, and behavioral spot-checks
 // ─── Discussion Log ──────────────────────────────────────────────────────────
 
 describe('DISCUSS: discussion log generation', () => {
-  test('discuss-phase workflow references DISCUSSION-LOG.md generation', () => {
+  test('shape-hypothesis workflow references DISCUSSION-LOG.md generation', () => {
     const content = fs.readFileSync(
-      path.join(WORKFLOWS_DIR, 'discuss-phase.md'), 'utf-8'
+      path.join(WORKFLOWS_DIR, 'hunt-shape-hypothesis.md'), 'utf-8'
     );
     assert.ok(
       content.includes('DISCUSSION-LOG.md'),
-      'discuss-phase must reference DISCUSSION-LOG.md generation'
+      'shape-hypothesis must reference DISCUSSION-LOG.md generation'
     );
     assert.ok(
       content.includes('Audit trail only'),
-      'discuss-phase must mark discussion log as audit-only'
+      'shape-hypothesis must mark discussion log as audit-only'
     );
   });
 
   test('discussion-log template exists', () => {
-    const templatePath = path.join(__dirname, '..', 'get-shit-done', 'templates', 'discussion-log.md');
+    const templatePath = path.join(__dirname, '..', 'thrunt-god', 'templates', 'discussion-log.md');
     assert.ok(
       fs.existsSync(templatePath),
       'discussion-log.md template must exist'
@@ -392,7 +392,7 @@ describe('PERM: worktree agents have permissionMode: acceptEdits', () => {
   // Agents spawned with isolation="worktree" need permissionMode: acceptEdits
   // to avoid per-directory edit permission prompts in the worktree path.
   // See: anthropics/claude-code#29110, anthropics/claude-code#28041
-  const WORKTREE_AGENTS = ['gsd-executor', 'gsd-debugger'];
+  const WORKTREE_AGENTS = ['thrunt-telemetry-executor', 'thrunt-incident-debugger'];
 
   for (const agent of WORKTREE_AGENTS) {
     test(`${agent} has permissionMode: acceptEdits`, () => {
@@ -417,7 +417,7 @@ describe('PERM: worktree agents have permissionMode: acceptEdits', () => {
       const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
       for (const file of files) {
         const content = fs.readFileSync(path.join(dir, file), 'utf-8');
-        // Find patterns like: subagent_type="gsd-executor" ... isolation="worktree"
+        // Find patterns like: subagent_type="thrunt-telemetry-executor" ... isolation="worktree"
         // These can span multiple lines in Task() calls
         const taskBlocks = content.match(/Task\([^)]*isolation="worktree"[^)]*\)/gs) || [];
         for (const block of taskBlocks) {

@@ -1,6 +1,6 @@
 # Discuss Mode (Modo de Discussão)
 
-O GSD oferece dois estilos para `/gsd:discuss-phase`:
+O THRUNT oferece dois estilos para `/hunt:shape-hypothesis`:
 
 - **`standard`**: entrevista aberta para levantar preferências
 - **`assumptions`**: análise do código primeiro, seguida de confirmação/correção de suposições
@@ -33,7 +33,7 @@ Trade-off: depende da qualidade do mapeamento de contexto.
 
 ## Como habilitar
 
-Via `/gsd:settings`, defina:
+Via `/thrunt:settings`, defina:
 
 ```json
 {
@@ -45,16 +45,16 @@ Via `/gsd:settings`, defina:
 
 ## Fluxo no modo `assumptions`
 
-1. GSD lê `PROJECT.md`, mapeamento de código e convenções
+1. THRUNT lê `MISSION.md`, mapeamento de código e convenções
 2. Gera lista estruturada de suposições
 3. Você confirma, corrige ou expande
-4. GSD escreve `CONTEXT.md` com decisões consolidadas
+4. THRUNT escreve `CONTEXT.md` com decisões consolidadas
 
 ## Boas práticas
 
-- Revise suposições antes do `plan-phase`
+- Revise suposições antes do `hunt-plan`
 - Corrija ambiguidades de nomes/paths cedo
-- Se o plano sair desalinhado, volte ao discuss-phase e refine
+- Se o plano sair desalinhado, volte ao shape-hypothesis e refine
 
 ---
 

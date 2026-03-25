@@ -4,7 +4,8 @@
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **security@gsd.build** (or DM @glittercowboy on Discord/Twitter if email bounces)
+Instead, use GitHub's private vulnerability reporting for this repository.
+If private reporting is unavailable in your client, open a maintainer contact request in GitHub Discussions without disclosing the vulnerability details.
 
 Include:
 - Description of the vulnerability
@@ -23,7 +24,7 @@ Include:
 
 ## Scope
 
-Security issues in the GSD codebase that could:
+Security issues in the THRUNT codebase that could:
 - Execute arbitrary code on user machines
 - Expose sensitive data (API keys, credentials)
 - Compromise the integrity of generated plans/code

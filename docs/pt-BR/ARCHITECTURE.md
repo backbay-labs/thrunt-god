@@ -1,6 +1,6 @@
-# Arquitetura do GSD
+# Arquitetura do THRUNT
 
-Visão arquitetural do Get Shit Done (GSD) em Português.  
+Visão arquitetural do THRUNT GOD (THRUNT) em Português.  
 Para detalhes de implementação linha a linha, consulte [ARCHITECTURE.md em inglês](../ARCHITECTURE.md).
 
 ---
@@ -16,13 +16,13 @@ Para detalhes de implementação linha a linha, consulte [ARCHITECTURE.md em ing
 ## Componentes centrais
 
 1. **Camada de comando**  
-   Recebe entrada do usuário (`/gsd:*`) e roteia fluxo.
+   Recebe entrada do usuário (`/thrunt:*`) e roteia fluxo.
 
 2. **Camada de orquestração**  
    Coordena pesquisadores, planejadores, executores e verificadores.
 
 3. **Camada de artefatos**  
-   Mantém `PROJECT.md`, `REQUIREMENTS.md`, `ROADMAP.md`, `STATE.md`, planos e sumários.
+   Mantém `MISSION.md`, `HYPOTHESES.md`, `HUNTMAP.md`, `STATE.md`, planos e sumários.
 
 4. **Camada de execução**  
    Roda tarefas em ondas, respeitando dependências.
@@ -33,19 +33,19 @@ Para detalhes de implementação linha a linha, consulte [ARCHITECTURE.md em ing
 ## Fluxo arquitetural (alto nível)
 
 ```text
-Entrada (/gsd:comando)
+Entrada (/thrunt:comando)
   -> Orquestrador
   -> Subagentes especializados
   -> Artefatos em .planning/
   -> Execução em ondas
-  -> Verificação/UAT
+  -> Verificação/Evidence Review
   -> Atualização de estado + commits
 ```
 
 ## Estado e persistência
 
 - `STATE.md`: memória operacional da jornada
-- `ROADMAP.md`: visão de progresso por fase
+- `HUNTMAP.md`: visão de progresso por fase
 - `SUMMARY.md`: histórico de decisões e resultados por tarefa
 - `VALIDATION.md` (quando aplicável): contrato de feedback automatizado
 
@@ -64,7 +64,7 @@ Entrada (/gsd:comando)
 
 ## Extensibilidade
 
-GSD suporta evolução por:
+THRUNT suporta evolução por:
 
 - novos comandos
 - novos tipos de agente

@@ -1,8 +1,8 @@
 /**
- * GSD Workspace Tests
+ * THRUNT Workspace Tests
  *
- * Tests for /gsd:new-workspace, /gsd:list-workspaces, /gsd:remove-workspace
- * init functions and integration with gsd-tools routing.
+ * Tests for /thrunt:new-workspace, /thrunt:list-workspaces, /thrunt:remove-workspace
+ * init functions and integration with thrunt-tools routing.
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
@@ -11,8 +11,8 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { execSync } = require('child_process');
-const { runGsdTools, createTempDir, cleanup } = require('./helpers.cjs');
-const { detectChildRepos } = require('../get-shit-done/bin/lib/init.cjs');
+const { runThruntTools, createTempDir, cleanup } = require('./helpers.cjs');
+const { detectChildRepos } = require('../thrunt-god/bin/lib/init.cjs');
 
 // ─── detectChildRepos ────────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ describe('detectChildRepos', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-ws-test-');
+    tmpDir = createTempDir('thrunt-ws-test-');
   });
 
   afterEach(() => {
@@ -75,13 +75,13 @@ describe('detectChildRepos', () => {
   });
 });
 
-// ─── cmdInitNewWorkspace via gsd-tools ──────────────────────────────────────
+// ─── cmdInitNewWorkspace via thrunt-tools ──────────────────────────────────────
 
 describe('init new-workspace', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-ws-test-');
+    tmpDir = createTempDir('thrunt-ws-test-');
   });
 
   afterEach(() => {
@@ -89,7 +89,7 @@ describe('init new-workspace', () => {
   });
 
   test('returns expected JSON fields', () => {
-    const result = runGsdTools('init new-workspace', tmpDir);
+    const result = runThruntTools('init new-workspace', tmpDir);
     assert.ok(result.success, `init failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.ok('default_workspace_base' in data);
@@ -106,26 +106,26 @@ describe('init new-workspace', () => {
     fs.mkdirSync(repo);
     execSync('git init', { cwd: repo, stdio: 'pipe' });
 
-    const result = runGsdTools('init new-workspace', tmpDir);
+    const result = runThruntTools('init new-workspace', tmpDir);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.child_repo_count, 1);
     assert.strictEqual(data.child_repos[0].name, 'my-repo');
   });
 
   test('reports no git repo when cwd is not a git repo', () => {
-    const result = runGsdTools('init new-workspace', tmpDir);
+    const result = runThruntTools('init new-workspace', tmpDir);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.is_git_repo, false);
   });
 });
 
-// ─── cmdInitListWorkspaces via gsd-tools ────────────────────────────────────
+// ─── cmdInitListWorkspaces via thrunt-tools ────────────────────────────────────
 
 describe('init list-workspaces', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-ws-test-');
+    tmpDir = createTempDir('thrunt-ws-test-');
   });
 
   afterEach(() => {
@@ -133,7 +133,7 @@ describe('init list-workspaces', () => {
   });
 
   test('returns empty list when no workspaces exist', () => {
-    const result = runGsdTools('init list-workspaces', tmpDir, { HOME: tmpDir });
+    const result = runThruntTools('init list-workspaces', tmpDir, { HOME: tmpDir });
     assert.ok(result.success, `init failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.workspace_count, 0);
@@ -141,7 +141,7 @@ describe('init list-workspaces', () => {
   });
 
   test('finds workspaces with WORKSPACE.md', () => {
-    const wsBase = path.join(tmpDir, 'gsd-workspaces');
+    const wsBase = path.join(tmpDir, 'thrunt-workspaces');
     const ws1 = path.join(wsBase, 'feature-a');
     fs.mkdirSync(path.join(ws1, '.planning'), { recursive: true });
     fs.writeFileSync(path.join(ws1, 'WORKSPACE.md'), [
@@ -157,7 +157,7 @@ describe('init list-workspaces', () => {
       '| hr-ui | /tmp/hr-ui | workspace/feature-a | worktree |',
     ].join('\n'));
 
-    const result = runGsdTools('init list-workspaces', tmpDir, { HOME: tmpDir });
+    const result = runThruntTools('init list-workspaces', tmpDir, { HOME: tmpDir });
     const data = JSON.parse(result.output);
     assert.strictEqual(data.workspace_count, 1);
     assert.strictEqual(data.workspaces[0].name, 'feature-a');
@@ -166,13 +166,13 @@ describe('init list-workspaces', () => {
   });
 });
 
-// ─── cmdInitRemoveWorkspace via gsd-tools ───────────────────────────────────
+// ─── cmdInitRemoveWorkspace via thrunt-tools ───────────────────────────────────
 
 describe('init remove-workspace', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-ws-test-');
+    tmpDir = createTempDir('thrunt-ws-test-');
   });
 
   afterEach(() => {
@@ -180,19 +180,19 @@ describe('init remove-workspace', () => {
   });
 
   test('errors when no name provided', () => {
-    const result = runGsdTools('init remove-workspace', tmpDir);
+    const result = runThruntTools('init remove-workspace', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(result.error.includes('workspace name required'));
   });
 
   test('errors when workspace not found', () => {
-    const result = runGsdTools('init remove-workspace nonexistent', tmpDir, { HOME: tmpDir });
+    const result = runThruntTools('init remove-workspace nonexistent', tmpDir, { HOME: tmpDir });
     assert.strictEqual(result.success, false);
     assert.ok(result.error.includes('Workspace not found'));
   });
 
   test('returns workspace info for existing workspace', () => {
-    const wsBase = path.join(tmpDir, 'gsd-workspaces');
+    const wsBase = path.join(tmpDir, 'thrunt-workspaces');
     const ws = path.join(wsBase, 'test-ws');
     fs.mkdirSync(ws, { recursive: true });
     fs.writeFileSync(path.join(ws, 'WORKSPACE.md'), [
@@ -208,7 +208,7 @@ describe('init remove-workspace', () => {
       '| api | /tmp/api | workspace/test-ws | clone |',
     ].join('\n'));
 
-    const result = runGsdTools('init remove-workspace test-ws', tmpDir, { HOME: tmpDir });
+    const result = runThruntTools('init remove-workspace test-ws', tmpDir, { HOME: tmpDir });
     assert.ok(result.success, `init failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.workspace_name, 'test-ws');
@@ -224,7 +224,7 @@ describe('workspace worktree integration', () => {
   let sourceRepo;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-ws-integ-');
+    tmpDir = createTempDir('thrunt-ws-integ-');
     // Create a source git repo with a commit
     sourceRepo = path.join(tmpDir, 'source-repo');
     fs.mkdirSync(sourceRepo);
@@ -316,8 +316,8 @@ describe('workspace command files', () => {
   const baseDir = path.join(__dirname, '..');
 
   test('new-workspace command exists with correct frontmatter', () => {
-    const content = fs.readFileSync(path.join(baseDir, 'commands/gsd/new-workspace.md'), 'utf8');
-    assert.ok(content.includes('name: gsd:new-workspace'));
+    const content = fs.readFileSync(path.join(baseDir, 'commands/thrunt/new-workspace.md'), 'utf8');
+    assert.ok(content.includes('name: thrunt:new-workspace'));
     assert.ok(content.includes('--name'));
     assert.ok(content.includes('--repos'));
     assert.ok(content.includes('--strategy'));
@@ -325,19 +325,19 @@ describe('workspace command files', () => {
   });
 
   test('list-workspaces command exists with correct frontmatter', () => {
-    const content = fs.readFileSync(path.join(baseDir, 'commands/gsd/list-workspaces.md'), 'utf8');
-    assert.ok(content.includes('name: gsd:list-workspaces'));
+    const content = fs.readFileSync(path.join(baseDir, 'commands/thrunt/list-workspaces.md'), 'utf8');
+    assert.ok(content.includes('name: thrunt:list-workspaces'));
     assert.ok(content.includes('workflows/list-workspaces.md'));
   });
 
   test('remove-workspace command exists with correct frontmatter', () => {
-    const content = fs.readFileSync(path.join(baseDir, 'commands/gsd/remove-workspace.md'), 'utf8');
-    assert.ok(content.includes('name: gsd:remove-workspace'));
+    const content = fs.readFileSync(path.join(baseDir, 'commands/thrunt/remove-workspace.md'), 'utf8');
+    assert.ok(content.includes('name: thrunt:remove-workspace'));
     assert.ok(content.includes('workflows/remove-workspace.md'));
   });
 
   test('new-workspace workflow exists', () => {
-    const content = fs.readFileSync(path.join(baseDir, 'get-shit-done/workflows/new-workspace.md'), 'utf8');
+    const content = fs.readFileSync(path.join(baseDir, 'thrunt-god/workflows/new-workspace.md'), 'utf8');
     assert.ok(content.includes('init new-workspace'));
     assert.ok(content.includes('WORKSPACE.md'));
     assert.ok(content.includes('git worktree add'));
@@ -345,23 +345,23 @@ describe('workspace command files', () => {
   });
 
   test('list-workspaces workflow exists', () => {
-    const content = fs.readFileSync(path.join(baseDir, 'get-shit-done/workflows/list-workspaces.md'), 'utf8');
+    const content = fs.readFileSync(path.join(baseDir, 'thrunt-god/workflows/list-workspaces.md'), 'utf8');
     assert.ok(content.includes('init list-workspaces'));
   });
 
   test('remove-workspace workflow exists', () => {
-    const content = fs.readFileSync(path.join(baseDir, 'get-shit-done/workflows/remove-workspace.md'), 'utf8');
+    const content = fs.readFileSync(path.join(baseDir, 'thrunt-god/workflows/remove-workspace.md'), 'utf8');
     assert.ok(content.includes('init remove-workspace'));
     assert.ok(content.includes('git worktree remove'));
   });
 });
 
-// ─── Routing in gsd-tools ───────────────────────────────────────────────────
+// ─── Routing in thrunt-tools ───────────────────────────────────────────────────
 
-describe('workspace routing in gsd-tools', () => {
+describe('workspace routing in thrunt-tools', () => {
   test('init new-workspace is routed correctly', () => {
     const toolsContent = fs.readFileSync(
-      path.join(__dirname, '..', 'get-shit-done', 'bin', 'gsd-tools.cjs'),
+      path.join(__dirname, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs'),
       'utf8'
     );
     assert.ok(toolsContent.includes("case 'new-workspace'"));
@@ -370,7 +370,7 @@ describe('workspace routing in gsd-tools', () => {
 
   test('init list-workspaces is routed correctly', () => {
     const toolsContent = fs.readFileSync(
-      path.join(__dirname, '..', 'get-shit-done', 'bin', 'gsd-tools.cjs'),
+      path.join(__dirname, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs'),
       'utf8'
     );
     assert.ok(toolsContent.includes("case 'list-workspaces'"));
@@ -379,7 +379,7 @@ describe('workspace routing in gsd-tools', () => {
 
   test('init remove-workspace is routed correctly', () => {
     const toolsContent = fs.readFileSync(
-      path.join(__dirname, '..', 'get-shit-done', 'bin', 'gsd-tools.cjs'),
+      path.join(__dirname, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs'),
       'utf8'
     );
     assert.ok(toolsContent.includes("case 'remove-workspace'"));

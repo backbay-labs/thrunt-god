@@ -8,12 +8,12 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, createTempGitProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, createTempGitProject, cleanup } = require('./helpers.cjs');
 
 const {
   PROFILING_QUESTIONS,
   CLAUDE_INSTRUCTIONS,
-} = require('../get-shit-done/bin/lib/profile-output.cjs');
+} = require('../thrunt-god/bin/lib/profile-output.cjs');
 
 // ─── PROFILING_QUESTIONS data ─────────────────────────────────────────────────
 
@@ -106,7 +106,7 @@ describe('write-profile command', () => {
     const analysisPath = path.join(tmpDir, 'analysis.json');
     fs.writeFileSync(analysisPath, JSON.stringify(analysis));
 
-    const result = runGsdTools(['write-profile', '--input', analysisPath, '--raw'], tmpDir);
+    const result = runThruntTools(['write-profile', '--input', analysisPath, '--raw'], tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.ok(out.profile_path, 'should return profile_path');
@@ -114,7 +114,7 @@ describe('write-profile command', () => {
   });
 
   test('errors when --input is missing', () => {
-    const result = runGsdTools('write-profile --raw', tmpDir);
+    const result = runThruntTools('write-profile --raw', tmpDir);
     assert.ok(!result.success, 'should fail without --input');
     assert.ok(result.error.includes('--input'), 'should mention --input');
   });
@@ -128,7 +128,7 @@ describe('generate-claude-md command', () => {
   beforeEach(() => {
     tmpDir = createTempGitProject();
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'PROJECT.md'),
+      path.join(tmpDir, '.planning', 'MISSION.md'),
       '# My Project\n\nA test project.\n\n## Tech Stack\n\n- Node.js\n- TypeScript\n'
     );
   });
@@ -139,7 +139,7 @@ describe('generate-claude-md command', () => {
 
   test('generates CLAUDE.md with --auto flag', () => {
     const outputPath = path.join(tmpDir, 'CLAUDE.md');
-    const result = runGsdTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
+    const result = runThruntTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
 
     if (fs.existsSync(outputPath)) {
@@ -152,10 +152,63 @@ describe('generate-claude-md command', () => {
     const outputPath = path.join(tmpDir, 'CLAUDE.md');
     fs.writeFileSync(outputPath, '# Custom CLAUDE.md\n\nUser content.\n');
 
-    const result = runGsdTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
+    const result = runThruntTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
     // Should merge, not overwrite
     const content = fs.readFileSync(outputPath, 'utf-8');
     assert.ok(content.length > 0, 'should still have content');
+  });
+
+  test('uses MISSION.md as the project source when present', () => {
+    const outputPath = path.join(tmpDir, 'CLAUDE.md');
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'MISSION.md'));
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'MISSION.md'),
+      '# Mission: OAuth Abuse Hunt\n\n## Signal\n\nSuspicious OAuth grant.\n\n## Desired Outcome\n\nConfirm whether privileged grants were abused.\n\n## Scope\n\n- Tenant A\n\n## Working Theory\n\nAttacker persistence via delegated permissions.\n\n## Operating Constraints\n\n- **Access:** Read-only tenant logs\n'
+    );
+
+    const result = runThruntTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
+    assert.ok(result.success, `Failed: ${result.error}`);
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    assert.ok(content.includes('<!-- THRUNT:mission-start source:MISSION.md -->'));
+    assert.ok(content.includes('## Mission'));
+    assert.ok(content.includes('OAuth Abuse Hunt'));
+    assert.ok(content.includes('Suspicious OAuth grant.'));
+    assert.ok(content.includes('Attacker persistence via delegated permissions.'));
+  });
+
+  test('uses neutral project fallback text when no MISSION.md or MISSION.md exists', () => {
+    const outputPath = path.join(tmpDir, 'CLAUDE.md');
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'MISSION.md'));
+
+    const result = runThruntTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
+    assert.ok(result.success, `Failed: ${result.error}`);
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    assert.ok(content.includes('/hunt:new-case'));
+    assert.ok(content.includes('/hunt:new-program'));
+  });
+
+  test('migrates legacy project markers to mission markers when updating CLAUDE.md', () => {
+    const outputPath = path.join(tmpDir, 'CLAUDE.md');
+    fs.writeFileSync(
+      outputPath,
+      [
+        '<!-- THRUNT:project-start source:MISSION.md -->',
+        '## Project',
+        '',
+        '**My Project**',
+        '<!-- THRUNT:project-end -->',
+      ].join('\n')
+    );
+
+    const result = runThruntTools(['generate-claude-md', '--output', outputPath, '--auto', '--raw'], tmpDir);
+    assert.ok(result.success, `Failed: ${result.error}`);
+
+    const content = fs.readFileSync(outputPath, 'utf-8');
+    assert.ok(content.includes('<!-- THRUNT:mission-start source:MISSION.md -->'));
+    assert.ok(!content.includes('<!-- THRUNT:project-start source:MISSION.md -->'));
+    assert.ok(content.includes('## Mission'));
   });
 });
 
@@ -173,7 +226,7 @@ describe('generate-dev-preferences command', () => {
   });
 
   test('errors when --analysis is missing', () => {
-    const result = runGsdTools('generate-dev-preferences --raw', tmpDir);
+    const result = runThruntTools('generate-dev-preferences --raw', tmpDir);
     assert.ok(!result.success, 'should fail without --analysis');
     assert.ok(result.error.includes('--analysis'), 'should mention --analysis');
   });
@@ -189,7 +242,7 @@ describe('generate-dev-preferences command', () => {
     const analysisPath = path.join(tmpDir, 'analysis.json');
     fs.writeFileSync(analysisPath, JSON.stringify(analysis));
 
-    const result = runGsdTools(['generate-dev-preferences', '--analysis', analysisPath, '--raw'], tmpDir);
+    const result = runThruntTools(['generate-dev-preferences', '--analysis', analysisPath, '--raw'], tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.ok(out.command_path || out.command_name, 'should return command output');

@@ -13,21 +13,21 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert');
 
-process.env.GSD_TEST_MODE = '1';
+process.env.THRUNT_TEST_MODE = '1';
 const {
   convertClaudeToOpencodeFrontmatter,
   convertClaudeToGeminiAgent,
   neutralizeAgentReferences,
 } = require('../bin/install.js');
 
-// Sample Claude agent frontmatter (matches actual GSD agent format)
+// Sample Claude agent frontmatter (matches actual THRUNT agent format)
 const SAMPLE_AGENT = `---
-name: gsd-executor
-description: Executes GSD plans with atomic commits
+name: thrunt-telemetry-executor
+description: Executes THRUNT plans with atomic commits
 tools: Read, Write, Edit, Bash, Grep, Glob
 color: yellow
 skills:
-  - gsd-executor-workflow
+  - thrunt-telemetry-executor-workflow
 # hooks:
 #   PostToolUse:
 #     - matcher: "Write|Edit"
@@ -37,12 +37,12 @@ skills:
 ---
 
 <role>
-You are a GSD plan executor.
+You are a THRUNT plan executor.
 </role>`;
 
 // Sample Claude command frontmatter (for comparison — commands work differently)
 const SAMPLE_COMMAND = `---
-name: gsd-execute-phase
+name: hunt-run
 description: Execute all plans in a phase
 allowed-tools:
   - Read
@@ -56,7 +56,7 @@ describe('OpenCode agent conversion (isAgent: true)', () => {
   test('keeps name: field for agents', () => {
     const result = convertClaudeToOpencodeFrontmatter(SAMPLE_AGENT, { isAgent: true });
     const frontmatter = result.split('---')[1];
-    assert.ok(frontmatter.includes('name: gsd-executor'), 'name: should be preserved for agents');
+    assert.ok(frontmatter.includes('name: thrunt-telemetry-executor'), 'name: should be preserved for agents');
   });
 
   test('does not add model: inherit (OpenCode does not support it)', () => {
@@ -82,7 +82,7 @@ describe('OpenCode agent conversion (isAgent: true)', () => {
     const result = convertClaudeToOpencodeFrontmatter(SAMPLE_AGENT, { isAgent: true });
     const frontmatter = result.split('---')[1];
     assert.ok(!frontmatter.includes('skills:'), 'skills: should be stripped');
-    assert.ok(!frontmatter.includes('gsd-executor-workflow'), 'skill entries should be stripped');
+    assert.ok(!frontmatter.includes('thrunt-telemetry-executor-workflow'), 'skill entries should be stripped');
   });
 
   test('strips color: field', () => {
@@ -101,13 +101,13 @@ describe('OpenCode agent conversion (isAgent: true)', () => {
   test('keeps description: field', () => {
     const result = convertClaudeToOpencodeFrontmatter(SAMPLE_AGENT, { isAgent: true });
     const frontmatter = result.split('---')[1];
-    assert.ok(frontmatter.includes('description: Executes GSD plans'), 'description should be kept');
+    assert.ok(frontmatter.includes('description: Executes THRUNT plans'), 'description should be kept');
   });
 
   test('preserves body content', () => {
     const result = convertClaudeToOpencodeFrontmatter(SAMPLE_AGENT, { isAgent: true });
     assert.ok(result.includes('<role>'), 'body should be preserved');
-    assert.ok(result.includes('You are a GSD plan executor.'), 'body content should be intact');
+    assert.ok(result.includes('You are a THRUNT plan executor.'), 'body content should be intact');
   });
 
   test('applies body text replacements', () => {
@@ -154,12 +154,12 @@ describe('OpenCode command conversion (isAgent: false, default)', () => {
 describe('convertClaudeToGeminiAgent', () => {
   test('drops unsupported skills frontmatter while keeping converted tools', () => {
     const input = `---
-name: gsd-codebase-mapper
+name: thrunt-environment-mapper
 description: Explores codebase and writes structured analysis documents.
 tools: Read, Bash, Grep, Glob, Write
 color: cyan
 skills:
-  - gsd-mapper-workflow
+  - thrunt-mapper-workflow
 ---
 
 <role>
@@ -169,7 +169,7 @@ Use \${PHASE} in shell examples.
     const result = convertClaudeToGeminiAgent(input);
     const frontmatter = result.split('---')[1] || '';
 
-    assert.ok(frontmatter.includes('name: gsd-codebase-mapper'), 'keeps name');
+    assert.ok(frontmatter.includes('name: thrunt-environment-mapper'), 'keeps name');
     assert.ok(frontmatter.includes('description: Explores codebase and writes structured analysis documents.'), 'keeps description');
     assert.ok(frontmatter.includes('tools:'), 'adds Gemini tools array');
     assert.ok(frontmatter.includes('  - read_file'), 'maps Read -> read_file');
@@ -179,7 +179,7 @@ Use \${PHASE} in shell examples.
     assert.ok(frontmatter.includes('  - write_file'), 'maps Write -> write_file');
     assert.ok(!frontmatter.includes('color:'), 'drops unsupported color field');
     assert.ok(!frontmatter.includes('skills:'), 'drops unsupported skills field');
-    assert.ok(!frontmatter.includes('gsd-mapper-workflow'), 'drops skills list items');
+    assert.ok(!frontmatter.includes('thrunt-mapper-workflow'), 'drops skills list items');
     assert.ok(result.includes('$PHASE'), 'escapes ${PHASE} shell variable for Gemini');
     assert.ok(!result.includes('${PHASE}'), 'removes Gemini template-string pattern');
   });

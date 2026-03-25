@@ -1,16 +1,16 @@
 # Referência de Ferramentas CLI
 
-Resumo em Português das ferramentas CLI do GSD.  
+Resumo em Português das ferramentas CLI do THRUNT.  
 Para API completa (assinaturas, argumentos e comportamento detalhado), consulte [CLI-TOOLS.md em inglês](../CLI-TOOLS.md).
 
 ---
 
 ## Objetivo
 
-As ferramentas CLI permitem que comandos e agentes do GSD executem ações padronizadas de:
+As ferramentas CLI permitem que comandos e agentes do THRUNT executem ações padronizadas de:
 
 - leitura e escrita de artefatos
-- gerenciamento de fases e roadmap
+- gerenciamento de fases e huntmap
 - execução e validação de planos
 - integração com git e automação
 
@@ -18,7 +18,7 @@ As ferramentas CLI permitem que comandos e agentes do GSD executem ações padro
 
 ### Projeto e estado
 
-- inicialização de artefatos (`PROJECT`, `REQUIREMENTS`, `ROADMAP`, `STATE`)
+- inicialização de artefatos (`PROJECT`, `HYPOTHESES`, `HUNTMAP`, `STATE`)
 - atualização de estado por fase
 - controle de milestones
 
@@ -38,7 +38,7 @@ As ferramentas CLI permitem que comandos e agentes do GSD executem ações padro
 
 - comparação de saída com objetivos
 - geração de relatórios de validação
-- apoio ao UAT
+- apoio ao Evidence Review
 
 ### Utilitários
 
@@ -62,7 +62,7 @@ Ler contexto do projeto
  -> montar input da etapa
  -> executar ferramenta CLI
  -> persistir artefatos
- -> atualizar estado/roadmap
+ -> atualizar estado/huntmap
  -> retornar resumo para o orquestrador
 ```
 

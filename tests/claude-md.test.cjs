@@ -1,12 +1,12 @@
 /**
- * CLAUDE.md generation and new-project workflow tests
+ * CLAUDE.md generation and new-program workflow tests
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
 describe('generate-claude-md', () => {
   let tmpDir;
@@ -21,11 +21,11 @@ describe('generate-claude-md', () => {
 
   test('creates CLAUDE.md with workflow enforcement section', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'PROJECT.md'),
+      path.join(tmpDir, '.planning', 'MISSION.md'),
       '# Test Project\n\n## What This Is\n\nA small test project.\n'
     );
 
-    const result = runGsdTools('generate-claude-md', tmpDir);
+    const result = runThruntTools('generate-claude-md', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -35,21 +35,21 @@ describe('generate-claude-md', () => {
 
     const claudePath = path.join(tmpDir, 'CLAUDE.md');
     const content = fs.readFileSync(claudePath, 'utf-8');
-    assert.ok(content.includes('## GSD Workflow Enforcement'));
-    assert.ok(content.includes('/gsd:quick'));
-    assert.ok(content.includes('/gsd:debug'));
-    assert.ok(content.includes('/gsd:execute-phase'));
-    assert.ok(content.includes('Do not make direct repo edits outside a GSD workflow'));
+    assert.ok(content.includes('## THRUNT Workflow Enforcement'));
+    assert.ok(content.includes('/thrunt:quick'));
+    assert.ok(content.includes('/thrunt:debug'));
+    assert.ok(content.includes('/hunt:run'));
+    assert.ok(content.includes('Do not make direct repo edits outside a THRUNT workflow'));
   });
 
   test('adds workflow enforcement section when updating an existing CLAUDE.md', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'PROJECT.md'),
+      path.join(tmpDir, '.planning', 'MISSION.md'),
       '# Test Project\n\n## What This Is\n\nA small test project.\n'
     );
     fs.writeFileSync(path.join(tmpDir, 'CLAUDE.md'), '## Local Notes\n\nKeep this intro.\n');
 
-    const result = runGsdTools('generate-claude-md', tmpDir);
+    const result = runThruntTools('generate-claude-md', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -57,21 +57,21 @@ describe('generate-claude-md', () => {
 
     const content = fs.readFileSync(path.join(tmpDir, 'CLAUDE.md'), 'utf-8');
     assert.ok(content.includes('## Local Notes'));
-    assert.ok(content.includes('## GSD Workflow Enforcement'));
+    assert.ok(content.includes('## THRUNT Workflow Enforcement'));
   });
 });
 
-describe('new-project workflow includes CLAUDE.md generation', () => {
-  const workflowPath = path.join(__dirname, '..', 'get-shit-done', 'workflows', 'new-project.md');
+describe('new-program workflow includes CLAUDE.md generation', () => {
+  const workflowPath = path.join(__dirname, '..', 'thrunt-god', 'workflows', 'hunt-bootstrap.md');
   const commandsPath = path.join(__dirname, '..', 'docs', 'COMMANDS.md');
 
-  test('new-project workflow generates CLAUDE.md before final commit', () => {
+  test('new-program workflow generates CLAUDE.md before final commit', () => {
     const content = fs.readFileSync(workflowPath, 'utf-8');
     assert.ok(content.includes('generate-claude-md'));
-    assert.ok(content.includes('--files .planning/ROADMAP.md .planning/STATE.md .planning/REQUIREMENTS.md CLAUDE.md'));
+    assert.ok(content.includes('--files .planning/HUNTMAP.md .planning/STATE.md .planning/HYPOTHESES.md CLAUDE.md'));
   });
 
-  test('new-project artifacts mention CLAUDE.md', () => {
+  test('new-program artifacts mention CLAUDE.md', () => {
     const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
     const commandsContent = fs.readFileSync(commandsPath, 'utf-8');
 

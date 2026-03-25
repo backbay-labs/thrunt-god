@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Copy GSD hooks to dist for installation.
- * Validates JavaScript syntax before copying to prevent shipping broken hooks.
- * See #1107, #1109, #1125, #1161 — a duplicate const declaration shipped
+ * Copy THRUNT hooks to dist for installation.
+ * Validates JavaScript syntax before copying to prevent publishing broken hooks.
+ * See #1107, #1109, #1125, #1161 — a duplicate const declaration published
  * in dist and caused PostToolUse hook errors for all users.
  */
 
@@ -15,17 +15,17 @@ const DIST_DIR = path.join(HOOKS_DIR, 'dist');
 
 // Hooks to copy (pure Node.js, no bundling needed)
 const HOOKS_TO_COPY = [
-  'gsd-check-update.js',
-  'gsd-context-monitor.js',
-  'gsd-prompt-guard.js',
-  'gsd-statusline.js',
-  'gsd-workflow-guard.js'
+  'thrunt-check-update.js',
+  'thrunt-context-monitor.js',
+  'thrunt-prompt-guard.js',
+  'thrunt-statusline.js',
+  'thrunt-workflow-guard.js'
 ];
 
 /**
  * Validate JavaScript syntax without executing the file.
  * Catches SyntaxError (duplicate const, missing brackets, etc.)
- * before the hook gets shipped to users.
+ * before the hook gets published to users.
  */
 function validateSyntax(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');

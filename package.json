@@ -1,14 +1,14 @@
 {
-  "name": "get-shit-done-cc",
+  "name": "thrunt-god",
   "version": "1.28.0",
-  "description": "A meta-prompting, context engineering and spec-driven development system for Claude Code, OpenCode, Gemini and Codex by TÂCHES.",
+  "description": "Threat-hunting orchestration system for Claude Code, OpenCode, Gemini, Codex, Copilot, Cursor, and Windsurf.",
   "bin": {
-    "get-shit-done-cc": "bin/install.js"
+    "thrunt-god": "bin/install.js"
   },
   "files": [
     "bin",
     "commands",
-    "get-shit-done",
+    "thrunt-god",
     "agents",
     "hooks/dist",
     "scripts"
@@ -17,24 +17,19 @@
     "claude",
     "claude-code",
     "ai",
-    "meta-prompting",
-    "context-engineering",
-    "spec-driven-development",
+    "threat-hunting",
+    "cybersecurity",
+    "incident-response",
+    "detection-engineering",
+    "telemetry",
     "gemini",
     "gemini-cli",
     "codex",
-    "codex-cli"
+    "codex-cli",
+    "thrunt"
   ],
   "author": "TÂCHES",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/gsd-build/get-shit-done.git"
-  },
-  "homepage": "https://github.com/gsd-build/get-shit-done",
-  "bugs": {
-    "url": "https://github.com/gsd-build/get-shit-done/issues"
-  },
   "engines": {
     "node": ">=20.0.0"
   },
@@ -46,6 +41,6 @@
     "build:hooks": "node scripts/build-hooks.js",
     "prepublishOnly": "npm run build:hooks",
     "test": "node scripts/run-tests.cjs",
-    "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'get-shit-done/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs"
+    "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'thrunt-god/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs"
   }
 }

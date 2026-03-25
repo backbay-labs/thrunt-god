@@ -6,7 +6,7 @@
  * literal parts of skill/subagent names.
  */
 
-process.env.GSD_TEST_MODE = '1';
+process.env.THRUNT_TEST_MODE = '1';
 
 const { describe, test } = require('node:test');
 const assert = require('node:assert');
@@ -28,39 +28,39 @@ Test body
 </objective>
 `;
 
-    const result = convertClaudeCommandToCursorSkill(input, 'gsd-quick');
+    const result = convertClaudeCommandToCursorSkill(input, 'thrunt-quick');
     const nameMatch = result.match(/^name:\s*(.+)$/m);
 
     assert.ok(nameMatch, 'frontmatter contains name field');
-    assert.strictEqual(nameMatch[1], 'gsd-quick', 'skill name is plain scalar');
-    assert.ok(!result.includes('name: "gsd-quick"'), 'quoted skill name is not emitted');
+    assert.strictEqual(nameMatch[1], 'thrunt-quick', 'skill name is plain scalar');
+    assert.ok(!result.includes('name: "thrunt-quick"'), 'quoted skill name is not emitted');
   });
 
   test('preserves slash for slash commands in markdown body', () => {
     const input = `---
-name: gsd:plan-phase
+name: hunt:plan
 description: Plan a phase
 ---
 
 Next:
-/gsd:execute-phase 17
-/gsd-help
-gsd:progress
+/hunt:run 17
+/thrunt-help
+thrunt:progress
 `;
 
-    const result = convertClaudeCommandToCursorSkill(input, 'gsd-plan-phase');
+    const result = convertClaudeCommandToCursorSkill(input, 'hunt-plan');
 
-    assert.ok(result.includes('/gsd-execute-phase 17'), 'slash command remains slash-prefixed');
-    assert.ok(result.includes('/gsd-help'), 'existing slash command is preserved');
-    assert.ok(result.includes('gsd-progress'), 'non-slash gsd: references still normalize');
-    assert.ok(!result.includes('/gsd:execute-phase'), 'legacy colon command form is removed');
+    assert.ok(result.includes('/hunt-run 17'), 'slash command remains slash-prefixed');
+    assert.ok(result.includes('/thrunt-help'), 'existing slash command is preserved');
+    assert.ok(result.includes('thrunt-progress'), 'non-slash thrunt: references still normalize');
+    assert.ok(!result.includes('/hunt:run'), 'slash-colon command form is removed');
   });
 });
 
 describe('convertClaudeAgentToCursorAgent', () => {
   test('writes unquoted Cursor agent name in frontmatter', () => {
     const input = `---
-name: gsd-planner
+name: thrunt-hunt-planner
 description: Planner agent
 tools: Read, Write
 color: green
@@ -75,7 +75,7 @@ Planner body
     const nameMatch = result.match(/^name:\s*(.+)$/m);
 
     assert.ok(nameMatch, 'frontmatter contains name field');
-    assert.strictEqual(nameMatch[1], 'gsd-planner', 'agent name is plain scalar');
-    assert.ok(!result.includes('name: "gsd-planner"'), 'quoted agent name is not emitted');
+    assert.strictEqual(nameMatch[1], 'thrunt-hunt-planner', 'agent name is plain scalar');
+    assert.ok(!result.includes('name: "thrunt-hunt-planner"'), 'quoted agent name is not emitted');
   });
 });

@@ -1,4 +1,4 @@
-# GSD Configuration Reference
+# THRUNT Configuration Reference
 
 > Full configuration schema, workflow toggles, model profiles, and git branching options. For feature context, see [Feature Reference](FEATURES.md).
 
@@ -6,7 +6,7 @@
 
 ## Configuration File
 
-GSD stores project settings in `.planning/config.json`. Created during `/gsd:new-project`, updated via `/gsd:settings`.
+THRUNT stores project settings in `.planning/config.json`. Created during `/hunt:new-program`, updated via `/thrunt:settings`.
 
 ### Full Schema
 
@@ -23,7 +23,7 @@ GSD stores project settings in `.planning/config.json`. Created during `/gsd:new
   "workflow": {
     "research": true,
     "plan_check": true,
-    "verifier": true,
+    "validator": true,
     "auto_advance": false,
     "nyquist_validation": true,
     "ui_phase": true,
@@ -49,14 +49,14 @@ GSD stores project settings in `.planning/config.json`. Created during `/gsd:new
   },
   "git": {
     "branching_strategy": "none",
-    "phase_branch_template": "gsd/phase-{phase}-{slug}",
-    "milestone_branch_template": "gsd/{milestone}-{slug}",
+    "phase_branch_template": "thrunt/phase-{phase}-{slug}",
+    "milestone_branch_template": "thrunt/{milestone}-{slug}",
     "quick_branch_template": null
   },
   "gates": {
     "confirm_project": true,
     "confirm_phases": true,
-    "confirm_roadmap": true,
+    "confirm_huntmap": true,
     "confirm_breakdown": true,
     "confirm_plan": true,
     "execute_next_plan": true,
@@ -93,21 +93,21 @@ All workflow toggles follow the **absent = enabled** pattern. If a key is missin
 |---------|------|---------|-------------|
 | `workflow.research` | boolean | `true` | Domain investigation before planning each phase |
 | `workflow.plan_check` | boolean | `true` | Plan verification loop (up to 3 iterations) |
-| `workflow.verifier` | boolean | `true` | Post-execution verification against phase goals |
+| `workflow.validator` | boolean | `true` | Post-execution findings validation against phase goals |
 | `workflow.auto_advance` | boolean | `false` | Auto-chain discuss → plan → execute without stopping |
-| `workflow.nyquist_validation` | boolean | `true` | Test coverage mapping during plan-phase research |
+| `workflow.nyquist_validation` | boolean | `true` | Test coverage mapping during hunt-plan research |
 | `workflow.ui_phase` | boolean | `true` | Generate UI design contracts for frontend phases |
-| `workflow.ui_safety_gate` | boolean | `true` | Prompt to run /gsd:ui-phase for frontend phases during plan-phase |
-| `workflow.node_repair` | boolean | `true` | Autonomous task repair on verification failure |
+| `workflow.ui_safety_gate` | boolean | `true` | Prompt to run /thrunt:ui-phase for frontend phases during hunt-plan |
+| `workflow.node_repair` | boolean | `true` | Autonomous task repair on validation failure |
 | `workflow.node_repair_budget` | number | `2` | Max repair attempts per failed task |
 | `workflow.research_before_questions` | boolean | `false` | Run research before discussion questions instead of after |
-| `workflow.discuss_mode` | string | `'discuss'` | Controls how `/gsd:discuss-phase` gathers context. `'discuss'` (default) asks questions one-by-one. `'assumptions'` reads the codebase first, generates structured assumptions with confidence levels, and only asks you to correct what's wrong. Added in v1.28 |
-| `workflow.skip_discuss` | boolean | `false` | When `true`, `/gsd:autonomous` bypasses the discuss-phase entirely, writing minimal CONTEXT.md from the ROADMAP phase goal. Useful for projects where developer preferences are fully captured in PROJECT.md/REQUIREMENTS.md. Added in v1.28 |
-| `workflow.text_mode` | boolean | `false` | Replaces AskUserQuestion TUI menus with plain-text numbered lists. Required for Claude Code remote sessions (`/rc` mode) where TUI menus don't render. Can also be set per-session with `--text` flag on discuss-phase. Added in v1.28 |
+| `workflow.discuss_mode` | string | `'discuss'` | Controls how `/hunt:shape-hypothesis` gathers context. `'discuss'` (default) asks questions one-by-one. `'assumptions'` reads the codebase first, generates structured assumptions with confidence levels, and only asks you to correct what's wrong. Added in v1.28 |
+| `workflow.skip_discuss` | boolean | `false` | When `true`, `/thrunt:autonomous` bypasses the shape-hypothesis entirely, writing minimal CONTEXT.md from the HUNTMAP phase goal. Useful for projects where developer preferences are fully captured in MISSION.md/HYPOTHESES.md. Added in v1.28 |
+| `workflow.text_mode` | boolean | `false` | Replaces AskUserQuestion TUI menus with plain-text numbered lists. Required for Claude Code remote sessions (`/rc` mode) where TUI menus don't render. Can also be set per-session with `--text` flag on shape-hypothesis. Added in v1.28 |
 
 ### Recommended Presets
 
-| Scenario | mode | granularity | profile | research | plan_check | verifier |
+| Scenario | mode | granularity | profile | research | plan_check | validator |
 |----------|------|-------------|---------|----------|------------|----------|
 | Prototyping | `yolo` | `coarse` | `budget` | `false` | `false` | `false` |
 | Normal development | `interactive` | `standard` | `balanced` | `true` | `true` | `true` |
@@ -133,9 +133,9 @@ If `.planning/` is in `.gitignore`, `commit_docs` is automatically `false` regar
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `hooks.context_warnings` | boolean | `true` | Show context window usage warnings via context monitor hook |
-| `hooks.workflow_guard` | boolean | `false` | Warn when file edits happen outside GSD workflow context (advises using `/gsd:quick` or `/gsd:fast`) |
+| `hooks.workflow_guard` | boolean | `false` | Warn when file edits happen outside THRUNT workflow context (advises using `/thrunt:quick` or `/thrunt:fast`) |
 
-The prompt injection guard hook (`gsd-prompt-guard.js`) is always active and cannot be disabled — it's a security feature, not a workflow toggle.
+The prompt injection guard hook (`thrunt-prompt-guard.js`) is always active and cannot be disabled — it's a security feature, not a workflow toggle.
 
 ### Private Planning Setup
 
@@ -149,7 +149,7 @@ To keep planning artifacts out of git:
 
 ## Agent Skills Injection
 
-Inject custom skill files into GSD subagent prompts. Skills are read by agents at spawn time, giving them project-specific instructions beyond what CLAUDE.md provides.
+Inject custom skill files into THRUNT subagent prompts. Skills are read by agents at spawn time, giving them project-specific instructions beyond what CLAUDE.md provides.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
@@ -162,9 +162,9 @@ Add an `agent_skills` section to `.planning/config.json` mapping agent types to 
 ```json
 {
   "agent_skills": {
-    "gsd-executor": ["skills/testing-standards", "skills/api-conventions"],
-    "gsd-planner": ["skills/architecture-rules"],
-    "gsd-verifier": ["skills/acceptance-criteria"]
+    "thrunt-telemetry-executor": ["skills/testing-standards", "skills/api-conventions"],
+    "thrunt-hunt-planner": ["skills/architecture-rules"],
+    "thrunt-findings-validator": ["skills/acceptance-criteria"]
   }
 }
 ```
@@ -173,25 +173,25 @@ Each path must be a directory containing a `SKILL.md` file. Paths are validated 
 
 ### Supported Agent Types
 
-Any GSD agent type can receive skills. Common types:
+Any THRUNT agent type can receive skills. Common types:
 
-- `gsd-executor` -- executes implementation plans
-- `gsd-planner` -- creates phase plans
-- `gsd-checker` -- verifies plan quality
-- `gsd-verifier` -- post-execution verification
-- `gsd-researcher` -- phase research
-- `gsd-project-researcher` -- new-project research
-- `gsd-debugger` -- diagnostic agents
-- `gsd-codebase-mapper` -- codebase analysis
-- `gsd-advisor` -- discuss-phase advisors
-- `gsd-ui-researcher` -- UI design contract creation
-- `gsd-ui-checker` -- UI spec verification
-- `gsd-roadmapper` -- roadmap creation
-- `gsd-synthesizer` -- research synthesis
+- `thrunt-telemetry-executor` -- executes implementation plans
+- `thrunt-hunt-planner` -- creates phase plans
+- `thrunt-hunt-checker` -- verifies plan quality
+- `thrunt-findings-validator` -- post-execution findings validation
+- `thrunt-query-writer` -- phase research
+- `thrunt-signal-triager` -- new-program research
+- `thrunt-incident-debugger` -- diagnostic agents
+- `thrunt-environment-mapper` -- codebase analysis
+- `thrunt-advisor` -- shape-hypothesis advisors
+- `thrunt-ui-researcher` -- UI design contract creation
+- `thrunt-ui-checker` -- UI spec verification
+- `thrunt-huntmap-builder` -- huntmap creation
+- `thrunt-synthesizer` -- research synthesis
 
 ### How It Works
 
-At spawn time, workflows call `node gsd-tools.cjs agent-skills <type>` to load configured skills. If skills exist for the agent type, they are injected as an `<agent_skills>` block in the Task() prompt:
+At spawn time, workflows call `node thrunt-tools.cjs agent-skills <type>` to load configured skills. If skills exist for the agent type, they are injected as an `<agent_skills>` block in the Task() prompt:
 
 ```xml
 <agent_skills>
@@ -208,7 +208,7 @@ If no skills are configured, the block is omitted (zero overhead).
 Set skills via the CLI:
 
 ```bash
-node gsd-tools.cjs config-set agent_skills.gsd-executor '["skills/my-skill"]'
+node thrunt-tools.cjs config-set agent_skills.thrunt-telemetry-executor '["skills/my-skill"]'
 ```
 
 ---
@@ -233,17 +233,17 @@ node gsd-tools.cjs config-set agent_skills.gsd-executor '["skills/my-skill"]'
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `git.branching_strategy` | enum | `none` | `none`, `phase`, or `milestone` |
-| `git.phase_branch_template` | string | `gsd/phase-{phase}-{slug}` | Branch name template for phase strategy |
-| `git.milestone_branch_template` | string | `gsd/{milestone}-{slug}` | Branch name template for milestone strategy |
-| `git.quick_branch_template` | string or null | `null` | Optional branch name template for `/gsd:quick` tasks |
+| `git.phase_branch_template` | string | `thrunt/phase-{phase}-{slug}` | Branch name template for phase strategy |
+| `git.milestone_branch_template` | string | `thrunt/{milestone}-{slug}` | Branch name template for milestone strategy |
+| `git.quick_branch_template` | string or null | `null` | Optional branch name template for `/thrunt:quick` tasks |
 
 ### Strategy Comparison
 
 | Strategy | Creates Branch | Scope | Merge Point | Best For |
 |----------|---------------|-------|-------------|----------|
 | `none` | Never | N/A | N/A | Solo development, simple projects |
-| `phase` | At `execute-phase` start | One phase | User merges after phase | Code review per phase, granular rollback |
-| `milestone` | At first `execute-phase` | All phases in milestone | At `complete-milestone` | Release branches, PR per version |
+| `phase` | At `hunt-run` start | One phase | User merges after phase | Code review per phase, granular rollback |
+| `milestone` | At first `hunt-run` | All phases in milestone | At `complete-milestone` | Release branches, PR per version |
 
 ### Template Variables
 
@@ -258,7 +258,7 @@ Example quick-task branching:
 
 ```json
 "git": {
-  "quick_branch_template": "gsd/quick-{num}-{slug}"
+  "quick_branch_template": "thrunt/quick-{num}-{slug}"
 }
 ```
 
@@ -281,7 +281,7 @@ Control confirmation prompts during workflows.
 |---------|------|---------|-------------|
 | `gates.confirm_project` | boolean | `true` | Confirm project details before finalizing |
 | `gates.confirm_phases` | boolean | `true` | Confirm phase breakdown |
-| `gates.confirm_roadmap` | boolean | `true` | Confirm roadmap before proceeding |
+| `gates.confirm_huntmap` | boolean | `true` | Confirm huntmap before proceeding |
 | `gates.confirm_breakdown` | boolean | `true` | Confirm task breakdown |
 | `gates.confirm_plan` | boolean | `true` | Confirm each plan before execution |
 | `gates.execute_next_plan` | boolean | `true` | Confirm before executing next plan |
@@ -313,18 +313,18 @@ Control confirmation prompts during workflows.
 
 | Agent | `quality` | `balanced` | `budget` | `inherit` |
 |-------|-----------|------------|----------|-----------|
-| gsd-planner | Opus | Opus | Sonnet | Inherit |
-| gsd-roadmapper | Opus | Sonnet | Sonnet | Inherit |
-| gsd-executor | Opus | Sonnet | Sonnet | Inherit |
-| gsd-phase-researcher | Opus | Sonnet | Haiku | Inherit |
-| gsd-project-researcher | Opus | Sonnet | Haiku | Inherit |
-| gsd-research-synthesizer | Sonnet | Sonnet | Haiku | Inherit |
-| gsd-debugger | Opus | Sonnet | Sonnet | Inherit |
-| gsd-codebase-mapper | Sonnet | Haiku | Haiku | Inherit |
-| gsd-verifier | Sonnet | Sonnet | Haiku | Inherit |
-| gsd-plan-checker | Sonnet | Sonnet | Haiku | Inherit |
-| gsd-integration-checker | Sonnet | Sonnet | Haiku | Inherit |
-| gsd-nyquist-auditor | Sonnet | Sonnet | Haiku | Inherit |
+| thrunt-hunt-planner | Opus | Opus | Sonnet | Inherit |
+| thrunt-huntmap-builder | Opus | Sonnet | Sonnet | Inherit |
+| thrunt-telemetry-executor | Opus | Sonnet | Sonnet | Inherit |
+| thrunt-query-writer | Opus | Sonnet | Haiku | Inherit |
+| thrunt-signal-triager | Opus | Sonnet | Haiku | Inherit |
+| thrunt-intel-synthesizer | Sonnet | Sonnet | Haiku | Inherit |
+| thrunt-incident-debugger | Opus | Sonnet | Sonnet | Inherit |
+| thrunt-environment-mapper | Sonnet | Haiku | Haiku | Inherit |
+| thrunt-findings-validator | Sonnet | Sonnet | Haiku | Inherit |
+| thrunt-hunt-checker | Sonnet | Sonnet | Haiku | Inherit |
+| thrunt-evidence-correlator | Sonnet | Sonnet | Haiku | Inherit |
+| thrunt-false-positive-auditor | Sonnet | Sonnet | Haiku | Inherit |
 
 ### Per-Agent Overrides
 
@@ -334,8 +334,8 @@ Override specific agents without changing the entire profile:
 {
   "model_profile": "balanced",
   "model_overrides": {
-    "gsd-executor": "opus",
-    "gsd-planner": "haiku"
+    "thrunt-telemetry-executor": "opus",
+    "thrunt-hunt-planner": "haiku"
   }
 }
 ```
@@ -344,7 +344,7 @@ Valid override values: `opus`, `sonnet`, `haiku`, `inherit`, or any fully-qualif
 
 ### Non-Claude Runtimes (Codex, OpenCode, Gemini CLI)
 
-When GSD is installed for a non-Claude runtime, the installer automatically sets `resolve_model_ids: "omit"` in `~/.gsd/defaults.json`. This causes GSD to return an empty model parameter for all agents, so each agent uses whatever model the runtime is configured with. No additional setup is needed for the default case.
+When THRUNT is installed for a non-Claude runtime, the installer automatically sets `resolve_model_ids: "omit"` in `~/.thrunt/defaults.json`. This causes THRUNT to return an empty model parameter for all agents, so each agent uses whatever model the runtime is configured with. No additional setup is needed for the default case.
 
 If you want different agents to use different models, use `model_overrides` with fully-qualified model IDs that your runtime recognizes:
 
@@ -352,10 +352,10 @@ If you want different agents to use different models, use `model_overrides` with
 {
   "resolve_model_ids": "omit",
   "model_overrides": {
-    "gsd-planner": "o3",
-    "gsd-executor": "o4-mini",
-    "gsd-debugger": "o3",
-    "gsd-codebase-mapper": "o4-mini"
+    "thrunt-hunt-planner": "o3",
+    "thrunt-telemetry-executor": "o4-mini",
+    "thrunt-incident-debugger": "o3",
+    "thrunt-environment-mapper": "o4-mini"
   }
 }
 ```
@@ -383,9 +383,9 @@ The intent is the same as the Claude profile tiers -- use a stronger model for p
 
 | Profile | Philosophy | When to Use |
 |---------|-----------|-------------|
-| `quality` | Opus for all decision-making, Sonnet for verification | Quota available, critical architecture work |
+| `quality` | Opus for all decision-making, Sonnet for validation | Quota available, critical architecture work |
 | `balanced` | Opus for planning only, Sonnet for everything else | Normal development (default) |
-| `budget` | Sonnet for code-writing, Haiku for research/verification | High-volume work, less critical phases |
+| `budget` | Sonnet for code-writing, Haiku for research/validation | High-volume work, less critical phases |
 | `inherit` | All agents use current session model | Dynamic model switching, **non-Anthropic providers** (OpenRouter, local models) |
 
 ---
@@ -404,6 +404,6 @@ The intent is the same as the Claude profile tiers -- use a stronger model for p
 
 Save settings as global defaults for future projects:
 
-**Location:** `~/.gsd/defaults.json`
+**Location:** `~/.thrunt/defaults.json`
 
-When `/gsd:new-project` creates a new `config.json`, it reads global defaults and merges them as the starting configuration. Per-project settings always override globals.
+When `/hunt:new-program` creates a new `config.json`, it reads global defaults and merges them as the starting configuration. Per-project settings always override globals.

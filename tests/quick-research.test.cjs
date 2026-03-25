@@ -1,21 +1,21 @@
 /**
- * GSD Quick Research Flag Tests
+ * THRUNT Quick Research Flag Tests
  *
- * Validates the --research flag for /gsd:quick:
+ * Validates the --research flag for /thrunt:quick:
  * - Command frontmatter advertises --research
  * - Workflow includes research step (Step 4.75)
  * - Research artifacts work within quick task directories
- * - Workflow spawns gsd-phase-researcher for research
+ * - Workflow spawns thrunt-query-writer for research
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
-const COMMANDS_DIR = path.join(__dirname, '..', 'commands', 'gsd');
-const WORKFLOWS_DIR = path.join(__dirname, '..', 'get-shit-done', 'workflows');
+const COMMANDS_DIR = path.join(__dirname, '..', 'commands', 'thrunt');
+const WORKFLOWS_DIR = path.join(__dirname, '..', 'thrunt-god', 'workflows');
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Command frontmatter: --research flag advertised
@@ -26,7 +26,7 @@ describe('quick command: --research in frontmatter', () => {
   let content;
 
   test('quick.md exists', () => {
-    assert.ok(fs.existsSync(commandPath), 'commands/gsd/quick.md should exist');
+    assert.ok(fs.existsSync(commandPath), 'commands/thrunt/quick.md should exist');
   });
 
   test('argument-hint includes --research', () => {
@@ -96,15 +96,15 @@ describe('quick workflow: research step', () => {
     );
   });
 
-  test('research step spawns gsd-phase-researcher', () => {
+  test('research step spawns thrunt-query-writer', () => {
     content = fs.readFileSync(workflowPath, 'utf-8');
     const researchSection = content.substring(
       content.indexOf('Step 4.75'),
       content.indexOf('Step 5:')
     );
     assert.ok(
-      researchSection.includes('subagent_type="gsd-phase-researcher"'),
-      'research step should spawn gsd-phase-researcher agent'
+      researchSection.includes('subagent_type="thrunt-query-writer"'),
+      'research step should spawn thrunt-query-writer agent'
     );
   });
 
@@ -171,7 +171,7 @@ describe('quick task: research file in task directory', () => {
   });
 
   test('init quick returns valid task_dir for research file placement', () => {
-    const result = runGsdTools('init quick "Add caching layer"', tmpDir);
+    const result = runThruntTools('init quick "Add caching layer"', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -191,7 +191,7 @@ describe('quick task: research file in task directory', () => {
     );
   });
 
-  test('verify-path-exists detects RESEARCH.md in quick task directory', () => {
+  test('check-path-exists detects RESEARCH.md in quick task directory', () => {
     const quickTaskDir = path.join(tmpDir, '.planning', 'quick', '1-test-task');
     fs.mkdirSync(quickTaskDir, { recursive: true });
     fs.writeFileSync(
@@ -199,8 +199,8 @@ describe('quick task: research file in task directory', () => {
       '# Research\n\nFindings for test task.\n'
     );
 
-    const result = runGsdTools(
-      'verify-path-exists .planning/quick/1-test-task/1-RESEARCH.md',
+    const result = runThruntTools(
+      'check-path-exists .planning/quick/1-test-task/1-RESEARCH.md',
       tmpDir
     );
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -210,12 +210,12 @@ describe('quick task: research file in task directory', () => {
     assert.strictEqual(output.type, 'file', 'should be detected as file');
   });
 
-  test('verify-path-exists returns false for missing RESEARCH.md', () => {
+  test('check-path-exists returns false for missing RESEARCH.md', () => {
     const quickTaskDir = path.join(tmpDir, '.planning', 'quick', '1-test-task');
     fs.mkdirSync(quickTaskDir, { recursive: true });
 
-    const result = runGsdTools(
-      'verify-path-exists .planning/quick/1-test-task/1-RESEARCH.md',
+    const result = runThruntTools(
+      'check-path-exists .planning/quick/1-test-task/1-RESEARCH.md',
       tmpDir
     );
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -233,7 +233,7 @@ describe('quick task: research file in task directory', () => {
       '1-RESEARCH.md',
       '1-PLAN.md',
       '1-SUMMARY.md',
-      '1-VERIFICATION.md',
+      '1-FINDINGS.md',
     ];
 
     for (const artifact of artifacts) {
@@ -241,8 +241,8 @@ describe('quick task: research file in task directory', () => {
     }
 
     for (const artifact of artifacts) {
-      const result = runGsdTools(
-        `verify-path-exists .planning/quick/1-add-caching/${artifact}`,
+      const result = runThruntTools(
+        `check-path-exists .planning/quick/1-add-caching/${artifact}`,
         tmpDir
       );
       assert.ok(result.success, `Command failed for ${artifact}: ${result.error}`);

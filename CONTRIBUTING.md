@@ -1,11 +1,11 @@
-# Contributing to GSD
+# Contributing to THRUNT
 
 ## Getting Started
 
 ```bash
 # Clone the repo
-git clone https://github.com/gsd-build/get-shit-done.git
-cd get-shit-done
+git clone https://github.com/thrunt-build/thrunt-god.git
+cd thrunt-god
 
 # Install dependencies
 npm install
@@ -74,16 +74,16 @@ test('does the thing', () => {
 Import helpers from `tests/helpers.cjs` instead of inlining temp directory creation:
 
 ```javascript
-const { createTempProject, createTempGitProject, createTempDir, cleanup, runGsdTools } = require('./helpers.cjs');
+const { createTempProject, createTempGitProject, createTempDir, cleanup, runThruntTools } = require('./helpers.cjs');
 ```
 
 | Helper | Creates | Use When |
 |--------|---------|----------|
-| `createTempProject(prefix?)` | tmpDir with `.planning/phases/` | Testing GSD tools that need planning structure |
+| `createTempProject(prefix?)` | tmpDir with `.planning/phases/` | Testing THRUNT tools that need planning structure |
 | `createTempGitProject(prefix?)` | Same + git init + initial commit | Testing git-dependent features |
 | `createTempDir(prefix?)` | Bare temp directory | Testing features that don't need `.planning/` |
 | `cleanup(tmpDir)` | Removes directory recursively | Always use in `afterEach` |
-| `runGsdTools(args, cwd, env?)` | Executes gsd-tools.cjs | Testing CLI commands |
+| `runThruntTools(args, cwd, env?)` | Executes thrunt-tools.cjs | Testing CLI commands |
 
 ### Test Structure
 
@@ -129,7 +129,7 @@ Tests must pass on:
 - **Node 22** (LTS)
 - **Node 24** (Current)
 
-Forward-compatible with Node 26. Do not use:
+Supports with Node 26. Do not use:
 - Deprecated APIs
 - Version-specific features not available in Node 22
 
@@ -170,20 +170,20 @@ npm run test:coverage
 ## Code Style
 
 - **CommonJS** (`.cjs`) — the project uses `require()`, not ESM `import`
-- **No external dependencies in core** — `gsd-tools.cjs` and all lib files use only Node.js built-ins
+- **No external dependencies in core** — `thrunt-tools.cjs` and all lib files use only Node.js built-ins
 - **Conventional commits** — `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`
 
 ## File Structure
 
 ```
 bin/install.js          — Installer (multi-runtime)
-get-shit-done/
+thrunt-god/
   bin/lib/              — Core library modules (.cjs)
   workflows/            — Workflow definitions (.md)
   references/           — Reference documentation (.md)
   templates/            — File templates
 agents/                 — Agent definitions (.md)
-commands/gsd/           — Slash command definitions (.md)
+commands/thrunt/           — Slash command definitions (.md)
 tests/                  — Test files (.test.cjs)
   helpers.cjs           — Shared test utilities
 docs/                   — User-facing documentation

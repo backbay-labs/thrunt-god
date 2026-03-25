@@ -19,7 +19,7 @@
 |------|-----------|---------------|
 | Normal | > 35% | 경고 없음 |
 | WARNING | <= 35% | 현재 작업 마무리, 새로운 복잡한 작업 시작 금지 |
-| CRITICAL | <= 25% | 즉시 중단 후 상태 저장 (`/gsd:pause-work`) |
+| CRITICAL | <= 25% | 즉시 중단 후 상태 저장 (`/thrunt:pause-work`) |
 
 ## Debounce
 
@@ -31,13 +31,13 @@
 ## 아키텍처
 
 ```
-Statusline Hook (gsd-statusline.js)
+Statusline Hook (thrunt-statusline.js)
     | 기록
     v
 /tmp/claude-ctx-{session_id}.json
     ^ 읽기
     |
-Context Monitor (gsd-context-monitor.js, PostToolUse/AfterTool)
+Context Monitor (thrunt-context-monitor.js, PostToolUse/AfterTool)
     | 주입
     v
 additionalContext -> 에이전트가 경고를 받음
@@ -54,13 +54,13 @@ additionalContext -> 에이전트가 경고를 받음
 }
 ```
 
-## GSD와의 통합
+## THRUNT와의 통합
 
-GSD의 `/gsd:pause-work` 명령어는 실행 상태를 저장합니다. WARNING 메시지는 해당 명령어 사용을 권장하며 CRITICAL 메시지는 즉각적인 상태 저장을 지시합니다.
+THRUNT의 `/thrunt:pause-work` 명령어는 실행 상태를 저장합니다. WARNING 메시지는 해당 명령어 사용을 권장하며 CRITICAL 메시지는 즉각적인 상태 저장을 지시합니다.
 
 ## 설정
 
-두 훅 모두 `npx get-shit-done-cc` 설치 중에 자동으로 등록됩니다.
+두 훅 모두 `npx thrunt-god` 설치 중에 자동으로 등록됩니다.
 
 - **Statusline** (브리지 파일 기록): settings.json에 `statusLine`으로 등록
 - **Context Monitor** (브리지 파일 읽기): settings.json에 `PostToolUse` 훅으로 등록 (Gemini의 경우 `AfterTool`)
@@ -71,7 +71,7 @@ GSD의 `/gsd:pause-work` 명령어는 실행 상태를 저장합니다. WARNING 
 {
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/hooks/gsd-statusline.js"
+    "command": "node ~/.claude/hooks/thrunt-statusline.js"
   },
   "hooks": {
     "PostToolUse": [
@@ -79,7 +79,7 @@ GSD의 `/gsd:pause-work` 명령어는 실행 상태를 저장합니다. WARNING 
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.claude/hooks/gsd-context-monitor.js"
+            "command": "node ~/.claude/hooks/thrunt-context-monitor.js"
           }
         ]
       }
@@ -98,7 +98,7 @@ Gemini CLI (`~/.gemini/settings.json`)의 경우 `PostToolUse` 대신 `AfterTool
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/.gemini/hooks/gsd-context-monitor.js"
+            "command": "node ~/.gemini/hooks/thrunt-context-monitor.js"
           }
         ]
       }

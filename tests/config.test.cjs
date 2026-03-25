@@ -1,17 +1,17 @@
 /**
- * GSD Tools Tests - config.cjs
+ * THRUNT Tools Tests - config.cjs
  *
  * CLI integration tests for config-ensure-section, config-set, and config-get
- * commands exercised through gsd-tools.cjs via execSync.
+ * commands exercised through thrunt-tools.cjs via execSync.
  *
- * Requirements: TEST-13
+ * Hypotheses: TEST-13
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,14 +39,14 @@ describe('config-ensure-section command', () => {
   });
 
   test('creates config.json with expected structure and types', () => {
-    const result = runGsdTools('config-ensure-section', tmpDir);
+    const result = runThruntTools('config-ensure-section', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.created, true);
 
     const config = readConfig(tmpDir);
-    // Verify structure and types — exact values may vary if ~/.gsd/defaults.json exists
+    // Verify structure and types — exact values may vary if ~/.thrunt/defaults.json exists
     assert.strictEqual(typeof config.model_profile, 'string');
     assert.strictEqual(typeof config.commit_docs, 'boolean');
     assert.strictEqual(typeof config.parallelization, 'boolean');
@@ -55,7 +55,7 @@ describe('config-ensure-section command', () => {
     assert.ok(config.workflow && typeof config.workflow === 'object', 'workflow should be an object');
     assert.strictEqual(typeof config.workflow.research, 'boolean');
     assert.strictEqual(typeof config.workflow.plan_check, 'boolean');
-    assert.strictEqual(typeof config.workflow.verifier, 'boolean');
+    assert.strictEqual(typeof config.workflow.validator, 'boolean');
     assert.strictEqual(typeof config.workflow.nyquist_validation, 'boolean');
     // These hardcoded defaults are always present (may be overridden by user defaults)
     assert.ok('model_profile' in config, 'model_profile should exist');
@@ -64,12 +64,12 @@ describe('config-ensure-section command', () => {
   });
 
   test('is idempotent — returns already_exists on second call', () => {
-    const first = runGsdTools('config-ensure-section', tmpDir);
+    const first = runThruntTools('config-ensure-section', tmpDir);
     assert.ok(first.success, `First call failed: ${first.error}`);
     const firstOutput = JSON.parse(first.output);
     assert.strictEqual(firstOutput.created, true);
 
-    const second = runGsdTools('config-ensure-section', tmpDir);
+    const second = runThruntTools('config-ensure-section', tmpDir);
     assert.ok(second.success, `Second call failed: ${second.error}`);
     const secondOutput = JSON.parse(second.output);
     assert.strictEqual(secondOutput.created, false);
@@ -77,13 +77,13 @@ describe('config-ensure-section command', () => {
   });
 
   test('detects Brave Search from file-based key', () => {
-    // runGsdTools sandboxes HOME=tmpDir, so brave_api_key is written there —
+    // runThruntTools sandboxes HOME=tmpDir, so brave_api_key is written there —
     // no real filesystem side effects, cleanup happens via afterEach.
-    const gsdDir = path.join(tmpDir, '.gsd');
-    fs.mkdirSync(gsdDir, { recursive: true });
-    fs.writeFileSync(path.join(gsdDir, 'brave_api_key'), 'test-key', 'utf-8');
+    const thruntDir = path.join(tmpDir, '.thrunt');
+    fs.mkdirSync(thruntDir, { recursive: true });
+    fs.writeFileSync(path.join(thruntDir, 'brave_api_key'), 'test-key', 'utf-8');
 
-    const result = runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -91,16 +91,16 @@ describe('config-ensure-section command', () => {
   });
 
   test('merges user defaults from defaults.json', () => {
-    // runGsdTools sandboxes HOME=tmpDir, so defaults.json is written there —
+    // runThruntTools sandboxes HOME=tmpDir, so defaults.json is written there —
     // no real filesystem side effects, cleanup happens via afterEach.
-    const gsdDir = path.join(tmpDir, '.gsd');
-    fs.mkdirSync(gsdDir, { recursive: true });
-    fs.writeFileSync(path.join(gsdDir, 'defaults.json'), JSON.stringify({
+    const thruntDir = path.join(tmpDir, '.thrunt');
+    fs.mkdirSync(thruntDir, { recursive: true });
+    fs.writeFileSync(path.join(thruntDir, 'defaults.json'), JSON.stringify({
       model_profile: 'quality',
       commit_docs: false,
     }), 'utf-8');
 
-    const result = runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -111,21 +111,21 @@ describe('config-ensure-section command', () => {
   });
 
   test('merges nested workflow keys from defaults.json preserving unset keys', () => {
-    // runGsdTools sandboxes HOME=tmpDir, so defaults.json is written there —
+    // runThruntTools sandboxes HOME=tmpDir, so defaults.json is written there —
     // no real filesystem side effects, cleanup happens via afterEach.
-    const gsdDir = path.join(tmpDir, '.gsd');
-    fs.mkdirSync(gsdDir, { recursive: true });
-    fs.writeFileSync(path.join(gsdDir, 'defaults.json'), JSON.stringify({
+    const thruntDir = path.join(tmpDir, '.thrunt');
+    fs.mkdirSync(thruntDir, { recursive: true });
+    fs.writeFileSync(path.join(thruntDir, 'defaults.json'), JSON.stringify({
       workflow: { research: false },
     }), 'utf-8');
 
-    const result = runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
     assert.strictEqual(config.workflow.research, false, 'research should be overridden');
     assert.strictEqual(typeof config.workflow.plan_check, 'boolean', 'plan_check should be a boolean');
-    assert.strictEqual(typeof config.workflow.verifier, 'boolean', 'verifier should be a boolean');
+    assert.strictEqual(typeof config.workflow.validator, 'boolean', 'validator should be a boolean');
   });
 });
 
@@ -137,7 +137,7 @@ describe('config-set command', () => {
   beforeEach(() => {
     tmpDir = createTempProject();
     // Create initial config
-    runGsdTools('config-ensure-section', tmpDir);
+    runThruntTools('config-ensure-section', tmpDir);
   });
 
   afterEach(() => {
@@ -145,7 +145,7 @@ describe('config-set command', () => {
   });
 
   test('sets a top-level string value', () => {
-    const result = runGsdTools('config-set model_profile quality', tmpDir);
+    const result = runThruntTools('config-set model_profile quality', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -158,7 +158,7 @@ describe('config-set command', () => {
   });
 
   test('coerces true to boolean', () => {
-    const result = runGsdTools('config-set commit_docs true', tmpDir);
+    const result = runThruntTools('config-set commit_docs true', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -167,7 +167,7 @@ describe('config-set command', () => {
   });
 
   test('coerces false to boolean', () => {
-    const result = runGsdTools('config-set commit_docs false', tmpDir);
+    const result = runThruntTools('config-set commit_docs false', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -175,26 +175,26 @@ describe('config-set command', () => {
     assert.strictEqual(typeof config.commit_docs, 'boolean');
   });
 
-  test('coerces numeric strings to numbers', () => {
-    const result = runGsdTools('config-set granularity 42', tmpDir);
+  test('coerces numeric strings to numbers for numeric config keys', () => {
+    const result = runThruntTools('config-set context_window 400000', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
-    assert.strictEqual(config.granularity, 42);
-    assert.strictEqual(typeof config.granularity, 'number');
+    assert.strictEqual(config.context_window, 400000);
+    assert.strictEqual(typeof config.context_window, 'number');
   });
 
-  test('preserves plain strings', () => {
-    const result = runGsdTools('config-set model_profile hello', tmpDir);
+  test('preserves valid plain strings for enum-like string keys', () => {
+    const result = runThruntTools('config-set resolve_model_ids omit', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
-    assert.strictEqual(config.model_profile, 'hello');
-    assert.strictEqual(typeof config.model_profile, 'string');
+    assert.strictEqual(config.resolve_model_ids, 'omit');
+    assert.strictEqual(typeof config.resolve_model_ids, 'string');
   });
 
   test('sets nested values via dot-notation', () => {
-    const result = runGsdTools('config-set workflow.research false', tmpDir);
+    const result = runThruntTools('config-set workflow.research false', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -205,7 +205,7 @@ describe('config-set command', () => {
     // Start with empty config
     writeConfig(tmpDir, {});
 
-    const result = runGsdTools('config-set workflow.research false', tmpDir);
+    const result = runThruntTools('config-set workflow.research false', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -214,7 +214,7 @@ describe('config-set command', () => {
   });
 
   test('rejects unknown config keys', () => {
-    const result = runGsdTools('config-set workflow.nyquist_validation_enabled false', tmpDir);
+    const result = runThruntTools('config-set workflow.nyquist_validation_enabled false', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Unknown config key'),
@@ -225,7 +225,7 @@ describe('config-set command', () => {
   test('sets workflow.text_mode for remote session support', () => {
     writeConfig(tmpDir, {});
 
-    const result = runGsdTools('config-set workflow.text_mode true', tmpDir);
+    const result = runThruntTools('config-set workflow.text_mode true', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -233,12 +233,12 @@ describe('config-set command', () => {
   });
 
   test('errors when no key path provided', () => {
-    const result = runGsdTools('config-set', tmpDir);
+    const result = runThruntTools('config-set', tmpDir);
     assert.strictEqual(result.success, false);
   });
 
   test('rejects known invalid nyquist alias keys with a suggestion', () => {
-    const result = runGsdTools('config-set workflow.nyquist_validation_enabled false', tmpDir);
+    const result = runThruntTools('config-set workflow.nyquist_validation_enabled false', tmpDir);
     assert.strictEqual(result.success, false);
     assert.match(result.error, /Unknown config key: workflow\.nyquist_validation_enabled/);
     assert.match(result.error, /workflow\.nyquist_validation/);
@@ -246,6 +246,39 @@ describe('config-set command', () => {
     const config = readConfig(tmpDir);
     assert.strictEqual(config.workflow.nyquist_validation_enabled, undefined);
     assert.strictEqual(config.workflow.nyquist_validation, true);
+  });
+
+  test('rejects legacy workflow.verifier key with validator suggestion', () => {
+    const result = runThruntTools('config-set workflow.verifier false', tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.match(result.error, /Unknown config key: workflow\.verifier/);
+    assert.match(result.error, /workflow\.validator/);
+  });
+
+  test('rejects invalid enum values for granularity', () => {
+    const result = runThruntTools('config-set granularity 42', tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.match(result.error, /Invalid value for granularity/);
+  });
+
+  test('rejects invalid enum values for model_profile', () => {
+    const result = runThruntTools('config-set model_profile hello', tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.match(result.error, /Invalid value for model_profile/);
+  });
+
+  test('migrates legacy workflow.discuss_mode standard to discuss', () => {
+    const result = runThruntTools('config-set workflow.discuss_mode standard', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.workflow.discuss_mode, 'discuss');
+  });
+
+  test('rejects invalid enum values for workflow.discuss_mode', () => {
+    const result = runThruntTools('config-set workflow.discuss_mode mystery', tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.match(result.error, /Invalid value for workflow\.discuss_mode/);
   });
 });
 
@@ -257,7 +290,7 @@ describe('config-get command', () => {
   beforeEach(() => {
     tmpDir = createTempProject();
     // Create config with known values — sandbox HOME to avoid global defaults
-    runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
   });
 
   afterEach(() => {
@@ -265,7 +298,7 @@ describe('config-get command', () => {
   });
 
   test('gets a top-level value', () => {
-    const result = runGsdTools('config-get model_profile', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools('config-get model_profile', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -273,7 +306,7 @@ describe('config-get command', () => {
   });
 
   test('gets a nested value via dot-notation', () => {
-    const result = runGsdTools('config-get workflow.research', tmpDir);
+    const result = runThruntTools('config-get workflow.research', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -281,7 +314,7 @@ describe('config-get command', () => {
   });
 
   test('errors for nonexistent key', () => {
-    const result = runGsdTools('config-get nonexistent_key', tmpDir);
+    const result = runThruntTools('config-get nonexistent_key', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Key not found'),
@@ -290,7 +323,7 @@ describe('config-get command', () => {
   });
 
   test('errors for deeply nested nonexistent key', () => {
-    const result = runGsdTools('config-get workflow.nonexistent', tmpDir);
+    const result = runThruntTools('config-get workflow.nonexistent', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Key not found'),
@@ -310,7 +343,7 @@ describe('config-get command', () => {
     });
 
     test('errors when config.json does not exist', () => {
-      const result = runGsdTools('config-get model_profile', emptyTmpDir);
+      const result = runThruntTools('config-get model_profile', emptyTmpDir);
       assert.strictEqual(result.success, false);
       assert.ok(
         result.error.includes('No config.json'),
@@ -320,14 +353,14 @@ describe('config-get command', () => {
   });
 
   test('errors when no key path provided', () => {
-    const result = runGsdTools('config-get', tmpDir);
+    const result = runThruntTools('config-get', tmpDir);
     assert.strictEqual(result.success, false);
   });
 });
 
-// ─── config-new-project ───────────────────────────────────────────────────────
+// ─── config-new-program ───────────────────────────────────────────────────────
 
-describe('config-new-project command', () => {
+describe('config-new-program command', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -345,9 +378,9 @@ describe('config-new-project command', () => {
       parallelization: true,
       commit_docs: true,
       model_profile: 'balanced',
-      workflow: { research: true, plan_check: true, verifier: true, nyquist_validation: true },
+      workflow: { research: true, plan_check: true, validator: true, nyquist_validation: true },
     });
-    const result = runGsdTools(['config-new-project', choices], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['config-new-program', choices], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -366,14 +399,14 @@ describe('config-new-project command', () => {
     // git section present with all three keys
     assert.ok(config.git && typeof config.git === 'object', 'git section should exist');
     assert.strictEqual(config.git.branching_strategy, 'none');
-    assert.strictEqual(config.git.phase_branch_template, 'gsd/phase-{phase}-{slug}');
-    assert.strictEqual(config.git.milestone_branch_template, 'gsd/{milestone}-{slug}');
+    assert.strictEqual(config.git.phase_branch_template, 'thrunt/phase-{phase}-{slug}');
+    assert.strictEqual(config.git.milestone_branch_template, 'thrunt/{milestone}-{slug}');
 
     // workflow section present with all keys
     assert.ok(config.workflow && typeof config.workflow === 'object', 'workflow section should exist');
     assert.strictEqual(config.workflow.research, true);
     assert.strictEqual(config.workflow.plan_check, true);
-    assert.strictEqual(config.workflow.verifier, true);
+    assert.strictEqual(config.workflow.validator, true);
     assert.strictEqual(config.workflow.nyquist_validation, true);
     assert.strictEqual(config.workflow.auto_advance, false);
     assert.strictEqual(config.workflow.node_repair, true);
@@ -393,9 +426,9 @@ describe('config-new-project command', () => {
       parallelization: false,
       commit_docs: false,
       model_profile: 'quality',
-      workflow: { research: false, plan_check: false, verifier: true, nyquist_validation: false },
+      workflow: { research: false, plan_check: false, validator: true, nyquist_validation: false },
     });
-    const result = runGsdTools(['config-new-project', choices], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['config-new-program', choices], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -406,7 +439,7 @@ describe('config-new-project command', () => {
     assert.strictEqual(config.model_profile, 'quality');
     assert.strictEqual(config.workflow.research, false);
     assert.strictEqual(config.workflow.plan_check, false);
-    assert.strictEqual(config.workflow.verifier, true);
+    assert.strictEqual(config.workflow.validator, true);
     assert.strictEqual(config.workflow.nyquist_validation, false);
     // Defaults still present for non-chosen keys
     assert.strictEqual(config.git.branching_strategy, 'none');
@@ -414,7 +447,7 @@ describe('config-new-project command', () => {
   });
 
   test('works with empty choices — all defaults materialized', () => {
-    const result = runGsdTools(['config-new-project', '{}'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['config-new-program', '{}'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -438,12 +471,12 @@ describe('config-new-project command', () => {
   test('is idempotent — returns already_exists if config exists', () => {
     const choices = JSON.stringify({ mode: 'yolo', granularity: 'fine' });
 
-    const first = runGsdTools(['config-new-project', choices], tmpDir);
+    const first = runThruntTools(['config-new-program', choices], tmpDir);
     assert.ok(first.success, `First call failed: ${first.error}`);
     const firstOut = JSON.parse(first.output);
     assert.strictEqual(firstOut.created, true);
 
-    const second = runGsdTools(['config-new-project', choices], tmpDir);
+    const second = runThruntTools(['config-new-program', choices], tmpDir);
     assert.ok(second.success, `Second call failed: ${second.error}`);
     const secondOut = JSON.parse(second.output);
     assert.strictEqual(secondOut.created, false);
@@ -459,9 +492,9 @@ describe('config-new-project command', () => {
     const choices = JSON.stringify({
       mode: 'yolo',
       granularity: 'standard',
-      workflow: { research: true, plan_check: true, verifier: true, nyquist_validation: true, auto_advance: true },
+      workflow: { research: true, plan_check: true, validator: true, nyquist_validation: true, auto_advance: true },
     });
-    const result = runGsdTools(['config-new-project', choices], tmpDir);
+    const result = runThruntTools(['config-new-program', choices], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -469,18 +502,28 @@ describe('config-new-project command', () => {
   });
 
   test('rejects invalid JSON choices', () => {
-    const result = runGsdTools(['config-new-project', '{not-json}'], tmpDir);
+    const result = runThruntTools(['config-new-program', '{not-json}'], tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(result.error.includes('Invalid JSON'), `Expected "Invalid JSON" in: ${result.error}`);
   });
 
   test('output has created:true and path on success', () => {
     const choices = JSON.stringify({ mode: 'interactive', granularity: 'standard' });
-    const result = runGsdTools(['config-new-project', choices], tmpDir);
+    const result = runThruntTools(['config-new-program', choices], tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.created, true);
     assert.strictEqual(out.path, '.planning/config.json');
+  });
+
+  test('rejects legacy verifier choice in config-new-program', () => {
+    const choices = JSON.stringify({
+      workflow: { verifier: false, research: true },
+    });
+    const result = runThruntTools(['config-new-program', choices], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    assert.strictEqual(result.success, false);
+    assert.match(result.error, /workflow\.verifier/);
+    assert.match(result.error, /workflow\.validator/);
   });
 });
 
@@ -491,7 +534,7 @@ describe('config-set research_before_questions and discuss_mode', () => {
 
   beforeEach(() => {
     tmpDir = createTempProject();
-    runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
   });
 
   afterEach(() => {
@@ -499,7 +542,7 @@ describe('config-set research_before_questions and discuss_mode', () => {
   });
 
   test('workflow.research_before_questions is a valid config key', () => {
-    const result = runGsdTools('config-set workflow.research_before_questions true', tmpDir);
+    const result = runThruntTools('config-set workflow.research_before_questions true', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -507,7 +550,7 @@ describe('config-set research_before_questions and discuss_mode', () => {
   });
 
   test('workflow.discuss_mode is a valid config key', () => {
-    const result = runGsdTools('config-set workflow.discuss_mode assumptions', tmpDir);
+    const result = runThruntTools('config-set workflow.discuss_mode assumptions', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -524,8 +567,20 @@ describe('config-set research_before_questions and discuss_mode', () => {
     assert.strictEqual(config.workflow.discuss_mode, 'discuss');
   });
 
+  test('config-new-program migrates legacy discuss_mode standard to discuss', () => {
+    const result = runThruntTools(
+      'config-new-program \'{"workflow":{"discuss_mode":"standard"}}\'',
+      tmpDir,
+      { HOME: tmpDir, USERPROFILE: tmpDir }
+    );
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.workflow.discuss_mode, 'discuss');
+  });
+
   test('hooks.research_questions is rejected with suggestion', () => {
-    const result = runGsdTools('config-set hooks.research_questions true', tmpDir);
+    const result = runThruntTools('config-set hooks.research_questions true', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Unknown config key'),
@@ -545,7 +600,7 @@ describe('config-set unknown key (no suggestion)', () => {
 
   beforeEach(() => {
     tmpDir = createTempProject();
-    runGsdTools('config-ensure-section', tmpDir);
+    runThruntTools('config-ensure-section', tmpDir);
   });
 
   afterEach(() => {
@@ -553,7 +608,7 @@ describe('config-set unknown key (no suggestion)', () => {
   });
 
   test('rejects a key that has no suggestion', () => {
-    const result = runGsdTools('config-set totally.unknown.key value', tmpDir);
+    const result = runThruntTools('config-set totally.unknown.key value', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Unknown config key'),
@@ -578,7 +633,7 @@ describe('config-get edge cases', () => {
   test('errors when traversing a dot-path through a non-object value', () => {
     // model_profile is a string — requesting model_profile.something traverses into a non-object
     writeConfig(tmpDir, { model_profile: 'balanced' });
-    const result = runGsdTools('config-get model_profile.something', tmpDir);
+    const result = runThruntTools('config-get model_profile.something', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Key not found'),
@@ -590,7 +645,7 @@ describe('config-get edge cases', () => {
     const configPath = path.join(tmpDir, '.planning', 'config.json');
     fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
     fs.writeFileSync(configPath, '{not valid json', 'utf-8');
-    const result = runGsdTools('config-get model_profile', tmpDir);
+    const result = runThruntTools('config-get model_profile', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Failed to read config.json'),
@@ -606,7 +661,7 @@ describe('config-set-model-profile command', () => {
 
   beforeEach(() => {
     tmpDir = createTempProject();
-    runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
   });
 
   afterEach(() => {
@@ -614,7 +669,7 @@ describe('config-set-model-profile command', () => {
   });
 
   test('sets a valid profile and updates config', () => {
-    const result = runGsdTools('config-set-model-profile quality', tmpDir);
+    const result = runThruntTools('config-set-model-profile quality', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const out = JSON.parse(result.output);
@@ -627,7 +682,7 @@ describe('config-set-model-profile command', () => {
   });
 
   test('reports previous profile in output', () => {
-    const result = runGsdTools('config-set-model-profile budget', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools('config-set-model-profile budget', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const out = JSON.parse(result.output);
@@ -637,8 +692,8 @@ describe('config-set-model-profile command', () => {
 
   test('setting the same profile is a no-op on config but still succeeds', () => {
     // Set to quality first, then set to quality again
-    runGsdTools('config-set-model-profile quality', tmpDir);
-    const result = runGsdTools('config-set-model-profile quality', tmpDir);
+    runThruntTools('config-set-model-profile quality', tmpDir);
+    const result = runThruntTools('config-set-model-profile quality', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const out = JSON.parse(result.output);
@@ -647,7 +702,7 @@ describe('config-set-model-profile command', () => {
   });
 
   test('is case-insensitive', () => {
-    const result = runGsdTools('config-set-model-profile BALANCED', tmpDir);
+    const result = runThruntTools('config-set-model-profile BALANCED', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -655,7 +710,7 @@ describe('config-set-model-profile command', () => {
   });
 
   test('rejects invalid profile', () => {
-    const result = runGsdTools('config-set-model-profile turbo', tmpDir);
+    const result = runThruntTools('config-set-model-profile turbo', tmpDir);
     assert.strictEqual(result.success, false);
     assert.ok(
       result.error.includes('Invalid profile'),
@@ -664,7 +719,7 @@ describe('config-set-model-profile command', () => {
   });
 
   test('errors when no profile provided', () => {
-    const result = runGsdTools('config-set-model-profile', tmpDir);
+    const result = runThruntTools('config-set-model-profile', tmpDir);
     assert.strictEqual(result.success, false);
   });
 
@@ -680,7 +735,7 @@ describe('config-set-model-profile command', () => {
     });
 
     test('creates config if missing before setting profile', () => {
-      const result = runGsdTools('config-set-model-profile budget', emptyDir);
+      const result = runThruntTools('config-set-model-profile budget', emptyDir);
       assert.ok(result.success, `Command failed: ${result.error}`);
 
       const config = readConfig(emptyDir);
@@ -696,7 +751,7 @@ describe('config-set workflow.skip_discuss', () => {
 
   beforeEach(() => {
     tmpDir = createTempProject();
-    runGsdTools('config-ensure-section', tmpDir);
+    runThruntTools('config-ensure-section', tmpDir);
   });
 
   afterEach(() => {
@@ -704,7 +759,7 @@ describe('config-set workflow.skip_discuss', () => {
   });
 
   test('workflow.skip_discuss is a valid config key', () => {
-    const result = runGsdTools('config-set workflow.skip_discuss true', tmpDir);
+    const result = runThruntTools('config-set workflow.skip_discuss true', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -717,15 +772,15 @@ describe('config-set workflow.skip_discuss', () => {
   });
 
   test('skip_discuss can be toggled back to false', () => {
-    runGsdTools('config-set workflow.skip_discuss true', tmpDir);
-    const result = runGsdTools('config-set workflow.skip_discuss false', tmpDir);
+    runThruntTools('config-set workflow.skip_discuss true', tmpDir);
+    const result = runThruntTools('config-set workflow.skip_discuss false', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
     assert.strictEqual(config.workflow.skip_discuss, false);
   });
 
-  describe('skip_discuss in config-new-project', () => {
+  describe('skip_discuss in config-new-program', () => {
     let emptyDir;
 
     beforeEach(() => {
@@ -736,19 +791,19 @@ describe('config-set workflow.skip_discuss', () => {
       cleanup(emptyDir);
     });
 
-    test('skip_discuss is present in config-new-project output', () => {
-      const result = runGsdTools(['config-new-project', '{}'], emptyDir, { HOME: emptyDir, USERPROFILE: emptyDir });
+    test('skip_discuss is present in config-new-program output', () => {
+      const result = runThruntTools(['config-new-program', '{}'], emptyDir, { HOME: emptyDir, USERPROFILE: emptyDir });
       assert.ok(result.success, `Command failed: ${result.error}`);
 
       const config = readConfig(emptyDir);
       assert.strictEqual(config.workflow.skip_discuss, false, 'skip_discuss should default to false');
     });
 
-    test('skip_discuss can be set via config-new-project choices', () => {
+    test('skip_discuss can be set via config-new-program choices', () => {
       const choices = JSON.stringify({
         workflow: { skip_discuss: true },
       });
-      const result = runGsdTools(['config-new-project', choices], emptyDir, { HOME: emptyDir, USERPROFILE: emptyDir });
+      const result = runThruntTools(['config-new-program', choices], emptyDir, { HOME: emptyDir, USERPROFILE: emptyDir });
       assert.ok(result.success, `Command failed: ${result.error}`);
 
       const config = readConfig(emptyDir);
@@ -757,8 +812,8 @@ describe('config-set workflow.skip_discuss', () => {
   });
 
   test('config-get workflow.skip_discuss returns the set value', () => {
-    runGsdTools('config-set workflow.skip_discuss true', tmpDir);
-    const result = runGsdTools('config-get workflow.skip_discuss', tmpDir);
+    runThruntTools('config-set workflow.skip_discuss true', tmpDir);
+    const result = runThruntTools('config-get workflow.skip_discuss', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);

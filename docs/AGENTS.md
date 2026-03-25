@@ -1,4 +1,4 @@
-# GSD Agent Reference
+# THRUNT Agent Reference
 
 > All 18 specialized agents — roles, tools, spawn patterns, and relationships. For architecture context, see [Architecture](ARCHITECTURE.md).
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-GSD uses a multi-agent architecture where thin orchestrators (workflow files) spawn specialized agents with fresh context windows. Each agent has a focused role, limited tool access, and produces specific artifacts.
+THRUNT uses a multi-agent architecture where thin orchestrators (workflow files) spawn specialized agents with fresh context windows. Each agent has a focused role, limited tool access, and produces specific artifacts.
 
 ### Agent Categories
 
@@ -16,10 +16,10 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 | Analyzers | 2 | assumptions-analyzer, advisor-researcher |
 | Synthesizers | 1 | research-synthesizer |
 | Planners | 1 | planner |
-| Roadmappers | 1 | roadmapper |
+| Huntmap Builders | 1 | huntmap builder |
 | Executors | 1 | executor |
 | Checkers | 3 | plan-checker, integration-checker, ui-checker |
-| Verifiers | 1 | verifier |
+| Validators | 1 | findings-validator |
 | Auditors | 2 | nyquist-auditor, ui-auditor |
 | Mappers | 1 | codebase-mapper |
 | Debuggers | 1 | debugger |
@@ -28,13 +28,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ## Agent Details
 
-### gsd-project-researcher
+### thrunt-signal-triager
 
-**Role:** Researches domain ecosystem before roadmap creation.
+**Role:** Researches domain ecosystem before huntmap creation.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:new-project`, `/gsd:new-milestone` |
+| **Spawned by** | `/hunt:new-program`, `/hunt:new-program` |
 | **Parallelism** | 4 instances (stack, features, architecture, pitfalls) |
 | **Tools** | Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp (context7) |
 | **Model (balanced)** | Sonnet |
@@ -47,13 +47,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-phase-researcher
+### thrunt-query-writer
 
 **Role:** Researches how to implement a specific phase before planning.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:plan-phase` |
+| **Spawned by** | `/hunt:plan` |
 | **Parallelism** | 4 instances (same focus areas as project researcher) |
 | **Tools** | Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp (context7) |
 | **Model (balanced)** | Sonnet |
@@ -66,13 +66,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-ui-researcher
+### thrunt-ui-researcher
 
 **Role:** Produces UI design contracts for frontend phases.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:ui-phase` |
+| **Spawned by** | `/thrunt:ui-phase` |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Write, Bash, Grep, Glob, WebSearch, WebFetch, mcp (context7) |
 | **Model (balanced)** | Sonnet |
@@ -87,13 +87,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-assumptions-analyzer
+### thrunt-scope-analyzer
 
 **Role:** Deeply analyzes codebase for a phase and returns structured assumptions with evidence, confidence levels, and consequences if wrong.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `discuss-phase-assumptions` workflow (when `workflow.discuss_mode = 'assumptions'`) |
+| **Spawned by** | `shape-assumptions` workflow (when `workflow.discuss_mode = 'assumptions'`) |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Bash, Grep, Glob |
 | **Model (balanced)** | Sonnet |
@@ -101,7 +101,7 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 | **Produces** | Structured assumptions with decision statements, evidence file paths, confidence levels |
 
 **Key behaviors:**
-- Reads ROADMAP.md phase description and prior CONTEXT.md files
+- Reads HUNTMAP.md phase description and prior CONTEXT.md files
 - Searches codebase for files related to the phase (components, patterns, similar features)
 - Reads 5-15 most relevant source files to form evidence-based assumptions
 - Classifies confidence: Confident (clear from code), Likely (reasonable inference), Unclear (could go multiple ways)
@@ -110,13 +110,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-advisor-researcher
+### thrunt-intel-advisor
 
-**Role:** Researches a single gray area decision during discuss-phase advisor mode and returns a structured comparison table.
+**Role:** Researches a single gray area decision during shape-hypothesis advisor mode and returns a structured comparison table.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `discuss-phase` workflow (when ADVISOR_MODE = true) |
+| **Spawned by** | `shape-hypothesis` workflow (when ADVISOR_MODE = true) |
 | **Parallelism** | Multiple instances (one per gray area) |
 | **Tools** | Read, Bash, Grep, Glob, WebSearch, WebFetch, mcp (context7) |
 | **Model (balanced)** | Sonnet |
@@ -132,13 +132,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-research-synthesizer
+### thrunt-intel-synthesizer
 
 **Role:** Combines outputs from parallel researchers into a unified summary.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:new-project` (after 4 researchers complete) |
+| **Spawned by** | `/hunt:new-program` (after 4 researchers complete) |
 | **Parallelism** | Single instance (sequential after researchers) |
 | **Tools** | Read, Write, Bash |
 | **Model (balanced)** | Sonnet |
@@ -147,13 +147,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-planner
+### thrunt-hunt-planner
 
-**Role:** Creates executable phase plans with task breakdown, dependency analysis, and goal-backward verification.
+**Role:** Creates executable phase plans with task breakdown, dependency analysis, and goal-backward validation.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:plan-phase`, `/gsd:quick` |
+| **Spawned by** | `/hunt:plan`, `/thrunt:quick` |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Write, Bash, Glob, Grep, WebFetch, mcp (context7) |
 | **Model (balanced)** | Opus |
@@ -161,7 +161,7 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 | **Produces** | `{phase}-{N}-PLAN.md` files |
 
 **Key behaviors:**
-- Reads PROJECT.md, REQUIREMENTS.md, CONTEXT.md, RESEARCH.md
+- Reads MISSION.md, HYPOTHESES.md, CONTEXT.md, RESEARCH.md
 - Creates 2-3 atomic task plans sized for single context windows
 - Uses XML structure with `<task>` elements
 - Includes `read_first` and `acceptance_criteria` sections
@@ -169,18 +169,18 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-roadmapper
+### thrunt-huntmap-builder
 
-**Role:** Creates project roadmaps with phase breakdown and requirement mapping.
+**Role:** Creates project huntmaps with phase breakdown and requirement mapping.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:new-project` |
+| **Spawned by** | `/hunt:new-program` |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Write, Bash, Glob, Grep |
 | **Model (balanced)** | Sonnet |
 | **Color** | Purple |
-| **Produces** | `ROADMAP.md` |
+| **Produces** | `HUNTMAP.md` |
 
 **Key behaviors:**
 - Maps requirements to phases (traceability)
@@ -190,13 +190,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-executor
+### thrunt-telemetry-executor
 
-**Role:** Executes GSD plans with atomic commits, deviation handling, and checkpoint protocols.
+**Role:** Executes THRUNT plans with atomic commits, deviation handling, and checkpoint protocols.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:execute-phase`, `/gsd:quick` |
+| **Spawned by** | `/hunt:run`, `/thrunt:quick` |
 | **Parallelism** | Multiple (parallel within waves, sequential across waves) |
 | **Tools** | Read, Write, Edit, Bash, Grep, Glob |
 | **Model (balanced)** | Sonnet |
@@ -209,17 +209,17 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 - Atomic git commit per completed task
 - Handles checkpoint types: auto, human-verify, decision, human-action
 - Reports deviations from plan in SUMMARY.md
-- Invokes node repair on verification failure
+- Invokes node repair on validation failure
 
 ---
 
-### gsd-plan-checker
+### thrunt-hunt-checker
 
 **Role:** Verifies plans will achieve phase goals before execution.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:plan-phase` (verification loop, max 3 iterations) |
+| **Spawned by** | `/hunt:plan` (validation loop, max 3 iterations) |
 | **Parallelism** | Single instance (iterative) |
 | **Tools** | Read, Bash, Glob, Grep |
 | **Model (balanced)** | Sonnet |
@@ -227,7 +227,7 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 | **Produces** | PASS/FAIL verdict with specific feedback |
 
 **8 Verification Dimensions:**
-1. Requirement coverage
+1. Hypothesis coverage
 2. Task atomicity
 3. Dependency ordering
 4. File scope
@@ -238,28 +238,28 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-integration-checker
+### thrunt-evidence-correlator
 
 **Role:** Verifies cross-phase integration and end-to-end flows.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:audit-milestone` |
+| **Spawned by** | `/thrunt:audit-milestone` |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Bash, Grep, Glob |
 | **Model (balanced)** | Sonnet |
 | **Color** | Blue |
-| **Produces** | Integration verification report |
+| **Produces** | Integration validation report |
 
 ---
 
-### gsd-ui-checker
+### thrunt-ui-checker
 
 **Role:** Validates UI-SPEC.md design contracts against quality dimensions.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:ui-phase` (validation loop, max 2 iterations) |
+| **Spawned by** | `/thrunt:ui-phase` (validation loop, max 2 iterations) |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Bash, Glob, Grep |
 | **Model (balanced)** | Sonnet |
@@ -268,33 +268,33 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-verifier
+### thrunt-findings-validator
 
 **Role:** Verifies phase goal achievement through goal-backward analysis.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:execute-phase` (after all executors complete) |
+| **Spawned by** | `/hunt:run` (after all executors complete) |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Write, Bash, Grep, Glob |
 | **Model (balanced)** | Sonnet |
 | **Color** | Green |
-| **Produces** | `{phase}-VERIFICATION.md` |
+| **Produces** | `{phase}-FINDINGS.md` |
 
 **Key behaviors:**
 - Checks codebase against phase goals, not just task completion
 - PASS/FAIL with specific evidence
-- Logs issues for `/gsd:verify-work` to address
+- Logs issues for `/hunt:validate-findings` to address
 
 ---
 
-### gsd-nyquist-auditor
+### thrunt-false-positive-auditor
 
 **Role:** Fills Nyquist validation gaps by generating tests.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:validate-phase` |
+| **Spawned by** | `/thrunt:validate-phase` |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Write, Edit, Bash, Grep, Glob |
 | **Model (balanced)** | Sonnet |
@@ -307,13 +307,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-ui-auditor
+### thrunt-ui-auditor
 
 **Role:** Retroactive 6-pillar visual audit of implemented frontend code.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:ui-review` |
+| **Spawned by** | `/thrunt:ui-review` |
 | **Parallelism** | Single instance |
 | **Tools** | Read, Write, Bash, Grep, Glob |
 | **Model (balanced)** | Sonnet |
@@ -330,13 +330,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-codebase-mapper
+### thrunt-environment-mapper
 
 **Role:** Explores codebase and writes structured analysis documents.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:map-codebase` |
+| **Spawned by** | `/hunt:map-environment` |
 | **Parallelism** | 4 instances (tech, architecture, quality, concerns) |
 | **Tools** | Read, Bash, Grep, Glob, Write |
 | **Model (balanced)** | Haiku |
@@ -350,13 +350,13 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 
 ---
 
-### gsd-debugger
+### thrunt-incident-debugger
 
 **Role:** Investigates bugs using scientific method with persistent state.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:debug`, `/gsd:verify-work` (for failures) |
+| **Spawned by** | `/thrunt:debug`, `/hunt:validate-findings` (for failures) |
 | **Parallelism** | Single instance (interactive) |
 | **Tools** | Read, Write, Edit, Bash, Grep, Glob, WebSearch |
 | **Model (balanced)** | Sonnet |
@@ -369,24 +369,24 @@ GSD uses a multi-agent architecture where thin orchestrators (workflow files) sp
 **Key behaviors:**
 - Tracks hypotheses, evidence, and eliminated theories
 - State persists across context resets
-- Requires human verification before marking resolved
+- Requires human validation before marking resolved
 - Appends to persistent knowledge base on resolution
 - Consults knowledge base on new sessions
 
 ---
 
-### gsd-user-profiler
+### thrunt-analyst-profiler
 
 **Role:** Analyzes session messages across 8 behavioral dimensions to produce a scored developer profile.
 
 | Property | Value |
 |----------|-------|
-| **Spawned by** | `/gsd:profile-user` |
+| **Spawned by** | `/thrunt:profile-user` |
 | **Parallelism** | Single instance |
 | **Tools** | Read |
 | **Model (balanced)** | Sonnet |
 | **Color** | Magenta |
-| **Produces** | `USER-PROFILE.md`, `/gsd:dev-preferences`, `CLAUDE.md` profile section |
+| **Produces** | `USER-PROFILE.md`, `/thrunt:dev-preferences`, `CLAUDE.md` profile section |
 
 **Behavioral Dimensions:**
 Communication style, decision patterns, debugging approach, UX preferences, vendor choices, frustration triggers, learning style, explanation depth.
@@ -409,12 +409,12 @@ Communication style, decision patterns, debugging approach, UX preferences, vend
 | advisor-researcher | ✓ | | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | research-synthesizer | ✓ | ✓ | | ✓ | | | | | |
 | planner | ✓ | ✓ | | ✓ | ✓ | ✓ | | ✓ | ✓ |
-| roadmapper | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
+| huntmap builder | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
 | executor | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | | |
 | plan-checker | ✓ | | | ✓ | ✓ | ✓ | | | |
 | integration-checker | ✓ | | | ✓ | ✓ | ✓ | | | |
 | ui-checker | ✓ | | | ✓ | ✓ | ✓ | | | |
-| verifier | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
+| findings-validator | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
 | nyquist-auditor | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | | |
 | ui-auditor | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
 | codebase-mapper | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |

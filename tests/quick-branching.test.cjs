@@ -1,7 +1,7 @@
 /**
  * Quick task branching tests
  *
- * Validates that /gsd:quick exposes branch_name from init and that the
+ * Validates that /thrunt:quick exposes branch_name from init and that the
  * workflow checks out a dedicated quick-task branch when configured.
  */
 
@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 
 describe('quick workflow: branching support', () => {
-  const workflowPath = path.join(__dirname, '..', 'get-shit-done', 'workflows', 'quick.md');
+  const workflowPath = path.join(__dirname, '..', 'thrunt-god', 'workflows', 'quick.md');
   let content;
 
   test('workflow file exists', () => {

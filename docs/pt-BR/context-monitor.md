@@ -9,7 +9,7 @@ Para detalhes completos de implementação, veja [context-monitor.md em inglês]
 ## Objetivos
 
 - identificar quando a sessão principal está saturando
-- recomendar ações de recuperação (`/clear`, `/gsd:resume-work`, `/gsd:progress`)
+- recomendar ações de recuperação (`/clear`, `/thrunt:resume-work`, `/thrunt:progress`)
 - manter previsibilidade durante ciclos longos de desenvolvimento
 
 ## Como funciona
@@ -29,9 +29,9 @@ Para detalhes completos de implementação, veja [context-monitor.md em inglês]
 
 ```bash
 /clear
-/gsd:resume-work
+/thrunt:resume-work
 # ou
-/gsd:progress
+/thrunt:progress
 ```
 
 ---

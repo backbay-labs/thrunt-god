@@ -1,6 +1,6 @@
-# Referência de Recursos do GSD
+# Referência de Recursos do THRUNT
 
-Visão em Português dos recursos centrais do GSD.  
+Visão em Português dos recursos centrais do THRUNT.  
 Para catálogo completo e detalhamento exaustivo, consulte [FEATURES.md em inglês](../FEATURES.md).
 
 ---
@@ -13,8 +13,8 @@ Para catálogo completo e detalhamento exaustivo, consulte [FEATURES.md em ingl�
 - **Execução em ondas paralelas** com controle por dependências
 - **Commits atômicos por tarefa** para rastreabilidade e rollback
 - **Verificação pós-execução** com foco em objetivos da fase
-- **UAT guiado** via `/gsd:verify-work`
-- **Suporte brownfield** com `/gsd:map-codebase`
+- **Evidence Review guiado** via `/hunt:validate-findings`
+- **Suporte brownfield** com `/hunt:map-environment`
 - **Workstreams** para trilhas paralelas sem colisão de estado
 - **Backlog, seeds e threads** para memória de médio/longo prazo
 
@@ -28,16 +28,16 @@ Para catálogo completo e detalhamento exaustivo, consulte [FEATURES.md em ingl�
 
 ## UX de frontend
 
-- **`/gsd:ui-phase`**: contrato visual antes da execução
-- **`/gsd:ui-review`**: auditoria visual em 6 pilares
+- **`/thrunt:ui-phase`**: contrato visual antes da execução
+- **`/thrunt:ui-review`**: auditoria visual em 6 pilares
 - **UI safety gate** para uso de registries de terceiros
 
 ## Operação e manutenção
 
 - **Perfis de modelo** (`quality`, `balanced`, `budget`, `inherit`)
 - **Ajuste por toggles** para custo/qualidade/velocidade
-- **Diagnóstico forense** com `/gsd:forensics`
-- **Relatório de sessão** com `/gsd:session-report`
+- **Diagnóstico forense** com `/thrunt:forensics`
+- **Relatório de sessão** com `/thrunt:session-report`
 
 ---
 
@@ -45,10 +45,10 @@ Para catálogo completo e detalhamento exaustivo, consulte [FEATURES.md em ingl�
 
 | Cenário | Comandos |
 |--------|----------|
-| Projeto novo | `/gsd:new-project` -> `/gsd:discuss-phase` -> `/gsd:plan-phase` -> `/gsd:execute-phase` |
-| Correção rápida | `/gsd:quick` |
-| Código existente | `/gsd:map-codebase` -> `/gsd:new-project` |
-| Fechamento de release | `/gsd:audit-milestone` -> `/gsd:complete-milestone` |
+| Projeto novo | `/hunt:new-program` -> `/hunt:shape-hypothesis` -> `/hunt:plan` -> `/hunt:run` |
+| Correção rápida | `/thrunt:quick` |
+| Código existente | `/hunt:map-environment` -> `/hunt:new-program` |
+| Fechamento de release | `/thrunt:audit-milestone` -> `/thrunt:complete-milestone` |
 
 ---
 

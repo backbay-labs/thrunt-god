@@ -6,13 +6,13 @@ const { describe, test, before, after, beforeEach, afterEach } = require('node:t
 const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
 function createProjectWithState(tmpDir, roadmap, state) {
   if (roadmap) {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), roadmap, 'utf-8');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), roadmap, 'utf-8');
   }
   if (state) {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), state, 'utf-8');
@@ -30,14 +30,14 @@ describe('planningDir workstream awareness via env var', () => {
     const wsDir = path.join(tmpDir, '.planning', 'workstreams', 'alpha');
     fs.mkdirSync(path.join(wsDir, 'phases'), { recursive: true });
     fs.writeFileSync(path.join(wsDir, 'STATE.md'), '# State\n**Status:** In progress\n**Current Phase:** 1\n');
-    fs.writeFileSync(path.join(wsDir, 'ROADMAP.md'), '## Roadmap v1.0: Alpha\n### Phase 1: Setup\n');
+    fs.writeFileSync(path.join(wsDir, 'HUNTMAP.md'), '## Huntmap v1.0: Alpha\n### Phase 1: Setup\n');
     fs.writeFileSync(path.join(tmpDir, '.planning', 'active-workstream'), 'alpha\n');
   });
 
   after(() => cleanup(tmpDir));
 
-  test('state json returns workstream-scoped state when GSD_WORKSTREAM is set', () => {
-    const result = runGsdTools(['state', 'json', '--raw'], tmpDir, { GSD_WORKSTREAM: 'alpha' });
+  test('state json returns workstream-scoped state when THRUNT_WORKSTREAM is set', () => {
+    const result = runThruntTools(['state', 'json', '--raw'], tmpDir, { THRUNT_WORKSTREAM: 'alpha' });
     assert.ok(result.success, `state json failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.ok(data.status || data.current_phase !== undefined, 'should return state data');
@@ -46,7 +46,7 @@ describe('planningDir workstream awareness via env var', () => {
   test('state json reads from flat .planning when no workstream set', () => {
     // Clear active-workstream so no auto-detection
     try { fs.unlinkSync(path.join(tmpDir, '.planning', 'active-workstream')); } catch {}
-    const result = runGsdTools(['state', 'json', '--raw'], tmpDir, { GSD_WORKSTREAM: '' });
+    const result = runThruntTools(['state', 'json', '--raw'], tmpDir, { THRUNT_WORKSTREAM: '' });
     // Should fail or return empty state since flat .planning/ has no STATE.md
     assert.ok(!result.success || result.output.includes('not found') || result.output === '{}',
       'should read from flat .planning/');
@@ -54,13 +54,13 @@ describe('planningDir workstream awareness via env var', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'active-workstream'), 'alpha\n');
   });
 
-  test('--ws flag overrides GSD_WORKSTREAM env var', () => {
+  test('--ws flag overrides THRUNT_WORKSTREAM env var', () => {
     // Create a second workstream
     const betaDir = path.join(tmpDir, '.planning', 'workstreams', 'beta');
     fs.mkdirSync(path.join(betaDir, 'phases'), { recursive: true });
     fs.writeFileSync(path.join(betaDir, 'STATE.md'), '# State\n**Status:** Beta active\n');
 
-    const result = runGsdTools(['state', 'json', '--raw', '--ws', 'beta'], tmpDir, { GSD_WORKSTREAM: 'alpha' });
+    const result = runThruntTools(['state', 'json', '--raw', '--ws', 'beta'], tmpDir, { THRUNT_WORKSTREAM: 'alpha' });
     assert.ok(result.success, `state json --ws beta failed: ${result.error}`);
   });
 });
@@ -72,13 +72,13 @@ describe('workstream create', () => {
 
   before(() => {
     tmpDir = createTempProject();
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'PROJECT.md'), '# Project\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'MISSION.md'), '# Project\n');
   });
 
   after(() => cleanup(tmpDir));
 
   test('creates a new workstream in clean project', () => {
-    const result = runGsdTools(['workstream', 'create', 'feature-x', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'create', 'feature-x', '--raw'], tmpDir);
     assert.ok(result.success, `create failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.created, true);
@@ -93,7 +93,7 @@ describe('workstream create', () => {
   });
 
   test('rejects duplicate workstream', () => {
-    const result = runGsdTools(['workstream', 'create', 'feature-x', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'create', 'feature-x', '--raw'], tmpDir);
     assert.ok(result.success); // returns success with error field
     const data = JSON.parse(result.output);
     assert.strictEqual(data.created, false);
@@ -101,7 +101,7 @@ describe('workstream create', () => {
   });
 
   test('creates second workstream', () => {
-    const result = runGsdTools(['workstream', 'create', 'feature-y', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'create', 'feature-y', '--raw'], tmpDir);
     assert.ok(result.success);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.created, true);
@@ -114,26 +114,40 @@ describe('workstream create with migration', () => {
 
   before(() => {
     tmpDir = createTempProject();
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'PROJECT.md'), '# Project\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'MISSION.md'), '# Project\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'MISSION.md'), '# Mission\n');
     // Existing flat-mode work
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), '## Roadmap v1.0: Existing\n### Phase 1: A\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), '## Huntmap v1.0: Existing\n### Phase 1: A\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), '# Huntmap\n### Phase 1: Intake\n');
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# State\n**Status:** In progress\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HYPOTHESES.md'), '# Hypotheses\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'SUCCESS_CRITERIA.md'), '# Success Criteria\n');
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'QUERIES'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'RECEIPTS'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'QUERIES', 'q1.md'), '# Query\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'RECEIPTS', 'r1.md'), '# Receipt\n');
   });
 
   after(() => cleanup(tmpDir));
 
   test('migrates existing flat work to named workstream', () => {
-    const result = runGsdTools(['workstream', 'create', 'new-feature', '--migrate-name', 'existing-work', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'create', 'new-feature', '--migrate-name', 'existing-work', '--raw'], tmpDir);
     assert.ok(result.success, `create with migration failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.created, true);
     assert.ok(data.migration, 'should include migration info');
     assert.strictEqual(data.migration.workstream, 'existing-work');
     // Old flat files moved to workstream dir
-    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'ROADMAP.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'HUNTMAP.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'HUNTMAP.md')));
     assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'STATE.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'HYPOTHESES.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'SUCCESS_CRITERIA.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'QUERIES', 'q1.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'workstreams', 'existing-work', 'RECEIPTS', 'r1.md')));
     // Shared files stay
-    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'PROJECT.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'MISSION.md')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'MISSION.md')));
   });
 });
 
@@ -153,7 +167,7 @@ describe('workstream list', () => {
   after(() => cleanup(tmpDir));
 
   test('lists all workstreams', () => {
-    const result = runGsdTools(['workstream', 'list', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'list', '--raw'], tmpDir);
     assert.ok(result.success, `list failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.mode, 'workstream');
@@ -174,7 +188,7 @@ describe('workstream list', () => {
     });
 
     test('reports flat mode when no workstreams exist', () => {
-      const result = runGsdTools(['workstream', 'list', '--raw'], flatDir);
+      const result = runThruntTools(['workstream', 'list', '--raw'], flatDir);
       assert.ok(result.success);
       const data = JSON.parse(result.output);
       assert.strictEqual(data.mode, 'flat');
@@ -189,26 +203,43 @@ describe('workstream status', () => {
     tmpDir = createTempProject();
     const wsDir = path.join(tmpDir, '.planning', 'workstreams', 'alpha');
     fs.mkdirSync(path.join(wsDir, 'phases', '01-setup'), { recursive: true });
+    fs.mkdirSync(path.join(wsDir, 'QUERIES'), { recursive: true });
+    fs.mkdirSync(path.join(wsDir, 'RECEIPTS'), { recursive: true });
     fs.writeFileSync(path.join(wsDir, 'phases', '01-setup', 'PLAN.md'), '# Plan\n');
+    fs.writeFileSync(path.join(wsDir, 'HUNTMAP.md'), '# Huntmap\n### Phase 1: Intake\n');
+    fs.writeFileSync(path.join(wsDir, 'HYPOTHESES.md'), '# Hypotheses\n');
+    fs.writeFileSync(path.join(wsDir, 'SUCCESS_CRITERIA.md'), '# Success Criteria\n');
+    fs.writeFileSync(path.join(wsDir, 'FINDINGS.md'), '# Findings\n');
+    fs.writeFileSync(path.join(wsDir, 'EVIDENCE_REVIEW.md'), '# Evidence Review\n');
+    fs.writeFileSync(path.join(wsDir, 'QUERIES', 'q1.md'), '# Query\n');
+    fs.writeFileSync(path.join(wsDir, 'RECEIPTS', 'r1.md'), '# Receipt\n');
     fs.writeFileSync(path.join(wsDir, 'STATE.md'), '# State\n**Status:** In progress\n**Current Phase:** 1 — Setup\n');
-    fs.writeFileSync(path.join(wsDir, 'ROADMAP.md'), '## Roadmap\n');
+    fs.writeFileSync(path.join(wsDir, 'HUNTMAP.md'), '## Huntmap\n');
   });
 
   after(() => cleanup(tmpDir));
 
   test('returns detailed status for workstream', () => {
-    const result = runGsdTools(['workstream', 'status', 'alpha', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'status', 'alpha', '--raw'], tmpDir);
     assert.ok(result.success, `status failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.found, true);
     assert.strictEqual(data.workstream, 'alpha');
-    assert.strictEqual(data.files.roadmap, true);
+    assert.strictEqual(data.files.huntmap, true);
     assert.strictEqual(data.files.state, true);
+    assert.strictEqual(data.files.hypotheses, true);
+    assert.strictEqual(data.files.success_criteria, true);
+    assert.strictEqual(data.files.findings, true);
+    assert.strictEqual(data.files.evidence_review, true);
+    assert.strictEqual(data.files.queries, true);
+    assert.strictEqual(data.files.receipts, true);
+    assert.strictEqual(data.query_count, 1);
+    assert.strictEqual(data.receipt_count, 1);
     assert.strictEqual(data.phase_count, 1);
   });
 
   test('returns not found for missing workstream', () => {
-    const result = runGsdTools(['workstream', 'status', 'nonexistent', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'status', 'nonexistent', '--raw'], tmpDir);
     assert.ok(result.success);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.found, false);
@@ -229,7 +260,7 @@ describe('workstream complete', () => {
   after(() => cleanup(tmpDir));
 
   test('archives workstream to milestones/', () => {
-    const result = runGsdTools(['workstream', 'complete', 'done-ws', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'complete', 'done-ws', '--raw'], tmpDir);
     assert.ok(result.success, `complete failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.completed, true);
@@ -258,13 +289,13 @@ describe('workstream set/get', () => {
   after(() => cleanup(tmpDir));
 
   test('sets active workstream', () => {
-    const result = runGsdTools(['workstream', 'set', 'ws-a', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'set', 'ws-a', '--raw'], tmpDir);
     assert.ok(result.success);
     assert.strictEqual(result.output, 'ws-a');
   });
 
   test('gets active workstream', () => {
-    const result = runGsdTools(['workstream', 'get', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'get', '--raw'], tmpDir);
     assert.ok(result.success);
     assert.strictEqual(result.output, 'ws-a');
   });
@@ -293,7 +324,7 @@ describe('getOtherActiveWorkstreams', () => {
   after(() => cleanup(tmpDir));
 
   test('workstream list excludes completed workstreams from active count', () => {
-    const result = runGsdTools(['workstream', 'list', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'list', '--raw'], tmpDir);
     assert.ok(result.success);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.count, 3); // all listed
@@ -313,14 +344,14 @@ describe('workstream progress', () => {
     fs.writeFileSync(path.join(wsDir, 'phases', '01-init', 'PLAN.md'), '# Plan\n');
     fs.writeFileSync(path.join(wsDir, 'phases', '01-init', 'SUMMARY.md'), '# Summary\n');
     fs.writeFileSync(path.join(wsDir, 'STATE.md'), '# State\n**Status:** In progress\n**Current Phase:** 2\n');
-    fs.writeFileSync(path.join(wsDir, 'ROADMAP.md'), '## Roadmap\n### Phase 1: Init\n### Phase 2: Build\n');
+    fs.writeFileSync(path.join(wsDir, 'HUNTMAP.md'), '## Huntmap\n### Phase 1: Init\n### Phase 2: Build\n');
     fs.writeFileSync(path.join(tmpDir, '.planning', 'active-workstream'), 'feature\n');
   });
 
   after(() => cleanup(tmpDir));
 
   test('returns progress summary', () => {
-    const result = runGsdTools(['workstream', 'progress', '--raw'], tmpDir);
+    const result = runThruntTools(['workstream', 'progress', '--raw'], tmpDir);
     assert.ok(result.success, `progress failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.strictEqual(data.mode, 'workstream');
@@ -331,9 +362,9 @@ describe('workstream progress', () => {
   });
 });
 
-// ─── Integration: gsd-tools --ws flag ────────────────────────────────────────
+// ─── Integration: thrunt-tools --ws flag ────────────────────────────────────────
 
-describe('gsd-tools --ws flag integration', () => {
+describe('thrunt-tools --ws flag integration', () => {
   let tmpDir;
 
   before(() => {
@@ -341,8 +372,8 @@ describe('gsd-tools --ws flag integration', () => {
     // Create a workstream with roadmap
     const wsDir = path.join(tmpDir, '.planning', 'workstreams', 'test-ws');
     fs.mkdirSync(path.join(wsDir, 'phases', '01-setup'), { recursive: true });
-    fs.writeFileSync(path.join(wsDir, 'ROADMAP.md'),
-      '## Roadmap v1.0: Test\n### Phase 1: Setup\nDo setup things.\n');
+    fs.writeFileSync(path.join(wsDir, 'HUNTMAP.md'),
+      '## Huntmap v1.0: Test\n### Phase 1: Setup\nDo setup things.\n');
     fs.writeFileSync(path.join(wsDir, 'STATE.md'),
       '---\nmilestone: v1.0\n---\n# State\n**Status:** In progress\n**Current Phase:** 1 — Setup\n');
     fs.writeFileSync(path.join(wsDir, 'phases', '01-setup', 'PLAN.md'), '# Plan\n');
@@ -351,13 +382,13 @@ describe('gsd-tools --ws flag integration', () => {
   after(() => cleanup(tmpDir));
 
   test('find-phase resolves to workstream-scoped phases via --ws', () => {
-    const result = runGsdTools(['find-phase', '1', '--raw', '--ws', 'test-ws'], tmpDir);
+    const result = runThruntTools(['find-phase', '1', '--raw', '--ws', 'test-ws'], tmpDir);
     assert.ok(result.success, `find-phase failed: ${result.error}`);
     assert.ok(result.output.includes('workstreams/test-ws'), `path should be workstream-scoped: ${result.output}`);
   });
 
   test('find-phase returns JSON with workstream path when not raw', () => {
-    const result = runGsdTools(['find-phase', '1', '--ws', 'test-ws'], tmpDir);
+    const result = runThruntTools(['find-phase', '1', '--ws', 'test-ws'], tmpDir);
     assert.ok(result.success, `find-phase failed: ${result.error}`);
     const data = JSON.parse(result.output);
     assert.ok(data.found, 'phase should be found');
@@ -372,7 +403,7 @@ describe('path traversal rejection', () => {
 
   before(() => {
     tmpDir = createTempProject();
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'PROJECT.md'), '# Project\n');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'MISSION.md'), '# Project\n');
     const wsDir = path.join(tmpDir, '.planning', 'workstreams', 'legit');
     fs.mkdirSync(path.join(wsDir, 'phases'), { recursive: true });
     fs.writeFileSync(path.join(wsDir, 'STATE.md'), '# State\n');
@@ -394,18 +425,18 @@ describe('path traversal rejection', () => {
   describe('--ws flag rejects traversal attempts', () => {
     for (const name of maliciousNames) {
       test(`rejects --ws=${name}`, () => {
-        const result = runGsdTools(['workstream', 'list', '--raw', '--ws', name], tmpDir);
+        const result = runThruntTools(['workstream', 'list', '--raw', '--ws', name], tmpDir);
         assert.ok(!result.success, `should reject --ws=${name}`);
         assert.ok(result.error.includes('Invalid workstream name'), `error should mention invalid name for: ${name}`);
       });
     }
   });
 
-  describe('GSD_WORKSTREAM env var rejects traversal attempts', () => {
+  describe('THRUNT_WORKSTREAM env var rejects traversal attempts', () => {
     for (const name of maliciousNames) {
-      test(`rejects GSD_WORKSTREAM=${name}`, () => {
-        const result = runGsdTools(['workstream', 'list', '--raw'], tmpDir, { GSD_WORKSTREAM: name });
-        assert.ok(!result.success, `should reject GSD_WORKSTREAM=${name}`);
+      test(`rejects THRUNT_WORKSTREAM=${name}`, () => {
+        const result = runThruntTools(['workstream', 'list', '--raw'], tmpDir, { THRUNT_WORKSTREAM: name });
+        assert.ok(!result.success, `should reject THRUNT_WORKSTREAM=${name}`);
         assert.ok(result.error.includes('Invalid workstream name'), `error should mention invalid name for: ${name}`);
       });
     }
@@ -414,7 +445,7 @@ describe('path traversal rejection', () => {
   describe('cmdWorkstreamSet rejects traversal attempts', () => {
     for (const name of maliciousNames) {
       test(`rejects set ${name}`, () => {
-        const result = runGsdTools(['workstream', 'set', name, '--raw'], tmpDir);
+        const result = runThruntTools(['workstream', 'set', name, '--raw'], tmpDir);
         // cmdWorkstreamSet validates the positional arg and returns invalid_name error
         assert.ok(result.success, `command should exit cleanly for: ${name}`);
         const data = JSON.parse(result.output);
@@ -429,7 +460,7 @@ describe('path traversal rejection', () => {
       test(`rejects poisoned file containing ${name}`, () => {
         // Write malicious name directly to the active-workstream file
         fs.writeFileSync(path.join(tmpDir, '.planning', 'active-workstream'), name + '\n');
-        const result = runGsdTools(['workstream', 'get'], tmpDir, { GSD_WORKSTREAM: '' });
+        const result = runThruntTools(['workstream', 'get'], tmpDir, { THRUNT_WORKSTREAM: '' });
         assert.ok(result.success, 'get should succeed');
         const data = JSON.parse(result.output);
         // getActiveWorkstream should return null for invalid names
@@ -444,7 +475,7 @@ describe('path traversal rejection', () => {
   });
 
   describe('setActiveWorkstream rejects invalid names directly', () => {
-    const { setActiveWorkstream } = require('../get-shit-done/bin/lib/core.cjs');
+    const { setActiveWorkstream } = require('../thrunt-god/bin/lib/core.cjs');
     for (const name of maliciousNames) {
       test(`throws for ${name}`, () => {
         assert.throws(

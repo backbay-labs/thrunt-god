@@ -50,8 +50,8 @@ Output: [可工作的、已测试的功能]
 </objective>
 
 <context>
-@.planning/PROJECT.md
-@.planning/ROADMAP.md
+@.planning/MISSION.md
+@.planning/HUNTMAP.md
 @relevant/source/files.ts
 </context>
 

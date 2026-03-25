@@ -1,5 +1,5 @@
 /**
- * GSD Tools Tests - Agent Skills Injection
+ * THRUNT Tools Tests - Agent Skills Injection
  *
  * CLI integration tests for the `agent-skills` command that reads
  * `agent_skills` from .planning/config.json and returns a formatted
@@ -10,7 +10,7 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -39,24 +39,24 @@ describe('agent-skills command', () => {
 
   test('returns empty when no config exists', () => {
     // No config.json at all
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     // Should succeed with empty output (no skills configured)
     assert.strictEqual(result.output, '');
   });
 
   test('returns empty when config has no agent_skills section', () => {
     writeConfig(tmpDir, { model_profile: 'balanced' });
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.strictEqual(result.output, '');
   });
 
   test('returns empty for unconfigured agent type', () => {
     writeConfig(tmpDir, {
       agent_skills: {
-        'gsd-executor': ['skills/test-skill'],
+        'thrunt-telemetry-executor': ['skills/test-skill'],
       },
     });
-    const result = runGsdTools(['agent-skills', 'gsd-planner'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-hunt-planner'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.strictEqual(result.output, '');
   });
 
@@ -68,11 +68,11 @@ describe('agent-skills command', () => {
 
     writeConfig(tmpDir, {
       agent_skills: {
-        'gsd-executor': ['skills/test-skill'],
+        'thrunt-telemetry-executor': ['skills/test-skill'],
       },
     });
 
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
     assert.ok(result.output.includes('<agent_skills>'), 'Should contain <agent_skills> tag');
     assert.ok(result.output.includes('</agent_skills>'), 'Should contain closing tag');
@@ -86,11 +86,11 @@ describe('agent-skills command', () => {
 
     writeConfig(tmpDir, {
       agent_skills: {
-        'gsd-executor': 'skills/my-skill',
+        'thrunt-telemetry-executor': 'skills/my-skill',
       },
     });
 
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
     assert.ok(result.output.includes('skills/my-skill/SKILL.md'), 'Should contain skill path');
   });
@@ -105,11 +105,11 @@ describe('agent-skills command', () => {
 
     writeConfig(tmpDir, {
       agent_skills: {
-        'gsd-executor': ['skills/skill-a', 'skills/skill-b'],
+        'thrunt-telemetry-executor': ['skills/skill-a', 'skills/skill-b'],
       },
     });
 
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
     assert.ok(result.output.includes('skills/skill-a/SKILL.md'), 'Should contain first skill');
     assert.ok(result.output.includes('skills/skill-b/SKILL.md'), 'Should contain second skill');
@@ -118,11 +118,11 @@ describe('agent-skills command', () => {
   test('warns for nonexistent skill path but does not error', () => {
     writeConfig(tmpDir, {
       agent_skills: {
-        'gsd-executor': ['skills/nonexistent'],
+        'thrunt-telemetry-executor': ['skills/nonexistent'],
       },
     });
 
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     // Should not crash — returns empty output (the missing skill is skipped)
     assert.ok(result.success, 'Command should succeed even with missing skill paths');
     // Should not include the missing skill in the output
@@ -133,17 +133,17 @@ describe('agent-skills command', () => {
   test('validates path safety — rejects traversal attempts', () => {
     writeConfig(tmpDir, {
       agent_skills: {
-        'gsd-executor': ['../../../etc/passwd'],
+        'thrunt-telemetry-executor': ['../../../etc/passwd'],
       },
     });
 
-    const result = runGsdTools(['agent-skills', 'gsd-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills', 'thrunt-telemetry-executor'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     // Should not include traversal path in output
     assert.ok(!result.output.includes('/etc/passwd'), 'Should not include traversal path');
   });
 
   test('returns empty when no agent type argument provided', () => {
-    const result = runGsdTools(['agent-skills'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools(['agent-skills'], tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     // Should succeed with empty output — no agent type means no skills to return
     assert.ok(result.success, 'Command should succeed');
     const parsed = JSON.parse(result.output);
@@ -165,7 +165,7 @@ describe('config-ensure-section with agent_skills', () => {
   });
 
   test('new configs include agent_skills key', () => {
-    const result = runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    const result = runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const config = readConfig(tmpDir);
@@ -182,7 +182,7 @@ describe('config-set agent_skills', () => {
   beforeEach(() => {
     tmpDir = createTempProject();
     // Ensure config exists first
-    runGsdTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
+    runThruntTools('config-ensure-section', tmpDir, { HOME: tmpDir, USERPROFILE: tmpDir });
   });
 
   afterEach(() => {
@@ -190,8 +190,8 @@ describe('config-set agent_skills', () => {
   });
 
   test('can set agent_skills via dot notation', () => {
-    const result = runGsdTools(
-      ['config-set', 'agent_skills.gsd-executor', '["skills/my-skill"]'],
+    const result = runThruntTools(
+      ['config-set', 'agent_skills.thrunt-telemetry-executor', '["skills/my-skill"]'],
       tmpDir,
       { HOME: tmpDir, USERPROFILE: tmpDir }
     );
@@ -199,7 +199,7 @@ describe('config-set agent_skills', () => {
 
     const config = readConfig(tmpDir);
     assert.deepStrictEqual(
-      config.agent_skills['gsd-executor'],
+      config.agent_skills['thrunt-telemetry-executor'],
       ['skills/my-skill'],
       'Should store array of skill paths'
     );

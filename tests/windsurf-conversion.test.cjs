@@ -6,7 +6,7 @@
  * literal parts of skill/subagent names.
  */
 
-process.env.GSD_TEST_MODE = '1';
+process.env.THRUNT_TEST_MODE = '1';
 
 const { describe, test } = require('node:test');
 const assert = require('node:assert');
@@ -29,31 +29,31 @@ Test body
 </objective>
 `;
 
-    const result = convertClaudeCommandToWindsurfSkill(input, 'gsd-quick');
+    const result = convertClaudeCommandToWindsurfSkill(input, 'thrunt-quick');
     const nameMatch = result.match(/^name:\s*(.+)$/m);
 
     assert.ok(nameMatch, 'frontmatter contains name field');
-    assert.strictEqual(nameMatch[1], 'gsd-quick', 'skill name is plain scalar');
-    assert.ok(!result.includes('name: "gsd-quick"'), 'quoted skill name is not emitted');
+    assert.strictEqual(nameMatch[1], 'thrunt-quick', 'skill name is plain scalar');
+    assert.ok(!result.includes('name: "thrunt-quick"'), 'quoted skill name is not emitted');
   });
 
   test('preserves slash for slash commands in markdown body', () => {
     const input = `---
-name: gsd:plan-phase
+name: hunt:plan
 description: Plan a phase
 ---
 
 Next:
-/gsd:execute-phase 17
-/gsd-help
-gsd:progress
+/hunt:run 17
+/thrunt-help
+thrunt:progress
 `;
 
-    const result = convertClaudeCommandToWindsurfSkill(input, 'gsd-plan-phase');
-    // Slash commands: /gsd:execute-phase -> /gsd-execute-phase
-    assert.ok(result.includes('/gsd-execute-phase 17'), 'slash command gsd: -> gsd-');
-    assert.ok(result.includes('/gsd-help'), '/gsd-help preserved');
-    assert.ok(result.includes('gsd-progress'), 'bare gsd: -> gsd-');
+    const result = convertClaudeCommandToWindsurfSkill(input, 'hunt-plan');
+    // Slash commands: /hunt:run -> /hunt-run
+    assert.ok(result.includes('/hunt-run 17'), 'slash command thrunt: -> thrunt-');
+    assert.ok(result.includes('/thrunt-help'), '/thrunt-help preserved');
+    assert.ok(result.includes('thrunt-progress'), 'bare thrunt: -> thrunt-');
   });
 
   test('includes windsurf_skill_adapter block', () => {
@@ -65,7 +65,7 @@ description: A test skill
 Body content.
 `;
 
-    const result = convertClaudeCommandToWindsurfSkill(input, 'gsd-test');
+    const result = convertClaudeCommandToWindsurfSkill(input, 'thrunt-test');
     assert.ok(result.includes('<windsurf_skill_adapter>'), 'adapter header present');
     assert.ok(result.includes('</windsurf_skill_adapter>'), 'adapter footer present');
     assert.ok(result.includes('Shell'), 'Shell tool mentioned');
@@ -76,7 +76,7 @@ Body content.
 describe('convertClaudeAgentToWindsurfAgent', () => {
   test('converts agent frontmatter with unquoted name', () => {
     const input = `---
-name: gsd-bugfix
+name: thrunt-bugfix
 description: "Fix bugs automatically"
 color: blue
 skills:
@@ -90,7 +90,7 @@ Agent body content.
     const result = convertClaudeAgentToWindsurfAgent(input);
     const nameMatch = result.match(/^name:\s*(.+)$/m);
     assert.ok(nameMatch, 'name field present');
-    assert.strictEqual(nameMatch[1], 'gsd-bugfix', 'agent name is plain scalar');
+    assert.strictEqual(nameMatch[1], 'thrunt-bugfix', 'agent name is plain scalar');
     // Should strip unsupported fields
     assert.ok(!result.includes('color:'), 'color field stripped');
     assert.ok(!result.includes('skills:'), 'skills field stripped');
@@ -124,10 +124,10 @@ describe('convertClaudeToWindsurfMarkdown', () => {
     assert.ok(result.includes('StrReplace('), 'Edit -> StrReplace');
   });
 
-  test('replaces $ARGUMENTS with {{GSD_ARGS}}', () => {
+  test('replaces $ARGUMENTS with {{THRUNT_ARGS}}', () => {
     const input = 'Pass $ARGUMENTS to the command.';
     const result = convertClaudeToWindsurfMarkdown(input);
-    assert.ok(result.includes('{{GSD_ARGS}}'), '$ARGUMENTS replaced');
+    assert.ok(result.includes('{{THRUNT_ARGS}}'), '$ARGUMENTS replaced');
   });
 
   test('removes classifyHandoffIfNeeded workarounds', () => {

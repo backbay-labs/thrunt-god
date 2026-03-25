@@ -1,4 +1,4 @@
-# GSD Architecture
+# THRUNT Architecture
 
 > System architecture for contributors and advanced users. For user-facing documentation, see [Feature Reference](FEATURES.md) or [User Guide](USER-GUIDE.md).
 
@@ -21,28 +21,28 @@
 
 ## System Overview
 
-GSD is a **meta-prompting framework** that sits between the user and AI coding agents (Claude Code, Gemini CLI, OpenCode, Codex, Copilot, Antigravity). It provides:
+THRUNT is a **meta-prompting framework** that sits between the user and AI coding agents (Claude Code, Gemini CLI, OpenCode, Codex, Copilot, Antigravity). It provides:
 
 1. **Context engineering** — Structured artifacts that give the AI everything it needs per task
 2. **Multi-agent orchestration** — Thin orchestrators that spawn specialized agents with fresh context windows
-3. **Spec-driven development** — Requirements → research → plans → execution → verification pipeline
-4. **State management** — Persistent project memory across sessions and context resets
+3. **Spec-driven development** — Hypotheses → research → plans → execution → validation pipeline
+4. **State management** — Persistent mission memory across sessions and context resets
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │                      USER                            │
-│            /gsd:command [args]                        │
+│            /thrunt:command [args]                        │
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
 │              COMMAND LAYER                            │
-│   commands/gsd/*.md — Prompt-based command files      │
+│   commands/thrunt/*.md — Prompt-based command files      │
 │   (Claude Code custom commands / Codex skills)        │
 └─────────────────────┬────────────────────────────────┘
                       │
 ┌─────────────────────▼────────────────────────────────┐
 │              WORKFLOW LAYER                           │
-│   get-shit-done/workflows/*.md — Orchestration logic  │
+│   thrunt-god/workflows/*.md — Orchestration logic  │
 │   (Reads references, spawns agents, manages state)    │
 └──────┬──────────────┬─────────────────┬──────────────┘
        │              │                 │
@@ -54,13 +54,13 @@ GSD is a **meta-prompting framework** that sits between the user and AI coding a
        │              │                 │
 ┌──────▼──────────────▼─────────────────▼──────────────┐
 │              CLI TOOLS LAYER                          │
-│   get-shit-done/bin/gsd-tools.cjs                     │
-│   (State, config, phase, roadmap, verify, templates)  │
+│   thrunt-god/bin/thrunt-tools.cjs                     │
+│   (State, config, phase, huntmap, validate, templates) │
 └──────────────────────┬───────────────────────────────┘
                        │
 ┌──────────────────────▼───────────────────────────────┐
 │              FILE SYSTEM (.planning/)                 │
-│   PROJECT.md | REQUIREMENTS.md | ROADMAP.md          │
+│   MISSION.md | HYPOTHESES.md | HUNTMAP.md          │
 │   STATE.md | config.json | phases/ | research/       │
 └──────────────────────────────────────────────────────┘
 ```
@@ -75,8 +75,8 @@ Every agent spawned by an orchestrator gets a clean context window (up to 200K t
 
 ### 2. Thin Orchestrators
 
-Workflow files (`get-shit-done/workflows/*.md`) never do heavy lifting. They:
-- Load context via `gsd-tools.cjs init <workflow>`
+Workflow files (`thrunt-god/workflows/*.md`) never do heavy lifting. They:
+- Load context via `thrunt-tools.cjs init <workflow>`
 - Spawn specialized agents with focused prompts
 - Collect results and route to the next step
 - Update state between steps
@@ -95,30 +95,30 @@ Workflow feature flags follow the **absent = enabled** pattern. If a key is miss
 ### 5. Defense in Depth
 
 Multiple layers prevent common failure modes:
-- Plans are verified before execution (plan-checker agent)
+- Plans are validated before execution (plan-checker agent)
 - Execution produces atomic commits per task
-- Post-execution verification checks against phase goals
-- UAT provides human verification as final gate
+- Post-execution findings validation checks against phase goals
+- Evidence Review provides human validation as final gate
 
 ---
 
 ## Component Architecture
 
-### Commands (`commands/gsd/*.md`)
+### Commands (`commands/thrunt/*.md`)
 
 User-facing entry points. Each file contains YAML frontmatter (name, description, allowed-tools) and a prompt body that bootstraps the workflow. Commands are installed as:
-- **Claude Code:** Custom slash commands (`/gsd:command-name`)
-- **OpenCode:** Slash commands (`/gsd-command-name`)
-- **Codex:** Skills (`$gsd-command-name`)
-- **Copilot:** Slash commands (`/gsd:command-name`)
+- **Claude Code:** Custom slash commands (`/thrunt:command-name`)
+- **OpenCode:** Slash commands (`/thrunt-command-name`)
+- **Codex:** Skills (`$thrunt-command-name`)
+- **Copilot:** Slash commands (`/thrunt:command-name`)
 - **Antigravity:** Skills
 
 **Total commands:** 44
 
-### Workflows (`get-shit-done/workflows/*.md`)
+### Workflows (`thrunt-god/workflows/*.md`)
 
 Orchestration logic that commands reference. Contains the step-by-step process including:
-- Context loading via `gsd-tools.cjs init`
+- Context loading via `thrunt-tools.cjs init`
 - Agent spawn instructions with model resolution
 - Gate/checkpoint definitions
 - State update patterns
@@ -136,29 +136,29 @@ Specialized agent definitions with frontmatter specifying:
 
 **Total agents:** 16
 
-### References (`get-shit-done/references/*.md`)
+### References (`thrunt-god/references/*.md`)
 
 Shared knowledge documents that workflows and agents `@-reference`:
 - `checkpoints.md` — Checkpoint type definitions and interaction patterns
 - `model-profiles.md` — Per-agent model tier assignments
-- `verification-patterns.md` — How to verify different artifact types
+- `validation-patterns.md` — How to validate different artifact types
 - `planning-config.md` — Full config schema and behavior
 - `git-integration.md` — Git commit, branching, and history patterns
-- `questioning.md` — Dream extraction philosophy for project initialization
+- `questioning.md` — Dream extraction philosophy for mission initialization
 - `tdd.md` — Test-driven development integration patterns
 - `ui-brand.md` — Visual output formatting patterns
 
-### Templates (`get-shit-done/templates/`)
+### Templates (`thrunt-god/templates/`)
 
-Markdown templates for all planning artifacts. Used by `gsd-tools.cjs template fill` and `scaffold` commands to create pre-structured files:
-- `project.md`, `requirements.md`, `roadmap.md`, `state.md` — Core project files
+Markdown templates for all planning artifacts. Used by `thrunt-tools.cjs template fill` and `scaffold` commands to create pre-structured files:
+- `mission.md`, `hypotheses.md`, `huntmap.md`, `state.md` — Core hunt workspace files
 - `phase-prompt.md` — Phase execution prompt template
 - `summary.md` (+ `summary-minimal.md`, `summary-standard.md`, `summary-complex.md`) — Granularity-aware summary templates
 - `DEBUG.md` — Debug session tracking template
-- `UI-SPEC.md`, `UAT.md`, `VALIDATION.md` — Specialized verification templates
+- `UI-SPEC.md`, `EVIDENCE_REVIEW.md`, `VALIDATION.md` — Specialized validation templates
 - `discussion-log.md` — Discussion audit trail template
 - `codebase/` — Brownfield mapping templates (stack, architecture, conventions, concerns, structure, testing, integrations)
-- `research-project/` — Research output templates (SUMMARY, STACK, FEATURES, ARCHITECTURE, PITFALLS)
+- `research-program/` — Research output templates (SUMMARY, STACK, FEATURES, ARCHITECTURE, PITFALLS)
 
 ### Hooks (`hooks/`)
 
@@ -166,24 +166,24 @@ Runtime hooks that integrate with the host AI agent:
 
 | Hook | Event | Purpose |
 |------|-------|---------|
-| `gsd-statusline.js` | `statusLine` | Displays model, task, directory, and context usage bar |
-| `gsd-context-monitor.js` | `PostToolUse` / `AfterTool` | Injects agent-facing context warnings at 35%/25% remaining |
-| `gsd-check-update.js` | `SessionStart` | Background check for new GSD versions |
-| `gsd-prompt-guard.js` | `PreToolUse` | Scans `.planning/` writes for prompt injection patterns (advisory) |
-| `gsd-workflow-guard.js` | `PreToolUse` | Detects file edits outside GSD workflow context (advisory, opt-in via `hooks.workflow_guard`) |
+| `thrunt-statusline.js` | `statusLine` | Displays model, task, directory, and context usage bar |
+| `thrunt-context-monitor.js` | `PostToolUse` / `AfterTool` | Injects agent-facing context warnings at 35%/25% remaining |
+| `thrunt-check-update.js` | `SessionStart` | Background check for new THRUNT versions |
+| `thrunt-prompt-guard.js` | `PreToolUse` | Scans `.planning/` writes for prompt injection patterns (advisory) |
+| `thrunt-workflow-guard.js` | `PreToolUse` | Detects file edits outside THRUNT workflow context (advisory, opt-in via `hooks.workflow_guard`) |
 
-### CLI Tools (`get-shit-done/bin/`)
+### CLI Tools (`thrunt-god/bin/`)
 
-Node.js CLI utility (`gsd-tools.cjs`) with 17 domain modules:
+Node.js CLI utility (`thrunt-tools.cjs`) with 17 domain modules:
 
 | Module | Responsibility |
 |--------|---------------|
 | `core.cjs` | Error handling, output formatting, shared utilities |
 | `state.cjs` | STATE.md parsing, updating, progression, metrics |
 | `phase.cjs` | Phase directory operations, decimal numbering, plan indexing |
-| `roadmap.cjs` | ROADMAP.md parsing, phase extraction, plan progress |
+| `huntmap.cjs` | HUNTMAP.md parsing, phase extraction, plan progress |
 | `config.cjs` | config.json read/write, section initialization |
-| `verify.cjs` | Plan structure, phase completeness, reference, commit validation |
+| `validate.cjs` | Plan structure, phase completeness, reference, commit validation |
 | `template.cjs` | Template selection and filling with variable substitution |
 | `frontmatter.cjs` | YAML frontmatter CRUD operations |
 | `init.cjs` | Compound context loading for each workflow type |
@@ -191,7 +191,7 @@ Node.js CLI utility (`gsd-tools.cjs`) with 17 domain modules:
 | `commands.cjs` | Misc commands (slug, timestamp, todos, scaffolding, stats) |
 | `model-profiles.cjs` | Model profile resolution table |
 | `security.cjs` | Path traversal prevention, prompt injection detection, safe JSON parsing, shell argument validation |
-| `uat.cjs` | UAT file parsing, verification debt tracking, audit-uat support |
+| `uat.cjs` | Evidence Review file parsing, validation debt tracking, audit-evidence support |
 
 ---
 
@@ -202,10 +202,10 @@ Node.js CLI utility (`gsd-tools.cjs`) with 17 domain modules:
 ```
 Orchestrator (workflow .md)
     │
-    ├── Load context: gsd-tools.cjs init <workflow> <phase>
-    │   Returns JSON with: project info, config, state, phase details
+    ├── Load context: thrunt-tools.cjs init <workflow> <phase>
+    │   Returns JSON with: mission/workspace info, config, state, phase details
     │
-    ├── Resolve model: gsd-tools.cjs resolve-model <agent-name>
+    ├── Resolve model: thrunt-tools.cjs resolve-model <agent-name>
     │   Returns: opus | sonnet | haiku | inherit
     │
     ├── Spawn Agent (Task/SubAgent call)
@@ -216,26 +216,26 @@ Orchestrator (workflow .md)
     │
     ├── Collect result
     │
-    └── Update state: gsd-tools.cjs state update/patch/advance-plan
+    └── Update state: thrunt-tools.cjs state update/patch/advance-plan
 ```
 
 ### Agent Spawn Categories
 
 | Category | Agents | Parallelism |
 |----------|--------|-------------|
-| **Researchers** | gsd-project-researcher, gsd-phase-researcher, gsd-ui-researcher, gsd-advisor-researcher | 4 parallel (stack, features, architecture, pitfalls); advisor spawns during discuss-phase |
-| **Synthesizers** | gsd-research-synthesizer | Sequential (after researchers complete) |
-| **Planners** | gsd-planner, gsd-roadmapper | Sequential |
-| **Checkers** | gsd-plan-checker, gsd-integration-checker, gsd-ui-checker, gsd-nyquist-auditor | Sequential (verification loop, max 3 iterations) |
-| **Executors** | gsd-executor | Parallel within waves, sequential across waves |
-| **Verifiers** | gsd-verifier | Sequential (after all executors complete) |
-| **Mappers** | gsd-codebase-mapper | 4 parallel (tech, arch, quality, concerns) |
-| **Debuggers** | gsd-debugger | Sequential (interactive) |
-| **Auditors** | gsd-ui-auditor | Sequential |
+| **Researchers** | thrunt-signal-triager, thrunt-query-writer, thrunt-ui-researcher, thrunt-intel-advisor | 4 parallel (stack, features, architecture, pitfalls); advisor spawns during shape-hypothesis |
+| **Synthesizers** | thrunt-intel-synthesizer | Sequential (after researchers complete) |
+| **Planners** | thrunt-hunt-planner, thrunt-huntmap-builder | Sequential |
+| **Checkers** | thrunt-hunt-checker, thrunt-evidence-correlator, thrunt-ui-checker, thrunt-false-positive-auditor | Sequential (validation loop, max 3 iterations) |
+| **Executors** | thrunt-telemetry-executor | Parallel within waves, sequential across waves |
+| **Validators** | thrunt-findings-validator | Sequential (after all executors complete) |
+| **Mappers** | thrunt-environment-mapper | 4 parallel (tech, arch, quality, concerns) |
+| **Debuggers** | thrunt-incident-debugger | Sequential (interactive) |
+| **Auditors** | thrunt-ui-auditor | Sequential |
 
 ### Wave Execution Model
 
-During `execute-phase`, plans are grouped into dependency waves:
+During `hunt-run`, plans are grouped into dependency waves:
 
 ```
 Wave Analysis:
@@ -249,7 +249,7 @@ Wave Analysis:
 Each executor gets:
 - Fresh 200K context window
 - The specific PLAN.md to execute
-- Project context (PROJECT.md, STATE.md)
+- Project context (MISSION.md, STATE.md)
 - Phase context (CONTEXT.md, RESEARCH.md if available)
 
 #### Parallel Commit Safety
@@ -283,10 +283,10 @@ Questions (questioning.md philosophy)
 Research Synthesizer → SUMMARY.md
     │
     ▼
-Requirements extraction → REQUIREMENTS.md
+Hypotheses extraction → HYPOTHESES.md
     │
     ▼
-Roadmapper → ROADMAP.md
+Huntmap Builder → HUNTMAP.md
     │
     ▼
 User approval → STATE.md initialized
@@ -295,26 +295,26 @@ User approval → STATE.md initialized
 ### Phase Execution Flow
 
 ```
-discuss-phase → CONTEXT.md (user preferences)
+shape-hypothesis → CONTEXT.md (user preferences)
     │
     ▼
 ui-phase → UI-SPEC.md (design contract, optional)
     │
     ▼
-plan-phase
+hunt-plan
     ├── Phase Researcher → RESEARCH.md
     ├── Planner → PLAN.md files
     └── Plan Checker → Verify loop (max 3x)
     │
     ▼
-execute-phase
+hunt-run
     ├── Wave analysis (dependency grouping)
     ├── Executor per plan → code + atomic commits
     ├── SUMMARY.md per plan
-    └── Verifier → VERIFICATION.md
+    └── Verifier → FINDINGS.md
     │
     ▼
-verify-work → UAT.md (user acceptance testing)
+validate-findings → EVIDENCE_REVIEW.md (user acceptance testing)
     │
     ▼
 ui-review → UI-REVIEW.md (visual audit, optional)
@@ -325,9 +325,9 @@ ui-review → UI-REVIEW.md (visual audit, optional)
 Each workflow stage produces artifacts that feed into subsequent stages:
 
 ```
-PROJECT.md ────────────────────────────────────────────► All agents
-REQUIREMENTS.md ───────────────────────────────────────► Planner, Verifier, Auditor
-ROADMAP.md ────────────────────────────────────────────► Orchestrators
+MISSION.md ────────────────────────────────────────────► All agents
+HYPOTHESES.md ───────────────────────────────────────► Planner, Verifier, Auditor
+HUNTMAP.md ────────────────────────────────────────────► Orchestrators
 STATE.md ──────────────────────────────────────────────► All agents (decisions, blockers)
 CONTEXT.md (per phase) ────────────────────────────────► Researcher, Planner, Executor
 RESEARCH.md (per phase) ───────────────────────────────► Planner, Plan Checker
@@ -344,18 +344,18 @@ UI-SPEC.md (per phase) ───────────────────
 
 ```
 ~/.claude/                          # Claude Code (global install)
-├── commands/gsd/*.md               # 37 slash commands
-├── get-shit-done/
-│   ├── bin/gsd-tools.cjs           # CLI utility
+├── commands/thrunt/*.md               # 37 slash commands
+├── thrunt-god/
+│   ├── bin/thrunt-tools.cjs           # CLI utility
 │   ├── bin/lib/*.cjs               # 15 domain modules
 │   ├── workflows/*.md              # 42 workflow definitions
 │   ├── references/*.md             # 13 shared reference docs
 │   └── templates/                  # Planning artifact templates
 ├── agents/*.md                     # 15 agent definitions
 ├── hooks/
-│   ├── gsd-statusline.js           # Statusline hook
-│   ├── gsd-context-monitor.js      # Context warning hook
-│   └── gsd-check-update.js         # Update check hook
+│   ├── thrunt-statusline.js           # Statusline hook
+│   ├── thrunt-context-monitor.js      # Context warning hook
+│   └── thrunt-check-update.js         # Update check hook
 ├── settings.json                   # Hook registrations
 └── VERSION                         # Installed version number
 ```
@@ -367,23 +367,23 @@ Equivalent paths for other runtimes:
 - **Copilot:** `~/.github/`
 - **Antigravity:** `~/.gemini/antigravity/` (global) or `./.agent/` (local)
 
-### Project Files (`.planning/`)
+### Planning Files (`.planning/`)
 
 ```
 .planning/
-├── PROJECT.md              # Project vision, constraints, decisions, evolution rules
-├── REQUIREMENTS.md         # Scoped requirements (v1/v2/out-of-scope)
-├── ROADMAP.md              # Phase breakdown with status tracking
+├── MISSION.md              # Mission context, constraints, decisions, evolution rules
+├── HYPOTHESES.md         # Scoped requirements (v1/v2/out-of-scope)
+├── HUNTMAP.md              # Phase breakdown with status tracking
 ├── STATE.md                # Living memory: position, decisions, blockers, metrics
 ├── config.json             # Workflow configuration
 ├── MILESTONES.md           # Completed milestone archive
-├── research/               # Domain research from /gsd:new-project
+├── research/               # Domain research from /hunt:new-program
 │   ├── SUMMARY.md
 │   ├── STACK.md
 │   ├── FEATURES.md
 │   ├── ARCHITECTURE.md
 │   └── PITFALLS.md
-├── codebase/               # Brownfield mapping (from /gsd:map-codebase)
+├── codebase/               # Brownfield mapping (from /hunt:map-environment)
 │   ├── STACK.md
 │   ├── ARCHITECTURE.md
 │   ├── CONVENTIONS.md
@@ -393,15 +393,15 @@ Equivalent paths for other runtimes:
 │   └── INTEGRATIONS.md
 ├── phases/
 │   └── XX-phase-name/
-│       ├── XX-CONTEXT.md       # User preferences (from discuss-phase)
-│       ├── XX-RESEARCH.md      # Ecosystem research (from plan-phase)
+│       ├── XX-CONTEXT.md       # User preferences (from shape-hypothesis)
+│       ├── XX-RESEARCH.md      # Ecosystem research (from hunt-plan)
 │       ├── XX-YY-PLAN.md       # Execution plans
 │       ├── XX-YY-SUMMARY.md    # Execution outcomes
-│       ├── XX-VERIFICATION.md  # Post-execution verification
+│       ├── XX-FINDINGS.md  # Post-execution findings validation
 │       ├── XX-VALIDATION.md    # Nyquist test coverage mapping
 │       ├── XX-UI-SPEC.md       # UI design contract (from ui-phase)
 │       ├── XX-UI-REVIEW.md     # Visual audit scores (from ui-review)
-│       └── XX-UAT.md           # User acceptance test results
+│       └── XX-EVIDENCE_REVIEW.md           # User acceptance test results
 ├── quick/                  # Quick task tracking
 │   └── YYMMDD-xxx-slug/
 │       ├── PLAN.md
@@ -409,13 +409,13 @@ Equivalent paths for other runtimes:
 ├── todos/
 │   ├── pending/            # Captured ideas
 │   └── done/               # Completed todos
-├── threads/               # Persistent context threads (from /gsd:thread)
-├── seeds/                 # Forward-looking ideas (from /gsd:plant-seed)
+├── threads/               # Persistent context threads (from /thrunt:thread)
+├── seeds/                 # Forward-looking ideas (from /thrunt:plant-seed)
 ├── debug/                  # Active debug sessions
 │   ├── *.md                # Active sessions
 │   ├── resolved/           # Archived sessions
 │   └── knowledge-base.md   # Persistent debug learnings
-├── ui-reviews/             # Screenshots from /gsd:ui-review (gitignored)
+├── ui-reviews/             # Screenshots from /thrunt:ui-review (gitignored)
 └── continue-here.md        # Context handoff (from pause-work)
 ```
 
@@ -437,9 +437,9 @@ The installer (`bin/install.js`, ~3,000 lines) handles:
    - Antigravity: Skills-first with Google model equivalents
 5. **Path normalization** — Replaces `~/.claude/` paths with runtime-specific paths
 6. **Settings integration** — Registers hooks in runtime's `settings.json`
-7. **Patch backup** — Since v1.17, backs up locally modified files to `gsd-local-patches/` for `/gsd:reapply-patches`
-8. **Manifest tracking** — Writes `gsd-file-manifest.json` for clean uninstall
-9. **Uninstall mode** — `--uninstall` removes all GSD files, hooks, and settings
+7. **Patch backup** — Since v1.17, backs up locally modified files to `thrunt-local-patches/` for `/thrunt:reapply-patches`
+8. **Manifest tracking** — Writes `thrunt-file-manifest.json` for clean uninstall
+9. **Uninstall mode** — `--uninstall` removes all THRUNT files, hooks, and settings
 
 ### Platform Handling
 
@@ -456,17 +456,17 @@ The installer (`bin/install.js`, ~3,000 lines) handles:
 ```
 Runtime Engine (Claude Code / Gemini CLI)
     │
-    ├── statusLine event ──► gsd-statusline.js
+    ├── statusLine event ──► thrunt-statusline.js
     │   Reads: stdin (session JSON)
     │   Writes: stdout (formatted status), /tmp/claude-ctx-{session}.json (bridge)
     │
-    ├── PostToolUse/AfterTool event ──► gsd-context-monitor.js
+    ├── PostToolUse/AfterTool event ──► thrunt-context-monitor.js
     │   Reads: stdin (tool event JSON), /tmp/claude-ctx-{session}.json (bridge)
     │   Writes: stdout (hookSpecificOutput with additionalContext warning)
     │
-    └── SessionStart event ──► gsd-check-update.js
+    └── SessionStart event ──► thrunt-check-update.js
         Reads: VERSION file
-        Writes: ~/.claude/cache/gsd-update-check.json (spawns background process)
+        Writes: ~/.claude/cache/thrunt-update-check.json (spawns background process)
 ```
 
 ### Context Monitor Thresholds
@@ -489,31 +489,31 @@ Debounce: 5 tool uses between repeated warnings. Severity escalation (WARNING→
 
 ### Security Hooks (v1.27)
 
-**Prompt Guard** (`gsd-prompt-guard.js`):
+**Prompt Guard** (`thrunt-prompt-guard.js`):
 - Triggers on Write/Edit to `.planning/` files
 - Scans content for prompt injection patterns (role override, instruction bypass, system tag injection)
 - Advisory-only — logs detection, does not block
 - Patterns are inlined (subset of `security.cjs`) for hook independence
 
-**Workflow Guard** (`gsd-workflow-guard.js`):
+**Workflow Guard** (`thrunt-workflow-guard.js`):
 - Triggers on Write/Edit to non-`.planning/` files
-- Detects edits outside GSD workflow context (no active `/gsd:` command or Task subagent)
-- Advises using `/gsd:quick` or `/gsd:fast` for state-tracked changes
+- Detects edits outside THRUNT workflow context (no active `/thrunt:` command or Task subagent)
+- Advises using `/thrunt:quick` or `/thrunt:fast` for state-tracked changes
 - Opt-in via `hooks.workflow_guard: true` (default: false)
 
 ---
 
 ## Runtime Abstraction
 
-GSD supports 6 AI coding runtimes through a unified command/workflow architecture:
+THRUNT supports 6 AI coding runtimes through a unified command/workflow architecture:
 
 | Runtime | Command Format | Agent System | Config Location |
 |---------|---------------|--------------|-----------------|
-| Claude Code | `/gsd:command` | Task spawning | `~/.claude/` |
-| OpenCode | `/gsd-command` | Subagent mode | `~/.config/opencode/` |
-| Gemini CLI | `/gsd:command` | Task spawning | `~/.gemini/` |
-| Codex | `$gsd-command` | Skills | `~/.codex/` |
-| Copilot | `/gsd:command` | Agent delegation | `~/.github/` |
+| Claude Code | `/thrunt:command` | Task spawning | `~/.claude/` |
+| OpenCode | `/thrunt-command` | Subagent mode | `~/.config/opencode/` |
+| Gemini CLI | `/thrunt:command` | Task spawning | `~/.gemini/` |
+| Codex | `$thrunt-command` | Skills | `~/.codex/` |
+| Copilot | `/thrunt:command` | Agent delegation | `~/.github/` |
 | Antigravity | Skills | Skills | `~/.gemini/antigravity/` |
 
 ### Abstraction Points
@@ -522,6 +522,6 @@ GSD supports 6 AI coding runtimes through a unified command/workflow architectur
 2. **Hook event names** — Claude uses `PostToolUse`, Gemini uses `AfterTool`
 3. **Agent frontmatter** — Each runtime has its own agent definition format
 4. **Path conventions** — Each runtime stores config in different directories
-5. **Model references** — `inherit` profile lets GSD defer to runtime's model selection
+5. **Model references** — `inherit` profile lets THRUNT defer to runtime's model selection
 
 The installer handles all translation at install time. Workflows and agents are written in Claude Code's native format and transformed during deployment.

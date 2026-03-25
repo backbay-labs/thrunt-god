@@ -1,19 +1,19 @@
-# GSD CLI Tools Reference
+# THRUNT CLI Tools Reference
 
-> Programmatic API reference for `gsd-tools.cjs`. Used by workflows and agents internally. For user-facing commands, see [Command Reference](COMMANDS.md).
+> Programmatic API reference for `thrunt-tools.cjs`. Used by workflows and agents internally. For user-facing commands, see [Command Reference](COMMANDS.md).
 
 ---
 
 ## Overview
 
-`gsd-tools.cjs` is a Node.js CLI utility that replaces repetitive inline bash patterns across GSD's ~50 command, workflow, and agent files. It centralizes: config parsing, model resolution, phase lookup, git commits, summary verification, state management, and template operations.
+`thrunt-tools.cjs` is a Node.js CLI utility that replaces repetitive inline bash patterns across THRUNT's command, workflow, and agent files. It centralizes: config parsing, model resolution, phase lookup, git commits, summary validation, state management, and template operations.
 
-**Location:** `get-shit-done/bin/gsd-tools.cjs`
-**Modules:** 15 domain modules in `get-shit-done/bin/lib/`
+**Location:** `thrunt-god/bin/thrunt-tools.cjs`
+**Modules:** 15 domain modules in `thrunt-god/bin/lib/`
 
 **Usage:**
 ```bash
-node gsd-tools.cjs <command> [args] [--raw] [--cwd <path>]
+node thrunt-tools.cjs <command> [args] [--raw] [--cwd <path>]
 ```
 
 **Global Flags:**
@@ -26,44 +26,44 @@ node gsd-tools.cjs <command> [args] [--raw] [--cwd <path>]
 
 ## State Commands
 
-Manage `.planning/STATE.md` — the project's living memory.
+Manage `.planning/STATE.md` — the hunt workspace's living memory.
 
 ```bash
-# Load full project config + state as JSON
-node gsd-tools.cjs state load
+# Load full workspace config + state as JSON
+node thrunt-tools.cjs state load
 
 # Output STATE.md frontmatter as JSON
-node gsd-tools.cjs state json
+node thrunt-tools.cjs state json
 
 # Update a single field
-node gsd-tools.cjs state update <field> <value>
+node thrunt-tools.cjs state update <field> <value>
 
 # Get STATE.md content or a specific section
-node gsd-tools.cjs state get [section]
+node thrunt-tools.cjs state get [section]
 
 # Batch update multiple fields
-node gsd-tools.cjs state patch --field1 val1 --field2 val2
+node thrunt-tools.cjs state patch --field1 val1 --field2 val2
 
 # Increment plan counter
-node gsd-tools.cjs state advance-plan
+node thrunt-tools.cjs state advance-plan
 
 # Record execution metrics
-node gsd-tools.cjs state record-metric --phase N --plan M --duration Xmin [--tasks N] [--files N]
+node thrunt-tools.cjs state record-metric --phase N --plan M --duration Xmin [--tasks N] [--files N]
 
 # Recalculate progress bar
-node gsd-tools.cjs state update-progress
+node thrunt-tools.cjs state update-progress
 
 # Add a decision
-node gsd-tools.cjs state add-decision --summary "..." [--phase N] [--rationale "..."]
+node thrunt-tools.cjs state add-decision --summary "..." [--phase N] [--rationale "..."]
 # Or from files:
-node gsd-tools.cjs state add-decision --summary-file path [--rationale-file path]
+node thrunt-tools.cjs state add-decision --summary-file path [--rationale-file path]
 
 # Add/resolve blockers
-node gsd-tools.cjs state add-blocker --text "..."
-node gsd-tools.cjs state resolve-blocker --text "..."
+node thrunt-tools.cjs state add-blocker --text "..."
+node thrunt-tools.cjs state resolve-blocker --text "..."
 
 # Record session continuity
-node gsd-tools.cjs state record-session --stopped-at "..." [--resume-file path]
+node thrunt-tools.cjs state record-session --stopped-at "..." [--resume-file path]
 ```
 
 ### State Snapshot
@@ -71,7 +71,7 @@ node gsd-tools.cjs state record-session --stopped-at "..." [--resume-file path]
 Structured parse of the full STATE.md:
 
 ```bash
-node gsd-tools.cjs state-snapshot
+node thrunt-tools.cjs state-snapshot
 ```
 
 Returns JSON with: current position, phase, plan, status, decisions, blockers, metrics, last activity.
@@ -80,49 +80,49 @@ Returns JSON with: current position, phase, plan, status, decisions, blockers, m
 
 ## Phase Commands
 
-Manage phases — directories, numbering, and roadmap sync.
+Manage phases — directories, numbering, and huntmap sync.
 
 ```bash
 # Find phase directory by number
-node gsd-tools.cjs find-phase <phase>
+node thrunt-tools.cjs find-phase <phase>
 
 # Calculate next decimal phase number for insertions
-node gsd-tools.cjs phase next-decimal <phase>
+node thrunt-tools.cjs phase next-decimal <phase>
 
-# Append new phase to roadmap + create directory
-node gsd-tools.cjs phase add <description>
+# Append new phase to huntmap + create directory
+node thrunt-tools.cjs phase add <description>
 
 # Insert decimal phase after existing
-node gsd-tools.cjs phase insert <after> <description>
+node thrunt-tools.cjs phase insert <after> <description>
 
 # Remove phase, renumber subsequent
-node gsd-tools.cjs phase remove <phase> [--force]
+node thrunt-tools.cjs phase remove <phase> [--force]
 
-# Mark phase complete, update state + roadmap
-node gsd-tools.cjs phase complete <phase>
+# Mark phase complete, update state + huntmap
+node thrunt-tools.cjs phase complete <phase>
 
 # Index plans with waves and status
-node gsd-tools.cjs phase-plan-index <phase>
+node thrunt-tools.cjs phase-plan-index <phase>
 
 # List phases with filtering
-node gsd-tools.cjs phases list [--type planned|executed|all] [--phase N] [--include-archived]
+node thrunt-tools.cjs phases list [--type planned|executed|all] [--phase N] [--include-archived]
 ```
 
 ---
 
-## Roadmap Commands
+## Huntmap Commands
 
-Parse and update `ROADMAP.md`.
+Parse and update `HUNTMAP.md`.
 
 ```bash
-# Extract phase section from ROADMAP.md
-node gsd-tools.cjs roadmap get-phase <phase>
+# Extract phase section from HUNTMAP.md
+node thrunt-tools.cjs huntmap get-phase <phase>
 
-# Full roadmap parse with disk status
-node gsd-tools.cjs roadmap analyze
+# Full huntmap parse with disk status
+node thrunt-tools.cjs huntmap analyze
 
 # Update progress table row from disk
-node gsd-tools.cjs roadmap update-plan-progress <N>
+node thrunt-tools.cjs huntmap update-plan-progress <N>
 ```
 
 ---
@@ -133,16 +133,16 @@ Read and write `.planning/config.json`.
 
 ```bash
 # Initialize config.json with defaults
-node gsd-tools.cjs config-ensure-section
+node thrunt-tools.cjs config-ensure-section
 
 # Set a config value (dot notation)
-node gsd-tools.cjs config-set <key> <value>
+node thrunt-tools.cjs config-set <key> <value>
 
 # Get a config value
-node gsd-tools.cjs config-get <key>
+node thrunt-tools.cjs config-get <key>
 
 # Set model profile
-node gsd-tools.cjs config-set-model-profile <profile>
+node thrunt-tools.cjs config-set-model-profile <profile>
 ```
 
 ---
@@ -151,11 +151,11 @@ node gsd-tools.cjs config-set-model-profile <profile>
 
 ```bash
 # Get model for agent based on current profile
-node gsd-tools.cjs resolve-model <agent-name>
+node thrunt-tools.cjs resolve-model <agent-name>
 # Returns: opus | sonnet | haiku | inherit
 ```
 
-Agent names: `gsd-planner`, `gsd-executor`, `gsd-phase-researcher`, `gsd-project-researcher`, `gsd-research-synthesizer`, `gsd-verifier`, `gsd-plan-checker`, `gsd-integration-checker`, `gsd-roadmapper`, `gsd-debugger`, `gsd-codebase-mapper`, `gsd-nyquist-auditor`
+Agent names: `thrunt-hunt-planner`, `thrunt-telemetry-executor`, `thrunt-query-writer`, `thrunt-signal-triager`, `thrunt-intel-synthesizer`, `thrunt-findings-validator`, `thrunt-hunt-checker`, `thrunt-evidence-correlator`, `thrunt-huntmap-builder`, `thrunt-incident-debugger`, `thrunt-environment-mapper`, `thrunt-false-positive-auditor`
 
 ---
 
@@ -165,39 +165,39 @@ Validate plans, phases, references, and commits.
 
 ```bash
 # Verify SUMMARY.md file
-node gsd-tools.cjs verify-summary <path> [--check-count N]
+node thrunt-tools.cjs validate-summary <path> [--check-count N]
 
 # Check PLAN.md structure + tasks
-node gsd-tools.cjs verify plan-structure <file>
+node thrunt-tools.cjs validate plan-structure <file>
 
 # Check all plans have summaries
-node gsd-tools.cjs verify phase-completeness <phase>
+node thrunt-tools.cjs validate phase-completeness <phase>
 
 # Check @-refs + paths resolve
-node gsd-tools.cjs verify references <file>
+node thrunt-tools.cjs validate references <file>
 
-# Batch verify commit hashes
-node gsd-tools.cjs verify commits <hash1> [hash2] ...
+# Batch validate commit hashes
+node thrunt-tools.cjs validate commits <hash1> [hash2] ...
 
 # Check must_haves.artifacts
-node gsd-tools.cjs verify artifacts <plan-file>
+node thrunt-tools.cjs validate artifacts <plan-file>
 
 # Check must_haves.key_links
-node gsd-tools.cjs verify key-links <plan-file>
+node thrunt-tools.cjs validate key-links <plan-file>
 ```
 
 ---
 
 ## Validation Commands
 
-Check project integrity.
+Check hunt workspace integrity.
 
 ```bash
-# Check phase numbering, disk/roadmap sync
-node gsd-tools.cjs validate consistency
+# Check phase numbering, disk/huntmap sync
+node thrunt-tools.cjs validate consistency
 
 # Check .planning/ integrity, optionally repair
-node gsd-tools.cjs validate health [--repair]
+node thrunt-tools.cjs validate health [--repair]
 ```
 
 ---
@@ -208,13 +208,13 @@ Template selection and filling.
 
 ```bash
 # Select summary template based on granularity
-node gsd-tools.cjs template select <type>
+node thrunt-tools.cjs template select <type>
 
 # Fill template with variables
-node gsd-tools.cjs template fill <type> --phase N [--plan M] [--name "..."] [--type execute|tdd] [--wave N] [--fields '{json}']
+node thrunt-tools.cjs template fill <type> --phase N [--plan M] [--name "..."] [--type execute|tdd] [--wave N] [--fields '{json}']
 ```
 
-Template types for `fill`: `summary`, `plan`, `verification`
+Template types for `fill`: `summary`, `plan`, `evidence-review`, `findings`
 
 ---
 
@@ -224,16 +224,16 @@ YAML frontmatter CRUD operations on any Markdown file.
 
 ```bash
 # Extract frontmatter as JSON
-node gsd-tools.cjs frontmatter get <file> [--field key]
+node thrunt-tools.cjs frontmatter get <file> [--field key]
 
 # Update single field
-node gsd-tools.cjs frontmatter set <file> --field key --value jsonVal
+node thrunt-tools.cjs frontmatter set <file> --field key --value jsonVal
 
 # Merge JSON into frontmatter
-node gsd-tools.cjs frontmatter merge <file> --data '{json}'
+node thrunt-tools.cjs frontmatter merge <file> --data '{json}'
 
 # Validate required fields
-node gsd-tools.cjs frontmatter validate <file> --schema plan|summary|verification
+node thrunt-tools.cjs frontmatter validate <file> --schema plan|summary|findings
 ```
 
 ---
@@ -244,43 +244,43 @@ Create pre-structured files and directories.
 
 ```bash
 # Create CONTEXT.md template
-node gsd-tools.cjs scaffold context --phase N
+node thrunt-tools.cjs scaffold context --phase N
 
-# Create UAT.md template
-node gsd-tools.cjs scaffold uat --phase N
+# Create EVIDENCE_REVIEW.md template
+node thrunt-tools.cjs scaffold evidence-review --phase N
 
-# Create VERIFICATION.md template
-node gsd-tools.cjs scaffold verification --phase N
+# Create FINDINGS.md template
+node thrunt-tools.cjs scaffold findings --phase N
 
 # Create phase directory
-node gsd-tools.cjs scaffold phase-dir --phase N --name "phase name"
+node thrunt-tools.cjs scaffold phase-dir --phase N --name "phase name"
 ```
 
 ---
 
 ## Init Commands (Compound Context Loading)
 
-Load all context needed for a specific workflow in one call. Returns JSON with project info, config, state, and workflow-specific data.
+Load all context needed for a specific workflow in one call. Returns JSON with mission/workspace info, config, state, and workflow-specific data.
 
 ```bash
-node gsd-tools.cjs init execute-phase <phase>
-node gsd-tools.cjs init plan-phase <phase>
-node gsd-tools.cjs init new-project
-node gsd-tools.cjs init new-milestone
-node gsd-tools.cjs init quick <description>
-node gsd-tools.cjs init resume
-node gsd-tools.cjs init verify-work <phase>
-node gsd-tools.cjs init phase-op <phase>
-node gsd-tools.cjs init todos [area]
-node gsd-tools.cjs init milestone-op
-node gsd-tools.cjs init map-codebase
-node gsd-tools.cjs init progress
+node thrunt-tools.cjs init run <phase>
+node thrunt-tools.cjs init plan <phase>
+node thrunt-tools.cjs init new-program
+node thrunt-tools.cjs init new-milestone
+node thrunt-tools.cjs init quick <description>
+node thrunt-tools.cjs init resume
+node thrunt-tools.cjs init validate-findings <phase>
+node thrunt-tools.cjs init phase-op <phase>
+node thrunt-tools.cjs init todos [area]
+node thrunt-tools.cjs init milestone-op
+node thrunt-tools.cjs init map-environment
+node thrunt-tools.cjs init progress
 ```
 
-**Large payload handling:** When output exceeds ~50KB, the CLI writes to a temp file and returns `@file:/tmp/gsd-init-XXXXX.json`. Workflows check for the `@file:` prefix and read from disk:
+**Large payload handling:** When output exceeds ~50KB, the CLI writes to a temp file and returns `@file:/tmp/thrunt-init-XXXXX.json`. Workflows check for the `@file:` prefix and read from disk:
 
 ```bash
-INIT=$(node gsd-tools.cjs init execute-phase "1")
+INIT=$(node thrunt-tools.cjs init run "1")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 ```
 
@@ -290,11 +290,11 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 
 ```bash
 # Archive milestone
-node gsd-tools.cjs milestone complete <version> [--name <name>] [--archive-phases]
+node thrunt-tools.cjs milestone complete <version> [--name <name>] [--archive-phases]
 
-# Mark requirements as complete
-node gsd-tools.cjs requirements mark-complete <ids>
-# Accepts: REQ-01,REQ-02 or REQ-01 REQ-02 or [REQ-01, REQ-02]
+# Mark hypotheses as complete
+node thrunt-tools.cjs hypotheses mark-complete <ids>
+# Accepts: HYP-01,HYP-02 or HYP-01 HYP-02 or [HYP-01, HYP-02]
 ```
 
 ---
@@ -303,44 +303,44 @@ node gsd-tools.cjs requirements mark-complete <ids>
 
 ```bash
 # Convert text to URL-safe slug
-node gsd-tools.cjs generate-slug "Some Text Here"
+node thrunt-tools.cjs generate-slug "Some Text Here"
 # → some-text-here
 
 # Get timestamp
-node gsd-tools.cjs current-timestamp [full|date|filename]
+node thrunt-tools.cjs current-timestamp [full|date|filename]
 
 # Count and list pending todos
-node gsd-tools.cjs list-todos [area]
+node thrunt-tools.cjs list-todos [area]
 
 # Check file/directory existence
-node gsd-tools.cjs verify-path-exists <path>
+node thrunt-tools.cjs check-path-exists <path>
 
 # Aggregate all SUMMARY.md data
-node gsd-tools.cjs history-digest
+node thrunt-tools.cjs history-digest
 
 # Extract structured data from SUMMARY.md
-node gsd-tools.cjs summary-extract <path> [--fields field1,field2]
+node thrunt-tools.cjs summary-extract <path> [--fields field1,field2]
 
-# Project statistics
-node gsd-tools.cjs stats [json|table]
+# Hunt statistics
+node thrunt-tools.cjs stats [json|table]
 
 # Progress rendering
-node gsd-tools.cjs progress [json|table|bar]
+node thrunt-tools.cjs progress [json|table|bar]
 
 # Complete a todo
-node gsd-tools.cjs todo complete <filename>
+node thrunt-tools.cjs todo complete <filename>
 
-# UAT audit — scan all phases for unresolved items
-node gsd-tools.cjs audit-uat
+# Evidence Review audit — scan all phases for unresolved items
+node thrunt-tools.cjs audit-evidence
 
 # Git commit with config checks
-node gsd-tools.cjs commit <message> [--files f1 f2] [--amend] [--no-verify]
+node thrunt-tools.cjs commit <message> [--files f1 f2] [--amend] [--no-verify]
 ```
 
 > **`--no-verify`**: Skips pre-commit hooks. Used by parallel executor agents during wave-based execution to avoid build lock contention (e.g., cargo lock fights in Rust projects). The orchestrator runs hooks once after each wave completes. Do not use `--no-verify` during sequential execution — let hooks run normally.
 
 # Web search (requires Brave API key)
-node gsd-tools.cjs websearch <query> [--limit N] [--freshness day|week|month]
+node thrunt-tools.cjs websearch <query> [--limit N] [--freshness day|week|month]
 ```
 
 ---
@@ -352,15 +352,15 @@ node gsd-tools.cjs websearch <query> [--limit N] [--freshness day|week|month]
 | Core | `lib/core.cjs` | `error()`, `output()`, `parseArgs()`, shared utilities |
 | State | `lib/state.cjs` | All `state` subcommands, `state-snapshot` |
 | Phase | `lib/phase.cjs` | Phase CRUD, `find-phase`, `phase-plan-index`, `phases list` |
-| Roadmap | `lib/roadmap.cjs` | Roadmap parsing, phase extraction, progress updates |
+| Huntmap | `lib/huntmap.cjs` | Huntmap parsing, phase extraction, progress updates |
 | Config | `lib/config.cjs` | Config read/write, section initialization |
-| Verify | `lib/verify.cjs` | All verification and validation commands |
+| Validate | `lib/validate.cjs` | Artifact validation and workspace health commands |
 | Template | `lib/template.cjs` | Template selection and variable filling |
 | Frontmatter | `lib/frontmatter.cjs` | YAML frontmatter CRUD |
 | Init | `lib/init.cjs` | Compound context loading for all workflows |
 | Milestone | `lib/milestone.cjs` | Milestone archival, requirements marking |
 | Commands | `lib/commands.cjs` | Misc: slug, timestamp, todos, scaffold, stats, websearch |
 | Model Profiles | `lib/model-profiles.cjs` | Profile resolution table |
-| UAT | `lib/uat.cjs` | Cross-phase UAT/verification audit |
+| Evidence Review | `lib/evidence.cjs` | Cross-phase Evidence Review/findings audit |
 | Profile Output | `lib/profile-output.cjs` | Developer profile formatting |
 | Profile Pipeline | `lib/profile-pipeline.cjs` | Session analysis pipeline |

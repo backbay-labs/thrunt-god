@@ -1,12 +1,12 @@
 /**
- * GSD Tools Tests - Init
+ * THRUNT Tools Tests - Init
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
 describe('init commands', () => {
   let tmpDir;
@@ -19,49 +19,82 @@ describe('init commands', () => {
     cleanup(tmpDir);
   });
 
-  test('init execute-phase returns file paths', () => {
+  test('init run returns file paths', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
 
-    const result = runGsdTools('init execute-phase 03', tmpDir);
+    const result = runThruntTools('init run 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
     assert.strictEqual(output.config_path, '.planning/config.json');
+    assert.strictEqual(typeof output.validator_enabled, 'boolean');
   });
 
-  test('init plan-phase returns file paths', () => {
+  test('init plan exposes plan_check_enabled from canonical workflow.plan_check config', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ workflow: { plan_check: false } }, null, 2)
+    );
+
+    const result = runThruntTools('init plan 03', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.plan_check_enabled, false);
+  });
+
+  test('init run exposes validator_enabled from canonical workflow.validator config', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'config.json'),
+      JSON.stringify({ workflow: { validator: false } }, null, 2)
+    );
+
+    const result = runThruntTools('init run 03', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.validator_enabled, false);
+  });
+
+  test('init plan returns file paths', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-CONTEXT.md'), '# Phase Context');
     fs.writeFileSync(path.join(phaseDir, '03-RESEARCH.md'), '# Research Findings');
-    fs.writeFileSync(path.join(phaseDir, '03-VERIFICATION.md'), '# Verification');
-    fs.writeFileSync(path.join(phaseDir, '03-UAT.md'), '# UAT');
+    fs.writeFileSync(path.join(phaseDir, '03-FINDINGS.md'), '# Verification');
+    fs.writeFileSync(path.join(phaseDir, '03-EVIDENCE_REVIEW.md'), '# Evidence Review');
 
-    const result = runGsdTools('init plan-phase 03', tmpDir);
+    const result = runThruntTools('init plan 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
-    assert.strictEqual(output.requirements_path, '.planning/REQUIREMENTS.md');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
+    assert.strictEqual(output.hypotheses_path, '.planning/HYPOTHESES.md');
     assert.strictEqual(output.context_path, '.planning/phases/03-api/03-CONTEXT.md');
     assert.strictEqual(output.research_path, '.planning/phases/03-api/03-RESEARCH.md');
-    assert.strictEqual(output.verification_path, '.planning/phases/03-api/03-VERIFICATION.md');
-    assert.strictEqual(output.uat_path, '.planning/phases/03-api/03-UAT.md');
+    assert.strictEqual(output.findings_path, '.planning/phases/03-api/03-FINDINGS.md');
+    assert.strictEqual(output.evidence_review_path, '.planning/phases/03-api/03-EVIDENCE_REVIEW.md');
   });
 
-  test('init plan-phase exposes text_mode from config (defaults false)', () => {
-    const result = runGsdTools('init plan-phase 03', tmpDir);
+  test('init plan exposes text_mode from config (defaults false)', () => {
+    const result = runThruntTools('init plan 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
     const output = JSON.parse(result.output);
     assert.strictEqual(output.text_mode, false, 'text_mode should default to false');
   });
 
-  test('init plan-phase exposes text_mode true when set in config', () => {
+  test('init plan exposes text_mode true when set in config', () => {
     const configPath = path.join(tmpDir, '.planning', 'config.json');
     const existing = fs.existsSync(configPath)
       ? JSON.parse(fs.readFileSync(configPath, 'utf8'))
@@ -69,21 +102,41 @@ describe('init commands', () => {
     const config = { ...existing, workflow: { ...(existing.workflow || {}), text_mode: true } };
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-    const result = runGsdTools('init plan-phase 03', tmpDir);
+    const result = runThruntTools('init plan 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
     const output = JSON.parse(result.output);
     assert.strictEqual(output.text_mode, true, 'text_mode should reflect config value');
   });
 
   test('init progress returns file paths', () => {
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
-    assert.strictEqual(output.project_path, '.planning/PROJECT.md');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
+    assert.strictEqual(output.mission_path, '.planning/MISSION.md');
     assert.strictEqual(output.config_path, '.planning/config.json');
+  });
+
+  test('init progress prefers hunt-native document paths when present', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'MISSION.md'),
+      '# Mission: Suspicious OAuth Program\n\n## Signal\n\nAnalyst lead.\n\n## Desired Outcome\n\nConfirm risky grants.\n\n## Scope\n\n- Tenant A\n'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap: Suspicious OAuth Program\n\n### Phase 1: Signal Intake\n**Goal**: Triage the lead\n'
+    );
+
+    const result = runThruntTools('init progress', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.mission_path, '.planning/MISSION.md');
+    assert.strictEqual(output.mission_source, 'MISSION.md');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
+    assert.strictEqual(output.huntmap_source, 'HUNTMAP.md');
   });
 
   test('init phase-op returns core and optional phase file paths', () => {
@@ -91,28 +144,28 @@ describe('init commands', () => {
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-CONTEXT.md'), '# Phase Context');
     fs.writeFileSync(path.join(phaseDir, '03-RESEARCH.md'), '# Research');
-    fs.writeFileSync(path.join(phaseDir, '03-VERIFICATION.md'), '# Verification');
-    fs.writeFileSync(path.join(phaseDir, '03-UAT.md'), '# UAT');
+    fs.writeFileSync(path.join(phaseDir, '03-FINDINGS.md'), '# Verification');
+    fs.writeFileSync(path.join(phaseDir, '03-EVIDENCE_REVIEW.md'), '# Evidence Review');
 
-    const result = runGsdTools('init phase-op 03', tmpDir);
+    const result = runThruntTools('init phase-op 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.state_path, '.planning/STATE.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
-    assert.strictEqual(output.requirements_path, '.planning/REQUIREMENTS.md');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
+    assert.strictEqual(output.hypotheses_path, '.planning/HYPOTHESES.md');
     assert.strictEqual(output.context_path, '.planning/phases/03-api/03-CONTEXT.md');
     assert.strictEqual(output.research_path, '.planning/phases/03-api/03-RESEARCH.md');
-    assert.strictEqual(output.verification_path, '.planning/phases/03-api/03-VERIFICATION.md');
-    assert.strictEqual(output.uat_path, '.planning/phases/03-api/03-UAT.md');
+    assert.strictEqual(output.findings_path, '.planning/phases/03-api/03-FINDINGS.md');
+    assert.strictEqual(output.evidence_review_path, '.planning/phases/03-api/03-EVIDENCE_REVIEW.md');
   });
 
-  test('init plan-phase detects has_reviews and reviews_path when REVIEWS.md exists', () => {
+  test('init plan detects has_reviews and reviews_path when REVIEWS.md exists', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-REVIEWS.md'), '# Cross-AI Reviews');
 
-    const result = runGsdTools('init plan-phase 03', tmpDir);
+    const result = runThruntTools('init plan 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -120,11 +173,11 @@ describe('init commands', () => {
     assert.strictEqual(output.reviews_path, '.planning/phases/03-api/03-REVIEWS.md');
   });
 
-  test('init plan-phase omits optional paths if files missing', () => {
+  test('init plan omits optional paths if files missing', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
 
-    const result = runGsdTools('init plan-phase 03', tmpDir);
+    const result = runThruntTools('init plan 03', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -134,119 +187,119 @@ describe('init commands', () => {
     assert.strictEqual(output.has_reviews, false);
   });
 
-  // ── phase_req_ids extraction (fix for #684) ──────────────────────────────
+  // ── phase_hypothesis_ids extraction (fix for #684) ──────────────────────────────
 
-  test('init plan-phase extracts phase_req_ids from ROADMAP', () => {
+  test('init plan extracts phase_hypothesis_ids from HUNTMAP', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: CP-01, CP-02, CP-03\n**Plans:** 0 plans\n`
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Hypotheses**: CP-01, CP-02, CP-03\n**Plans:** 0 plans\n`
     );
 
-    const result = runGsdTools('init plan-phase 3', tmpDir);
+    const result = runThruntTools('init plan 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, 'CP-01, CP-02, CP-03');
+    assert.strictEqual(output.phase_hypothesis_ids, 'CP-01, CP-02, CP-03');
   });
 
-  test('init plan-phase strips brackets from phase_req_ids', () => {
+  test('init plan strips brackets from phase_hypothesis_ids', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: [CP-01, CP-02]\n**Plans:** 0 plans\n`
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Hypotheses**: [CP-01, CP-02]\n**Plans:** 0 plans\n`
     );
 
-    const result = runGsdTools('init plan-phase 3', tmpDir);
+    const result = runThruntTools('init plan 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, 'CP-01, CP-02');
+    assert.strictEqual(output.phase_hypothesis_ids, 'CP-01, CP-02');
   });
 
-  test('init plan-phase returns null phase_req_ids when Requirements line is absent', () => {
+  test('init plan returns null phase_hypothesis_ids when Hypotheses line is absent', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 0 plans\n`
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 0 plans\n`
     );
 
-    const result = runGsdTools('init plan-phase 3', tmpDir);
+    const result = runThruntTools('init plan 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, null);
+    assert.strictEqual(output.phase_hypothesis_ids, null);
   });
 
-  test('init plan-phase returns null phase_req_ids when ROADMAP is absent', () => {
+  test('init plan returns null phase_hypothesis_ids when HUNTMAP is absent', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
 
-    const result = runGsdTools('init plan-phase 3', tmpDir);
+    const result = runThruntTools('init plan 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, null);
+    assert.strictEqual(output.phase_hypothesis_ids, null);
   });
 
-  test('init execute-phase extracts phase_req_ids from ROADMAP', () => {
+  test('init run extracts phase_hypothesis_ids from HUNTMAP', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: EX-01, EX-02\n**Plans:** 1 plans\n`
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Hypotheses**: EX-01, EX-02\n**Plans:** 1 plans\n`
     );
 
-    const result = runGsdTools('init execute-phase 3', tmpDir);
+    const result = runThruntTools('init run 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, 'EX-01, EX-02');
+    assert.strictEqual(output.phase_hypothesis_ids, 'EX-01, EX-02');
   });
 
-  test('init plan-phase returns null phase_req_ids when value is TBD', () => {
+  test('init plan returns null phase_hypothesis_ids when value is TBD', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '03-api'), { recursive: true });
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Requirements**: TBD\n**Plans:** 0 plans\n`
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Hypotheses**: TBD\n**Plans:** 0 plans\n`
     );
 
-    const result = runGsdTools('init plan-phase 3', tmpDir);
+    const result = runThruntTools('init plan 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, null, 'TBD placeholder should return null');
+    assert.strictEqual(output.phase_hypothesis_ids, null, 'TBD placeholder should return null');
   });
 
-  test('init execute-phase returns null phase_req_ids when Requirements line is absent', () => {
+  test('init run returns null phase_hypothesis_ids when Hypotheses line is absent', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '03-api');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 1 plans\n`
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 1 plans\n`
     );
 
-    const result = runGsdTools('init execute-phase 3', tmpDir);
+    const result = runThruntTools('init run 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_req_ids, null);
+    assert.strictEqual(output.phase_hypothesis_ids, null);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROADMAP fallback for init plan-phase / execute-phase / verify-work (#1238)
+// HUNTMAP fallback for init plan / hunt-run / validate-findings (#1238)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('init commands ROADMAP fallback when phase directory does not exist (#1238)', () => {
+describe('init commands HUNTMAP fallback when phase directory does not exist (#1238)', () => {
   let tmpDir;
 
   beforeEach(() => {
     tmpDir = createTempProject();
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\n### Phase 1: Foundation Setup\n**Goal:** Bootstrap project\n**Requirements**: R-01, R-02\n**Plans:** TBD\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n### Phase 1: Foundation Setup\n**Goal:** Bootstrap project\n**Hypotheses**: R-01, R-02\n**Plans:** TBD\n'
     );
   });
 
@@ -254,12 +307,12 @@ describe('init commands ROADMAP fallback when phase directory does not exist (#1
     cleanup(tmpDir);
   });
 
-  test('init plan-phase falls back to ROADMAP when no phase directory exists', () => {
-    const result = runGsdTools('init plan-phase 1', tmpDir);
+  test('init plan falls back to HUNTMAP when no phase directory exists', () => {
+    const result = runThruntTools('init plan 1', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_found, true, 'phase_found should be true from ROADMAP fallback');
+    assert.strictEqual(output.phase_found, true, 'phase_found should be true from HUNTMAP fallback');
     assert.strictEqual(output.phase_dir, null, 'phase_dir should be null (no directory yet)');
     assert.strictEqual(output.phase_number, '1');
     assert.strictEqual(output.phase_name, 'Foundation Setup');
@@ -267,32 +320,52 @@ describe('init commands ROADMAP fallback when phase directory does not exist (#1
     assert.strictEqual(output.padded_phase, '01');
   });
 
-  test('init execute-phase falls back to ROADMAP when no phase directory exists', () => {
-    const result = runGsdTools('init execute-phase 1', tmpDir);
+  test('init plan falls back to HUNTMAP when HUNTMAP is absent', () => {
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'));
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n### Phase 1: Signal Intake\n**Goal**: Bootstrap the case\n**Hypotheses**: R-01, R-02\n**Plans:** TBD\n'
+    );
+
+    const result = runThruntTools('init plan 1', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_found, true, 'phase_found should be true from ROADMAP fallback');
+    assert.strictEqual(output.phase_found, true);
+    assert.strictEqual(output.phase_number, '1');
+    assert.strictEqual(output.phase_name, 'Signal Intake');
+    assert.strictEqual(output.phase_slug, 'signal-intake');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
+    assert.strictEqual(output.huntmap_source, 'HUNTMAP.md');
+    assert.strictEqual(output.phase_hypothesis_ids, 'R-01, R-02');
+  });
+
+  test('init run falls back to HUNTMAP when no phase directory exists', () => {
+    const result = runThruntTools('init run 1', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.phase_found, true, 'phase_found should be true from HUNTMAP fallback');
     assert.strictEqual(output.phase_dir, null, 'phase_dir should be null (no directory yet)');
     assert.strictEqual(output.phase_number, '1');
     assert.strictEqual(output.phase_name, 'Foundation Setup');
     assert.strictEqual(output.phase_slug, 'foundation-setup');
-    assert.strictEqual(output.phase_req_ids, 'R-01, R-02');
+    assert.strictEqual(output.phase_hypothesis_ids, 'R-01, R-02');
   });
 
-  test('init verify-work falls back to ROADMAP when no phase directory exists', () => {
-    const result = runGsdTools('init verify-work 1', tmpDir);
+  test('init validate-findings falls back to HUNTMAP when no phase directory exists', () => {
+    const result = runThruntTools('init validate-findings 1', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.phase_found, true, 'phase_found should be true from ROADMAP fallback');
+    assert.strictEqual(output.phase_found, true, 'phase_found should be true from HUNTMAP fallback');
     assert.strictEqual(output.phase_dir, null, 'phase_dir should be null (no directory yet)');
     assert.strictEqual(output.phase_number, '1');
     assert.strictEqual(output.phase_name, 'Foundation Setup');
   });
 
-  test('init plan-phase returns phase_found false when neither directory nor ROADMAP entry exists', () => {
-    const result = runGsdTools('init plan-phase 99', tmpDir);
+  test('init plan returns phase_found false when neither directory nor HUNTMAP entry exists', () => {
+    const result = runThruntTools('init plan 99', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -302,12 +375,12 @@ describe('init commands ROADMAP fallback when phase directory does not exist (#1
     assert.strictEqual(output.phase_name, null);
   });
 
-  test('init plan-phase prefers disk directory over ROADMAP fallback', () => {
+  test('init plan prefers disk directory over HUNTMAP fallback', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '01-foundation-setup');
     fs.mkdirSync(phaseDir, { recursive: true });
     fs.writeFileSync(path.join(phaseDir, '01-01-PLAN.md'), '# Plan');
 
-    const result = runGsdTools('init plan-phase 1', tmpDir);
+    const result = runThruntTools('init plan 1', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -336,7 +409,7 @@ describe('cmdInitTodos', () => {
   test('empty pending dir returns zero count', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'todos', 'pending'), { recursive: true });
 
-    const result = runGsdTools('init todos', tmpDir);
+    const result = runThruntTools('init todos', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -346,7 +419,7 @@ describe('cmdInitTodos', () => {
   });
 
   test('missing pending dir returns zero count', () => {
-    const result = runGsdTools('init todos', tmpDir);
+    const result = runThruntTools('init todos', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -363,7 +436,7 @@ describe('cmdInitTodos', () => {
     fs.writeFileSync(path.join(pendingDir, 'task-2.md'), 'title: Add feature\narea: frontend\ncreated: 2026-02-24');
     fs.writeFileSync(path.join(pendingDir, 'task-3.md'), 'title: Write docs\narea: backend\ncreated: 2026-02-23');
 
-    const result = runGsdTools('init todos', tmpDir);
+    const result = runThruntTools('init todos', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -386,7 +459,7 @@ describe('cmdInitTodos', () => {
     fs.writeFileSync(path.join(pendingDir, 'task-2.md'), 'title: Add feature\narea: frontend\ncreated: 2026-02-24');
     fs.writeFileSync(path.join(pendingDir, 'task-3.md'), 'title: Write docs\narea: backend\ncreated: 2026-02-23');
 
-    const result = runGsdTools('init todos backend', tmpDir);
+    const result = runThruntTools('init todos backend', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -403,7 +476,7 @@ describe('cmdInitTodos', () => {
 
     fs.writeFileSync(path.join(pendingDir, 'task-1.md'), 'title: Fix bug\narea: backend\ncreated: 2026-02-25');
 
-    const result = runGsdTools('init todos nonexistent', tmpDir);
+    const result = runThruntTools('init todos nonexistent', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -417,7 +490,7 @@ describe('cmdInitTodos', () => {
 
     fs.writeFileSync(path.join(pendingDir, 'broken.md'), 'some random content without fields');
 
-    const result = runGsdTools('init todos', tmpDir);
+    const result = runThruntTools('init todos', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -435,7 +508,7 @@ describe('cmdInitTodos', () => {
     fs.writeFileSync(path.join(pendingDir, 'task.md'), 'title: Real task\narea: dev\ncreated: 2026-01-01');
     fs.writeFileSync(path.join(pendingDir, 'notes.txt'), 'title: Not a task\narea: dev\ncreated: 2026-01-01');
 
-    const result = runGsdTools('init todos', tmpDir);
+    const result = runThruntTools('init todos', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -460,7 +533,7 @@ describe('cmdInitMilestoneOp', () => {
   });
 
   test('no phase directories returns zero counts', () => {
-    const result = runGsdTools('init milestone-op', tmpDir);
+    const result = runThruntTools('init milestone-op', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -477,7 +550,7 @@ describe('cmdInitMilestoneOp', () => {
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
     fs.writeFileSync(path.join(phase2, '02-01-PLAN.md'), '# Plan');
 
-    const result = runGsdTools('init milestone-op', tmpDir);
+    const result = runThruntTools('init milestone-op', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -495,7 +568,7 @@ describe('cmdInitMilestoneOp', () => {
     fs.writeFileSync(path.join(phase1, '01-01-SUMMARY.md'), '# Summary');
     fs.writeFileSync(path.join(phase2, '02-01-PLAN.md'), '# Plan');
 
-    const result = runGsdTools('init milestone-op', tmpDir);
+    const result = runThruntTools('init milestone-op', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -510,7 +583,7 @@ describe('cmdInitMilestoneOp', () => {
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
     fs.writeFileSync(path.join(phase1, '01-01-SUMMARY.md'), '# Summary');
 
-    const result = runGsdTools('init milestone-op', tmpDir);
+    const result = runThruntTools('init milestone-op', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -523,7 +596,7 @@ describe('cmdInitMilestoneOp', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'archive', 'v1.0'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, '.planning', 'archive', 'v0.9'), { recursive: true });
 
-    const result = runGsdTools('init milestone-op', tmpDir);
+    const result = runThruntTools('init milestone-op', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -532,7 +605,7 @@ describe('cmdInitMilestoneOp', () => {
   });
 
   test('no archive directory returns empty', () => {
-    const result = runGsdTools('init milestone-op', tmpDir);
+    const result = runThruntTools('init milestone-op', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -562,11 +635,11 @@ describe('cmdInitPhaseOp fallback', () => {
     fs.writeFileSync(path.join(phaseDir, '03-CONTEXT.md'), '# Context');
     fs.writeFileSync(path.join(phaseDir, '03-01-PLAN.md'), '# Plan');
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 1 plans\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n### Phase 3: API\n**Goal:** Build API\n**Plans:** 1 plans\n'
     );
 
-    const result = runGsdTools('init phase-op 3', tmpDir);
+    const result = runThruntTools('init phase-op 3', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -576,13 +649,13 @@ describe('cmdInitPhaseOp fallback', () => {
     assert.strictEqual(output.has_plans, true);
   });
 
-  test('fallback to ROADMAP when no directory exists', () => {
+  test('fallback to HUNTMAP when no directory exists', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\n### Phase 5: Widget Builder\n**Goal:** Build widgets\n**Plans:** TBD\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n### Phase 5: Widget Builder\n**Goal:** Build widgets\n**Plans:** TBD\n'
     );
 
-    const result = runGsdTools('init phase-op 5', tmpDir);
+    const result = runThruntTools('init phase-op 5', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -605,11 +678,11 @@ describe('cmdInitPhaseOp fallback', () => {
     fs.mkdirSync(archiveDir, { recursive: true });
     fs.writeFileSync(path.join(archiveDir, '02-CONTEXT.md'), '# Archived context');
     fs.writeFileSync(path.join(archiveDir, '02-01-PLAN.md'), '# Archived plan');
-    fs.writeFileSync(path.join(archiveDir, '02-VERIFICATION.md'), '# Archived verification');
+    fs.writeFileSync(path.join(archiveDir, '02-FINDINGS.md'), '# Archived verification');
 
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      `# Roadmap
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap
 
 <details>
 <summary>Shipped milestone v1.2</summary>
@@ -626,7 +699,7 @@ describe('cmdInitPhaseOp fallback', () => {
 `
     );
 
-    const result = runGsdTools('init phase-op 2', tmpDir);
+    const result = runThruntTools('init phase-op 2', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -636,16 +709,16 @@ describe('cmdInitPhaseOp fallback', () => {
     assert.strictEqual(output.phase_slug, 'retry-orchestration');
     assert.strictEqual(output.has_context, false);
     assert.strictEqual(output.has_plans, false);
-    assert.strictEqual(output.has_verification, false);
+    assert.strictEqual(output.has_findings, false);
   });
 
   test('neither directory nor roadmap entry returns not found', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\n### Phase 1: Setup\n**Goal:** Setup project\n**Plans:** TBD\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n### Phase 1: Setup\n**Goal:** Setup project\n**Plans:** TBD\n'
     );
 
-    const result = runGsdTools('init phase-op 99', tmpDir);
+    const result = runThruntTools('init phase-op 99', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -670,7 +743,7 @@ describe('cmdInitProgress', () => {
   });
 
   test('no phases returns empty state', () => {
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -698,7 +771,7 @@ describe('cmdInitProgress', () => {
     fs.mkdirSync(phase3, { recursive: true });
     fs.writeFileSync(path.join(phase3, '03-CONTEXT.md'), '# Context');
 
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -725,7 +798,7 @@ describe('cmdInitProgress', () => {
     fs.mkdirSync(phase1, { recursive: true });
     fs.writeFileSync(path.join(phase1, '01-RESEARCH.md'), '# Research');
 
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -741,7 +814,7 @@ describe('cmdInitProgress', () => {
     fs.writeFileSync(path.join(phase1, '01-01-PLAN.md'), '# Plan');
     fs.writeFileSync(path.join(phase1, '01-01-SUMMARY.md'), '# Summary');
 
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -753,10 +826,10 @@ describe('cmdInitProgress', () => {
   test('paused_at detected from STATE.md', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
-      '# Project State\n\n**Paused At:** Phase 2, Task 3 — implementing auth\n'
+      '# Hunt State\n\n**Paused At:** Phase 2, Task 3 — implementing auth\n'
     );
 
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -767,10 +840,10 @@ describe('cmdInitProgress', () => {
   test('no paused_at when STATE.md has no pause line', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'STATE.md'),
-      '# Project State\n\nSome content without pause.\n'
+      '# Hunt State\n\nSome content without pause.\n'
     );
 
-    const result = runGsdTools('init progress', tmpDir);
+    const result = runThruntTools('init progress', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -794,7 +867,7 @@ describe('cmdInitQuick', () => {
   });
 
   test('with description generates slug and task_dir with YYMMDD-xxx format', () => {
-    const result = runGsdTools('init quick "Fix login bug"', tmpDir);
+    const result = runThruntTools('init quick "Fix login bug"', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -819,7 +892,7 @@ describe('cmdInitQuick', () => {
   });
 
   test('without description returns null slug and task_dir', () => {
-    const result = runGsdTools('init quick', tmpDir);
+    const result = runThruntTools('init quick', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -835,8 +908,8 @@ describe('cmdInitQuick', () => {
   test('two rapid calls produce different quick_ids (no collision within 2s window)', () => {
     // Both calls happen within the same test, which is sub-second.
     // They may or may not land in the same 2-second block. We just verify format.
-    const r1 = runGsdTools('init quick "Task one"', tmpDir);
-    const r2 = runGsdTools('init quick "Task two"', tmpDir);
+    const r1 = runThruntTools('init quick "Task one"', tmpDir);
+    const r2 = runThruntTools('init quick "Task two"', tmpDir);
     assert.ok(r1.success && r2.success);
 
     const o1 = JSON.parse(r1.output);
@@ -850,7 +923,7 @@ describe('cmdInitQuick', () => {
   });
 
   test('long description truncates slug to 40 chars', () => {
-    const result = runGsdTools('init quick "This is a very long description that should get truncated to forty characters maximum"', tmpDir);
+    const result = runThruntTools('init quick "This is a very long description that should get truncated to forty characters maximum"', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -862,17 +935,17 @@ describe('cmdInitQuick', () => {
       path.join(tmpDir, '.planning', 'config.json'),
       JSON.stringify({
         git: {
-          quick_branch_template: 'gsd/quick-{num}-{slug}',
+          quick_branch_template: 'thrunt/quick-{num}-{slug}',
         },
       }, null, 2)
     );
 
-    const result = runGsdTools('init quick "Fix login bug"', tmpDir);
+    const result = runThruntTools('init quick "Fix login bug"', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.ok(output.branch_name, 'branch_name should be set');
-    assert.ok(output.branch_name.startsWith('gsd/quick-'));
+    assert.ok(output.branch_name.startsWith('thrunt/quick-'));
     assert.ok(output.branch_name.endsWith('-fix-login-bug'));
     assert.ok(output.branch_name.includes(output.quick_id), 'branch_name should include quick_id');
   });
@@ -882,12 +955,12 @@ describe('cmdInitQuick', () => {
       path.join(tmpDir, '.planning', 'config.json'),
       JSON.stringify({
         git: {
-          quick_branch_template: 'gsd/quick-{quick}-{slug}',
+          quick_branch_template: 'thrunt/quick-{quick}-{slug}',
         },
       }, null, 2)
     );
 
-    const result = runGsdTools('init quick', tmpDir);
+    const result = runThruntTools('init quick', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -897,10 +970,10 @@ describe('cmdInitQuick', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// cmdInitMapCodebase (INIT-05)
+// cmdInitMapEnvironment (INIT-05)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('cmdInitMapCodebase', () => {
+describe('cmdInitMapEnvironment', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -912,7 +985,7 @@ describe('cmdInitMapCodebase', () => {
   });
 
   test('no codebase dir returns empty', () => {
-    const result = runGsdTools('init map-codebase', tmpDir);
+    const result = runThruntTools('init map-environment', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -928,7 +1001,7 @@ describe('cmdInitMapCodebase', () => {
     fs.writeFileSync(path.join(codebaseDir, 'ARCHITECTURE.md'), '# Architecture');
     fs.writeFileSync(path.join(codebaseDir, 'notes.txt'), 'not a markdown file');
 
-    const result = runGsdTools('init map-codebase', tmpDir);
+    const result = runThruntTools('init map-environment', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -942,7 +1015,7 @@ describe('cmdInitMapCodebase', () => {
     const codebaseDir = path.join(tmpDir, '.planning', 'codebase');
     fs.mkdirSync(codebaseDir, { recursive: true });
 
-    const result = runGsdTools('init map-codebase', tmpDir);
+    const result = runThruntTools('init map-environment', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -951,9 +1024,9 @@ describe('cmdInitMapCodebase', () => {
     assert.strictEqual(output.codebase_dir_exists, true);
   });
 
-  test('map-codebase workflow does not list OpenCode under runtimes without Task tool (#1316)', () => {
+  test('map-environment workflow does not list OpenCode under runtimes without Task tool (#1316)', () => {
     const workflow = fs.readFileSync(
-      path.join(__dirname, '..', 'get-shit-done', 'workflows', 'map-codebase.md'), 'utf8'
+      path.join(__dirname, '..', 'thrunt-god', 'workflows', 'hunt-map-environment.md'), 'utf8'
     );
     // OpenCode must NOT appear in the "WITHOUT Task tool" / "NOT available" condition
     const withoutLine = workflow.split('\n').find(l =>
@@ -965,10 +1038,10 @@ describe('cmdInitMapCodebase', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// cmdInitNewProject (INIT-06)
+// cmdInitNewProgram (INIT-06)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('cmdInitNewProject', () => {
+describe('cmdInitNewProgram', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -980,7 +1053,7 @@ describe('cmdInitNewProject', () => {
   });
 
   test('greenfield project with no code', () => {
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -993,7 +1066,7 @@ describe('cmdInitNewProject', () => {
   test('brownfield with package.json detected', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"test"}');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1006,7 +1079,7 @@ describe('cmdInitNewProject', () => {
     fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"test"}');
     fs.mkdirSync(path.join(tmpDir, '.planning', 'codebase'), { recursive: true });
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1015,7 +1088,7 @@ describe('cmdInitNewProject', () => {
   });
 
   test('planning_exists flag is correct', () => {
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1027,7 +1100,7 @@ describe('cmdInitNewProject', () => {
     fs.mkdirSync(srcDir, { recursive: true });
     fs.writeFileSync(path.join(srcDir, 'MainActivity.kt'), 'class MainActivity');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1038,7 +1111,7 @@ describe('cmdInitNewProject', () => {
   test('brownfield with build.gradle detected (Android/Gradle project)', () => {
     fs.writeFileSync(path.join(tmpDir, 'build.gradle'), 'apply plugin: "com.android.application"');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1050,7 +1123,7 @@ describe('cmdInitNewProject', () => {
   test('brownfield with build.gradle.kts detected (Kotlin DSL)', () => {
     fs.writeFileSync(path.join(tmpDir, 'build.gradle.kts'), 'plugins { id("com.android.application") }');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1061,7 +1134,7 @@ describe('cmdInitNewProject', () => {
   test('brownfield with pom.xml detected (Maven project)', () => {
     fs.writeFileSync(path.join(tmpDir, 'pom.xml'), '<project></project>');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1072,7 +1145,7 @@ describe('cmdInitNewProject', () => {
   test('brownfield with pubspec.yaml detected (Flutter/Dart project)', () => {
     fs.writeFileSync(path.join(tmpDir, 'pubspec.yaml'), 'name: my_app');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1085,7 +1158,7 @@ describe('cmdInitNewProject', () => {
     fs.mkdirSync(libDir, { recursive: true });
     fs.writeFileSync(path.join(libDir, 'main.dart'), 'void main() {}');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1096,7 +1169,7 @@ describe('cmdInitNewProject', () => {
   test('brownfield with C++ files detected', () => {
     fs.writeFileSync(path.join(tmpDir, 'main.cpp'), 'int main() { return 0; }');
 
-    const result = runGsdTools('init new-project', tmpDir);
+    const result = runThruntTools('init new-program', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1121,7 +1194,7 @@ describe('cmdInitNewMilestone', () => {
   });
 
   test('returns expected fields', () => {
-    const result = runGsdTools('init new-milestone', tmpDir);
+    const result = runThruntTools('init new-milestone', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1129,35 +1202,35 @@ describe('cmdInitNewMilestone', () => {
     assert.ok('current_milestone_name' in output, 'Should have current_milestone_name');
     assert.ok('researcher_model' in output, 'Should have researcher_model');
     assert.ok('synthesizer_model' in output, 'Should have synthesizer_model');
-    assert.ok('roadmapper_model' in output, 'Should have roadmapper_model');
+    assert.ok('huntmap_builder_model' in output, 'Should have huntmap_builder_model');
     assert.ok('commit_docs' in output, 'Should have commit_docs');
-    assert.strictEqual(output.project_path, '.planning/PROJECT.md');
-    assert.strictEqual(output.roadmap_path, '.planning/ROADMAP.md');
+    assert.strictEqual(output.mission_path, '.planning/MISSION.md');
+    assert.strictEqual(output.huntmap_path, '.planning/HUNTMAP.md');
     assert.strictEqual(output.state_path, '.planning/STATE.md');
   });
 
   test('file existence flags reflect actual state', () => {
-    // Default: no STATE.md, ROADMAP.md, or PROJECT.md
-    const result1 = runGsdTools('init new-milestone', tmpDir);
+    // Default: no STATE.md, HUNTMAP.md, or MISSION.md
+    const result1 = runThruntTools('init new-milestone', tmpDir);
     assert.ok(result1.success, `Command failed: ${result1.error}`);
 
     const output1 = JSON.parse(result1.output);
     assert.strictEqual(output1.state_exists, false);
-    assert.strictEqual(output1.roadmap_exists, false);
-    assert.strictEqual(output1.project_exists, false);
+    assert.strictEqual(output1.huntmap_exists, false);
+    assert.strictEqual(output1.mission_exists, false);
 
     // Create files and verify flags change
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), '# State');
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), '# Roadmap');
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'PROJECT.md'), '# Project');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), '# Huntmap');
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'MISSION.md'), '# Project');
 
-    const result2 = runGsdTools('init new-milestone', tmpDir);
+    const result2 = runThruntTools('init new-milestone', tmpDir);
     assert.ok(result2.success, `Command failed: ${result2.error}`);
 
     const output2 = JSON.parse(result2.output);
     assert.strictEqual(output2.state_exists, true);
-    assert.strictEqual(output2.roadmap_exists, true);
-    assert.strictEqual(output2.project_exists, true);
+    assert.strictEqual(output2.huntmap_exists, true);
+    assert.strictEqual(output2.mission_exists, true);
   });
 
   test('reports latest completed milestone and archive target for reset flow', () => {
@@ -1168,7 +1241,7 @@ describe('cmdInitNewMilestone', () => {
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '06-refine-search'), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', '07-polish'), { recursive: true });
 
-    const result = runGsdTools('init new-milestone', tmpDir);
+    const result = runThruntTools('init new-milestone', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1179,7 +1252,7 @@ describe('cmdInitNewMilestone', () => {
   });
 
   test('reset flow metadata is null-safe when no milestones file exists', () => {
-    const result = runGsdTools('init new-milestone', tmpDir);
+    const result = runThruntTools('init new-milestone', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1191,7 +1264,7 @@ describe('cmdInitNewMilestone', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// findProjectRoot integration — gsd-tools resolves project root from sub-repo
+// findProjectRoot integration — thrunt-tools resolves project root from sub-repo
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('findProjectRoot integration via --cwd', () => {
@@ -1199,10 +1272,10 @@ describe('findProjectRoot integration via --cwd', () => {
 
   beforeEach(() => {
     projectRoot = createTempProject();
-    // Add ROADMAP.md so init quick doesn't error
+    // Add HUNTMAP.md so init quick doesn't error
     fs.writeFileSync(
-      path.join(projectRoot, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\n## Phase 1: Foundation\n**Goal:** Setup\n'
+      path.join(projectRoot, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n## Phase 1: Foundation\n**Goal:** Setup\n'
     );
     // Write sub_repos config
     fs.writeFileSync(
@@ -1219,17 +1292,17 @@ describe('findProjectRoot integration via --cwd', () => {
 
   test('init quick from sub-repo CWD returns project_root pointing to parent', () => {
     const backendDir = path.join(projectRoot, 'backend');
-    const result = runGsdTools(['init', 'quick', 'test task', '--cwd', backendDir]);
+    const result = runThruntTools(['init', 'quick', 'test task', '--cwd', backendDir]);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.ok('project_root' in output, 'Should have project_root');
     assert.strictEqual(output.project_root, projectRoot, 'project_root should be the parent, not the sub-repo');
-    assert.ok(output.roadmap_exists, 'Should find ROADMAP.md at project root');
+    assert.ok(output.huntmap_exists, 'Should find HUNTMAP.md at project root');
   });
 
   test('init quick from project root returns project_root as-is', () => {
-    const result = runGsdTools(['init', 'quick', 'test task', '--cwd', projectRoot]);
+    const result = runThruntTools(['init', 'quick', 'test task', '--cwd', projectRoot]);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1244,7 +1317,7 @@ describe('findProjectRoot integration via --cwd', () => {
     );
 
     const backendDir = path.join(projectRoot, 'backend');
-    const result = runGsdTools(['state', '--cwd', backendDir]);
+    const result = runThruntTools(['state', '--cwd', backendDir]);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -1255,5 +1328,5 @@ describe('findProjectRoot integration via --cwd', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// roadmap analyze command
+// huntmap analyze command
 // ─────────────────────────────────────────────────────────────────────────────

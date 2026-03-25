@@ -10,7 +10,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { runGsdTools, createTempDir, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempDir, createTempProject, cleanup } = require('./helpers.cjs');
 
 // ─── scan-sessions ────────────────────────────────────────────────────────────
 
@@ -18,7 +18,7 @@ describe('scan-sessions command', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-profile-test-');
+    tmpDir = createTempDir('thrunt-profile-test-');
   });
 
   afterEach(() => {
@@ -28,7 +28,7 @@ describe('scan-sessions command', () => {
   test('returns empty array for empty sessions directory', () => {
     const sessionsDir = path.join(tmpDir, 'projects');
     fs.mkdirSync(sessionsDir, { recursive: true });
-    const result = runGsdTools(`scan-sessions --path ${sessionsDir} --raw`, tmpDir);
+    const result = runThruntTools(`scan-sessions --path ${sessionsDir} --raw`, tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.ok(Array.isArray(out), 'should return an array');
@@ -47,7 +47,7 @@ describe('scan-sessions command', () => {
     ].join('\n');
     fs.writeFileSync(path.join(projectDir, 'session-001.jsonl'), sessionData);
 
-    const result = runGsdTools(`scan-sessions --path ${sessionsDir} --raw`, tmpDir);
+    const result = runThruntTools(`scan-sessions --path ${sessionsDir} --raw`, tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.ok(Array.isArray(out), 'should return array');
@@ -65,7 +65,7 @@ describe('scan-sessions command', () => {
       fs.writeFileSync(path.join(projectDir, `session-${i}.jsonl`), data + '\n');
     }
 
-    const result = runGsdTools(`scan-sessions --path ${sessionsDir} --raw`, tmpDir);
+    const result = runThruntTools(`scan-sessions --path ${sessionsDir} --raw`, tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.strictEqual(out[0].sessionCount, 3);
@@ -79,7 +79,7 @@ describe('extract-messages command', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = createTempDir('gsd-profile-test-');
+    tmpDir = createTempDir('thrunt-profile-test-');
   });
 
   afterEach(() => {
@@ -102,7 +102,7 @@ describe('extract-messages command', () => {
       messages.map(m => JSON.stringify(m)).join('\n')
     );
 
-    const result = runGsdTools(`extract-messages my-project --path ${sessionsDir} --raw`, tmpDir);
+    const result = runThruntTools(`extract-messages my-project --path ${sessionsDir} --raw`, tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.messages_extracted, 2, 'should extract 2 genuine user messages');
@@ -128,7 +128,7 @@ describe('extract-messages command', () => {
       messages.map(m => JSON.stringify(m)).join('\n')
     );
 
-    const result = runGsdTools(`extract-messages filter-test --path ${sessionsDir} --raw`, tmpDir);
+    const result = runThruntTools(`extract-messages filter-test --path ${sessionsDir} --raw`, tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.strictEqual(out.messages_extracted, 2, 'should only extract 2 genuine external messages');
@@ -149,7 +149,7 @@ describe('profile-questionnaire command', () => {
   });
 
   test('returns questionnaire structure', () => {
-    const result = runGsdTools('profile-questionnaire --raw', tmpDir);
+    const result = runThruntTools('profile-questionnaire --raw', tmpDir);
     assert.ok(result.success, `Failed: ${result.error}`);
     const out = JSON.parse(result.output);
     assert.ok(out.questions, 'should have questions array');

@@ -1,13 +1,13 @@
 # Git 规划提交
 
-使用 gsd-tools CLI 提交规划工件，它会自动检查 `commit_docs` 配置和 gitignore 状态。
+使用 thrunt-tools CLI 提交规划工件，它会自动检查 `commit_docs` 配置和 gitignore 状态。
 
 ## 通过 CLI 提交
 
-始终使用 `gsd-tools.cjs commit` 处理 `.planning/` 文件 — 它会自动处理 `commit_docs` 和 gitignore 检查：
+始终使用 `thrunt-tools.cjs commit` 处理 `.planning/` 文件 — 它会自动处理 `commit_docs` 和 gitignore 检查：
 
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs({scope}): {description}" --files .planning/STATE.md .planning/ROADMAP.md
+node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" commit "docs({scope}): {description}" --files .planning/STATE.md .planning/HUNTMAP.md
 ```
 
 如果 `commit_docs` 为 `false` 或 `.planning/` 被 gitignore，CLI 会返回 `skipped`（带原因）。无需手动条件检查。
@@ -17,15 +17,15 @@ node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs({scope}): {des
 将 `.planning/` 文件变更合并到上次提交：
 
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "" --files .planning/codebase/*.md --amend
+node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" commit "" --files .planning/codebase/*.md --amend
 ```
 
 ## 提交消息模式
 
 | 命令 | 范围 | 示例 |
 |------|------|------|
-| plan-phase | phase | `docs(phase-03): create authentication plans` |
-| execute-phase | phase | `docs(phase-03): complete authentication phase` |
+| hunt-plan | phase | `docs(phase-03): create authentication plans` |
+| hunt-run | phase | `docs(phase-03): complete authentication phase` |
 | new-milestone | milestone | `docs: start milestone v1.1` |
 | remove-phase | chore | `chore: remove phase 17 (dashboard)` |
 | insert-phase | phase | `docs: insert phase 16.1 (critical fix)` |

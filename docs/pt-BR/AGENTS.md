@@ -1,13 +1,13 @@
-# Referência de Agentes do GSD
+# Referência de Agentes do THRUNT
 
-Este documento descreve os papéis dos agentes especializados no ecossistema GSD.  
+Este documento descreve os papéis dos agentes especializados no ecossistema THRUNT.  
 Para a listagem completa com regras detalhadas, consulte [AGENTS.md em inglês](../AGENTS.md).
 
 ---
 
 ## Visão geral
 
-O GSD usa um **orquestrador leve** para coordenar subagentes especializados por etapa:
+O THRUNT usa um **orquestrador leve** para coordenar subagentes especializados por etapa:
 
 - pesquisa
 - planejamento
@@ -37,7 +37,7 @@ Cada agente tem responsabilidade clara, entradas/saídas definidas e contexto de
 ### Verificação
 
 - **Verifier**: compara entrega contra objetivos da fase
-- **UAT support**: auxilia no processo de validação manual guiada
+- **Evidence Review support**: auxilia no processo de validação manual guiada
 
 ### Diagnóstico
 

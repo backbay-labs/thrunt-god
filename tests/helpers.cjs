@@ -1,24 +1,24 @@
 /**
- * GSD Tools Test Helpers
+ * THRUNT Tools Test Helpers
  */
 
 const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-const TOOLS_PATH = path.join(__dirname, '..', 'get-shit-done', 'bin', 'gsd-tools.cjs');
+const TOOLS_PATH = path.join(__dirname, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs');
 
 /**
- * Run gsd-tools command.
+ * Run thrunt-tools command.
  *
  * @param {string|string[]} args - Command string (shell-interpreted) or array
  *   of arguments (shell-bypassed via execFileSync, safe for JSON and dollar signs).
  * @param {string} cwd - Working directory.
  * @param {object} [env] - Optional env overrides merged on top of process.env.
- *   Pass { HOME: cwd } to sandbox ~/.gsd/ lookups in tests that assert concrete
+ *   Pass { HOME: cwd } to sandbox ~/.thrunt/ lookups in tests that assert concrete
  *   config values that could be overridden by a developer's defaults.json.
  */
-function runGsdTools(args, cwd = process.cwd(), env = {}) {
+function runThruntTools(args, cwd = process.cwd(), env = {}) {
   try {
     let result;
     const childEnv = { ...process.env, ...env };
@@ -48,19 +48,19 @@ function runGsdTools(args, cwd = process.cwd(), env = {}) {
 }
 
 // Create a bare temp directory (no .planning/ structure)
-function createTempDir(prefix = 'gsd-test-') {
+function createTempDir(prefix = 'thrunt-test-') {
   return fs.mkdtempSync(path.join(require('os').tmpdir(), prefix));
 }
 
 // Create temp directory structure
-function createTempProject(prefix = 'gsd-test-') {
+function createTempProject(prefix = 'thrunt-test-') {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), prefix));
   fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
   return tmpDir;
 }
 
 // Create temp directory with initialized git repo and at least one commit
-function createTempGitProject(prefix = 'gsd-test-') {
+function createTempGitProject(prefix = 'thrunt-test-') {
   const tmpDir = fs.mkdtempSync(path.join(require('os').tmpdir(), prefix));
   fs.mkdirSync(path.join(tmpDir, '.planning', 'phases'), { recursive: true });
 
@@ -70,7 +70,7 @@ function createTempGitProject(prefix = 'gsd-test-') {
   execSync('git config commit.gpgsign false', { cwd: tmpDir, stdio: 'pipe' });
 
   fs.writeFileSync(
-    path.join(tmpDir, '.planning', 'PROJECT.md'),
+    path.join(tmpDir, '.planning', 'MISSION.md'),
     '# Project\n\nTest project.\n'
   );
 
@@ -84,4 +84,4 @@ function cleanup(tmpDir) {
   fs.rmSync(tmpDir, { recursive: true, force: true });
 }
 
-module.exports = { runGsdTools, createTempDir, createTempProject, createTempGitProject, cleanup, TOOLS_PATH };
+module.exports = { runThruntTools, createTempDir, createTempProject, createTempGitProject, cleanup, TOOLS_PATH };

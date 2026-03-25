@@ -10,8 +10,8 @@
 },
 "git": {
   "branching_strategy": "none",
-  "phase_branch_template": "gsd/phase-{phase}-{slug}",
-  "milestone_branch_template": "gsd/{milestone}-{slug}"
+  "phase_branch_template": "thrunt/phase-{phase}-{slug}",
+  "milestone_branch_template": "thrunt/{milestone}-{slug}"
 }
 ```
 
@@ -20,15 +20,15 @@
 | `commit_docs` | `true` | 是否将规划工件提交到 git |
 | `search_gitignored` | `false` | 在广泛 rg 搜索中添加 `--no-ignore` |
 | `git.branching_strategy` | `"none"` | Git 分支策略：`"none"`、`"phase"` 或 `"milestone"` |
-| `git.phase_branch_template` | `"gsd/phase-{phase}-{slug}"` | 阶段策略的分支模板 |
-| `git.milestone_branch_template` | `"gsd/{milestone}-{slug}"` | 里程碑策略的分支模板 |
+| `git.phase_branch_template` | `"thrunt/phase-{phase}-{slug}"` | 阶段策略的分支模板 |
+| `git.milestone_branch_template` | `"thrunt/{milestone}-{slug}"` | 里程碑策略的分支模板 |
 </config_schema>
 
 <commit_docs_behavior>
 
 **当 `commit_docs: true`（默认）：**
 - 规划文件正常提交
-- SUMMARY.md、STATE.md、ROADMAP.md 在 git 中跟踪
+- SUMMARY.md、STATE.md、HUNTMAP.md 在 git 中跟踪
 - 规划决策的完整历史保留
 
 **当 `commit_docs: false`：**
@@ -36,19 +36,19 @@
 - 用户必须将 `.planning/` 添加到 `.gitignore`
 - 适用于：OSS 贡献、客户项目、保持规划私有
 
-**使用 gsd-tools.cjs（推荐）：**
+**使用 thrunt-tools.cjs（推荐）：**
 
 ```bash
 # 提交时自动检查 commit_docs + gitignore：
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: update state" --files .planning/STATE.md
+node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" commit "docs: update state" --files .planning/STATE.md
 
 # 通过 state load 加载配置（返回 JSON）：
-INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state load)
+INIT=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" state load)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 # commit_docs 在 JSON 输出中可用
 
 # 或使用包含 commit_docs 的 init 命令：
-INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init execute-phase "1")
+INIT=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" init run "1")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 # commit_docs 包含在所有 init 命令输出中
 ```
@@ -58,7 +58,7 @@ if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 **通过 CLI 提交（自动处理检查）：**
 
 ```bash
-node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" commit "docs: update state" --files .planning/STATE.md
+node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" commit "docs: update state" --files .planning/STATE.md
 ```
 
 CLI 在内部检查 `commit_docs` 配置和 gitignore 状态 —— 无需手动条件判断。
@@ -76,7 +76,7 @@ CLI 在内部检查 `commit_docs` 配置和 gitignore 状态 —— 无需手动
 - 在应该包含 `.planning/` 的广泛 rg 搜索中添加 `--no-ignore`
 - 仅在搜索整个仓库并期望 `.planning/` 匹配时需要
 
-**注意：** 大多数 GSD 操作使用直接文件读取或显式路径，无论 gitignore 状态如何都有效。
+**注意：** 大多数 THRUNT 操作使用直接文件读取或显式路径，无论 gitignore 状态如何都有效。
 
 </search_behavior>
 
@@ -114,23 +114,23 @@ CLI 在内部检查 `commit_docs` 配置和 gitignore 状态 —— 无需手动
 | 策略 | 创建分支时机 | 分支范围 | 合并点 |
 |----------|---------------------|--------------|-------------|
 | `none` | 从不 | N/A | N/A |
-| `phase` | `execute-phase` 开始时 | 单个阶段 | 阶段后用户手动合并 |
-| `milestone` | 里程碑第一个 `execute-phase` | 整个里程碑 | `complete-milestone` 时 |
+| `phase` | `hunt-run` 开始时 | 单个阶段 | 阶段后用户手动合并 |
+| `milestone` | 里程碑第一个 `hunt-run` | 整个里程碑 | `complete-milestone` 时 |
 
 **当 `git.branching_strategy: "none"`（默认）：**
 - 所有工作提交到当前分支
-- 标准 GSD 行为
+- 标准 THRUNT 行为
 
 **当 `git.branching_strategy: "phase"`：**
-- `execute-phase` 在执行前创建/切换到分支
-- 分支名来自 `phase_branch_template`（如 `gsd/phase-03-authentication`）
+- `hunt-run` 在执行前创建/切换到分支
+- 分支名来自 `phase_branch_template`（如 `thrunt/phase-03-authentication`）
 - 所有计划提交到该分支
 - 阶段完成后用户手动合并分支
 - `complete-milestone` 提供合并所有阶段分支的选项
 
 **当 `git.branching_strategy: "milestone"`：**
-- 里程碑的第一个 `execute-phase` 创建里程碑分支
-- 分支名来自 `milestone_branch_template`（如 `gsd/v1.0-mvp`）
+- 里程碑的第一个 `hunt-run` 创建里程碑分支
+- 分支名来自 `milestone_branch_template`（如 `thrunt/v1.0-mvp`）
 - 里程碑中所有阶段提交到同一分支
 - `complete-milestone` 提供将里程碑分支合并到 main 的选项
 
@@ -144,16 +144,16 @@ CLI 在内部检查 `commit_docs` 配置和 gitignore 状态 —— 无需手动
 
 **检查配置：**
 
-使用 `init execute-phase` 返回所有配置为 JSON：
+使用 `init run` 返回所有配置为 JSON：
 ```bash
-INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" init execute-phase "1")
+INIT=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" init run "1")
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 # JSON 输出包含：branching_strategy, phase_branch_template, milestone_branch_template
 ```
 
 或使用 `state load` 获取配置值：
 ```bash
-INIT=$(node "$HOME/.claude/get-shit-done/bin/gsd-tools.cjs" state load)
+INIT=$(node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" state load)
 if [[ "$INIT" == @file:* ]]; then INIT=$(cat "${INIT#@file:}"); fi
 # 从 JSON 解析 branching_strategy, phase_branch_template, milestone_branch_template
 ```

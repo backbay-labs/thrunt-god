@@ -35,7 +35,7 @@ Closes #<!-- issue number -->
 
 ## Checklist
 
-- [ ] Follows GSD style (no enterprise patterns, no filler)
+- [ ] Follows THRUNT style (direct, pragmatic, no enterprise filler)
 - [ ] Updates CHANGELOG.md for user-facing changes
 - [ ] No unnecessary dependencies added
 - [ ] Works on Windows (backslash paths tested)

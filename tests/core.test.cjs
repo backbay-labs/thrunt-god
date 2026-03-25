@@ -1,8 +1,8 @@
 /**
- * GSD Tools Tests - core.cjs
+ * THRUNT Tools Tests - core.cjs
  *
  * Tests for the foundational module's exports including regressions
- * for known bugs (REG-01: loadConfig model_overrides, REG-02: getRoadmapPhaseInternal export).
+ * for known bugs (REG-01: loadConfig model_overrides, REG-02: getHuntmapPhaseInternal export).
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
@@ -25,12 +25,13 @@ const {
   pathExistsInternal,
   getMilestoneInfo,
   getMilestonePhaseFilter,
-  getRoadmapPhaseInternal,
+  getHuntmapPhaseInternal,
   searchPhaseInDir,
   findPhaseInternal,
   findProjectRoot,
   detectSubRepos,
-} = require('../get-shit-done/bin/lib/core.cjs');
+  planningPaths,
+} = require('../thrunt-god/bin/lib/core.cjs');
 
 // ─── loadConfig ────────────────────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ describe('loadConfig', () => {
     assert.strictEqual(config.model_profile, 'balanced');
     assert.strictEqual(config.commit_docs, true);
     assert.strictEqual(config.research, true);
-    assert.strictEqual(config.plan_checker, true);
+    assert.strictEqual(config.plan_check, true);
     assert.strictEqual(config.brave_search, false);
     assert.strictEqual(config.parallelization, true);
     assert.strictEqual(config.nyquist_validation, true);
@@ -79,6 +80,13 @@ describe('loadConfig', () => {
     assert.strictEqual(config.commit_docs, false);
   });
 
+  test('normalizes legacy workflow.discuss_mode standard to discuss on load', () => {
+    writeConfig({ workflow: { discuss_mode: 'standard' } });
+    loadConfig(tmpDir);
+    const disk = JSON.parse(fs.readFileSync(path.join(tmpDir, '.planning', 'config.json'), 'utf-8'));
+    assert.strictEqual(disk.workflow.discuss_mode, 'discuss');
+  });
+
   test('reads branching_strategy from git section', () => {
     writeConfig({ git: { branching_strategy: 'per-phase' } });
     const config = loadConfig(tmpDir);
@@ -87,9 +95,9 @@ describe('loadConfig', () => {
 
   // Bug: loadConfig previously omitted model_overrides from return value
   test('returns model_overrides when present (REG-01)', () => {
-    writeConfig({ model_overrides: { 'gsd-executor': 'opus' } });
+    writeConfig({ model_overrides: { 'thrunt-telemetry-executor': 'opus' } });
     const config = loadConfig(tmpDir);
-    assert.deepStrictEqual(config.model_overrides, { 'gsd-executor': 'opus' });
+    assert.deepStrictEqual(config.model_overrides, { 'thrunt-telemetry-executor': 'opus' });
   });
 
   test('returns model_overrides as null when not in config', () => {
@@ -124,6 +132,48 @@ describe('loadConfig', () => {
     writeConfig({ commit_docs: false, planning: { commit_docs: true } });
     const config = loadConfig(tmpDir);
     assert.strictEqual(config.commit_docs, false);
+  });
+});
+
+describe('planningPaths', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('includes hunt-native root and scoped artifact paths', () => {
+    const paths = planningPaths(tmpDir);
+
+    assert.strictEqual(paths.mission, path.join(tmpDir, '.planning', 'MISSION.md'));
+    assert.strictEqual(paths.environmentMap, path.join(tmpDir, '.planning', 'environment', 'ENVIRONMENT.md'));
+    assert.strictEqual(paths.huntmap, path.join(tmpDir, '.planning', 'HUNTMAP.md'));
+    assert.strictEqual(paths.hypotheses, path.join(tmpDir, '.planning', 'HYPOTHESES.md'));
+    assert.strictEqual(paths.successCriteria, path.join(tmpDir, '.planning', 'SUCCESS_CRITERIA.md'));
+    assert.strictEqual(paths.findings, path.join(tmpDir, '.planning', 'FINDINGS.md'));
+    assert.strictEqual(paths.evidenceReview, path.join(tmpDir, '.planning', 'EVIDENCE_REVIEW.md'));
+    assert.strictEqual(paths.queries, path.join(tmpDir, '.planning', 'QUERIES'));
+    assert.strictEqual(paths.receipts, path.join(tmpDir, '.planning', 'RECEIPTS'));
+  });
+
+  test('scopes hunt-native workstream artifacts to the selected workstream', () => {
+    const paths = planningPaths(tmpDir, 'alpha');
+    const wsRoot = path.join(tmpDir, '.planning', 'workstreams', 'alpha');
+
+    assert.strictEqual(paths.planning, wsRoot);
+    assert.strictEqual(paths.huntmap, path.join(wsRoot, 'HUNTMAP.md'));
+    assert.strictEqual(paths.hypotheses, path.join(wsRoot, 'HYPOTHESES.md'));
+    assert.strictEqual(paths.successCriteria, path.join(wsRoot, 'SUCCESS_CRITERIA.md'));
+    assert.strictEqual(paths.findings, path.join(wsRoot, 'FINDINGS.md'));
+    assert.strictEqual(paths.evidenceReview, path.join(wsRoot, 'EVIDENCE_REVIEW.md'));
+    assert.strictEqual(paths.queries, path.join(wsRoot, 'QUERIES'));
+    assert.strictEqual(paths.receipts, path.join(wsRoot, 'RECEIPTS'));
+    assert.strictEqual(paths.mission, path.join(tmpDir, '.planning', 'MISSION.md'));
+    assert.strictEqual(paths.environmentMap, path.join(tmpDir, '.planning', 'environment', 'ENVIRONMENT.md'));
   });
 });
 
@@ -186,7 +236,7 @@ describe('loadConfig commit_docs gitignore auto-detection (#1250)', () => {
     // When config.json is missing, loadConfig catches and returns defaults.
     // The gitignore check happens inside the try block, so with no config.json
     // the catch returns defaults (commit_docs: true). This is acceptable since
-    // a project without config.json hasn't been initialized by GSD yet.
+    // a project without config.json hasn't been initialized by THRUNT yet.
     assert.strictEqual(typeof config.commit_docs, 'boolean');
   });
 });
@@ -213,7 +263,7 @@ describe('resolveModelInternal', () => {
 
   describe('model profile structural validation', () => {
     test('all known agents resolve to a valid string for each profile', () => {
-      const knownAgents = ['gsd-planner', 'gsd-executor', 'gsd-phase-researcher', 'gsd-codebase-mapper'];
+      const knownAgents = ['thrunt-hunt-planner', 'thrunt-telemetry-executor', 'thrunt-query-writer', 'thrunt-environment-mapper'];
       const profiles = ['quality', 'balanced', 'budget', 'inherit'];
       const validValues = ['inherit', 'sonnet', 'haiku', 'opus'];
 
@@ -230,7 +280,7 @@ describe('resolveModelInternal', () => {
     });
 
     test('inherit profile forces all known agents to inherit model', () => {
-      const knownAgents = ['gsd-planner', 'gsd-executor', 'gsd-phase-researcher', 'gsd-codebase-mapper'];
+      const knownAgents = ['thrunt-hunt-planner', 'thrunt-telemetry-executor', 'thrunt-query-writer', 'thrunt-environment-mapper'];
       writeConfig({ model_profile: 'inherit' });
       for (const agent of knownAgents) {
         assert.strictEqual(resolveModelInternal(tmpDir, agent), 'inherit');
@@ -242,68 +292,68 @@ describe('resolveModelInternal', () => {
     test('per-agent override takes precedence over profile', () => {
       writeConfig({
         model_profile: 'balanced',
-        model_overrides: { 'gsd-executor': 'haiku' },
+        model_overrides: { 'thrunt-telemetry-executor': 'haiku' },
       });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-executor'), 'haiku');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-telemetry-executor'), 'haiku');
     });
 
     test('opus override resolves to opus', () => {
       writeConfig({
-        model_overrides: { 'gsd-executor': 'opus' },
+        model_overrides: { 'thrunt-telemetry-executor': 'opus' },
       });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-executor'), 'opus');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-telemetry-executor'), 'opus');
     });
 
     test('agents not in override fall back to profile', () => {
       writeConfig({
         model_profile: 'quality',
-        model_overrides: { 'gsd-executor': 'haiku' },
+        model_overrides: { 'thrunt-telemetry-executor': 'haiku' },
       });
-      // gsd-planner not overridden, should use quality profile -> opus
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), 'opus');
+      // thrunt-hunt-planner not overridden, should use quality profile -> opus
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-hunt-planner'), 'opus');
     });
   });
 
   describe('edge cases', () => {
     test('returns sonnet for unknown agent type', () => {
       writeConfig({ model_profile: 'balanced' });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-nonexistent'), 'sonnet');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-nonexistent'), 'sonnet');
     });
 
     test('returns sonnet for unknown agent type even with inherit profile', () => {
       writeConfig({ model_profile: 'inherit' });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-nonexistent'), 'sonnet');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-nonexistent'), 'sonnet');
     });
 
     test('defaults to balanced profile when model_profile missing', () => {
       writeConfig({});
-      // balanced profile, gsd-planner -> opus
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), 'opus');
+      // balanced profile, thrunt-hunt-planner -> opus
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-hunt-planner'), 'opus');
     });
   });
 
   describe('resolve_model_ids: "omit"', () => {
     test('returns empty string for known agents', () => {
       writeConfig({ resolve_model_ids: 'omit' });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), '');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-hunt-planner'), '');
     });
 
     test('returns empty string for unknown agents', () => {
       writeConfig({ resolve_model_ids: 'omit' });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-nonexistent'), '');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-nonexistent'), '');
     });
 
     test('still respects model_overrides even when omit', () => {
       writeConfig({
         resolve_model_ids: 'omit',
-        model_overrides: { 'gsd-planner': 'openai/gpt-5.4' },
+        model_overrides: { 'thrunt-hunt-planner': 'openai/gpt-5.4' },
       });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), 'openai/gpt-5.4');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-hunt-planner'), 'openai/gpt-5.4');
     });
 
     test('returns empty string with inherit profile', () => {
       writeConfig({ resolve_model_ids: 'omit', model_profile: 'inherit' });
-      assert.strictEqual(resolveModelInternal(tmpDir, 'gsd-planner'), '');
+      assert.strictEqual(resolveModelInternal(tmpDir, 'thrunt-hunt-planner'), '');
     });
   });
 });
@@ -380,7 +430,7 @@ describe('safeReadFile', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-core-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-core-test-'));
   });
 
   afterEach(() => {
@@ -439,8 +489,8 @@ describe('getMilestoneInfo', () => {
 
   test('extracts version and name from roadmap', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\n## Roadmap v1.2: My Cool Project\n\nSome content'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\n## Huntmap v1.2: My Cool Project\n\nSome content'
     );
     const info = getMilestoneInfo(tmpDir);
     assert.strictEqual(info.version, 'v1.2');
@@ -453,7 +503,7 @@ describe('getMilestoneInfo', () => {
     assert.strictEqual(info.name, 'milestone');
   });
 
-  test('returns active milestone when shipped milestone is collapsed in details block', () => {
+  test('returns active milestone when published milestone is collapsed in details block', () => {
     const roadmap = [
       '# Milestones',
       '',
@@ -465,25 +515,25 @@ describe('getMilestoneInfo', () => {
       '<details>',
       '<summary>v0.1 — Legacy Feature Parity (Shipped)</summary>',
       '',
-      '## Roadmap v0.1: Legacy Feature Parity',
+      '## Huntmap v0.1: Legacy Feature Parity',
       '',
       '### Phase 1: Core Setup',
       'Some content about phase 1',
       '',
       '</details>',
       '',
-      '## Roadmap v0.2: Dashboard Overhaul',
+      '## Huntmap v0.2: Dashboard Overhaul',
       '',
       '### Phase 8: New Dashboard Layout',
       'Some content about phase 8',
     ].join('\n');
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), roadmap);
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), roadmap);
     const info = getMilestoneInfo(tmpDir);
     assert.strictEqual(info.version, 'v0.2');
     assert.strictEqual(info.name, 'Dashboard Overhaul');
   });
 
-  test('returns active milestone when multiple shipped milestones exist in details blocks', () => {
+  test('returns active milestone when multiple published milestones exist in details blocks', () => {
     const roadmap = [
       '# Milestones',
       '',
@@ -496,31 +546,41 @@ describe('getMilestoneInfo', () => {
       '<details>',
       '<summary>v0.1 — Initial Release (Shipped)</summary>',
       '',
-      '## Roadmap v0.1: Initial Release',
+      '## Huntmap v0.1: Initial Release',
       '',
       '</details>',
       '',
       '<details>',
       '<summary>v0.2 — Feature Expansion (Shipped)</summary>',
       '',
-      '## Roadmap v0.2: Feature Expansion',
+      '## Huntmap v0.2: Feature Expansion',
       '',
       '</details>',
       '',
-      '## Roadmap v0.3: Performance Tuning',
+      '## Huntmap v0.3: Performance Tuning',
       '',
       '### Phase 12: Optimize Queries',
     ].join('\n');
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), roadmap);
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), roadmap);
     const info = getMilestoneInfo(tmpDir);
     assert.strictEqual(info.version, 'v0.3');
     assert.strictEqual(info.name, 'Performance Tuning');
   });
 
+  test('extracts program name from HUNTMAP when HUNTMAP is absent', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap: Identity Escalation Hunt\n\n## Overview\n\nTrack suspicious admin actions.\n'
+    );
+    const info = getMilestoneInfo(tmpDir);
+    assert.strictEqual(info.version, 'v1.0');
+    assert.strictEqual(info.name, 'Identity Escalation Hunt');
+  });
+
   test('returns defaults when roadmap has no heading matches', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\nSome content without version headings'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\nSome content without version headings'
     );
     const info = getMilestoneInfo(tmpDir);
     assert.strictEqual(info.version, 'v1.0');
@@ -535,7 +595,7 @@ describe('searchPhaseInDir', () => {
   let phasesDir;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-core-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-core-test-'));
     phasesDir = path.join(tmpDir, 'phases');
     fs.mkdirSync(phasesDir, { recursive: true });
   });
@@ -637,9 +697,9 @@ describe('findPhaseInternal', () => {
   });
 });
 
-// ─── getRoadmapPhaseInternal ───────────────────────────────────────────────────
+// ─── getHuntmapPhaseInternal ───────────────────────────────────────────────────
 
-describe('getRoadmapPhaseInternal', () => {
+describe('getHuntmapPhaseInternal', () => {
   let tmpDir;
 
   beforeEach(() => {
@@ -650,15 +710,15 @@ describe('getRoadmapPhaseInternal', () => {
     cleanup(tmpDir);
   });
 
-  // Bug: getRoadmapPhaseInternal was missing from module.exports
+  // Bug: getHuntmapPhaseInternal was missing from module.exports
   test('is exported from core.cjs (REG-02)', () => {
-    assert.strictEqual(typeof getRoadmapPhaseInternal, 'function');
+    assert.strictEqual(typeof getHuntmapPhaseInternal, 'function');
     // Also verify it works with a real roadmap (note: goal regex expects **Goal:** with colon inside bold)
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 1: Foundation\n**Goal:** Build the base\n'
     );
-    const result = getRoadmapPhaseInternal(tmpDir, '1');
+    const result = getHuntmapPhaseInternal(tmpDir, '1');
     assert.strictEqual(result.found, true);
     assert.strictEqual(result.phase_name, 'Foundation');
     assert.strictEqual(result.goal, 'Build the base');
@@ -666,10 +726,10 @@ describe('getRoadmapPhaseInternal', () => {
 
   test('extracts phase name and goal from roadmap', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 2: API Layer\n**Goal:** Create REST endpoints\n**Depends on**: Phase 1\n'
     );
-    const result = getRoadmapPhaseInternal(tmpDir, '2');
+    const result = getHuntmapPhaseInternal(tmpDir, '2');
     assert.strictEqual(result.phase_name, 'API Layer');
     assert.strictEqual(result.goal, 'Create REST endpoints');
   });
@@ -677,40 +737,51 @@ describe('getRoadmapPhaseInternal', () => {
   test('returns goal when Goal uses colon-outside-bold format', () => {
     // **Goal**: (colon outside bold) is now supported alongside **Goal:**
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 1: Foundation\n**Goal**: Build the base\n'
     );
-    const result = getRoadmapPhaseInternal(tmpDir, '1');
+    const result = getHuntmapPhaseInternal(tmpDir, '1');
     assert.strictEqual(result.found, true);
     assert.strictEqual(result.phase_name, 'Foundation');
     assert.strictEqual(result.goal, 'Build the base');
   });
 
+  test('reads phase details from HUNTMAP when HUNTMAP is absent', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '### Phase 3: Swarm Execution\n**Goal**: Correlate telemetry across domains\n'
+    );
+    const result = getHuntmapPhaseInternal(tmpDir, '3');
+    assert.strictEqual(result.found, true);
+    assert.strictEqual(result.phase_name, 'Swarm Execution');
+    assert.strictEqual(result.goal, 'Correlate telemetry across domains');
+  });
+
   test('returns null when roadmap missing', () => {
-    const result = getRoadmapPhaseInternal(tmpDir, '1');
+    const result = getHuntmapPhaseInternal(tmpDir, '1');
     assert.strictEqual(result, null);
   });
 
   test('returns null when phase not in roadmap', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 1: Foundation\n**Goal**: Build the base\n'
     );
-    const result = getRoadmapPhaseInternal(tmpDir, '99');
+    const result = getHuntmapPhaseInternal(tmpDir, '99');
     assert.strictEqual(result, null);
   });
 
   test('returns null for null phase number', () => {
-    const result = getRoadmapPhaseInternal(tmpDir, null);
+    const result = getHuntmapPhaseInternal(tmpDir, null);
     assert.strictEqual(result, null);
   });
 
   test('extracts full section text', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '### Phase 1: Foundation\n**Goal**: Build the base\n**Requirements**: TEST-01\nSome details here\n\n### Phase 2: API\n**Goal**: REST\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '### Phase 1: Foundation\n**Goal**: Build the base\n**Hypotheses**: TEST-01\nSome details here\n\n### Phase 2: API\n**Goal**: REST\n'
     );
-    const result = getRoadmapPhaseInternal(tmpDir, '1');
+    const result = getHuntmapPhaseInternal(tmpDir, '1');
     assert.ok(result.section.includes('Phase 1: Foundation'));
     assert.ok(result.section.includes('Some details here'));
     // Should not include Phase 2 content
@@ -732,11 +803,11 @@ describe('getMilestonePhaseFilter', () => {
   });
 
   test('filters directories to only current milestone phases', () => {
-    // ROADMAP lists only phases 5-7
+    // HUNTMAP lists only phases 5-7
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       [
-        '## Roadmap v2.0: Next Release',
+        '## Huntmap v2.0: Next Release',
         '',
         '### Phase 5: Auth',
         '**Goal:** Add authentication',
@@ -769,17 +840,17 @@ describe('getMilestonePhaseFilter', () => {
     assert.strictEqual(filter('04-phase-4'), false);
   });
 
-  test('returns pass-all filter when ROADMAP.md is missing', () => {
+  test('returns pass-all filter when HUNTMAP.md is missing', () => {
     const filter = getMilestonePhaseFilter(tmpDir);
 
     assert.strictEqual(filter('01-foundation'), true);
     assert.strictEqual(filter('99-anything'), true);
   });
 
-  test('returns pass-all filter when ROADMAP has no phase headings', () => {
+  test('returns pass-all filter when HUNTMAP has no phase headings', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\nSome content without phases.\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\nSome content without phases.\n'
     );
 
     const filter = getMilestonePhaseFilter(tmpDir);
@@ -790,7 +861,7 @@ describe('getMilestonePhaseFilter', () => {
 
   test('handles letter-suffix phases (e.g. 3A)', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 3A: Sub-feature\n**Goal:** Sub work\n'
     );
 
@@ -803,7 +874,7 @@ describe('getMilestonePhaseFilter', () => {
 
   test('handles decimal phases (e.g. 5.1)', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 5: Main\n**Goal:** Main work\n\n### Phase 5.1: Patch\n**Goal:** Patch work\n'
     );
 
@@ -816,7 +887,7 @@ describe('getMilestonePhaseFilter', () => {
 
   test('returns false for non-phase directory names', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 1: Init\n**Goal:** Start\n'
     );
 
@@ -826,9 +897,9 @@ describe('getMilestonePhaseFilter', () => {
     assert.strictEqual(filter('.gitkeep'), false);
   });
 
-  test('phaseCount reflects ROADMAP phase count', () => {
+  test('phaseCount reflects HUNTMAP phase count', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
       '### Phase 5: Auth\n### Phase 6: Dashboard\n### Phase 7: Polish\n'
     );
 
@@ -836,15 +907,15 @@ describe('getMilestonePhaseFilter', () => {
     assert.strictEqual(filter.phaseCount, 3);
   });
 
-  test('phaseCount is 0 when ROADMAP is missing', () => {
+  test('phaseCount is 0 when HUNTMAP is missing', () => {
     const filter = getMilestonePhaseFilter(tmpDir);
     assert.strictEqual(filter.phaseCount, 0);
   });
 
-  test('phaseCount is 0 when ROADMAP has no phase headings', () => {
+  test('phaseCount is 0 when HUNTMAP has no phase headings', () => {
     fs.writeFileSync(
-      path.join(tmpDir, '.planning', 'ROADMAP.md'),
-      '# Roadmap\n\nSome content.\n'
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap\n\nSome content.\n'
     );
 
     const filter = getMilestonePhaseFilter(tmpDir);
@@ -941,7 +1012,7 @@ describe('normalizeMd', () => {
 
   test('complex real-world STATE.md-like content', () => {
     const input = [
-      '# Project State',
+      '# Hunt State',
       '## Current Position',
       'Phase: 5 of 10',
       'Status: Executing',
@@ -964,49 +1035,49 @@ describe('normalizeMd', () => {
 // ─── Stale hook filter regression (#1200) ─────────────────────────────────────
 
 describe('stale hook filter', () => {
-  test('filter should only match gsd-prefixed .js files', () => {
+  test('filter should only match thrunt-prefixed .js files', () => {
     const files = [
-      'gsd-check-update.js',
-      'gsd-context-monitor.js',
-      'gsd-prompt-guard.js',
-      'gsd-statusline.js',
-      'gsd-workflow-guard.js',
+      'thrunt-check-update.js',
+      'thrunt-context-monitor.js',
+      'thrunt-prompt-guard.js',
+      'thrunt-statusline.js',
+      'thrunt-workflow-guard.js',
       'guard-edits-outside-project.js',  // user hook
       'my-custom-hook.js',               // user hook
-      'gsd-check-update.js.bak',         // backup file
+      'thrunt-check-update.js.bak',         // backup file
       'README.md',                       // non-js file
     ];
 
-    const gsdFilter = f => f.startsWith('gsd-') && f.endsWith('.js');
-    const filtered = files.filter(gsdFilter);
+    const thruntFilter = f => f.startsWith('thrunt-') && f.endsWith('.js');
+    const filtered = files.filter(thruntFilter);
 
     assert.deepStrictEqual(filtered, [
-      'gsd-check-update.js',
-      'gsd-context-monitor.js',
-      'gsd-prompt-guard.js',
-      'gsd-statusline.js',
-      'gsd-workflow-guard.js',
-    ], 'should only include gsd-prefixed .js files');
+      'thrunt-check-update.js',
+      'thrunt-context-monitor.js',
+      'thrunt-prompt-guard.js',
+      'thrunt-statusline.js',
+      'thrunt-workflow-guard.js',
+    ], 'should only include thrunt-prefixed .js files');
 
     assert.ok(!filtered.includes('guard-edits-outside-project.js'), 'must not include user hooks');
-    assert.ok(!filtered.includes('my-custom-hook.js'), 'must not include non-gsd hooks');
+    assert.ok(!filtered.includes('my-custom-hook.js'), 'must not include non-thrunt hooks');
   });
 });
 
 // ─── stale hook path regression (#1249) ──────────────────────────────────────
 
 describe('stale hook path', () => {
-  test('gsd-check-update.js checks get-shit-done/hooks/ not configDir/hooks/', () => {
+  test('thrunt-check-update.js checks thrunt-god/hooks/ not configDir/hooks/', () => {
     const content = fs.readFileSync(
-      path.join(__dirname, '..', 'hooks', 'gsd-check-update.js'), 'utf-8'
+      path.join(__dirname, '..', 'hooks', 'thrunt-check-update.js'), 'utf-8'
     );
     assert.ok(
-      content.includes("path.join(configDir, 'get-shit-done', 'hooks')"),
-      'stale hook check must look in configDir/get-shit-done/hooks/, not configDir/hooks/'
+      content.includes("path.join(configDir, 'thrunt-god', 'hooks')"),
+      'stale hook check must look in configDir/thrunt-god/hooks/, not configDir/hooks/'
     );
     assert.ok(
       !content.includes("path.join(configDir, 'hooks')") ||
-      content.indexOf("path.join(configDir, 'get-shit-done', 'hooks')") <
+      content.indexOf("path.join(configDir, 'thrunt-god', 'hooks')") <
       content.indexOf("path.join(configDir, 'hooks')") + 100, // allow the old pattern only if corrected version exists first
       'should not use the wrong hooks path'
     );
@@ -1016,7 +1087,7 @@ describe('stale hook path', () => {
 // ─── resolveWorktreeRoot ─────────────────────────────────────────────────────
 
 describe('resolveWorktreeRoot', () => {
-  const { resolveWorktreeRoot } = require('../get-shit-done/bin/lib/core.cjs');
+  const { resolveWorktreeRoot } = require('../thrunt-god/bin/lib/core.cjs');
   let tmpDir;
 
   beforeEach(() => {
@@ -1041,7 +1112,7 @@ describe('resolveWorktreeRoot', () => {
 // ─── resolveWorktreeRoot — linked worktree with .planning/ (#1315) ───────────
 
 describe('resolveWorktreeRoot with linked worktree .planning/', () => {
-  const { resolveWorktreeRoot } = require('../get-shit-done/bin/lib/core.cjs');
+  const { resolveWorktreeRoot } = require('../thrunt-god/bin/lib/core.cjs');
   const { execSync: execSyncLocal } = require('child_process');
   // On Windows CI, os.tmpdir() may return 8.3 short paths (RUNNER~1) while
   // git returns long paths (runneradmin). realpathSync.native resolves both.
@@ -1053,7 +1124,7 @@ describe('resolveWorktreeRoot with linked worktree .planning/', () => {
   let worktreeDir;
 
   function initBareGitRepo() {
-    const dir = normalizePath(fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-wt-main-')));
+    const dir = normalizePath(fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-wt-main-')));
     execSyncLocal('git init', { cwd: dir, stdio: 'pipe' });
     execSyncLocal('git config user.email "test@test.com"', { cwd: dir, stdio: 'pipe' });
     execSyncLocal('git config user.name "Test"', { cwd: dir, stdio: 'pipe' });
@@ -1082,7 +1153,7 @@ describe('resolveWorktreeRoot with linked worktree .planning/', () => {
     fs.mkdirSync(path.join(mainDir, '.planning'), { recursive: true });
 
     // Create a linked worktree
-    worktreeDir = normalizePath(fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-wt-linked-')));
+    worktreeDir = normalizePath(fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-wt-linked-')));
     fs.rmSync(worktreeDir, { recursive: true, force: true });
     execSyncLocal(`git worktree add "${worktreeDir}" -b test-linked`, { cwd: mainDir, stdio: 'pipe' });
 
@@ -1097,7 +1168,7 @@ describe('resolveWorktreeRoot with linked worktree .planning/', () => {
 
   test('returns main repo root when linked worktree has no .planning/', () => {
     // Create a linked worktree (no .planning/ in main or worktree)
-    worktreeDir = normalizePath(fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-wt-linked-')));
+    worktreeDir = normalizePath(fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-wt-linked-')));
     fs.rmSync(worktreeDir, { recursive: true, force: true });
     execSyncLocal(`git worktree add "${worktreeDir}" -b test-linked-no-plan`, { cwd: mainDir, stdio: 'pipe' });
 
@@ -1112,11 +1183,11 @@ describe('resolveWorktreeRoot with linked worktree .planning/', () => {
 // ─── monorepo worktree CWD preservation (#1283) ─────────────────────────────
 
 describe('monorepo worktree CWD preservation', () => {
-  const { resolveWorktreeRoot } = require('../get-shit-done/bin/lib/core.cjs');
+  const { resolveWorktreeRoot } = require('../thrunt-god/bin/lib/core.cjs');
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-monorepo-wt-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-monorepo-wt-'));
   });
 
   afterEach(() => {
@@ -1149,7 +1220,7 @@ describe('monorepo worktree CWD preservation', () => {
 // ─── withPlanningLock ────────────────────────────────────────────────────────
 
 describe('withPlanningLock', () => {
-  const { withPlanningLock, planningDir } = require('../get-shit-done/bin/lib/core.cjs');
+  const { withPlanningLock, planningDir } = require('../thrunt-god/bin/lib/core.cjs');
   let tmpDir;
 
   beforeEach(() => {
@@ -1193,7 +1264,7 @@ describe('detectSubRepos', () => {
   let projectRoot;
 
   beforeEach(() => {
-    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-detect-test-'));
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-detect-test-'));
   });
 
   afterEach(() => {
@@ -1239,7 +1310,7 @@ describe('loadConfig sub_repos auto-sync', () => {
   let projectRoot;
 
   beforeEach(() => {
-    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-sync-test-'));
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-sync-test-'));
     fs.mkdirSync(path.join(projectRoot, '.planning'), { recursive: true });
   });
 
@@ -1248,7 +1319,7 @@ describe('loadConfig sub_repos auto-sync', () => {
   });
 
   test('migrates multiRepo: true to sub_repos array', () => {
-    // Create config with legacy multiRepo flag
+    // Create config with previous multiRepo flag
     fs.writeFileSync(
       path.join(projectRoot, '.planning', 'config.json'),
       JSON.stringify({ multiRepo: true, model_profile: 'quality' })
@@ -1309,7 +1380,7 @@ describe('findProjectRoot', () => {
   let projectRoot;
 
   beforeEach(() => {
-    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-root-test-'));
+    projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-root-test-'));
   });
 
   afterEach(() => {
@@ -1353,7 +1424,7 @@ describe('findProjectRoot', () => {
     assert.strictEqual(findProjectRoot(deepDir), projectRoot);
   });
 
-  test('walks up via legacy multiRepo flag', () => {
+  test('walks up via previous multiRepo flag', () => {
     fs.mkdirSync(path.join(projectRoot, '.planning'), { recursive: true });
     fs.writeFileSync(
       path.join(projectRoot, '.planning', 'config.json'),
@@ -1406,7 +1477,7 @@ describe('findProjectRoot', () => {
     assert.strictEqual(findProjectRoot(nestedDir), projectRoot);
   });
 
-  test('walks up from nested path via legacy multiRepo flag', () => {
+  test('walks up from nested path via previous multiRepo flag', () => {
     fs.mkdirSync(path.join(projectRoot, '.planning'), { recursive: true });
     fs.writeFileSync(
       path.join(projectRoot, '.planning', 'config.json'),
@@ -1521,25 +1592,25 @@ describe('findProjectRoot', () => {
 // ─── reapStaleTempFiles ─────────────────────────────────────────────────────
 
 describe('reapStaleTempFiles', () => {
-  test('removes stale gsd-*.json files older than maxAgeMs', () => {
+  test('removes stale thrunt-*.json files older than maxAgeMs', () => {
     const tmpDir = os.tmpdir();
-    const stalePath = path.join(tmpDir, `gsd-reap-test-${Date.now()}.json`);
+    const stalePath = path.join(tmpDir, `thrunt-reap-test-${Date.now()}.json`);
     fs.writeFileSync(stalePath, '{}');
     // Set mtime to 10 minutes ago
     const oldTime = new Date(Date.now() - 10 * 60 * 1000);
     fs.utimesSync(stalePath, oldTime, oldTime);
 
-    reapStaleTempFiles('gsd-reap-test-', { maxAgeMs: 5 * 60 * 1000 });
+    reapStaleTempFiles('thrunt-reap-test-', { maxAgeMs: 5 * 60 * 1000 });
 
     assert.ok(!fs.existsSync(stalePath), 'stale file should be removed');
   });
 
-  test('preserves fresh gsd-*.json files', () => {
+  test('preserves fresh thrunt-*.json files', () => {
     const tmpDir = os.tmpdir();
-    const freshPath = path.join(tmpDir, `gsd-reap-fresh-${Date.now()}.json`);
+    const freshPath = path.join(tmpDir, `thrunt-reap-fresh-${Date.now()}.json`);
     fs.writeFileSync(freshPath, '{}');
 
-    reapStaleTempFiles('gsd-reap-fresh-', { maxAgeMs: 5 * 60 * 1000 });
+    reapStaleTempFiles('thrunt-reap-fresh-', { maxAgeMs: 5 * 60 * 1000 });
 
     assert.ok(fs.existsSync(freshPath), 'fresh file should be preserved');
     // Clean up
@@ -1548,20 +1619,20 @@ describe('reapStaleTempFiles', () => {
 
   test('removes stale temp directories when present', () => {
     const tmpDir = os.tmpdir();
-    const staleDir = fs.mkdtempSync(path.join(tmpDir, 'gsd-reap-dir-'));
+    const staleDir = fs.mkdtempSync(path.join(tmpDir, 'thrunt-reap-dir-'));
     fs.writeFileSync(path.join(staleDir, 'data.jsonl'), 'test');
     // Set mtime to 10 minutes ago
     const oldTime = new Date(Date.now() - 10 * 60 * 1000);
     fs.utimesSync(staleDir, oldTime, oldTime);
 
-    reapStaleTempFiles('gsd-reap-dir-', { maxAgeMs: 5 * 60 * 1000 });
+    reapStaleTempFiles('thrunt-reap-dir-', { maxAgeMs: 5 * 60 * 1000 });
 
     assert.ok(!fs.existsSync(staleDir), 'stale directory should be removed');
   });
 
   test('does not throw on empty or missing prefix matches', () => {
     assert.doesNotThrow(() => {
-      reapStaleTempFiles('gsd-nonexistent-prefix-xyz-', { maxAgeMs: 0 });
+      reapStaleTempFiles('thrunt-nonexistent-prefix-xyz-', { maxAgeMs: 0 });
     });
   });
 });

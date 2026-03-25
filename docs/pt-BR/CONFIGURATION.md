@@ -1,4 +1,4 @@
-# Referência de Configuração do GSD
+# Referência de Configuração do THRUNT
 
 Configurações do projeto ficam em `.planning/config.json`.  
 Esta versão resume os parâmetros principais em Português. Para schema completo, veja [inglês](../CONFIGURATION.md).
@@ -19,12 +19,12 @@ Esta versão resume os parâmetros principais em Português. Para schema complet
   "workflow": {
     "research": true,
     "plan_check": true,
-    "verifier": true,
+    "validator": true,
     "nyquist_validation": true,
     "ui_phase": true,
     "ui_safety_gate": true,
     "research_before_questions": false,
-    "discuss_mode": "standard",
+    "discuss_mode": "discuss",
     "skip_discuss": false
   }
 }
@@ -51,22 +51,22 @@ Esta versão resume os parâmetros principais em Português. Para schema complet
 |------|--------|-----------|
 | `workflow.research` | `true` | Pesquisa antes de planejar |
 | `workflow.plan_check` | `true` | Loop de verificação de plano |
-| `workflow.verifier` | `true` | Verificação pós-execução |
+| `workflow.validator` | `true` | Verificação pós-execução |
 | `workflow.nyquist_validation` | `true` | Camada de validação automatizada por requisito |
 | `workflow.ui_phase` | `true` | Contrato de UI para fases frontend |
 | `workflow.ui_safety_gate` | `true` | Gate de segurança para registry UI |
 | `workflow.research_before_questions` | `false` | Pesquisa antes da discussão |
-| `workflow.discuss_mode` | `standard` | Discussão aberta; use `assumptions` para modo baseado em código |
-| `workflow.skip_discuss` | `false` | Pula discuss-phase no modo autônomo |
+| `workflow.discuss_mode` | `discuss` | Discussão guiada pergunta por pergunta; use `assumptions` para modo baseado em código |
+| `workflow.skip_discuss` | `false` | Pula shape-hypothesis no modo autônomo |
 
 ## Git branching
 
 | Chave | Opções | Padrão | Descrição |
 |------|--------|--------|-----------|
 | `git.branching_strategy` | `none`, `phase`, `milestone` | `none` | Estratégia de criação de branches |
-| `git.phase_branch_template` | string | `gsd/phase-{phase}-{slug}` | Nome para branch por fase |
-| `git.milestone_branch_template` | string | `gsd/{milestone}-{slug}` | Nome para branch de milestone |
-| `git.quick_branch_template` | string ou `null` | `null` | Branch opcional para `/gsd:quick` |
+| `git.phase_branch_template` | string | `thrunt/phase-{phase}-{slug}` | Nome para branch por fase |
+| `git.milestone_branch_template` | string | `thrunt/{milestone}-{slug}` | Nome para branch de milestone |
+| `git.quick_branch_template` | string ou `null` | `null` | Branch opcional para `/thrunt:quick` |
 
 ## Perfis de modelo
 
@@ -80,5 +80,5 @@ Esta versão resume os parâmetros principais em Português. Para schema complet
 Troca rápida:
 
 ```bash
-/gsd:set-profile budget
+/thrunt:set-profile budget
 ```

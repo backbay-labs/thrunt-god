@@ -1,5 +1,5 @@
 /**
- * GSD Milestone Summary Tests
+ * THRUNT Milestone Summary Tests
  *
  * Validates the milestone-summary command and workflow files exist
  * and follow expected patterns. Tests artifact discovery logic.
@@ -11,17 +11,17 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..');
-const commandPath = path.join(repoRoot, 'commands', 'gsd', 'milestone-summary.md');
-const workflowPath = path.join(repoRoot, 'get-shit-done', 'workflows', 'milestone-summary.md');
+const commandPath = path.join(repoRoot, 'commands', 'thrunt', 'milestone-summary.md');
+const workflowPath = path.join(repoRoot, 'thrunt-god', 'workflows', 'milestone-summary.md');
 
 describe('milestone-summary command', () => {
   test('command file exists', () => {
-    assert.ok(fs.existsSync(commandPath), 'commands/gsd/milestone-summary.md should exist');
+    assert.ok(fs.existsSync(commandPath), 'commands/thrunt/milestone-summary.md should exist');
   });
 
   test('command has correct frontmatter name', () => {
     const content = fs.readFileSync(commandPath, 'utf-8');
-    assert.ok(content.includes('name: gsd:milestone-summary'), 'should have correct command name');
+    assert.ok(content.includes('name: thrunt:milestone-summary'), 'should have correct command name');
   });
 
   test('command references workflow in execution_context', () => {
@@ -47,11 +47,11 @@ describe('milestone-summary workflow', () => {
   test('workflow reads milestone artifacts', () => {
     const content = fs.readFileSync(workflowPath, 'utf-8');
     const requiredArtifacts = [
-      'ROADMAP.md',
-      'REQUIREMENTS.md',
-      'PROJECT.md',
+      'HUNTMAP.md',
+      'HYPOTHESES.md',
+      'MISSION.md',
       'SUMMARY.md',
-      'VERIFICATION.md',
+      'FINDINGS.md',
       'CONTEXT.md',
       'RETROSPECTIVE.md',
     ];
@@ -91,7 +91,7 @@ describe('milestone-summary workflow', () => {
       'Project Overview',
       'Architecture',
       'Phases Delivered',
-      'Requirements Coverage',
+      'Hypothesis Coverage',
       'Key Decisions',
       'Tech Debt',
       'Getting Started',
@@ -108,7 +108,7 @@ describe('milestone-summary workflow', () => {
     const content = fs.readFileSync(workflowPath, 'utf-8');
     assert.ok(
       content.includes('state record-session'),
-      'should update STATE.md via gsd-tools'
+      'should update STATE.md via thrunt-tools'
     );
   });
 
@@ -163,12 +163,12 @@ describe('milestone-summary artifact path resolution', () => {
     const content = fs.readFileSync(workflowPath, 'utf-8');
     // Archived roadmap path should be under milestones/
     assert.ok(
-      content.includes('.planning/milestones/v${VERSION}-ROADMAP.md'),
-      'archived ROADMAP path should be under .planning/milestones/'
+      content.includes('.planning/milestones/v${VERSION}-HUNTMAP.md'),
+      'archived HUNTMAP path should be under .planning/milestones/'
     );
     assert.ok(
-      content.includes('.planning/milestones/v${VERSION}-REQUIREMENTS.md'),
-      'archived REQUIREMENTS path should be under .planning/milestones/'
+      content.includes('.planning/milestones/v${VERSION}-HYPOTHESES.md'),
+      'archived HYPOTHESES path should be under .planning/milestones/'
     );
     assert.ok(
       content.includes('.planning/milestones/v${VERSION}-MILESTONE-AUDIT.md'),
@@ -185,8 +185,8 @@ describe('milestone-summary artifact path resolution', () => {
       lines.findIndex(l => l.includes('Current/in-progress')) + 10
     ).join('\n');
     assert.ok(
-      currentSection.includes('ROADMAP_PATH=".planning/ROADMAP.md"'),
-      'current ROADMAP path should be at .planning/ root'
+      currentSection.includes('HUNTMAP_PATH=".planning/HUNTMAP.md"'),
+      'current HUNTMAP path should be at .planning/ root'
     );
   });
 });
@@ -196,7 +196,7 @@ describe('milestone-summary fixture-based artifact discovery', () => {
   let tmpDir;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-ms-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-ms-test-'));
   });
 
   afterEach(() => {
@@ -207,14 +207,14 @@ describe('milestone-summary fixture-based artifact discovery', () => {
     // Create archived milestone structure
     const milestonesDir = path.join(tmpDir, '.planning', 'milestones');
     fs.mkdirSync(milestonesDir, { recursive: true });
-    fs.writeFileSync(path.join(milestonesDir, 'v1.0-ROADMAP.md'), '# Roadmap v1.0');
-    fs.writeFileSync(path.join(milestonesDir, 'v1.0-REQUIREMENTS.md'), '# Reqs v1.0');
+    fs.writeFileSync(path.join(milestonesDir, 'v1.0-HUNTMAP.md'), '# Huntmap v1.0');
+    fs.writeFileSync(path.join(milestonesDir, 'v1.0-HYPOTHESES.md'), '# Reqs v1.0');
     fs.writeFileSync(path.join(milestonesDir, 'v1.0-MILESTONE-AUDIT.md'), '# Audit v1.0');
 
     // Verify all 3 archived files are discoverable
     const files = fs.readdirSync(milestonesDir);
-    assert.ok(files.includes('v1.0-ROADMAP.md'), 'archived ROADMAP should exist');
-    assert.ok(files.includes('v1.0-REQUIREMENTS.md'), 'archived REQUIREMENTS should exist');
+    assert.ok(files.includes('v1.0-HUNTMAP.md'), 'archived HUNTMAP should exist');
+    assert.ok(files.includes('v1.0-HYPOTHESES.md'), 'archived HYPOTHESES should exist');
     assert.ok(files.includes('v1.0-MILESTONE-AUDIT.md'), 'archived AUDIT should exist');
   });
 
@@ -230,7 +230,7 @@ describe('milestone-summary fixture-based artifact discovery', () => {
     // Phase 1: all artifacts
     fs.writeFileSync(path.join(phase1, '01-SUMMARY.md'), 'one_liner: Setup');
     fs.writeFileSync(path.join(phase1, '01-CONTEXT.md'), '<decisions>D-01</decisions>');
-    fs.writeFileSync(path.join(phase1, '01-VERIFICATION.md'), 'status: passed');
+    fs.writeFileSync(path.join(phase1, '01-FINDINGS.md'), 'status: passed');
     fs.writeFileSync(path.join(phase1, '01-RESEARCH.md'), '# Research');
 
     // Phase 2: partial artifacts (no RESEARCH, no VERIFICATION)

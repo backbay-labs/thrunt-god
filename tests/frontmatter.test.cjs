@@ -1,5 +1,5 @@
 /**
- * GSD Tools Tests - frontmatter.cjs
+ * THRUNT Tools Tests - frontmatter.cjs
  *
  * Tests for the hand-rolled YAML parser's pure function exports:
  * extractFrontmatter, reconstructFrontmatter, spliceFrontmatter,
@@ -17,7 +17,7 @@ const {
   spliceFrontmatter,
   parseMustHavesBlock,
   FRONTMATTER_SCHEMAS,
-} = require('../get-shit-done/bin/lib/frontmatter.cjs');
+} = require('../thrunt-god/bin/lib/frontmatter.cjs');
 
 // ─── extractFrontmatter ─────────────────────────────────────────────────────
 
@@ -99,10 +99,10 @@ describe('extractFrontmatter', () => {
   test('converts empty-object placeholders to arrays when dash items follow', () => {
     // When a key has no value, it gets an empty {} placeholder.
     // When "- item" lines follow, the parser converts {} to [].
-    const content = '---\nrequirements:\n  - REQ-01\n  - REQ-02\n---\n';
+    const content = '---\nrequirements:\n  - HYP-01\n  - HYP-02\n---\n';
     const result = extractFrontmatter(content);
     assert.ok(Array.isArray(result.requirements), 'should convert placeholder object to array');
-    assert.deepStrictEqual(result.requirements, ['REQ-01', 'REQ-02']);
+    assert.deepStrictEqual(result.requirements, ['HYP-01', 'HYP-02']);
   });
 
   test('skips empty lines in YAML body', () => {

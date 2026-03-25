@@ -1,14 +1,14 @@
 /**
- * GSD Tools Tests - Init Manager
+ * THRUNT Tools Tests - Init Manager
  */
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { runGsdTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
 
-// Helper: write a minimal ROADMAP.md with phases
+// Helper: write a minimal HUNTMAP.md with phases
 function writeRoadmap(tmpDir, phases) {
   const sections = phases.map(p => {
     let section = `### Phase ${p.number}: ${p.name}\n\n**Goal:** ${p.goal || 'Do the thing'}\n`;
@@ -21,8 +21,8 @@ function writeRoadmap(tmpDir, phases) {
     return `- [${mark}] **Phase ${p.number}: ${p.name}**`;
   }).join('\n');
 
-  const content = `# Roadmap\n\n## Progress\n\n${checklist}\n\n${sections}`;
-  fs.writeFileSync(path.join(tmpDir, '.planning', 'ROADMAP.md'), content);
+  const content = `# Huntmap\n\n## Progress\n\n${checklist}\n\n${sections}`;
+  fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), content);
 }
 
 // Helper: write a minimal STATE.md
@@ -66,18 +66,43 @@ describe('init manager', () => {
     cleanup(tmpDir);
   });
 
-  test('fails without ROADMAP.md', () => {
+  test('fails without HUNTMAP.md', () => {
     writeState(tmpDir);
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     assert.ok(!result.success);
-    assert.ok(result.error.includes('ROADMAP.md'));
+    assert.ok(result.error.includes('HUNTMAP.md'));
+  });
+
+  test('fails with hunt-aware roadmap hint when MISSION.md exists but HUNTMAP.md is missing', () => {
+    writeState(tmpDir);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'MISSION.md'),
+      '# Mission: OAuth Hunt\n\n## Signal\n\nLead\n\n## Desired Outcome\n\nConfirm\n\n## Scope\n\n- Tenant\n'
+    );
+
+    const result = runThruntTools('init manager', tmpDir);
+    assert.ok(!result.success);
+    assert.ok(result.error.includes('HUNTMAP.md'));
+    assert.ok(result.error.includes('/hunt:new-case'));
   });
 
   test('fails without STATE.md', () => {
     writeRoadmap(tmpDir, [{ number: '1', name: 'Setup' }]);
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     assert.ok(!result.success);
     assert.ok(result.error.includes('STATE.md'));
+  });
+
+  test('fails with hunt-aware state hint when HUNTMAP.md exists but STATE.md is missing', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap: Threat Hunt\n\n## Progress\n\n- [ ] **Phase 1: Signal Intake**\n\n### Phase 1: Signal Intake\n\n**Goal:** Triage the lead\n'
+    );
+
+    const result = runThruntTools('init manager', tmpDir);
+    assert.ok(!result.success);
+    assert.ok(result.error.includes('STATE.md'));
+    assert.ok(result.error.includes('/hunt:new-case'));
   });
 
   test('returns basic structure with phases', () => {
@@ -88,16 +113,52 @@ describe('init manager', () => {
       { number: '3', name: 'UI' },
     ]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.phase_count, 3);
     assert.strictEqual(output.completed_count, 0);
-    assert.strictEqual(output.roadmap_exists, true);
+    assert.strictEqual(output.huntmap_exists, true);
     assert.strictEqual(output.state_exists, true);
     assert.ok(Array.isArray(output.phases));
     assert.ok(Array.isArray(output.recommended_actions));
+  });
+
+  test('accepts HUNTMAP.md as the active roadmap source', () => {
+    writeState(tmpDir);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap: Threat Hunt\n\n## Progress\n\n- [ ] **Phase 1: Signal Intake**\n\n### Phase 1: Signal Intake\n\n**Goal**: Triage the lead\n'
+    );
+
+    const result = runThruntTools('init manager', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.phase_count, 1);
+    assert.strictEqual(output.workflow_mode, 'hunt');
+    assert.strictEqual(output.huntmap_source, 'HUNTMAP.md');
+  });
+
+  test('emits hunt-native commands in recommended_actions when HUNTMAP.md is active', () => {
+    writeState(tmpDir);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      '# Huntmap: Threat Hunt\n\n## Progress\n\n- [ ] **Phase 1: Signal Intake**\n- [ ] **Phase 2: Pivot Scope**\n- [ ] **Phase 3: Telemetry Sweep**\n\n### Phase 1: Signal Intake\n\n**Goal:** Shape the lead\n\n### Phase 2: Pivot Scope\n\n**Goal:** Plan the hunt\n\n### Phase 3: Telemetry Sweep\n\n**Goal:** Run the hunt\n'
+    );
+
+    scaffoldPhase(tmpDir, 1, { slug: 'signal-intake', context: true, plans: 1 });
+    scaffoldPhase(tmpDir, 2, { slug: 'pivot-scope', context: true });
+
+    const result = runThruntTools('init manager', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.workflow_mode, 'hunt');
+    assert.strictEqual(output.recommended_actions[0].command, '/hunt:run 1');
+    assert.strictEqual(output.recommended_actions[1].command, '/hunt:plan 2');
+    assert.strictEqual(output.recommended_actions[2].command, '/hunt:shape-hypothesis 3');
   });
 
   test('detects disk status correctly for each phase state', () => {
@@ -120,7 +181,7 @@ describe('init manager', () => {
     scaffoldPhase(tmpDir, 4, { slug: 'empty-phase' });
     // Phase 5: no directory at all
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
@@ -139,7 +200,7 @@ describe('init manager', () => {
     ]);
     scaffoldPhase(tmpDir, 1, { slug: 'foundation', plans: 1, summaries: 1 });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phases[0].deps_satisfied, true);
@@ -153,7 +214,7 @@ describe('init manager', () => {
       { number: '2', name: 'Depends on 1', depends_on: 'Phase 1' },
     ]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phases[0].deps_satisfied, true); // no deps
@@ -168,7 +229,7 @@ describe('init manager', () => {
       { number: '3', name: 'UI' },
     ]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // Only phase 1 should be discussable
@@ -178,8 +239,10 @@ describe('init manager', () => {
 
     // Only recommendation should be discuss phase 1
     assert.strictEqual(output.recommended_actions.length, 1);
+    assert.strictEqual(output.workflow_mode, 'hunt');
     assert.strictEqual(output.recommended_actions[0].action, 'discuss');
     assert.strictEqual(output.recommended_actions[0].phase, '1');
+    assert.strictEqual(output.recommended_actions[0].command, '/hunt:shape-hypothesis 1');
   });
 
   test('sliding window: after discussing N, plan N + discuss N+1', () => {
@@ -193,7 +256,7 @@ describe('init manager', () => {
     // Phase 1 discussed
     scaffoldPhase(tmpDir, 1, { slug: 'foundation', context: true });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // Phase 1 is discussed, phase 2 is next to discuss
@@ -222,7 +285,7 @@ describe('init manager', () => {
     scaffoldPhase(tmpDir, 2, { slug: 'api-layer', context: true, plans: 2 }); // planned
     scaffoldPhase(tmpDir, 3, { slug: 'auth', context: true }); // discussed
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // Phase 4 is first undiscussed
@@ -251,7 +314,7 @@ describe('init manager', () => {
     scaffoldPhase(tmpDir, 2, { slug: 'ready-to-execute', context: true, plans: 2 });
     scaffoldPhase(tmpDir, 3, { slug: 'ready-to-plan', context: true });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.ok(output.recommended_actions.length >= 3);
@@ -270,7 +333,7 @@ describe('init manager', () => {
       { number: '2', name: 'Blocked', depends_on: 'Phase 1' },
     ]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // Phase 2 should not appear in recommendations (blocked by phase 1)
@@ -287,7 +350,7 @@ describe('init manager', () => {
     scaffoldPhase(tmpDir, 1, { slug: 'done', plans: 1, summaries: 1 });
     scaffoldPhase(tmpDir, 2, { slug: 'also-done', plans: 1, summaries: 1 });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.all_complete, true);
@@ -304,7 +367,7 @@ describe('init manager', () => {
       JSON.stringify(waiting)
     );
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.deepStrictEqual(output.waiting_signal, waiting);
@@ -317,7 +380,7 @@ describe('init manager', () => {
       { number: '2', name: 'API', goal: 'Build endpoints', depends_on: 'Phase 1' },
     ]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phases[0].goal, 'Set up the base');
@@ -334,7 +397,7 @@ describe('init manager', () => {
       { number: '3', name: 'This Name Is Way Too Long For The Table' },
     ]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phases[0].display_name, 'Short');
@@ -352,7 +415,7 @@ describe('init manager', () => {
     // Scaffold with a file — it will have current mtime (within 5 min)
     scaffoldPhase(tmpDir, 1, { slug: 'active-phase', context: true });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     assert.strictEqual(output.phases[0].is_active, true);
@@ -372,7 +435,7 @@ describe('init manager', () => {
     // Phase 3: planned and deps would be met if Phase 2 were complete, but it's not
     scaffoldPhase(tmpDir, 3, { slug: 'auth', context: true, plans: 1 });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // Phase 2 is partial — should NOT appear as execute recommendation (already running)
@@ -394,7 +457,7 @@ describe('init manager', () => {
     // Phase 3: planned, no deps — independent of Phase 2
     scaffoldPhase(tmpDir, 3, { slug: 'notifications', context: true, plans: 1 });
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // Phase 3 is independent of Phase 2 — should be recommended for execution
@@ -407,7 +470,7 @@ describe('init manager', () => {
     writeState(tmpDir);
     writeRoadmap(tmpDir, [{ number: '1', name: 'Test' }]);
 
-    const result = runGsdTools('init manager', tmpDir);
+    const result = runThruntTools('init manager', tmpDir);
     const output = JSON.parse(result.output);
 
     // macOS resolves /var → /private/var; normalize both sides
