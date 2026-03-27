@@ -53,9 +53,22 @@ function dateStamp() {
   return d.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-/** Deterministic JSON serialization with sorted keys. */
+/** Recursively sort object keys for deterministic serialization. */
+function sortKeysDeep(val) {
+  if (Array.isArray(val)) return val.map(sortKeysDeep);
+  if (val && typeof val === 'object' && !Buffer.isBuffer(val)) {
+    const sorted = {};
+    for (const k of Object.keys(val).sort()) {
+      sorted[k] = sortKeysDeep(val[k]);
+    }
+    return sorted;
+  }
+  return val;
+}
+
+/** Deterministic JSON serialization with recursively sorted keys. */
 function canonicalSerialize(obj) {
-  return JSON.stringify(obj, Object.keys(obj).sort(), 2);
+  return JSON.stringify(sortKeysDeep(obj), null, 2);
 }
 
 /** Atomic write: tmp file then rename. */
