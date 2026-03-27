@@ -22,6 +22,10 @@
 </p>
 
 <p align="center">
+  <code>/thrunt:autonomous</code> &nbsp;|&nbsp; one command, full hunt
+</p>
+
+<p align="center">
   <a href="#the-five-phases">Phases</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#hunt-commands">Commands</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#installation">Install</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
