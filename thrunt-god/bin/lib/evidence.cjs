@@ -10,7 +10,7 @@ const path = require('path');
 const { output, error, getMilestonePhaseFilter, planningDir, planningPaths, toPosixPath } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { requireSafePath, sanitizeForDisplay } = require('./security.cjs');
-const { createEvidenceManifest, canonicalSerialize, computeContentHash } = require('./manifest.cjs');
+const { createEvidenceManifest, canonicalSerialize, computeContentHash, buildProvenance, computeManifestHash, verifyManifestIntegrity } = require('./manifest.cjs');
 
 function cmdAuditEvidence(cwd, raw) {
   const phasesDir = path.join(planningDir(cwd), 'phases');
@@ -62,6 +62,46 @@ function cmdAuditEvidence(cwd, raw) {
           type: 'findings',
           status: (extractFrontmatter(content).status || 'unknown'),
           items,
+        });
+      }
+    }
+  }
+
+  // Phase 14: Manifest integrity scanning
+  const manifestsDir = planningPaths(cwd).manifests;
+  if (fs.existsSync(manifestsDir)) {
+    const manifestFiles = fs.readdirSync(manifestsDir).filter(f => f.endsWith('.json'));
+    for (const file of manifestFiles) {
+      const filePath = path.join(manifestsDir, file);
+      try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const manifest = JSON.parse(content);
+        const integrity = verifyManifestIntegrity(manifest, cwd);
+        if (!integrity.valid) {
+          results.push({
+            file,
+            file_path: toPosixPath(path.relative(cwd, filePath)),
+            type: 'manifest_integrity',
+            manifest_id: manifest.manifest_id || file,
+            items: integrity.failures.map(f => ({
+              name: f.message,
+              result: 'fail',
+              category: `integrity_${f.type}`,
+              ...f,
+            })),
+          });
+        }
+      } catch (err) {
+        results.push({
+          file,
+          file_path: toPosixPath(path.relative(cwd, filePath)),
+          type: 'manifest_corrupt',
+          manifest_id: file,
+          items: [{
+            name: `Corrupt manifest JSON: ${err.message}`,
+            result: 'error',
+            category: 'manifest_corrupt',
+          }],
         });
       }
     }
@@ -523,6 +563,11 @@ function writeRuntimeArtifacts(cwd, spec, envelope, options = {}) {
     tags: options.tags || null,
     raw_metadata: options.rawMetadata || null,
   });
+
+  // Phase 14: Provenance + manifest-level hash
+  manifest.provenance = buildProvenance(options.provenance || {});
+  manifest.signature = null; // placeholder for future signature hooks
+  manifest.manifest_hash = computeManifestHash(manifest);
 
   const manifestJson = canonicalSerialize(manifest);
   fs.mkdirSync(paths.manifests, { recursive: true });
