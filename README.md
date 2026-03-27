@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/terminal.svg" alt="THRUNT GOD" width="720" />
+  <img src="assets/hero.png" alt="THRUNT GOD" width="820" />
 </p>
 
 <p align="center">
@@ -78,6 +78,10 @@ Utility and orchestration commands (`/thrunt:*`) for workspace management, diagn
 ```bash
 npx thrunt-god@latest --claude --local
 ```
+
+<p align="center">
+  <img src="assets/terminal.svg" alt="thrunt-god install" width="640" />
+</p>
 
 Bootstrap the hunt command surface into your local IDE environment.
 
