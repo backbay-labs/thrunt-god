@@ -403,3 +403,155 @@ describe('toYaml', () => {
     assert.ok(yaml.includes('  child: value'));
   });
 });
+
+// ---------------------------------------------------------------------------
+// CLI Integration tests
+// ---------------------------------------------------------------------------
+
+describe('CLI: detection map', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('detection map with a valid finding produces candidate JSON files in DETECTIONS/', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '17-detection-mapping-model');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'DETECTIONS'), { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, 'FINDINGS.md'), [
+      '# Findings',
+      '',
+      '- **F-001**: Suspicious T1078 valid account usage detected | status: confirmed | hypothesis: HYP-04',
+    ].join('\n'));
+
+    const result = runThruntTools(['detection', 'map', '--phase', '17'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+
+    // Verify candidate file was created
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    const files = fs.readdirSync(detectionsDir).filter(f => f.endsWith('.json'));
+    assert.ok(files.length >= 1, `Expected at least 1 candidate file, got ${files.length}`);
+
+    // Verify file contains valid JSON with expected fields
+    const candidate = JSON.parse(fs.readFileSync(path.join(detectionsDir, files[0]), 'utf-8'));
+    assert.equal(candidate.source_finding_id, 'F-001');
+    assert.ok(candidate.technique_ids.length > 0);
+    assert.equal(candidate.candidate_version, '1.0');
+  });
+
+  it('detection map with no findings produces empty result', () => {
+    // Without --raw, output is human text via output(candidates, true, markdown)
+    const result = runThruntTools(['detection', 'map'], tmpDir);
+    assert.ok(result.success);
+    assert.ok(result.output.includes('No detection candidates'));
+  });
+
+  it('detection map --raw outputs JSON array', () => {
+    const phaseDir = path.join(tmpDir, '.planning', 'phases', '17-detection-mapping-model');
+    fs.mkdirSync(phaseDir, { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'DETECTIONS'), { recursive: true });
+    fs.writeFileSync(path.join(phaseDir, 'FINDINGS.md'), [
+      '# Findings',
+      '',
+      '- **F-001**: Suspicious T1078 valid account usage detected | status: confirmed | hypothesis: HYP-04',
+    ].join('\n'));
+
+    // --raw => output(candidates, raw) => JSON.stringify(candidates)
+    const result = runThruntTools(['detection', 'map', '--phase', '17', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+
+    // Output should be valid JSON array
+    const parsed = JSON.parse(result.output);
+    assert.ok(Array.isArray(parsed));
+    assert.ok(parsed.length >= 1);
+  });
+});
+
+describe('CLI: detection list', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('detection list --raw reads previously-written candidates as JSON', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+    const candidate = {
+      candidate_version: '1.0',
+      candidate_id: 'DET-20260327150000-A1B2C3D4',
+      source_finding_id: 'F-001',
+      technique_ids: ['T1078'],
+      target_format: 'sigma',
+      promotion_readiness: 0.85,
+      metadata: { status: 'draft' },
+    };
+    fs.writeFileSync(
+      path.join(detectionsDir, 'DET-20260327150000-A1B2C3D4.json'),
+      JSON.stringify(candidate)
+    );
+
+    // --raw => JSON output
+    const result = runThruntTools(['detection', 'list', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.equal(parsed.length, 1);
+    assert.equal(parsed[0].candidate_id, 'DET-20260327150000-A1B2C3D4');
+  });
+
+  it('detection list --status draft --raw filters correctly', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+
+    const draft = {
+      candidate_id: 'DET-20260327150000-AAAAAAAA',
+      source_finding_id: 'F-001',
+      metadata: { status: 'draft' },
+    };
+    const promoted = {
+      candidate_id: 'DET-20260327150000-BBBBBBBB',
+      source_finding_id: 'F-002',
+      metadata: { status: 'promoted' },
+    };
+    fs.writeFileSync(
+      path.join(detectionsDir, 'DET-20260327150000-AAAAAAAA.json'),
+      JSON.stringify(draft)
+    );
+    fs.writeFileSync(
+      path.join(detectionsDir, 'DET-20260327150000-BBBBBBBB.json'),
+      JSON.stringify(promoted)
+    );
+
+    const result = runThruntTools(['detection', 'list', '--status', 'draft', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.equal(parsed.length, 1);
+    assert.equal(parsed[0].candidate_id, 'DET-20260327150000-AAAAAAAA');
+  });
+
+  it('detection list --raw with no DETECTIONS returns empty JSON array', () => {
+    const result = runThruntTools(['detection', 'list', '--raw'], tmpDir);
+    assert.ok(result.success);
+    const parsed = JSON.parse(result.output);
+    assert.ok(Array.isArray(parsed));
+    assert.equal(parsed.length, 0);
+  });
+});
+
+describe('CLI: detection unknown subcommand', () => {
+  it('shows error for unknown subcommand', () => {
+    const tmpDir = createTempProject();
+    const result = runThruntTools(['detection', 'unknown'], tmpDir);
+    assert.ok(!result.success);
+    cleanup(tmpDir);
+  });
+});

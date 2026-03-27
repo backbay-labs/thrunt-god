@@ -752,6 +752,21 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'detection': {
+      const subcommand = args[1];
+      const detection = require('./lib/detection.cjs');
+      if (subcommand === 'map') {
+        const options = parseNamedArgs(args, ['phase', 'finding', 'format'], []);
+        detection.cmdDetectionMap(cwd, options, raw);
+      } else if (subcommand === 'list') {
+        const options = parseNamedArgs(args, ['phase', 'status', 'format'], []);
+        detection.cmdDetectionList(cwd, options, raw);
+      } else {
+        error('Unknown detection subcommand. Available: map, list');
+      }
+      break;
+    }
+
     case 'stats': {
       const subcommand = args[1] || 'json';
       commands.cmdStats(cwd, subcommand, raw);

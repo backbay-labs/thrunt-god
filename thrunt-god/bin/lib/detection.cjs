@@ -611,17 +611,21 @@ function listDetectionCandidates(cwd, options) {
 
 /**
  * CLI: detection map -- scan findings and produce detection candidates.
+ *
+ * Follows output(result, raw, humanText) convention:
+ * - --raw => output(candidates, raw) => JSON
+ * - no --raw => output(candidates, true, markdown) => human-readable Markdown
  */
 function cmdDetectionMap(cwd, options, raw) {
   const candidates = mapFindingsToDetections(cwd, options || {});
 
   if (raw) {
-    output(JSON.stringify(candidates, null, 2));
+    output(candidates, raw);
     return;
   }
 
   if (candidates.length === 0) {
-    output('No detection candidates generated. No qualifying findings found.');
+    output(candidates, true, 'No detection candidates generated. No qualifying findings found.');
     return;
   }
 
@@ -639,22 +643,26 @@ function cmdDetectionMap(cwd, options, raw) {
     lines.push('');
   }
 
-  output(lines.join('\n'));
+  output(candidates, true, lines.join('\n'));
 }
 
 /**
  * CLI: detection list -- display existing detection candidates.
+ *
+ * Follows output(result, raw, humanText) convention:
+ * - --raw => output(candidates, raw) => JSON
+ * - no --raw => output(candidates, true, markdown) => human-readable Markdown
  */
 function cmdDetectionList(cwd, options, raw) {
   const candidates = listDetectionCandidates(cwd, options || {});
 
   if (raw) {
-    output(JSON.stringify(candidates, null, 2));
+    output(candidates, raw);
     return;
   }
 
   if (candidates.length === 0) {
-    output('No detection candidates found.');
+    output(candidates, true, 'No detection candidates found.');
     return;
   }
 
@@ -669,7 +677,7 @@ function cmdDetectionList(cwd, options, raw) {
     lines.push(`| ${c.candidate_id} | ${c.source_finding_id || '-'} | ${c.target_format || '-'} | ${(c.metadata && c.metadata.status) || '-'} | ${c.promotion_readiness || '-'} |`);
   }
 
-  output(lines.join('\n'));
+  output(candidates, true, lines.join('\n'));
 }
 
 // ---------------------------------------------------------------------------
