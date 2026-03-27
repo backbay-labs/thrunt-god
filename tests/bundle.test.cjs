@@ -738,3 +738,177 @@ describe('Output path handling', () => {
     }
   });
 });
+
+// ===========================================================================
+// CLI Integration Tests
+// ===========================================================================
+
+describe('CLI integration', () => {
+  const { runThruntTools, createTempProject: ctp, cleanup: cln } = require('./helpers.cjs');
+  const { execSync } = require('child_process');
+
+  it('bundle export produces JSON output with bundlePath and bundleHash', () => {
+    const tmpDir = ctp('bundle-cli-export-');
+    try {
+      setupBundleProject(tmpDir);
+      const { success, output } = runThruntTools(['bundle', 'export'], tmpDir);
+      assert.ok(success, 'command succeeds');
+      const result = JSON.parse(output);
+      assert.ok(result.bundlePath, 'bundlePath in output');
+      assert.ok(result.bundleHash, 'bundleHash in output');
+      assert.ok(fs.existsSync(result.bundlePath), 'ZIP file exists');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('bundle export --phase 15 filters artifacts by phase', () => {
+    const tmpDir = ctp('bundle-cli-phase-');
+    try {
+      setupBundleProject(tmpDir);
+      const { success, output } = runThruntTools(
+        ['bundle', 'export', '--phase', '15'],
+        tmpDir
+      );
+      assert.ok(success, 'command succeeds');
+      const result = JSON.parse(output);
+      assert.ok(result.bundlePath, 'bundlePath present');
+
+      // Read the bundle and verify phase filter was applied
+      const { readZipEntries } = loadBundle();
+      const zipBuf = fs.readFileSync(result.bundlePath);
+      const entries = readZipEntries(zipBuf);
+      const bundleEntry = entries.find(e => e.filename === 'bundle.json');
+      const bundleJson = JSON.parse(bundleEntry.data.toString('utf-8'));
+      assert.equal(bundleJson.filters.phase, '15');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('bundle verify on a valid bundle reports PASS', () => {
+    const tmpDir = ctp('bundle-cli-verify-');
+    try {
+      setupBundleProject(tmpDir);
+      // First create a bundle
+      const exportResult = runThruntTools(['bundle', 'export'], tmpDir);
+      assert.ok(exportResult.success);
+      const { bundlePath } = JSON.parse(exportResult.output);
+
+      // Then verify it
+      const { success, output } = runThruntTools(
+        ['bundle', 'verify', bundlePath],
+        tmpDir
+      );
+      assert.ok(success, 'verify command succeeds');
+      const result = JSON.parse(output);
+      assert.equal(result.valid, true, 'bundle is valid');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('bundle verify on corrupted ZIP reports FAIL', () => {
+    const tmpDir = ctp('bundle-cli-corrupt-');
+    try {
+      const corruptPath = path.join(tmpDir, 'corrupt.zip');
+      fs.writeFileSync(corruptPath, Buffer.from('not-a-zip-file'));
+      const { success, output } = runThruntTools(
+        ['bundle', 'verify', corruptPath],
+        tmpDir
+      );
+      // verify still succeeds as a command (exits 0) but reports invalid
+      assert.ok(success, 'command does not crash');
+      const result = JSON.parse(output);
+      assert.equal(result.valid, false, 'corrupted bundle is invalid');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('bundle export with --redact produces redactions in bundle.json', () => {
+    const tmpDir = ctp('bundle-cli-redact-');
+    try {
+      // Create a project with secret-containing content
+      const queryContent = '# Query Log\n\napi_key=supersecret123\nSome data.';
+      setupBundleProject(tmpDir, { queryContent });
+
+      const { success, output } = runThruntTools(
+        ['bundle', 'export', '--redact'],
+        tmpDir
+      );
+      assert.ok(success, 'redact export succeeds');
+      const result = JSON.parse(output);
+
+      // Read bundle.json from the ZIP
+      const { readZipEntries } = loadBundle();
+      const zipBuf = fs.readFileSync(result.bundlePath);
+      const entries = readZipEntries(zipBuf);
+      const bundleEntry = entries.find(e => e.filename === 'bundle.json');
+      const bundleJson = JSON.parse(bundleEntry.data.toString('utf-8'));
+
+      assert.ok(bundleJson.redactions.length > 0, 'redactions array populated');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('unknown subcommand returns error', () => {
+    const tmpDir = ctp('bundle-cli-unknown-');
+    try {
+      const { success, error } = runThruntTools(['bundle', 'foo'], tmpDir);
+      assert.equal(success, false, 'unknown subcommand fails');
+      assert.ok(error.includes('Unknown bundle subcommand'), 'error message correct');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('bundle export with --output <dir> writes ZIP to specified directory', () => {
+    const tmpDir = ctp('bundle-cli-output-dir-');
+    try {
+      setupBundleProject(tmpDir);
+      const outputDir = path.join(tmpDir, 'exports');
+      fs.mkdirSync(outputDir, { recursive: true });
+
+      const { success, output } = runThruntTools(
+        ['bundle', 'export', '--output', outputDir],
+        tmpDir
+      );
+      assert.ok(success, 'command succeeds');
+      const result = JSON.parse(output);
+      assert.ok(result.bundlePath.includes('exports'), 'bundle in exports dir');
+      assert.ok(fs.existsSync(result.bundlePath), 'file exists in output dir');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('produced ZIP is extractable by system unzip (smoke test)', () => {
+    const tmpDir = ctp('bundle-cli-unzip-');
+    try {
+      setupBundleProject(tmpDir);
+      const { success, output } = runThruntTools(['bundle', 'export'], tmpDir);
+      assert.ok(success);
+      const result = JSON.parse(output);
+
+      // Try system unzip -t (test mode)
+      try {
+        const unzipResult = execSync(`unzip -t "${result.bundlePath}"`, {
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        assert.ok(unzipResult.includes('No errors'), 'unzip reports no errors');
+      } catch (err) {
+        // If unzip is not available, skip gracefully
+        if (err.message && err.message.includes('ENOENT')) {
+          // unzip not installed -- skip
+        } else {
+          throw err;
+        }
+      }
+    } finally {
+      cln(tmpDir);
+    }
+  });
+});

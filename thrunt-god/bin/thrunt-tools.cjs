@@ -734,6 +734,20 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'bundle': {
+      const subcommand = args[1];
+      const bundle = require('./lib/bundle.cjs');
+      if (subcommand === 'export') {
+        const options = parseNamedArgs(args, ['phase', 'output', 'since', 'until'], ['redact']);
+        bundle.cmdBundleExport(cwd, options, raw);
+      } else if (subcommand === 'verify') {
+        bundle.cmdBundleVerify(cwd, args[2], raw);
+      } else {
+        error('Unknown bundle subcommand. Available: export, verify');
+      }
+      break;
+    }
+
     case 'stats': {
       const subcommand = args[1] || 'json';
       commands.cmdStats(cwd, subcommand, raw);
