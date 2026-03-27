@@ -1,20 +1,20 @@
 ---
 thrunt_state_version: 1.0
-milestone: v1.2
-milestone_name: Evidence Integrity & Provenance
-current_phase: 16
-current_phase_name: evidence review publish gates
-current_plan: 16-01 (planned, not started)
-status: validating
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-03-27T18:20:16.170Z"
+milestone: v1.3
+milestone_name: Detection Promotion Pipeline
+current_phase: 17
+current_phase_name: detection mapping model
+current_plan: 17-01 (planned, not started)
+status: planned
+stopped_at: Phase 17 plan created; ready for execution
+last_updated: "2026-03-27T20:00:00.000Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
   completed_phases: 5
-  total_plans: 5
+  total_plans: 6
   completed_plans: 5
-  percent: 80
+  percent: 83
 ---
 
 # Hunt State
@@ -24,21 +24,21 @@ progress:
 See: .planning/MISSION.md (updated 2026-03-25)
 
 **Core value:** Turn THRUNT into an executable, evidence-grade threat hunting platform.
-**Current focus:** Phase 16 — evidence review & publish gates
+**Current focus:** Phase 17 — detection mapping model
 
 ## Current Position
 
-Phase: 16 (evidence review & publish gates) — PLANNED, READY TO EXECUTE
+Phase: 17 (detection mapping model) — PLANNED, READY TO EXECUTE
 Plan: 0 of 1 complete
-Current Phase: 16
-Current Phase Name: evidence review publish gates
+Current Phase: 17
+Current Phase Name: detection mapping model
 Total Phases: 35
-Current Plan: 16-01 (planned, not started)
+Current Plan: 17-01 (planned, not started)
 Total Plans in Phase: 1
-Status: Phase complete — ready for validation
+Status: Plan created — ready for execution
 Last activity: 2026-03-27
-Last Activity Description: Created 16-01-PLAN.md — review.cjs module with quality scoring, publish gates, contradiction/blind-spot detection, chain-of-custody, config registration, CLI wiring
-Progress: [████████░░] 80%
+Last Activity Description: Phase 17 plan created with detection candidate model, mapping, scoring, rendering, and CLI
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
@@ -103,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T18:20:16.167Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-03-27T20:00:00.000Z
+Stopped at: Phase 17 plan created (17-01-PLAN.md)
 Resume file: None
