@@ -18,7 +18,10 @@ related_hypotheses:
   - [HYP-01]
 related_queries:
   - [QRY-...]
+content_hash: sha256:[hex digest of this document]
+manifest_id: [MAN-... ID of the manifest linking this receipt]
 ---
+<!-- content_hash and manifest_id are auto-populated by the runtime and used for evidence integrity (Phase 14). -->
 
 # Receipt: [Short title]
 

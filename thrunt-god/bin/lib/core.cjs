@@ -589,6 +589,7 @@ function planningPaths(cwd, ws) {
     phases: path.join(base, 'phases'),
     queries: path.join(base, 'QUERIES'),
     receipts: path.join(base, 'RECEIPTS'),
+    manifests: path.join(base, 'MANIFESTS'),
     published: path.join(base, 'published'),
   };
 }

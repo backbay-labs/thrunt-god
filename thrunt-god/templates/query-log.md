@@ -15,7 +15,12 @@ executed_at: [ISO timestamp]
 author: [analyst or agent]
 related_hypotheses:
   - [HYP-01]
+related_receipts:
+  - [RCT-...]
+content_hash: sha256:[hex digest of this document]
+manifest_id: [MAN-... ID of the manifest linking this query log]
 ---
+<!-- related_receipts, content_hash, and manifest_id are auto-populated by the runtime and used for evidence integrity (Phase 14). -->
 
 # Query Log: [Short title]
 

@@ -10,6 +10,7 @@ const path = require('path');
 const { output, error, getMilestonePhaseFilter, planningDir, planningPaths, toPosixPath } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { requireSafePath, sanitizeForDisplay } = require('./security.cjs');
+const { createEvidenceManifest, canonicalSerialize, computeContentHash } = require('./manifest.cjs');
 
 function cmdAuditEvidence(cwd, raw) {
   const phasesDir = path.join(planningDir(cwd), 'phases');
@@ -485,6 +486,49 @@ function writeRuntimeArtifacts(cwd, spec, envelope, options = {}) {
   fs.writeFileSync(queryPath, queryDoc, 'utf-8');
   fs.writeFileSync(receiptPath, receiptDoc, 'utf-8');
 
+  // Emit manifest AFTER writing artifacts — hash the exact bytes written (pitfall 5)
+  const queryContentHash = computeContentHash(queryDoc);
+  const receiptContentHash = computeContentHash(receiptDoc);
+
+  const manifest = createEvidenceManifest({
+    connector_id: spec.connector.id,
+    dataset: spec.dataset.kind,
+    execution: {
+      profile: spec.execution.profile,
+      query_id: spec.query_id,
+      request_id: spec.execution.request_id,
+      status: envelope.status,
+      started_at: envelope.timing.started_at,
+      completed_at: envelope.timing.completed_at,
+      duration_ms: envelope.timing.duration_ms,
+      dry_run: spec.execution.dry_run || false,
+    },
+    artifacts: [
+      {
+        id: spec.query_id,
+        type: 'query_log',
+        path: toPosixPath(path.relative(cwd, queryPath)),
+        content: queryDoc,
+        receipt_ids: [receiptId],
+      },
+      {
+        id: receiptId,
+        type: 'receipt',
+        path: toPosixPath(path.relative(cwd, receiptPath)),
+        content: receiptDoc,
+        query_ids: [spec.query_id],
+      },
+    ],
+    hypothesis_ids: options.hypothesisIds || null,
+    tags: options.tags || null,
+    raw_metadata: options.rawMetadata || null,
+  });
+
+  const manifestJson = canonicalSerialize(manifest);
+  fs.mkdirSync(paths.manifests, { recursive: true });
+  const manifestPath = path.join(paths.manifests, `${manifest.manifest_id}.json`);
+  fs.writeFileSync(manifestPath, manifestJson, 'utf-8');
+
   return {
     query_log: {
       id: spec.query_id,
@@ -496,6 +540,10 @@ function writeRuntimeArtifacts(cwd, spec, envelope, options = {}) {
         path: toPosixPath(path.relative(cwd, receiptPath)),
       },
     ],
+    manifest: {
+      id: manifest.manifest_id,
+      path: toPosixPath(path.relative(cwd, manifestPath)),
+    },
   };
 }
 

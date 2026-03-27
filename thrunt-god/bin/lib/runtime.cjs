@@ -861,6 +861,7 @@ async function executeQuerySpec(specInput, adapterOrRegistry, options = {}) {
     envelope.metadata.artifact_ids = [
       artifacts.query_log?.id,
       ...artifacts.receipts.map(item => item.id),
+      artifacts.manifest?.id,
     ].filter(Boolean);
 
     if (envelope.errors.length > 0) {
