@@ -44,6 +44,48 @@
 - Detection promotion includes mapping rules, backtesting expectations, and output templates
 - Learning and scoring outputs are visible in artifacts or UX, not buried in raw logs
 
+### Live Connector Ecosystem
+
+- Connectors ship as standalone npm packages (`@thrunt/connector-*`) installable independently from THRUNT core
+- A shared test harness and certification CLI validate connector compliance before publication
+- A community registry enables discovery, installation, and contribution of third-party connectors
+- Core SIEM (Splunk, Elastic, Sentinel) and extended (CrowdStrike, Okta, AWS, GCP) connectors are published and certified
+
+### Interactive Hunt Replay & Case Gallery
+
+- Completed hunts can be serialized into self-contained timeline exports with evidence linkage and redaction support
+- A static web viewer renders hunt timelines as interactive, navigable investigations in any browser
+- A public case gallery hosts curated hunts tagged by technique, difficulty, and outcome
+- Training mode enables annotated walkthroughs with decision-point assessments
+
+### Hunt-as-Code & Continuous Hunting
+
+- `.thrunt` files encode complete hunt playbooks (hypothesis, environment, queries, outcomes) in a declarative, validated format
+- Playbooks support versioning, composition, and team sharing through git repositories
+- A CI/CD runner and GitHub Action execute playbooks non-interactively with structured output and alerting
+- Continuous hunting pipelines run on schedule with drift detection and baseline comparison
+
+### Collaborative Hunting (Multi-Analyst)
+
+- Multiple analysts can investigate the same hunt case through namespaced, parallel workstreams
+- Findings merge preserves provenance and surfaces contradictions and overlaps automatically
+- Structured handoff bundles transfer investigation context cleanly between analysts
+- Shared state and presence signals prevent duplicate work without external coordination tools
+
+### Metrics Dashboard & Hunt Program Analytics
+
+- Every hunt execution emits structured metrics (duration, yield, noise, outcome) attributable to packs, connectors, and analysts
+- ATT&CK coverage matrix computes which techniques have been hunted and surfaces gaps as actionable recommendations
+- A web dashboard presents program analytics with executive summary generation and export
+- ROI metrics quantify program value (true positives, detections promoted, coverage gained) with a composite health score
+
+### Threat Intelligence Integration
+
+- STIX 2.1/TAXII 2.1 ingestion extracts IOCs and TTPs with ATT&CK mapping and confidence levels
+- Intel auto-generates hunt cases with hypotheses, pack selection, and environment-matched queries
+- MISP integration supports feed management with filtering, aging, deduplication, and quality scoring
+- Intel-driven prioritization ranks pending hunts by recency, relevance, and technique severity
+
 ## Non-Goals
 
 - THRUNT will not replace the full UI or search ergonomics of every supported backend
