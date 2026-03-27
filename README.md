@@ -99,7 +99,7 @@ Bootstrap the hunt command surface into your local IDE environment.
 
 <table>
 <tr>
-<td width="33%">
+<td width="50%">
 
 ### Single signal
 
@@ -112,16 +112,8 @@ Bootstrap the hunt command surface into your local IDE environment.
 /hunt:publish
 ```
 
-### Pack-seeded signal
-
-```text
-/hunt:new-case --pack domain.identity-abuse
-/hunt:run 1
-/hunt:validate-findings 1
-```
-
 </td>
-<td width="34%">
+<td width="50%">
 
 ### Long-lived program
 
@@ -133,7 +125,20 @@ Bootstrap the hunt command surface into your local IDE environment.
 ```
 
 </td>
-<td width="33%">
+</tr>
+<tr>
+<td width="50%">
+
+### Pack-seeded signal
+
+```text
+/hunt:new-case --pack domain.identity-abuse
+/hunt:run 1
+/hunt:validate-findings 1
+```
+
+</td>
+<td width="50%">
 
 ### Autonomous
 
