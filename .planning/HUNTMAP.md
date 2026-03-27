@@ -70,7 +70,7 @@ THRUNT can turn validated findings into tested detection candidates instead of s
 ### Phases
 
 - [x] **Phase 17: Detection Mapping Model** - Define how findings, evidence, and hypotheses map to detection candidates (completed 2026-03-27)
-- [ ] **Phase 18: Detection Generation & Backtesting** - Generate detection content and validate it against historical data
+- [x] **Phase 18: Detection Generation & Backtesting** - Generate detection content and validate it against historical data (completed 2026-03-27)
 - [ ] **Phase 19: Promotion Workflow & Integrations** - Promote tested detections into target content systems
 
 ### Phase 17: Detection Mapping Model
@@ -101,7 +101,7 @@ Plans:
 **Plans**: 1/1 planned
 
 Plans:
-- [ ] 18-01: Generate detection candidates and add backtesting/shadow-mode evaluation
+- [x] 18-01: Rule generation pipeline, structural validation, noise scoring, and backtest framework with CLI
 
 ### Phase 19: Promotion Workflow & Integrations
 **Goal**: Move good detections into operational systems with explicit gates and receipts
@@ -116,7 +116,7 @@ Plans:
 **Plans**: 1/1 planned
 
 Plans:
-- [ ] 19-01: Build promotion workflows and target detection content integrations
+- [ ] 19-01: Three-gate promotion engine, rejection workflow, status CLI, hooks, config, and evidence quality feedback
 
 ## 📋 v1.4 Hunt Learning & Recommendation Engine (Planned)
 

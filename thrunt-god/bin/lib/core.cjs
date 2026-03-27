@@ -219,6 +219,8 @@ function loadConfig(cwd) {
     phase_naming: 'sequential', // 'sequential' (default, auto-increment) or 'custom' (arbitrary string IDs)
     connector_profiles: {},
     publish_quality_threshold: 0.7,
+    promotion_readiness_threshold: 0.6,
+    promotion_hooks_enabled: false,
   };
 
   try {
@@ -320,6 +322,8 @@ function loadConfig(cwd) {
       model_overrides: parsed.model_overrides || null,
       agent_skills: parsed.agent_skills || {},
       publish_quality_threshold: get('publish_quality_threshold') ?? defaults.publish_quality_threshold,
+      promotion_readiness_threshold: get('promotion_readiness_threshold') ?? defaults.promotion_readiness_threshold,
+      promotion_hooks_enabled: get('promotion_hooks_enabled') ?? defaults.promotion_hooks_enabled,
     };
   } catch {
     return defaults;

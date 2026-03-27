@@ -19,8 +19,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { planningPaths, output, error } = require('./core.cjs');
-const { canonicalSerialize, computeContentHash } = require('./manifest.cjs');
+const { planningPaths, loadConfig, output, error } = require('./core.cjs');
+const { canonicalSerialize, computeContentHash, detectRuntimeName } = require('./manifest.cjs');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1180,6 +1180,492 @@ function cmdDetectionBacktest(cwd, options, raw) {
 }
 
 // ---------------------------------------------------------------------------
+// Promotion ID Generators
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a promotion receipt ID. Format: PROM-{YYYYMMDDHHMMSS}-{RANDOM8}
+ */
+function makePromotionId() {
+  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+  return `PROM-${stamp}-${suffix}`;
+}
+
+/**
+ * Generate a rejection receipt ID. Format: REJ-{YYYYMMDDHHMMSS}-{RANDOM8}
+ */
+function makeRejectionId() {
+  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+  return `REJ-${stamp}-${suffix}`;
+}
+
+// ---------------------------------------------------------------------------
+// Promotion: Backtest Lookup
+// ---------------------------------------------------------------------------
+
+/**
+ * Find the latest backtest result for a candidate.
+ * Scans DETECTIONS/backtests/ for JSON files matching candidate_id.
+ * Returns latest by backtest_id (timestamp-based sort), or null.
+ */
+function findLatestBacktest(candidateId, cwd) {
+  const backtestsDir = path.join(planningPaths(cwd).detections, 'backtests');
+  if (!fs.existsSync(backtestsDir)) return null;
+
+  let backtests = [];
+  try {
+    const files = fs.readdirSync(backtestsDir).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      try {
+        const bt = JSON.parse(fs.readFileSync(path.join(backtestsDir, file), 'utf-8'));
+        if (bt.candidate_id === candidateId) {
+          backtests.push(bt);
+        }
+      } catch {
+        // Skip corrupt files
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  if (backtests.length === 0) return null;
+  backtests.sort((a, b) => (b.backtest_id || '').localeCompare(a.backtest_id || ''));
+  return backtests[0];
+}
+
+// ---------------------------------------------------------------------------
+// Promotion: Gate Checking
+// ---------------------------------------------------------------------------
+
+/**
+ * Evaluate three promotion gates (cheapest first):
+ * 1. backtest_passed - has a passing backtest
+ * 2. readiness_threshold - promotion_readiness >= config threshold
+ * 3. analyst_approval - --approve flag set
+ *
+ * @returns {{ all_passed: boolean, gates: Array<{ gate, passed, detail }> }}
+ */
+function checkPromotionGates(candidate, cwd, options) {
+  const config = loadConfig(cwd);
+  const gates = [];
+
+  // Gate 1: Backtest passed
+  const backtest = findLatestBacktest(candidate.candidate_id, cwd);
+  const backtestPassed = backtest ? (backtest.validation && backtest.validation.passed === true) : false;
+  gates.push({
+    gate: 'backtest_passed',
+    passed: backtestPassed,
+    detail: backtest
+      ? (backtestPassed ? `Backtest ${backtest.backtest_id} passed` : `Backtest ${backtest.backtest_id} failed validation`)
+      : 'No backtest found for candidate',
+  });
+
+  // Gate 2: Readiness threshold
+  const threshold = config.promotion_readiness_threshold || 0.6;
+  const readiness = candidate.promotion_readiness || 0;
+  const readinessPassed = readiness >= threshold;
+  gates.push({
+    gate: 'readiness_threshold',
+    passed: readinessPassed,
+    detail: readinessPassed
+      ? `Readiness ${readiness} >= threshold ${threshold}`
+      : `Readiness ${readiness} < threshold ${threshold}`,
+  });
+
+  // Gate 3: Analyst approval
+  const approved = options && options.approve === true;
+  gates.push({
+    gate: 'analyst_approval',
+    passed: approved,
+    detail: approved ? 'Analyst approved with --approve flag' : 'Missing --approve flag',
+  });
+
+  return {
+    all_passed: gates.every(g => g.passed),
+    gates,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Promotion: Hooks
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply promotion hooks following applySignatureHooks pattern from manifest.cjs.
+ * Calls beforePromote(candidate) before, afterPromote(candidate, receipt) after.
+ * Returns potentially mutated candidate.
+ */
+function applyPromotionHooks(candidate, receipt, hooks) {
+  if (!hooks || (!hooks.beforePromote && !hooks.afterPromote)) return candidate;
+
+  let result = { ...candidate };
+
+  if (typeof hooks.beforePromote === 'function') {
+    result = hooks.beforePromote(result) || result;
+  }
+
+  if (typeof hooks.afterPromote === 'function') {
+    hooks.afterPromote(result, receipt);
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Promotion: Write Promoted Rule
+// ---------------------------------------------------------------------------
+
+/**
+ * Render candidate and write rule file + meta.json sidecar to DETECTIONS/promotions/rules/.
+ * Returns { rulePath, metaPath } as relative paths from DETECTIONS/.
+ */
+function writePromotedRule(candidate, cwd) {
+  const detectionsDir = planningPaths(cwd).detections;
+  const promotionRulesDir = path.join(detectionsDir, 'promotions', 'rules');
+  tryMkdir(promotionRulesDir);
+
+  const format = candidate.target_format || 'sigma';
+  const ext = FORMAT_EXTENSIONS[format] || '.txt';
+  const ruleFilename = `${candidate.candidate_id}-${format}${ext}`;
+  const metaFilename = `${candidate.candidate_id}-${format}${ext}.meta.json`;
+
+  const rendered = renderCandidate(candidate);
+  const content = rendered.error ? '' : rendered.content;
+
+  fs.writeFileSync(path.join(promotionRulesDir, ruleFilename), content, 'utf-8');
+
+  const meta = {
+    candidate_id: candidate.candidate_id,
+    source_finding_id: candidate.source_finding_id,
+    technique_ids: candidate.technique_ids || [],
+    confidence: candidate.confidence,
+    promotion_readiness: candidate.promotion_readiness,
+    evidence_chain: candidate.evidence_links || [],
+    promoted_at: nowUtc(),
+  };
+  fs.writeFileSync(path.join(promotionRulesDir, metaFilename), JSON.stringify(meta, null, 2), 'utf-8');
+
+  return {
+    rulePath: `promotions/rules/${ruleFilename}`,
+    metaPath: `promotions/rules/${metaFilename}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Promotion: Core Promote/Reject/Status
+// ---------------------------------------------------------------------------
+
+/**
+ * Promote a detection candidate through three-gate workflow.
+ *
+ * @param {string} cwd - project root
+ * @param {object} candidate - detection candidate object
+ * @param {object} options - { approve, 'promoted-by'?, hooks? }
+ * @returns {object} promotion result
+ */
+function promoteDetection(cwd, candidate, options) {
+  const config = loadConfig(cwd);
+  const detectionsDir = planningPaths(cwd).detections;
+  const promotionsDir = path.join(detectionsDir, 'promotions');
+
+  // Check gates
+  const gateResult = checkPromotionGates(candidate, cwd, options);
+  if (!gateResult.all_passed) {
+    const failedGates = gateResult.gates.filter(g => !g.passed);
+    return {
+      promoted: false,
+      gates: gateResult,
+      reason: `Promotion blocked: ${failedGates.map(g => g.detail).join('; ')}`,
+    };
+  }
+
+  // Hooks: beforePromote
+  const hooksEnabled = config.promotion_hooks_enabled;
+  const hooks = options && options.hooks;
+  if (hooksEnabled && hooks) {
+    applyPromotionHooks(candidate, null, hooks);
+  }
+
+  // Write promoted rule + sidecar
+  const ruleResult = writePromotedRule(candidate, cwd);
+
+  // Build promotion receipt
+  const promotionId = makePromotionId();
+  const promotedBy = (options && options['promoted-by']) || detectRuntimeName();
+  const receipt = {
+    promotion_id: promotionId,
+    candidate_id: candidate.candidate_id,
+    rule_path: ruleResult.rulePath,
+    target_format: candidate.target_format || 'sigma',
+    promoted_at: nowUtc(),
+    promoted_by: promotedBy,
+    gate_results: gateResult.gates,
+    evidence_chain: candidate.evidence_links || [],
+  };
+
+  // Compute content hash for receipt integrity
+  const receiptCopy = { ...receipt };
+  receipt.content_hash = computeContentHash(canonicalSerialize(receiptCopy));
+
+  // Write receipt atomically
+  tryMkdir(promotionsDir);
+  const tmpFile = path.join(promotionsDir, `.tmp-${promotionId}.json`);
+  const finalFile = path.join(promotionsDir, `${promotionId}.json`);
+  fs.writeFileSync(tmpFile, JSON.stringify(receipt, null, 2), 'utf-8');
+  fs.renameSync(tmpFile, finalFile);
+
+  // Update candidate status on disk
+  candidate.metadata.status = 'promoted';
+  const candidateCopy = { ...candidate };
+  delete candidateCopy.content_hash;
+  candidate.content_hash = computeContentHash(canonicalSerialize(candidateCopy));
+  const candidateFile = path.join(detectionsDir, `${candidate.candidate_id}.json`);
+  if (fs.existsSync(candidateFile)) {
+    fs.writeFileSync(candidateFile, JSON.stringify(candidate, null, 2), 'utf-8');
+  }
+
+  // Hooks: afterPromote
+  if (hooksEnabled && hooks) {
+    applyPromotionHooks(candidate, receipt, { afterPromote: hooks.afterPromote });
+  }
+
+  return { promoted: true, receipt, rule_path: ruleResult.rulePath };
+}
+
+/**
+ * Reject a detection candidate with a reason, creating an audit trail.
+ *
+ * @param {string} cwd - project root
+ * @param {object} candidate - detection candidate object
+ * @param {object} options - { reason, 'rejected-by'? }
+ * @returns {object} rejection result
+ */
+function rejectDetection(cwd, candidate, options) {
+  const detectionsDir = planningPaths(cwd).detections;
+  const promotionsDir = path.join(detectionsDir, 'promotions');
+
+  const rejectionId = makeRejectionId();
+  const rejectedBy = (options && options['rejected-by']) || detectRuntimeName();
+  const receipt = {
+    rejection_id: rejectionId,
+    candidate_id: candidate.candidate_id,
+    reason: (options && options.reason) || 'No reason provided',
+    rejected_at: nowUtc(),
+    rejected_by: rejectedBy,
+  };
+  receipt.content_hash = computeContentHash(canonicalSerialize({ ...receipt }));
+
+  // Write receipt atomically
+  tryMkdir(promotionsDir);
+  const tmpFile = path.join(promotionsDir, `.tmp-${rejectionId}.json`);
+  const finalFile = path.join(promotionsDir, `${rejectionId}.json`);
+  fs.writeFileSync(tmpFile, JSON.stringify(receipt, null, 2), 'utf-8');
+  fs.renameSync(tmpFile, finalFile);
+
+  // Update candidate status on disk
+  candidate.metadata.status = 'rejected';
+  candidate.metadata.rejection_reason = receipt.reason;
+  const candidateCopy = { ...candidate };
+  delete candidateCopy.content_hash;
+  candidate.content_hash = computeContentHash(canonicalSerialize(candidateCopy));
+  const candidateFile = path.join(detectionsDir, `${candidate.candidate_id}.json`);
+  if (fs.existsSync(candidateFile)) {
+    fs.writeFileSync(candidateFile, JSON.stringify(candidate, null, 2), 'utf-8');
+  }
+
+  return { rejected: true, receipt };
+}
+
+/**
+ * Scan DETECTIONS/ for all candidates, group by status with counts and scores.
+ *
+ * @param {string} cwd - project root
+ * @param {object} options - (reserved for future use)
+ * @returns {object} { by_status, counts }
+ */
+function detectionStatus(cwd, options) {
+  const candidates = listDetectionCandidates(cwd, {});
+
+  const byStatus = { draft: [], promoted: [], rejected: [] };
+  for (const c of candidates) {
+    const status = (c.metadata && c.metadata.status) || 'draft';
+    if (!byStatus[status]) byStatus[status] = [];
+    byStatus[status].push({
+      candidate_id: c.candidate_id,
+      source_finding_id: c.source_finding_id,
+      target_format: c.target_format,
+      promotion_readiness: c.promotion_readiness,
+      status,
+    });
+  }
+
+  return {
+    by_status: byStatus,
+    counts: {
+      draft: byStatus.draft.length,
+      promoted: byStatus.promoted.length,
+      rejected: byStatus.rejected.length,
+      total: candidates.length,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CLI Entry Points: Promote, Reject, Status
+// ---------------------------------------------------------------------------
+
+/**
+ * CLI: detection promote -- promote single candidate or bulk by phase.
+ */
+function cmdDetectionPromote(cwd, options, raw) {
+  const detectionsDir = planningPaths(cwd).detections;
+
+  if (options && options.candidate) {
+    // Single candidate promote
+    const candidateFile = path.join(detectionsDir, `${options.candidate}.json`);
+    if (!fs.existsSync(candidateFile)) {
+      error(`Candidate not found: ${options.candidate}`);
+    }
+    const candidate = JSON.parse(fs.readFileSync(candidateFile, 'utf-8'));
+    const result = promoteDetection(cwd, candidate, options);
+
+    if (raw) {
+      output(result, raw);
+      return;
+    }
+
+    if (result.promoted) {
+      output(result, true, `Promoted ${options.candidate}\nReceipt: ${result.receipt.promotion_id}\nRule: ${result.rule_path}`);
+    } else {
+      output(result, true, `Promotion blocked for ${options.candidate}: ${result.reason}`);
+    }
+    return;
+  }
+
+  if (options && options.phase) {
+    // Bulk promote
+    const candidates = listDetectionCandidates(cwd, {}).filter(c =>
+      c.metadata && c.metadata.status === 'draft' &&
+      c.source_phase && c.source_phase.startsWith(options.phase)
+    );
+
+    const promoted = [];
+    const skipped = [];
+    const failed = [];
+
+    for (const candidate of candidates) {
+      try {
+        const result = promoteDetection(cwd, candidate, options);
+        if (result.promoted) {
+          promoted.push({ candidate_id: candidate.candidate_id, receipt: result.receipt });
+        } else {
+          skipped.push({ candidate_id: candidate.candidate_id, reason: result.reason });
+        }
+      } catch (err) {
+        failed.push({ candidate_id: candidate.candidate_id, error: err.message });
+      }
+    }
+
+    const summary = { promoted, skipped, failed };
+
+    if (raw) {
+      output(summary, raw);
+      return;
+    }
+
+    const lines = [
+      '# Bulk Promotion Results',
+      '',
+      `**Promoted:** ${promoted.length}`,
+      `**Skipped:** ${skipped.length}`,
+      `**Failed:** ${failed.length}`,
+      '',
+    ];
+    for (const p of promoted) {
+      lines.push(`- PROMOTED: ${p.candidate_id} (${p.receipt.promotion_id})`);
+    }
+    for (const s of skipped) {
+      lines.push(`- SKIPPED: ${s.candidate_id}: ${s.reason}`);
+    }
+    for (const f of failed) {
+      lines.push(`- FAILED: ${f.candidate_id}: ${f.error}`);
+    }
+
+    output(summary, true, lines.join('\n'));
+    return;
+  }
+
+  error('Usage: detection promote --candidate ID --approve  OR  detection promote --phase N --approve');
+}
+
+/**
+ * CLI: detection reject -- reject a candidate with reason.
+ */
+function cmdDetectionReject(cwd, options, raw) {
+  if (!options || !options.candidate) {
+    error('Usage: detection reject --candidate ID --reason "text"');
+  }
+  if (!options.reason) {
+    error('Usage: detection reject --candidate ID --reason "text" (--reason is required)');
+  }
+
+  const detectionsDir = planningPaths(cwd).detections;
+  const candidateFile = path.join(detectionsDir, `${options.candidate}.json`);
+  if (!fs.existsSync(candidateFile)) {
+    error(`Candidate not found: ${options.candidate}`);
+  }
+  const candidate = JSON.parse(fs.readFileSync(candidateFile, 'utf-8'));
+  const result = rejectDetection(cwd, candidate, options);
+
+  if (raw) {
+    output(result, raw);
+    return;
+  }
+
+  output(result, true, `Rejected ${options.candidate}\nReceipt: ${result.receipt.rejection_id}\nReason: ${result.receipt.reason}`);
+}
+
+/**
+ * CLI: detection status -- show candidates grouped by lifecycle status.
+ */
+function cmdDetectionStatus(cwd, options, raw) {
+  const result = detectionStatus(cwd, options || {});
+
+  if (raw) {
+    output(result, raw);
+    return;
+  }
+
+  const lines = [
+    '# Detection Status',
+    '',
+    '| Status | Count |',
+    '|--------|-------|',
+    `| Draft | ${result.counts.draft} |`,
+    `| Promoted | ${result.counts.promoted} |`,
+    `| Rejected | ${result.counts.rejected} |`,
+    `| **Total** | **${result.counts.total}** |`,
+    '',
+  ];
+
+  for (const [status, candidates] of Object.entries(result.by_status)) {
+    if (candidates.length > 0) {
+      lines.push(`## ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+      lines.push('');
+      for (const c of candidates) {
+        lines.push(`- ${c.candidate_id} (readiness: ${c.promotion_readiness})`);
+      }
+      lines.push('');
+    }
+  }
+
+  output(result, true, lines.join('\n'));
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -1201,4 +1687,12 @@ module.exports = {
   validateExpectedOutcomes,
   FORMAT_EXTENSIONS,
   makeBacktestId,
+  promoteDetection,
+  rejectDetection,
+  detectionStatus,
+  checkPromotionGates,
+  applyPromotionHooks,
+  cmdDetectionPromote,
+  cmdDetectionReject,
+  cmdDetectionStatus,
 };

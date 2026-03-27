@@ -844,3 +844,70 @@ describe('config-set workflow.skip_discuss', () => {
     assert.strictEqual(output, true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Config: promotion_readiness_threshold and promotion_hooks_enabled
+// ---------------------------------------------------------------------------
+
+describe('config: promotion_readiness_threshold', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    runThruntTools('config-ensure-section', tmpDir);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('promotion_readiness_threshold is a recognized config key', () => {
+    const result = runThruntTools(['config-set', 'promotion_readiness_threshold', '0.8'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.promotion_readiness_threshold, 0.8);
+  });
+
+  test('promotion_readiness_threshold rejects values outside 0-1 range', () => {
+    const result = runThruntTools(['config-set', 'promotion_readiness_threshold', '1.5'], tmpDir);
+    assert.ok(!result.success, 'Should reject value > 1');
+  });
+
+  test('promotion_readiness_threshold rejects non-number values', () => {
+    const result = runThruntTools(['config-set', 'promotion_readiness_threshold', 'high'], tmpDir);
+    assert.ok(!result.success, 'Should reject non-number value');
+  });
+
+  test('config-get promotion_readiness_threshold returns value from loadConfig', () => {
+    runThruntTools(['config-set', 'promotion_readiness_threshold', '0.75'], tmpDir);
+    const result = runThruntTools(['config-get', 'promotion_readiness_threshold'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const value = JSON.parse(result.output);
+    assert.strictEqual(value, 0.75);
+  });
+});
+
+describe('config: promotion_hooks_enabled', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    runThruntTools('config-ensure-section', tmpDir);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('promotion_hooks_enabled is a recognized config key', () => {
+    const result = runThruntTools(['config-set', 'promotion_hooks_enabled', 'true'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.promotion_hooks_enabled, true);
+  });
+
+  test('promotion_hooks_enabled rejects non-boolean values', () => {
+    const result = runThruntTools(['config-set', 'promotion_hooks_enabled', 'yes'], tmpDir);
+    assert.ok(!result.success, 'Should reject non-boolean value');
+  });
+});

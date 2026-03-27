@@ -2,19 +2,19 @@
 thrunt_state_version: 1.0
 milestone: v1.3
 milestone_name: Detection Promotion Pipeline
-current_phase: 17
-current_phase_name: detection mapping model
-current_plan: 17-01 (planned, not started)
-status: validating
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-27T19:41:30.207Z"
+current_phase: 19
+current_phase_name: promotion workflow integrations
+current_plan: 19-01 (planned, not started)
+status: planning
+stopped_at: Completed 19-01-PLAN.md (promotion gates, rejection, status, hooks, config, evidence feedback)
+last_updated: "2026-03-27T21:00:00.000Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 83
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 2
+  percent: 67
 ---
 
 # Hunt State
@@ -24,21 +24,21 @@ progress:
 See: .planning/MISSION.md (updated 2026-03-25)
 
 **Core value:** Turn THRUNT into an executable, evidence-grade threat hunting platform.
-**Current focus:** Phase 17 — detection mapping model
+**Current focus:** Phase 19 — promotion workflow & integrations
 
 ## Current Position
 
-Phase: 17 (detection mapping model) — PLANNED, READY TO EXECUTE
+Phase: 19 (promotion workflow & integrations) — PLANNED, READY TO EXECUTE
 Plan: 0 of 1 complete
-Current Phase: 17
-Current Phase Name: detection mapping model
+Current Phase: 19
+Current Phase Name: promotion workflow integrations
 Total Phases: 35
-Current Plan: 17-01 (planned, not started)
+Current Plan: 19-01 (planned, not started)
 Total Plans in Phase: 1
-Status: Phase complete — ready for validation
+Status: Plan created — ready for execution
 Last activity: 2026-03-27
-Last Activity Description: Phase 17 plan created with detection candidate model, mapping, scoring, rendering, and CLI
-Progress: [████████░░] 83%
+Last Activity Description: Phase 19 plan created with three-gate promotion engine, rejection workflow, status CLI, hooks, config registration, and evidence quality feedback
+Progress: [██████░░░░] 67%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [████████░░] 83%
 | Phase 15 P01 | 5min | 2 tasks | 3 files |
 | Phase 16 P01 | 6min | 2 tasks | 5 files |
 | Phase 17 P01 | 7min | 2 tasks | 5 files |
+| Phase 18 P01 | 6min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,10 @@ Progress: [████████░░] 83%
 - [Phase 17]: Sigma YAML via custom toYaml serializer with no external dependencies
 - [Phase 17]: Pluggable renderer architecture with RENDERERS map of pure functions (sigma full, SPL/EQL/KQL stubs)
 - [Phase 17]: output(result, raw, humanText) convention for detection CLI commands
+- [Phase 18]: Noise scoring extracts detection section only from Sigma YAML to avoid scoring comment/metadata boilerplate
+- [Phase 18]: Stub formats get default medium noise risk with stub: true flag rather than false precision
+- [Phase 18]: Expected outcomes default to null with warning; backtest results update candidate promotion_readiness with penalties
+- [Phase 18]: Atomic writes (tmp + rename) for backtest results to prevent partial JSON on crash
 
 ### Pending Todos
 
@@ -108,6 +113,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T19:41:30.203Z
-Stopped at: Completed 17-01-PLAN.md
+Last session: 2026-03-27T21:00:00.000Z
+Stopped at: Completed 19-01-PLAN.md (promotion gates, rejection, status, hooks, config, evidence feedback)
 Resume file: None

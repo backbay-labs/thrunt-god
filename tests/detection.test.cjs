@@ -1363,12 +1363,598 @@ describe('CLI: detection backtest', () => {
 // ---------------------------------------------------------------------------
 
 describe('CLI: detection unknown subcommand (updated)', () => {
-  it('error message includes all four subcommands', () => {
+  it('error message includes all seven subcommands', () => {
     const tmpDir = createTempProject();
     const result = runThruntTools(['detection', 'unknown'], tmpDir);
     assert.ok(!result.success);
     assert.ok(result.error.includes('generate'), 'error should mention generate');
     assert.ok(result.error.includes('backtest'), 'error should mention backtest');
+    assert.ok(result.error.includes('promote'), 'error should mention promote');
+    assert.ok(result.error.includes('reject'), 'error should mention reject');
+    assert.ok(result.error.includes('status'), 'error should mention status');
     cleanup(tmpDir);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests: checkPromotionGates
+// ---------------------------------------------------------------------------
+
+describe('checkPromotionGates', () => {
+  let detection;
+  let tmpDir;
+
+  beforeEach(() => {
+    detection = require('../thrunt-god/bin/lib/detection.cjs');
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  function setupCandidateWithBacktest(tmpDir, opts = {}) {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    const backtestsDir = path.join(detectionsDir, 'backtests');
+    fs.mkdirSync(backtestsDir, { recursive: true });
+
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-GATE',
+      technique_ids: ['T1078'],
+      detection_logic: {
+        title: 'Gate test',
+        description: 'Test',
+        logsource: { category: 'authentication' },
+        detection: { selection: { EventID: 4624 }, condition: 'selection' },
+        false_positives: ['Unknown'],
+      },
+      confidence: 'high',
+      evidence_links: [
+        { type: 'receipt', id: 'RCT-001' },
+        { type: 'receipt', id: 'RCT-002' },
+        { type: 'receipt', id: 'RCT-003' },
+      ],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    candidate.promotion_readiness = opts.readiness !== undefined ? opts.readiness : 0.75;
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+
+    if (opts.withBacktest !== false) {
+      const backtest = {
+        backtest_id: 'BT-20260327150000-TESTTEST',
+        candidate_id: candidate.candidate_id,
+        timestamp: '2026-03-27T15:00:00.000Z',
+        validation: { passed: opts.backtestPassed !== false, errors: [], warnings: [] },
+        noise_score: { noise_risk: 'low', score: 0.1 },
+      };
+      fs.writeFileSync(path.join(backtestsDir, `${backtest.backtest_id}.json`), JSON.stringify(backtest, null, 2));
+    }
+
+    return candidate;
+  }
+
+  it('returns all_passed true when all 3 gates pass', () => {
+    const candidate = setupCandidateWithBacktest(tmpDir);
+    const result = detection.checkPromotionGates(candidate, tmpDir, { approve: true });
+    assert.equal(result.all_passed, true);
+    assert.ok(Array.isArray(result.gates));
+    assert.equal(result.gates.length, 3);
+    assert.ok(result.gates.every(g => g.passed === true));
+  });
+
+  it('returns all_passed false when no backtest exists', () => {
+    const candidate = setupCandidateWithBacktest(tmpDir, { withBacktest: false });
+    const result = detection.checkPromotionGates(candidate, tmpDir, { approve: true });
+    assert.equal(result.all_passed, false);
+    assert.ok(result.gates.some(g => g.gate === 'backtest_passed' && g.passed === false));
+  });
+
+  it('returns all_passed false when backtest failed', () => {
+    const candidate = setupCandidateWithBacktest(tmpDir, { backtestPassed: false });
+    const result = detection.checkPromotionGates(candidate, tmpDir, { approve: true });
+    assert.equal(result.all_passed, false);
+    assert.ok(result.gates.some(g => g.gate === 'backtest_passed' && g.passed === false));
+  });
+
+  it('returns all_passed false when readiness below threshold', () => {
+    const candidate = setupCandidateWithBacktest(tmpDir, { readiness: 0.3 });
+    const result = detection.checkPromotionGates(candidate, tmpDir, { approve: true });
+    assert.equal(result.all_passed, false);
+    assert.ok(result.gates.some(g => g.gate === 'readiness_threshold' && g.passed === false));
+  });
+
+  it('returns all_passed false when --approve flag missing', () => {
+    const candidate = setupCandidateWithBacktest(tmpDir);
+    const result = detection.checkPromotionGates(candidate, tmpDir, {});
+    assert.equal(result.all_passed, false);
+    assert.ok(result.gates.some(g => g.gate === 'analyst_approval' && g.passed === false));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests: promoteDetection
+// ---------------------------------------------------------------------------
+
+describe('promoteDetection', () => {
+  let detection;
+  let tmpDir;
+
+  beforeEach(() => {
+    detection = require('../thrunt-god/bin/lib/detection.cjs');
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  function createPromotableCandidate(tmpDir) {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    const backtestsDir = path.join(detectionsDir, 'backtests');
+    fs.mkdirSync(backtestsDir, { recursive: true });
+
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-PROM',
+      technique_ids: ['T1078'],
+      detection_logic: {
+        title: 'Promote test',
+        description: 'Promotion test detection',
+        logsource: { category: 'authentication', product: 'azure' },
+        detection: { selection: { EventID: 4624 }, condition: 'selection' },
+        false_positives: ['Unknown'],
+      },
+      confidence: 'high',
+      evidence_links: [
+        { type: 'receipt', id: 'RCT-001' },
+        { type: 'receipt', id: 'RCT-002' },
+        { type: 'receipt', id: 'RCT-003' },
+      ],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    candidate.promotion_readiness = 0.75;
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+
+    const backtest = {
+      backtest_id: 'BT-20260327150000-PROMTEST',
+      candidate_id: candidate.candidate_id,
+      timestamp: '2026-03-27T15:00:00.000Z',
+      validation: { passed: true, errors: [], warnings: [] },
+      noise_score: { noise_risk: 'low', score: 0.1 },
+    };
+    fs.writeFileSync(path.join(backtestsDir, `${backtest.backtest_id}.json`), JSON.stringify(backtest, null, 2));
+
+    return candidate;
+  }
+
+  it('creates PROM receipt with required fields on successful promotion', () => {
+    const candidate = createPromotableCandidate(tmpDir);
+    const result = detection.promoteDetection(tmpDir, candidate, { approve: true });
+    assert.equal(result.promoted, true);
+    assert.ok(result.receipt);
+    assert.ok(result.receipt.promotion_id);
+    assert.match(result.receipt.promotion_id, /^PROM-/);
+    assert.equal(result.receipt.candidate_id, candidate.candidate_id);
+    assert.ok(result.receipt.rule_path);
+    assert.ok(result.receipt.target_format);
+    assert.ok(result.receipt.promoted_at);
+    assert.ok(result.receipt.promoted_by);
+    assert.ok(result.receipt.gate_results);
+    assert.ok(result.receipt.evidence_chain);
+    assert.ok(result.receipt.content_hash);
+    assert.match(result.receipt.content_hash, /^sha256:/);
+  });
+
+  it('writes promoted rule file and meta.json sidecar to promotions/rules/', () => {
+    const candidate = createPromotableCandidate(tmpDir);
+    const result = detection.promoteDetection(tmpDir, candidate, { approve: true });
+    assert.equal(result.promoted, true);
+    assert.ok(result.rule_path);
+
+    const promotionsRulesDir = path.join(tmpDir, '.planning', 'DETECTIONS', 'promotions', 'rules');
+    assert.ok(fs.existsSync(promotionsRulesDir));
+    const ruleFiles = fs.readdirSync(promotionsRulesDir);
+    assert.ok(ruleFiles.some(f => f.endsWith('.yml')), 'should have a .yml rule file');
+    assert.ok(ruleFiles.some(f => f.endsWith('.meta.json')), 'should have a .meta.json sidecar');
+  });
+
+  it('updates candidate status to promoted on disk', () => {
+    const candidate = createPromotableCandidate(tmpDir);
+    detection.promoteDetection(tmpDir, candidate, { approve: true });
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    const updated = JSON.parse(fs.readFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), 'utf-8'));
+    assert.equal(updated.metadata.status, 'promoted');
+    assert.ok(updated.content_hash);
+    assert.match(updated.content_hash, /^sha256:/);
+  });
+
+  it('returns promoted false when gates fail', () => {
+    const candidate = createPromotableCandidate(tmpDir);
+    const result = detection.promoteDetection(tmpDir, candidate, {}); // no --approve
+    assert.equal(result.promoted, false);
+    assert.ok(result.gates);
+    assert.ok(result.reason);
+  });
+
+  it('defaults promoted_by to detectRuntimeName() when not provided', () => {
+    const candidate = createPromotableCandidate(tmpDir);
+    const result = detection.promoteDetection(tmpDir, candidate, { approve: true });
+    assert.ok(result.receipt.promoted_by);
+    // Should be one of the known runtime names or 'unknown'
+    assert.ok(['claude', 'gemini', 'codex', 'cursor', 'unknown'].includes(result.receipt.promoted_by));
+  });
+
+  it('uses options.promoted-by when provided', () => {
+    const candidate = createPromotableCandidate(tmpDir);
+    const result = detection.promoteDetection(tmpDir, candidate, { approve: true, 'promoted-by': 'analyst-jane' });
+    assert.equal(result.receipt.promoted_by, 'analyst-jane');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests: applyPromotionHooks
+// ---------------------------------------------------------------------------
+
+describe('applyPromotionHooks', () => {
+  let detection;
+
+  beforeEach(() => {
+    detection = require('../thrunt-god/bin/lib/detection.cjs');
+  });
+
+  it('calls beforePromote and afterPromote hooks when provided', () => {
+    const candidate = { candidate_id: 'DET-TEST', metadata: { status: 'draft' } };
+    const receipt = { promotion_id: 'PROM-TEST' };
+    const calls = [];
+
+    const hooks = {
+      beforePromote: (c) => { calls.push('before'); return c; },
+      afterPromote: (c, r) => { calls.push('after'); },
+    };
+
+    const result = detection.applyPromotionHooks(candidate, receipt, hooks);
+    assert.deepEqual(calls, ['before', 'after']);
+  });
+
+  it('returns candidate unchanged when no hooks provided', () => {
+    const candidate = { candidate_id: 'DET-TEST', metadata: { status: 'draft' } };
+    const receipt = { promotion_id: 'PROM-TEST' };
+    const result = detection.applyPromotionHooks(candidate, receipt, {});
+    assert.equal(result.candidate_id, 'DET-TEST');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests: rejectDetection
+// ---------------------------------------------------------------------------
+
+describe('rejectDetection', () => {
+  let detection;
+  let tmpDir;
+
+  beforeEach(() => {
+    detection = require('../thrunt-god/bin/lib/detection.cjs');
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('creates REJ receipt with candidate_id, reason, rejected_at, rejected_by', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-REJ',
+      technique_ids: ['T1078'],
+      detection_logic: { title: 'Reject test', description: 'Test', logsource: { category: 'auth' }, detection: { selection: {}, condition: 'selection' }, false_positives: ['Unknown'] },
+      confidence: 'medium',
+      evidence_links: [],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+
+    const result = detection.rejectDetection(tmpDir, candidate, { reason: 'high false positive rate' });
+    assert.equal(result.rejected, true);
+    assert.ok(result.receipt);
+    assert.match(result.receipt.rejection_id, /^REJ-/);
+    assert.equal(result.receipt.candidate_id, candidate.candidate_id);
+    assert.equal(result.receipt.reason, 'high false positive rate');
+    assert.ok(result.receipt.rejected_at);
+    assert.ok(result.receipt.rejected_by);
+    assert.ok(result.receipt.content_hash);
+  });
+
+  it('updates candidate status to rejected and adds rejection_reason', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-REJ2',
+      technique_ids: ['T1110'],
+      detection_logic: { title: 'Reject test 2', description: 'Test', logsource: { category: 'auth' }, detection: { selection: {}, condition: 'selection' }, false_positives: ['Unknown'] },
+      confidence: 'low',
+      evidence_links: [],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+
+    detection.rejectDetection(tmpDir, candidate, { reason: 'Too noisy' });
+    const updated = JSON.parse(fs.readFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), 'utf-8'));
+    assert.equal(updated.metadata.status, 'rejected');
+    assert.equal(updated.metadata.rejection_reason, 'Too noisy');
+  });
+
+  it('writes REJ receipt atomically to DETECTIONS/promotions/', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-REJ3',
+      technique_ids: ['T1078'],
+      detection_logic: { title: 'Reject atomic', description: 'Test', logsource: { category: 'auth' }, detection: { selection: {}, condition: 'selection' }, false_positives: ['Unknown'] },
+      confidence: 'medium',
+      evidence_links: [],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+
+    detection.rejectDetection(tmpDir, candidate, { reason: 'Test reject' });
+    const promotionsDir = path.join(detectionsDir, 'promotions');
+    assert.ok(fs.existsSync(promotionsDir));
+    const rejFiles = fs.readdirSync(promotionsDir).filter(f => f.startsWith('REJ-') && f.endsWith('.json'));
+    assert.ok(rejFiles.length >= 1, 'should have at least one REJ receipt');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests: detectionStatus
+// ---------------------------------------------------------------------------
+
+describe('detectionStatus', () => {
+  let detection;
+  let tmpDir;
+
+  beforeEach(() => {
+    detection = require('../thrunt-god/bin/lib/detection.cjs');
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('groups candidates by status with counts', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+
+    const candidates = [
+      { candidate_id: 'DET-A', metadata: { status: 'draft' }, promotion_readiness: 0.5 },
+      { candidate_id: 'DET-B', metadata: { status: 'draft' }, promotion_readiness: 0.3 },
+      { candidate_id: 'DET-C', metadata: { status: 'promoted' }, promotion_readiness: 0.9 },
+      { candidate_id: 'DET-D', metadata: { status: 'rejected' }, promotion_readiness: 0.2 },
+    ];
+    for (const c of candidates) {
+      fs.writeFileSync(path.join(detectionsDir, `${c.candidate_id}.json`), JSON.stringify(c, null, 2));
+    }
+
+    const result = detection.detectionStatus(tmpDir, {});
+    assert.ok(result.by_status);
+    assert.equal(result.by_status.draft.length, 2);
+    assert.equal(result.by_status.promoted.length, 1);
+    assert.equal(result.by_status.rejected.length, 1);
+    assert.equal(result.counts.draft, 2);
+    assert.equal(result.counts.promoted, 1);
+    assert.equal(result.counts.rejected, 1);
+    assert.equal(result.counts.total, 4);
+  });
+
+  it('returns empty groups when no candidates exist', () => {
+    const result = detection.detectionStatus(tmpDir, {});
+    assert.equal(result.counts.total, 0);
+    assert.equal(result.by_status.draft.length, 0);
+    assert.equal(result.by_status.promoted.length, 0);
+    assert.equal(result.by_status.rejected.length, 0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unit tests: bulk promote
+// ---------------------------------------------------------------------------
+
+describe('bulk promote via cmdDetectionPromote', () => {
+  let detection;
+  let tmpDir;
+
+  beforeEach(() => {
+    detection = require('../thrunt-god/bin/lib/detection.cjs');
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('promotes eligible and skips ineligible in bulk', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    const backtestsDir = path.join(detectionsDir, 'backtests');
+    fs.mkdirSync(backtestsDir, { recursive: true });
+
+    // Eligible candidate
+    const eligible = detection.createDetectionCandidate({
+      source_finding_id: 'F-BULK1',
+      source_phase: '19-promotion',
+      technique_ids: ['T1078'],
+      detection_logic: {
+        title: 'Bulk eligible',
+        description: 'Test',
+        logsource: { category: 'auth' },
+        detection: { selection: { EventID: 4624 }, condition: 'selection' },
+        false_positives: ['Unknown'],
+      },
+      confidence: 'high',
+      evidence_links: [{ type: 'receipt', id: 'RCT-001' }, { type: 'receipt', id: 'RCT-002' }, { type: 'receipt', id: 'RCT-003' }],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    eligible.promotion_readiness = 0.75;
+    fs.writeFileSync(path.join(detectionsDir, `${eligible.candidate_id}.json`), JSON.stringify(eligible, null, 2));
+    fs.writeFileSync(path.join(backtestsDir, `BT-BULK1.json`), JSON.stringify({
+      backtest_id: 'BT-BULK1',
+      candidate_id: eligible.candidate_id,
+      validation: { passed: true, errors: [], warnings: [] },
+    }, null, 2));
+
+    // Ineligible candidate (no backtest)
+    const ineligible = detection.createDetectionCandidate({
+      source_finding_id: 'F-BULK2',
+      source_phase: '19-promotion',
+      technique_ids: ['T1110'],
+      detection_logic: {
+        title: 'Bulk ineligible',
+        description: 'Test',
+        logsource: { category: 'auth' },
+        detection: { selection: { EventID: 4625 }, condition: 'selection' },
+        false_positives: ['Unknown'],
+      },
+      confidence: 'medium',
+      evidence_links: [],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    ineligible.promotion_readiness = 0.2;
+    fs.writeFileSync(path.join(detectionsDir, `${ineligible.candidate_id}.json`), JSON.stringify(ineligible, null, 2));
+
+    // Already promoted (should be skipped)
+    const promoted = detection.createDetectionCandidate({
+      source_finding_id: 'F-BULK3',
+      source_phase: '19-promotion',
+      technique_ids: ['T1078'],
+      detection_logic: {
+        title: 'Already promoted',
+        description: 'Test',
+        logsource: { category: 'auth' },
+        detection: { selection: { EventID: 4624 }, condition: 'selection' },
+        false_positives: ['Unknown'],
+      },
+      confidence: 'high',
+      evidence_links: [],
+      metadata: { author: 'test', status: 'promoted', notes: '' },
+    });
+    fs.writeFileSync(path.join(detectionsDir, `${promoted.candidate_id}.json`), JSON.stringify(promoted, null, 2));
+
+    const result = runThruntTools(['detection', 'promote', '--phase', '19', '--approve', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok(parsed.promoted.length >= 1, 'should have at least 1 promoted');
+    assert.ok(parsed.skipped.length >= 1, 'should have at least 1 skipped');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CLI Integration tests: detection promote, reject, status
+// ---------------------------------------------------------------------------
+
+describe('CLI: detection promote', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('detection promote --candidate ID --approve creates PROM receipt', () => {
+    const detection = require('../thrunt-god/bin/lib/detection.cjs');
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    const backtestsDir = path.join(detectionsDir, 'backtests');
+    fs.mkdirSync(backtestsDir, { recursive: true });
+
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-CLI-PROM',
+      technique_ids: ['T1078'],
+      detection_logic: {
+        title: 'CLI promote test',
+        description: 'Test',
+        logsource: { category: 'authentication' },
+        detection: { selection: { EventID: 4624 }, condition: 'selection' },
+        false_positives: ['Unknown'],
+      },
+      confidence: 'high',
+      evidence_links: [{ type: 'receipt', id: 'RCT-001' }, { type: 'receipt', id: 'RCT-002' }, { type: 'receipt', id: 'RCT-003' }],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    candidate.promotion_readiness = 0.75;
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+    fs.writeFileSync(path.join(backtestsDir, 'BT-CLI-TEST.json'), JSON.stringify({
+      backtest_id: 'BT-CLI-TEST',
+      candidate_id: candidate.candidate_id,
+      validation: { passed: true, errors: [], warnings: [] },
+    }, null, 2));
+
+    const result = runThruntTools(['detection', 'promote', '--candidate', candidate.candidate_id, '--approve', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.equal(parsed.promoted, true);
+    assert.ok(parsed.receipt);
+  });
+});
+
+describe('CLI: detection reject', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('detection reject --candidate ID --reason "text" creates REJ receipt', () => {
+    const detection = require('../thrunt-god/bin/lib/detection.cjs');
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+
+    const candidate = detection.createDetectionCandidate({
+      source_finding_id: 'F-CLI-REJ',
+      technique_ids: ['T1078'],
+      detection_logic: { title: 'CLI reject test', description: 'Test', logsource: { category: 'auth' }, detection: { selection: {}, condition: 'selection' }, false_positives: ['Unknown'] },
+      confidence: 'medium',
+      evidence_links: [],
+      metadata: { author: 'test', status: 'draft', notes: '' },
+    });
+    fs.writeFileSync(path.join(detectionsDir, `${candidate.candidate_id}.json`), JSON.stringify(candidate, null, 2));
+
+    const result = runThruntTools(['detection', 'reject', '--candidate', candidate.candidate_id, '--reason', 'high false positive rate', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.equal(parsed.rejected, true);
+    assert.ok(parsed.receipt);
+    assert.equal(parsed.receipt.reason, 'high false positive rate');
+  });
+});
+
+describe('CLI: detection status', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  it('detection status --raw returns grouped status with counts', () => {
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
+    fs.mkdirSync(detectionsDir, { recursive: true });
+
+    fs.writeFileSync(path.join(detectionsDir, 'DET-A.json'), JSON.stringify({ candidate_id: 'DET-A', metadata: { status: 'draft' }, promotion_readiness: 0.5 }));
+    fs.writeFileSync(path.join(detectionsDir, 'DET-B.json'), JSON.stringify({ candidate_id: 'DET-B', metadata: { status: 'promoted' }, promotion_readiness: 0.9 }));
+
+    const result = runThruntTools(['detection', 'status', '--raw'], tmpDir);
+    assert.ok(result.success, `Expected success but got error: ${result.error}`);
+    const parsed = JSON.parse(result.output);
+    assert.ok(parsed.by_status);
+    assert.ok(parsed.counts);
+    assert.equal(parsed.counts.total, 2);
   });
 });

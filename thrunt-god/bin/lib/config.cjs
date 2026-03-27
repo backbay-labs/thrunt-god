@@ -29,6 +29,8 @@ const VALID_CONFIG_KEYS = new Set([
   'hooks.context_warnings', 'hooks.workflow_guard',
   'connector_profiles',
   'publish_quality_threshold',
+  'promotion_readiness_threshold',
+  'promotion_hooks_enabled',
 ]);
 
 /**
@@ -94,6 +96,8 @@ const CONFIG_VALUE_RULES = {
   'hooks.context_warnings': { type: 'boolean' },
   'hooks.workflow_guard': { type: 'boolean' },
   'publish_quality_threshold': { type: 'number', min: 0, max: 1 },
+  'promotion_readiness_threshold': { type: 'number', min: 0, max: 1 },
+  'promotion_hooks_enabled': { type: 'boolean' },
 };
 
 function normalizeLegacyConfigSchema(config) {
