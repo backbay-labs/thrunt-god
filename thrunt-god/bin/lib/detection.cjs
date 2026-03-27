@@ -681,6 +681,385 @@ function cmdDetectionList(cwd, options, raw) {
 }
 
 // ---------------------------------------------------------------------------
+// Generation, Validation, Noise Scoring, and Backtesting
+// ---------------------------------------------------------------------------
+
+const FORMAT_EXTENSIONS = {
+  sigma: '.yml',
+  splunk_spl: '.spl',
+  elastic_eql: '.eql',
+  kql: '.kql',
+};
+
+/**
+ * Generate a backtest ID following the makeCandidateId pattern.
+ * Format: BT-{YYYYMMDDHHMMSS}-{RANDOM8}
+ */
+function makeBacktestId() {
+  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
+  return `BT-${stamp}-${suffix}`;
+}
+
+/**
+ * Validate Sigma structural requirements.
+ * Required: title (string), logsource (object), detection (object with condition).
+ * Warns on: empty logsource (no category/product/service), empty selection.
+ */
+function validateSigmaStructure(candidate) {
+  const errors = [];
+  const warnings = [];
+  const dl = candidate.detection_logic || {};
+
+  if (!dl.title || typeof dl.title !== 'string') errors.push('missing or invalid title');
+  if (!dl.logsource || typeof dl.logsource !== 'object') errors.push('missing logsource');
+  if (!dl.detection || typeof dl.detection !== 'object') errors.push('missing detection');
+  if (dl.detection && !dl.detection.condition) errors.push('missing detection.condition');
+
+  if (dl.logsource && typeof dl.logsource === 'object' &&
+      !dl.logsource.category && !dl.logsource.product && !dl.logsource.service) {
+    warnings.push('logsource has no category, product, or service -- overly generic');
+  }
+  if (dl.detection && dl.detection.selection &&
+      typeof dl.detection.selection === 'object' &&
+      Object.keys(dl.detection.selection).length === 0) {
+    warnings.push('empty selection object -- matches everything');
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+/**
+ * Validate stub format structure (SPL/EQL/KQL).
+ * Checks detection_logic is non-empty. Flags as stub with limited validation.
+ */
+function validateStubStructure(candidate, format) {
+  const errors = [];
+  const warnings = [`stub format (${format}) -- limited validation`];
+  const dl = candidate.detection_logic;
+  if (!dl || (typeof dl === 'object' && Object.keys(dl).length === 0)) {
+    errors.push('empty detection_logic');
+  }
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+/**
+ * Validate candidate structure per target format.
+ * Dispatches to format-specific validators.
+ *
+ * @param {object} candidate
+ * @param {string} format - sigma, splunk_spl, elastic_eql, kql
+ * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
+ */
+function validateStructure(candidate, format) {
+  if (format === 'sigma') return validateSigmaStructure(candidate);
+  if (format === 'splunk_spl' || format === 'elastic_eql' || format === 'kql') {
+    return validateStubStructure(candidate, format);
+  }
+  return { valid: false, errors: [`unsupported format: ${format}`], warnings: [] };
+}
+
+/**
+ * Score noise risk for a detection candidate.
+ *
+ * Stub formats (SPL/EQL/KQL) return default medium risk with stub flag.
+ * Sigma: scores detection section content for wildcard density,
+ * field specificity, time window breadth, and negation usage.
+ *
+ * @param {object} candidate
+ * @param {string} renderedContent
+ * @returns {{ noise_risk: string, dimensions: object, score: number, stub?: boolean }}
+ */
+function scoreNoise(candidate, renderedContent) {
+  const format = candidate.target_format;
+
+  // Stub formats get default medium noise
+  if (format === 'splunk_spl' || format === 'elastic_eql' || format === 'kql') {
+    return {
+      noise_risk: 'medium',
+      dimensions: {
+        wildcard_density: 0.5,
+        field_specificity: 0.5,
+        time_window_breadth: 0.5,
+        negation_only: 0,
+      },
+      score: 0.45,
+      stub: true,
+    };
+  }
+
+  // Sigma: extract detection section from rendered content
+  const detectionContent = extractDetectionSection(renderedContent);
+  const dl = (candidate.detection_logic && candidate.detection_logic.detection) || {};
+  const selection = dl.selection || {};
+  const condition = (dl.condition || '').toLowerCase();
+
+  // Wildcard density
+  const wildcardCount = (detectionContent.match(/\*/g) || []).length;
+  const tokenCount = detectionContent.split(/\s+/).filter(Boolean).length;
+  const wildcardDensity = Math.min(1.0, wildcardCount / Math.max(tokenCount * 0.1, 1));
+
+  // Field specificity: more named fields = lower noise
+  const fieldCount = Object.keys(selection).length;
+  const fieldSpecificity = Math.max(0, 1.0 - (fieldCount / 5));
+
+  // Time window breadth: 1.0 if no timeframe, 0.0 if timeframe present
+  const hasTimeframe = candidate.detection_logic &&
+    (candidate.detection_logic.timeframe || (dl.timeframe));
+  const timeWindowBreadth = hasTimeframe ? 0.0 : 1.0;
+
+  // Negation only: 1.0 if condition uses only NOT/exclude without positive selection
+  const hasPositiveSelection = /\bselection\b/.test(condition) && !/^\s*not\b/i.test(condition);
+  const hasNegation = /\bnot\b/i.test(condition) || /\bexclude\b/i.test(condition);
+  const negationOnly = (hasNegation && !hasPositiveSelection) ? 1.0 : 0.0;
+
+  const dimensions = {
+    wildcard_density: Math.round(wildcardDensity * 10000) / 10000,
+    field_specificity: Math.round(fieldSpecificity * 10000) / 10000,
+    time_window_breadth: timeWindowBreadth,
+    negation_only: negationOnly,
+  };
+
+  const score = (dimensions.wildcard_density * 0.3) +
+                (dimensions.field_specificity * 0.3) +
+                (dimensions.time_window_breadth * 0.2) +
+                (dimensions.negation_only * 0.2);
+
+  const roundedScore = Math.round(score * 10000) / 10000;
+  const noiseRisk = roundedScore > 0.6 ? 'high' : roundedScore > 0.3 ? 'medium' : 'low';
+
+  return { noise_risk: noiseRisk, dimensions, score: roundedScore };
+}
+
+/**
+ * Extract the detection section from rendered Sigma YAML content.
+ * Returns lines between 'detection:' and the next top-level key.
+ */
+function extractDetectionSection(content) {
+  const lines = content.split('\n');
+  let collecting = false;
+  const detectionLines = [];
+
+  for (const line of lines) {
+    if (/^detection:/.test(line)) {
+      collecting = true;
+      continue;
+    }
+    if (collecting) {
+      // Stop at next top-level key (no leading whitespace)
+      if (/^\S/.test(line) && line.trim() !== '') {
+        break;
+      }
+      detectionLines.push(line);
+    }
+  }
+
+  return detectionLines.join('\n');
+}
+
+/**
+ * Validate expected outcome schema.
+ * Returns { valid, errors, warnings }.
+ *
+ * @param {object|null|undefined} outcomes
+ * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
+ */
+function validateExpectedOutcomes(outcomes) {
+  if (outcomes === null || outcomes === undefined) {
+    return { valid: true, errors: [], warnings: ['no expected outcomes defined'] };
+  }
+
+  const errors = [];
+  const warnings = [];
+
+  // expected_matches must have numeric min and max
+  if (!outcomes.expected_matches ||
+      typeof outcomes.expected_matches.min !== 'number' ||
+      typeof outcomes.expected_matches.max !== 'number') {
+    errors.push('expected_matches must have numeric min and max');
+  }
+
+  // expected_noise_level must be low/medium/high
+  const validLevels = ['low', 'medium', 'high'];
+  if (!validLevels.includes(outcomes.expected_noise_level)) {
+    errors.push('expected_noise_level must be low, medium, or high');
+  }
+
+  // time_window must be a string
+  if (outcomes.time_window !== undefined && typeof outcomes.time_window !== 'string') {
+    errors.push('time_window must be a string');
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
+/**
+ * Generate detection rules from existing candidates.
+ *
+ * Reads candidates from DETECTIONS/, renders each via renderCandidate(),
+ * and writes rule files to DETECTIONS/rules/ with format-specific extensions.
+ *
+ * @param {string} cwd - project root
+ * @param {object} options - { phase?, candidate?, format? }
+ * @returns {object} generation report
+ */
+function generateDetectionRules(cwd, options) {
+  let candidates = listDetectionCandidates(cwd, options || {});
+
+  // Candidate ID filter
+  if (options && options.candidate) {
+    candidates = candidates.filter(c => c.candidate_id === options.candidate);
+  }
+
+  const paths = planningPaths(cwd);
+  const rulesDir = path.join(paths.detections, 'rules');
+  const report = {
+    total_candidates: candidates.length,
+    generated: 0,
+    skipped: 0,
+    errors: 0,
+    rules: [],
+    skipped_candidates: [],
+    format_breakdown: {},
+  };
+
+  for (const candidate of candidates) {
+    // Skip candidates with missing or empty detection_logic
+    if (!candidate.detection_logic ||
+        (typeof candidate.detection_logic === 'object' &&
+         Object.keys(candidate.detection_logic).length === 0)) {
+      report.skipped++;
+      report.skipped_candidates.push({
+        candidate_id: candidate.candidate_id,
+        reason: 'missing detection_logic',
+      });
+      continue;
+    }
+
+    const result = renderCandidate(candidate);
+    if (result.error) {
+      report.errors++;
+      report.skipped_candidates.push({
+        candidate_id: candidate.candidate_id,
+        reason: result.error,
+      });
+      continue;
+    }
+
+    // Ensure rules/ directory exists
+    tryMkdir(rulesDir);
+
+    const ext = FORMAT_EXTENSIONS[result.format] || '.txt';
+    const filename = `${candidate.candidate_id}-${result.format}${ext}`;
+    const filePath = path.join(rulesDir, filename);
+
+    fs.writeFileSync(filePath, result.content, 'utf-8');
+
+    report.generated++;
+    report.rules.push({
+      candidate_id: candidate.candidate_id,
+      format: result.format,
+      file: `rules/${filename}`,
+      status: 'ok',
+    });
+    report.format_breakdown[result.format] = (report.format_breakdown[result.format] || 0) + 1;
+  }
+
+  return report;
+}
+
+/**
+ * Write a backtest result to backtests/ atomically (write to tmp, rename).
+ */
+function writeBacktestResult(backtestsDir, backtestResult) {
+  tryMkdir(backtestsDir);
+  const tmpFile = path.join(backtestsDir, `.tmp-${backtestResult.backtest_id}.json`);
+  const finalFile = path.join(backtestsDir, `${backtestResult.backtest_id}.json`);
+  fs.writeFileSync(tmpFile, JSON.stringify(backtestResult, null, 2), 'utf-8');
+  fs.renameSync(tmpFile, finalFile);
+}
+
+/**
+ * Update candidate promotion_readiness with backtest delta and rewrite to disk.
+ */
+function updateCandidateReadiness(detectionsDir, candidate, delta) {
+  const baseScore = scorePromotionReadiness(candidate, {
+    finding_status: candidate.confidence,
+  });
+  candidate.promotion_readiness = Math.max(0, Math.min(1,
+    Math.round((baseScore + delta) * 10000) / 10000
+  ));
+
+  const candidateCopy = { ...candidate };
+  delete candidateCopy.content_hash;
+  candidate.content_hash = computeContentHash(canonicalSerialize(candidateCopy));
+
+  const candidateFile = path.join(detectionsDir, `${candidate.candidate_id}.json`);
+  if (fs.existsSync(candidateFile)) {
+    fs.writeFileSync(candidateFile, JSON.stringify(candidate, null, 2), 'utf-8');
+  }
+}
+
+/**
+ * Compute promotion_readiness_delta from validation and noise results.
+ */
+function computeReadinessDelta(validation, noiseScore) {
+  const validationPenalty = validation.passed ? 0 : -0.2;
+  const noisePenalties = { high: -0.15, medium: -0.05, low: 0 };
+  const noisePenalty = noisePenalties[noiseScore.noise_risk] || 0;
+  return validationPenalty + noisePenalty;
+}
+
+/**
+ * Backtest a single detection candidate.
+ *
+ * Renders the candidate, runs structural validation and noise scoring,
+ * validates expected outcomes, computes promotion_readiness_delta,
+ * writes result to backtests/ atomically, and updates the candidate JSON.
+ *
+ * @param {string} cwd - project root
+ * @param {object} candidate - detection candidate object
+ * @returns {object} backtest result
+ */
+function backtestDetection(cwd, candidate) {
+  const paths = planningPaths(cwd);
+  const format = candidate.target_format || 'sigma';
+
+  // Render candidate
+  const renderResult = renderCandidate(candidate);
+  const renderedContent = renderResult.error ? '' : renderResult.content;
+  const ruleFile = renderResult.error ? null :
+    `rules/${candidate.candidate_id}-${renderResult.format}${FORMAT_EXTENSIONS[renderResult.format] || '.txt'}`;
+
+  // Validation and scoring
+  const validation = validateStructure(candidate, format);
+  const noiseScore = scoreNoise(candidate, renderedContent);
+  const outcomeValidation = validateExpectedOutcomes(
+    candidate.expected_outcomes !== undefined ? candidate.expected_outcomes : null
+  );
+  const delta = computeReadinessDelta(validation, noiseScore);
+
+  // Build backtest result
+  const backtestResult = {
+    backtest_id: makeBacktestId(),
+    candidate_id: candidate.candidate_id,
+    rule_file: ruleFile,
+    timestamp: nowUtc(),
+    validation: { passed: validation.valid, errors: validation.errors, warnings: validation.warnings },
+    noise_score: noiseScore,
+    expected_outcomes: outcomeValidation,
+    promotion_readiness_delta: Math.round(delta * 10000) / 10000,
+  };
+  backtestResult.content_hash = computeContentHash(canonicalSerialize(backtestResult));
+
+  // Persist results and update candidate
+  writeBacktestResult(path.join(paths.detections, 'backtests'), backtestResult);
+  updateCandidateReadiness(paths.detections, candidate, delta);
+
+  return backtestResult;
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -693,4 +1072,11 @@ module.exports = {
   cmdDetectionMap,
   cmdDetectionList,
   toYaml,
+  generateDetectionRules,
+  backtestDetection,
+  scoreNoise,
+  validateStructure,
+  validateExpectedOutcomes,
+  FORMAT_EXTENSIONS,
+  makeBacktestId,
 };
