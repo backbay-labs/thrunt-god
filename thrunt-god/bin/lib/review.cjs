@@ -536,7 +536,9 @@ function cmdEvidenceReview(cwd, options, raw) {
     output(result, raw);
   } else {
     const md = renderReviewMarkdown(scoreResult, gateResult);
-    output(result, raw, md);
+    // Use raw=true with md as rawValue so output() writes the Markdown text
+    // (when raw is false, output() always serializes to JSON)
+    output(result, true, md);
   }
 }
 

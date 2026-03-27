@@ -728,8 +728,12 @@ async function runCommand(command, args, cwd, raw) {
       if (subcommand === 'render-checkpoint') {
         const options = parseNamedArgs(args, ['file']);
         evidence.cmdRenderEvidenceCheckpoint(cwd, options, raw);
+      } else if (subcommand === 'review') {
+        const review = require('./lib/review.cjs');
+        const options = parseNamedArgs(args, ['phase', 'format'], ['force']);
+        review.cmdEvidenceReview(cwd, options, raw);
       } else {
-        error('Unknown evidence subcommand. Available: render-checkpoint');
+        error('Unknown evidence subcommand. Available: render-checkpoint, review');
       }
       break;
     }

@@ -28,6 +28,7 @@ const VALID_CONFIG_KEYS = new Set([
   'planning.commit_docs', 'planning.search_gitignored',
   'hooks.context_warnings', 'hooks.workflow_guard',
   'connector_profiles',
+  'publish_quality_threshold',
 ]);
 
 /**
@@ -92,6 +93,7 @@ const CONFIG_VALUE_RULES = {
   'planning.search_gitignored': { type: 'boolean' },
   'hooks.context_warnings': { type: 'boolean' },
   'hooks.workflow_guard': { type: 'boolean' },
+  'publish_quality_threshold': { type: 'number', min: 0, max: 1 },
 };
 
 function normalizeLegacyConfigSchema(config) {
@@ -187,6 +189,9 @@ function normalizeAndValidateConfigValue(keyPath, value) {
     }
     if (rule.min !== undefined && value < rule.min) {
       error(`Invalid value for ${keyPath}: expected value >= ${rule.min}, received ${JSON.stringify(value)}`);
+    }
+    if (rule.max !== undefined && value > rule.max) {
+      error(`Invalid value for ${keyPath}: expected value <= ${rule.max}, received ${JSON.stringify(value)}`);
     }
     return value;
   }

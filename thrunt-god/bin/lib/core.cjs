@@ -218,6 +218,7 @@ function loadConfig(cwd) {
     context_window: 200000, // default 200k; set to 1000000 for Opus/Sonnet 4.6 1M models
     phase_naming: 'sequential', // 'sequential' (default, auto-increment) or 'custom' (arbitrary string IDs)
     connector_profiles: {},
+    publish_quality_threshold: 0.7,
   };
 
   try {
@@ -318,6 +319,7 @@ function loadConfig(cwd) {
       connector_profiles: parsed.connector_profiles || {},
       model_overrides: parsed.model_overrides || null,
       agent_skills: parsed.agent_skills || {},
+      publish_quality_threshold: get('publish_quality_threshold') ?? defaults.publish_quality_threshold,
     };
   } catch {
     return defaults;
