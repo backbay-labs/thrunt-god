@@ -26,12 +26,34 @@
 </p>
 
 <p align="center">
+  <a href="#installation">Install</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#the-five-phases">Phases</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#hunt-commands">Commands</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
-  <a href="#installation">Install</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#common-flows">Flows</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#canonical-artifacts">Artifacts</a>
 </p>
+
+---
+
+## Installation
+
+```bash
+npx thrunt-god@latest --claude --local
+```
+
+<p align="center">
+  <img src="assets/terminal.svg" alt="thrunt-god install" width="640" />
+</p>
+
+Bootstrap the hunt command surface into your local IDE environment.
+
+| IDE                  | Command      |
+| -------------------- | ------------ |
+| Claude Code / Gemini | `/hunt:help` |
+| OpenCode             | `/hunt-help` |
+| Codex                | `$hunt-help` |
+| Copilot              | `/hunt-help` |
+| Cursor / Windsurf    | `hunt-help`  |
 
 ---
 
@@ -70,28 +92,6 @@ Every hunt resolves through five phases. Each step is explicit.
 ### Thrunt Commands
 
 Utility and orchestration commands (`/thrunt:*`) for workspace management, diagnostics, settings, and agent control.
-
----
-
-## Installation
-
-```bash
-npx thrunt-god@latest --claude --local
-```
-
-<p align="center">
-  <img src="assets/terminal.svg" alt="thrunt-god install" width="640" />
-</p>
-
-Bootstrap the hunt command surface into your local IDE environment.
-
-| IDE                  | Command      |
-| -------------------- | ------------ |
-| Claude Code / Gemini | `/hunt:help` |
-| OpenCode             | `/hunt-help` |
-| Codex                | `$hunt-help` |
-| Copilot              | `/hunt-help` |
-| Cursor / Windsurf    | `hunt-help`  |
 
 ---
 

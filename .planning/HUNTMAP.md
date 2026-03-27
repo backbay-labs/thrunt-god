@@ -8,8 +8,8 @@ Turn THRUNT from a strong hunt-orchestration substrate into a full threat huntin
 
 - ✅ **v1.0 Query Runtime & Connector SDK** — Archived 2026-03-25
 - ✅ **v1.1 Hunt Packs & Technique Packs** — Archived 2026-03-25
-- 🚧 **v1.2 Evidence Integrity & Provenance** — Phases 12-16 (in progress)
-- 📋 **v1.3 Detection Promotion Pipeline** — Phases 17-19 (planned)
+- ✅ **v1.2 Evidence Integrity & Provenance** — Archived 2026-03-27
+- 🚧 **v1.3 Detection Promotion Pipeline** — Phases 17-19 (in progress)
 - 📋 **v1.4 Hunt Learning & Recommendation Engine** — Phases 20-22 (planned)
 - 📋 **v1.5 Live Connector Ecosystem** — Phases 23-26 (planned)
 - 📋 **v1.6 Interactive Hunt Replay & Case Gallery** — Phases 27-30 (planned)
@@ -46,94 +46,20 @@ Delivered:
 
 See the archived huntmap, milestone audit, and archived phase summaries for full phase detail.
 
-## 📋 v1.2 Evidence Integrity & Provenance (Planned)
+## ✅ v1.2 Evidence Integrity & Provenance (Archived)
 
-### Milestone Outcome
+**Status:** Shipped 2026-03-27
+**Archive:** `.planning/milestones/v1.2-HUNTMAP.md`
+**Audit:** `.planning/milestones/v1.2-MILESTONE-AUDIT.md`
 
-THRUNT can certify connector readiness against live backends, then turn the resulting receipts into hashable, exportable, provenance-rich evidence suitable for higher-trust publication and handoff workflows.
+Delivered:
+- canonical EvidenceManifest format with deterministic serialization and SHA-256 content hashing
+- manifest-level integrity hashing, agent-based provenance, and signature hooks
+- zero-dependency ZIP export bundles with chain-of-custody and redaction
+- evidence quality scoring with configurable publish gates, contradiction/blind-spot detection
+- connector certification with readiness scoring and live smoke testing
 
-### Phases
-
-- [x] **Phase 12: Connector Certification & Live Readiness** - Prove configured connectors can preflight and smoke-test against real backends safely (completed 2026-03-25)
-- [x] **Phase 13: Receipt Manifest Canonicalization** - Standardize query logs, receipts, and evidence manifests (completed 2026-03-27)
-- [x] **Phase 14: Hashing, Signatures & Provenance** - Add tamper-evident integrity and signer metadata (completed 2026-03-27)
-- [x] **Phase 15: Evidence Export Bundles** - Package findings, receipts, and chain-of-custody data for handoff (completed 2026-03-27)
-- [x] **Phase 16: Evidence Review & Publish Gates** - Make publication and escalation depend on evidence quality (completed 2026-03-27)
-
-### Phase 12: Connector Certification & Live Readiness
-**Goal**: Add an operator-visible trust layer proving configured connectors can preflight and smoke-test against real backends safely
-**Depends on**: Phase 11
-**Hypotheses**: [HYP-01]
-**Operations**: readiness scoring, doctor UX, live smoke execution, profile-defined smoke specs, connector certification docs
-**Receipts Required**: readiness report schema, live smoke examples, connector certification docs
-**Success Criteria**:
-  1. THRUNT exposes `runtime doctor` and `runtime smoke` so operators can certify a connector before trusting hunt output.
-  2. Connectors without a shipped safe smoke query can define `connector_profiles.<connector>.<profile>.smoke_test`.
-  3. Readiness output distinguishes unconfigured, ready, and live-verified connectors with a defensible score and per-check detail.
-**Plans**: 1/1 complete
-
-Plans:
-- [x] 12-01: Build connector doctor, live smoke execution, readiness scoring, and profile-defined smoke specs (completed 2026-03-25)
-
-### Phase 13: Receipt Manifest Canonicalization
-**Goal**: Standardize the evidence objects that every execution and publication flow depends on
-**Depends on**: Phase 12
-**Hypotheses**: [HYP-03]
-**Operations**: receipt schema, query log schema, evidence manifest schema, canonical serialization
-**Receipts Required**: schema docs, manifest examples, canonicalization rules
-**Success Criteria**:
-  1. THRUNT has one canonical manifest format linking findings to queries and receipts.
-  2. Query logs and receipts can be serialized consistently across connectors and packs.
-  3. Evidence objects preserve enough metadata for later integrity and handoff steps.
-**Plans**: 1/1 planned
-
-Plans:
-- [x] 13-01: Canonicalize receipt, query log, and evidence manifest schemas
-
-### Phase 14: Hashing, Signatures & Provenance
-**Goal**: Make evidence tamper-evident and attributable
-**Depends on**: Phase 13
-**Hypotheses**: [HYP-03]
-**Operations**: hashing strategy, optional signatures, provenance metadata, signer/runner identity model
-**Receipts Required**: hash strategy ADR, provenance fields, signature workflow notes
-**Success Criteria**:
-  1. Material evidence artifacts can be hashed deterministically.
-  2. THRUNT can record who executed, generated, or signed a receipt bundle.
-  3. Integrity failures can be detected and surfaced clearly in review flows.
-**Plans**: 1/1 planned
-
-Plans:
-- [x] 14-01: Add deterministic hashing, provenance metadata, and signing hooks
-
-### Phase 15: Evidence Export Bundles
-**Goal**: Package evidence for handoff without losing provenance or context
-**Depends on**: Phase 14
-**Hypotheses**: [HYP-03]
-**Operations**: export packaging, manifest bundling, case handoff bundle design, integrity verification tools
-**Receipts Required**: export bundle spec, verification examples, bundle inventory outputs
-**Success Criteria**:
-  1. THRUNT can export findings, receipts, and manifests as a coherent bundle.
-  2. Bundles can be verified later for completeness and integrity.
-  3. Bundle contents are usable by IR, escalation, or audit consumers without raw runtime context.
-**Plans**: 1/1 planned
-
-Plans:
-- [x] 15-01: Build export bundles and bundle verification tooling
-
-### Phase 16: Evidence Review & Publish Gates
-**Goal**: Make publication quality depend on evidence quality instead of optimism
-**Depends on**: Phase 15
-**Hypotheses**: [HYP-03]
-**Operations**: evidence review logic, publish gating, escalation gating, contradiction handling, chain-of-custody surfacing
-**Receipts Required**: review checklist updates, publish gate logic, contradiction examples
-**Success Criteria**:
-  1. Publication and escalation workflows can block on missing or weak evidence.
-  2. Contradictory evidence and blind spots are surfaced explicitly in the review flow.
-  3. Chain-of-custody details are visible enough for downstream trust decisions.
-**Plans**: 1/1 planned
-
-Plans:
-- [x] 16-01: Wire evidence quality gates into review, publish, and escalation flows
+See the archived huntmap and phase summaries for full phase detail.
 
 ## 📋 v1.3 Detection Promotion Pipeline (Planned)
 
@@ -143,7 +69,7 @@ THRUNT can turn validated findings into tested detection candidates instead of s
 
 ### Phases
 
-- [ ] **Phase 17: Detection Mapping Model** - Define how findings, evidence, and hypotheses map to detection candidates
+- [x] **Phase 17: Detection Mapping Model** - Define how findings, evidence, and hypotheses map to detection candidates (completed 2026-03-27)
 - [ ] **Phase 18: Detection Generation & Backtesting** - Generate detection content and validate it against historical data
 - [ ] **Phase 19: Promotion Workflow & Integrations** - Promote tested detections into target content systems
 
@@ -160,7 +86,7 @@ THRUNT can turn validated findings into tested detection candidates instead of s
 **Plans**: 1/1 planned
 
 Plans:
-- [ ] 17-01: Define the findings-to-detection mapping and candidate model
+- [x] 17-01: Define the findings-to-detection mapping and candidate model
 
 ### Phase 18: Detection Generation & Backtesting
 **Goal**: Prove generated detections before promotion

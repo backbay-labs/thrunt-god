@@ -48,7 +48,7 @@
 - **Evidence needed:** THRUNT can generate detection candidates from findings and score them before promotion
 - **Disproof condition:** Findings are too narrative or backend-specific to produce reliable detections without bespoke analyst work each time
 - **Confidence:** Medium
-- **Status:** Open
+- **Status:** Supported
 
 ### HYP-05: Hunt memory and scoring will improve prioritization, pack quality, and analyst confidence over time
 

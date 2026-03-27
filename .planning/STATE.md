@@ -5,15 +5,15 @@ milestone_name: Detection Promotion Pipeline
 current_phase: 17
 current_phase_name: detection mapping model
 current_plan: 17-01 (planned, not started)
-status: planned
-stopped_at: Phase 17 plan created; ready for execution
-last_updated: "2026-03-27T20:00:00.000Z"
+status: validating
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-27T19:41:30.207Z"
 last_activity: 2026-03-27
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 6
-  completed_plans: 5
+  total_phases: 3
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
   percent: 83
 ---
 
@@ -35,7 +35,7 @@ Current Phase Name: detection mapping model
 Total Phases: 35
 Current Plan: 17-01 (planned, not started)
 Total Plans in Phase: 1
-Status: Plan created — ready for execution
+Status: Phase complete — ready for validation
 Last activity: 2026-03-27
 Last Activity Description: Phase 17 plan created with detection candidate model, mapping, scoring, rendering, and CLI
 Progress: [████████░░] 83%
@@ -63,6 +63,7 @@ Progress: [████████░░] 83%
 | Phase 14 P01 | 4min | 2 tasks | 3 files |
 | Phase 15 P01 | 5min | 2 tasks | 3 files |
 | Phase 16 P01 | 6min | 2 tasks | 5 files |
+| Phase 17 P01 | 7min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,10 @@ Progress: [████████░░] 83%
 - [Phase 16]: Composite quality score from average of three positive dimensions minus contradiction penalty (0.1 per contradiction), floored at 0.0
 - [Phase 16]: Division by zero returns 1.0 (vacuously true) for all dimensions when denominator is 0
 - [Phase 16]: Added max validation to config.cjs number type rules for publish_quality_threshold 0-1 range
+- [Phase 17]: detection.cjs is a leaf module -- core.cjs, manifest.cjs, evidence.cjs, review.cjs never import from it
+- [Phase 17]: Sigma YAML via custom toYaml serializer with no external dependencies
+- [Phase 17]: Pluggable renderer architecture with RENDERERS map of pure functions (sigma full, SPL/EQL/KQL stubs)
+- [Phase 17]: output(result, raw, humanText) convention for detection CLI commands
 
 ### Pending Todos
 
@@ -103,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T20:00:00.000Z
-Stopped at: Phase 17 plan created (17-01-PLAN.md)
+Last session: 2026-03-27T19:41:30.203Z
+Stopped at: Completed 17-01-PLAN.md
 Resume file: None
