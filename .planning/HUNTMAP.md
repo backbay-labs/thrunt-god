@@ -57,7 +57,7 @@ THRUNT can certify connector readiness against live backends, then turn the resu
 - [x] **Phase 12: Connector Certification & Live Readiness** - Prove configured connectors can preflight and smoke-test against real backends safely (completed 2026-03-25)
 - [x] **Phase 13: Receipt Manifest Canonicalization** - Standardize query logs, receipts, and evidence manifests (completed 2026-03-27)
 - [x] **Phase 14: Hashing, Signatures & Provenance** - Add tamper-evident integrity and signer metadata (completed 2026-03-27)
-- [ ] **Phase 15: Evidence Export Bundles** - Package findings, receipts, and chain-of-custody data for handoff
+- [x] **Phase 15: Evidence Export Bundles** - Package findings, receipts, and chain-of-custody data for handoff (completed 2026-03-27)
 - [ ] **Phase 16: Evidence Review & Publish Gates** - Make publication and escalation depend on evidence quality
 
 ### Phase 12: Connector Certification & Live Readiness
@@ -118,7 +118,7 @@ Plans:
 **Plans**: 1/1 planned
 
 Plans:
-- [ ] 15-01: Build export bundles and bundle verification tooling
+- [x] 15-01: Build export bundles and bundle verification tooling
 
 ### Phase 16: Evidence Review & Publish Gates
 **Goal**: Make publication quality depend on evidence quality instead of optimism
