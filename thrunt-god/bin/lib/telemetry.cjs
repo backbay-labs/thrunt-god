@@ -238,6 +238,31 @@ function recordPromotionOutcome(cwd, candidate, promotionReceipt) {
 }
 
 // ---------------------------------------------------------------------------
+// Classification helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Classify a hunt execution record by outcome quality.
+ *
+ * @param {object} record - a hunt execution metric record
+ * @returns {string} classification: high_yield|productive|noisy|inconclusive|failed|low_yield
+ */
+function classifyOutcome(record) {
+  const events = (record.evidence_yield && record.evidence_yield.events) || 0;
+  const warnings = (record.evidence_yield && record.evidence_yield.warnings) || 0;
+  const errors = (record.evidence_yield && record.evidence_yield.errors) || 0;
+  const status = record.outcome || (record.execution_metrics && record.execution_metrics.status) || 'unknown';
+
+  if (status === 'error') return 'failed';
+  if (status === 'empty' || (status === 'partial' && events === 0)) return 'inconclusive';
+  if (events > 100) return 'high_yield';
+  if (warnings > errors && warnings > 5) return 'noisy';
+  if (events > 0 && events <= 10) return 'low_yield';
+  if (events > 0 && status === 'ok') return 'productive';
+  return 'inconclusive';
+}
+
+// ---------------------------------------------------------------------------
 // Query functions
 // ---------------------------------------------------------------------------
 
@@ -529,6 +554,7 @@ module.exports = {
   recordHuntExecution,
   recordPackExecution,
   recordPromotionOutcome,
+  classifyOutcome,
   listMetrics,
   summarizeMetrics,
   cmdMetricsSummary,

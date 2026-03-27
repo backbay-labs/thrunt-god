@@ -52,6 +52,14 @@
  *   metrics summary                    Aggregate hunt metrics summary
  *   metrics list [--type hunt|pack|promotion] [--connector ID] [--pack ID] [--hypothesis ID] [--limit N]
  *
+ * Scoring:
+ *   score summary                      Show scores for all entities
+ *   score entity <type> <id>           Show detailed score for one entity
+ *
+ * Feedback:
+ *   feedback submit --entity-type T --entity-id ID --type TYPE [--annotation "..."] [--adjustment N] [--analyst NAME]
+ *   feedback list [--entity-type T] [--entity-id ID] [--type TYPE] [--limit N]
+ *
  * Phase Operations:
  *   phase next-decimal <phase>         Calculate next decimal phase number
  *   phase add <description> [--id ID]  Append new phase to HUNTMAP.md + create dir
@@ -174,6 +182,7 @@ const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
 const telemetry = require('./lib/telemetry.cjs');
+const scoring = require('./lib/scoring.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -795,6 +804,30 @@ async function runCommand(command, args, cwd, raw) {
         telemetry.cmdMetricsList(cwd, args.slice(2), raw);
       } else {
         error('Unknown metrics subcommand. Available: summary, list');
+      }
+      break;
+    }
+
+    case 'score': {
+      const subcommand = args[1];
+      if (subcommand === 'summary') {
+        scoring.cmdScoreSummary(cwd, raw);
+      } else if (subcommand === 'entity') {
+        scoring.cmdScoreEntity(cwd, args[2], args[3], raw);
+      } else {
+        error('Unknown score subcommand. Available: summary, entity <type> <id>');
+      }
+      break;
+    }
+
+    case 'feedback': {
+      const subcommand = args[1];
+      if (subcommand === 'submit') {
+        scoring.cmdFeedbackSubmit(cwd, args.slice(2), raw);
+      } else if (subcommand === 'list') {
+        scoring.cmdFeedbackList(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown feedback subcommand. Available: submit, list');
       }
       break;
     }
