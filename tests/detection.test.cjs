@@ -168,8 +168,9 @@ describe('scorePromotionReadiness', () => {
     );
     assert.equal(typeof score, 'number');
     assert.ok(score >= 0 && score <= 1);
-    // Check 4-decimal precision: score * 10000 should be an integer
-    assert.equal(Math.round(score * 10000), score * 10000);
+    // Check 4-decimal precision: rounding to 4 decimals should not change the value
+    const rounded = Math.round(score * 10000) / 10000;
+    assert.equal(score, rounded);
   });
 
   it('returns score >= 0.7 for candidate with 3 receipts, technique_ids, and confirmed finding', () => {
