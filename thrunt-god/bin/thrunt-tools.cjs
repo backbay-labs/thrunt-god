@@ -60,6 +60,12 @@
  *   feedback submit --entity-type T --entity-id ID --type TYPE [--annotation "..."] [--adjustment N] [--analyst NAME]
  *   feedback list [--entity-type T] [--entity-id ID] [--type TYPE] [--limit N]
  *
+ * Recommendations:
+ *   recommend packs [--limit N] [--min-score S]       Ranked pack recommendations
+ *   recommend connectors [--limit N] [--min-score S]  Ranked connector recommendations
+ *   recommend hypotheses [--limit N] [--min-score S]  Ranked hypothesis recommendations
+ *   planning-hints                                     Aggregate planning hints from scores
+ *
  * Phase Operations:
  *   phase next-decimal <phase>         Calculate next decimal phase number
  *   phase add <description> [--id ID]  Append new phase to HUNTMAP.md + create dir
@@ -183,6 +189,7 @@ const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
 const telemetry = require('./lib/telemetry.cjs');
 const scoring = require('./lib/scoring.cjs');
+const recommend = require('./lib/recommend.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -829,6 +836,21 @@ async function runCommand(command, args, cwd, raw) {
       } else {
         error('Unknown feedback subcommand. Available: submit, list');
       }
+      break;
+    }
+
+    case 'recommend': {
+      const entityType = args[1];
+      if (['packs', 'connectors', 'hypotheses'].includes(entityType)) {
+        recommend.cmdRecommend(cwd, entityType, args.slice(2), raw);
+      } else {
+        error('Unknown recommend target. Available: packs, connectors, hypotheses');
+      }
+      break;
+    }
+
+    case 'planning-hints': {
+      recommend.cmdPlanningHints(cwd, raw);
       break;
     }
 
