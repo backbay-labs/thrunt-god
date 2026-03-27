@@ -11,6 +11,7 @@ const { output, error, getMilestonePhaseFilter, planningDir, planningPaths, toPo
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { requireSafePath, sanitizeForDisplay } = require('./security.cjs');
 const { createEvidenceManifest, canonicalSerialize, computeContentHash, buildProvenance, computeManifestHash, verifyManifestIntegrity } = require('./manifest.cjs');
+const telemetry = require('./telemetry.cjs');
 
 function cmdAuditEvidence(cwd, raw) {
   const phasesDir = path.join(planningDir(cwd), 'phases');
@@ -573,6 +574,15 @@ function writeRuntimeArtifacts(cwd, spec, envelope, options = {}) {
   fs.mkdirSync(paths.manifests, { recursive: true });
   const manifestPath = path.join(paths.manifests, `${manifest.manifest_id}.json`);
   fs.writeFileSync(manifestPath, manifestJson, 'utf-8');
+
+  // Emit hunt execution telemetry
+  try {
+    telemetry.recordHuntExecution(cwd, spec, envelope, {
+      pack_id: (options && options.pack_id) || null,
+      receipt_ids: [receiptId],
+      manifest_ids: [manifest.manifest_id],
+    });
+  } catch (_) { /* telemetry failures must not break execution */ }
 
   return {
     query_log: {

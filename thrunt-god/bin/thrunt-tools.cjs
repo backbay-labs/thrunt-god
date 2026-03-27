@@ -48,6 +48,10 @@
  *   websearch <query>                  Search web via Brave API (if configured)
  *     [--limit N] [--freshness day|week|month]
  *
+ * Metrics:
+ *   metrics summary                    Aggregate hunt metrics summary
+ *   metrics list [--type hunt|pack|promotion] [--connector ID] [--pack ID] [--hypothesis ID] [--limit N]
+ *
  * Phase Operations:
  *   phase next-decimal <phase>         Calculate next decimal phase number
  *   phase add <description> [--id ID]  Append new phase to HUNTMAP.md + create dir
@@ -169,6 +173,7 @@ const frontmatter = require('./lib/frontmatter.cjs');
 const profilePipeline = require('./lib/profile-pipeline.cjs');
 const profileOutput = require('./lib/profile-output.cjs');
 const workstream = require('./lib/workstream.cjs');
+const telemetry = require('./lib/telemetry.cjs');
 
 // ─── Arg parsing helpers ──────────────────────────────────────────────────────
 
@@ -778,6 +783,18 @@ async function runCommand(command, args, cwd, raw) {
         detection.cmdDetectionStatus(cwd, options, raw);
       } else {
         error('Unknown detection subcommand. Available: map, list, generate, backtest, promote, reject, status');
+      }
+      break;
+    }
+
+    case 'metrics': {
+      const subcommand = args[1];
+      if (subcommand === 'summary') {
+        telemetry.cmdMetricsSummary(cwd, raw);
+      } else if (subcommand === 'list') {
+        telemetry.cmdMetricsList(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown metrics subcommand. Available: summary, list');
       }
       break;
     }

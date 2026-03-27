@@ -21,6 +21,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { planningPaths, loadConfig, output, error } = require('./core.cjs');
 const { canonicalSerialize, computeContentHash, detectRuntimeName } = require('./manifest.cjs');
+const telemetry = require('./telemetry.cjs');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -1432,6 +1433,11 @@ function promoteDetection(cwd, candidate, options) {
     applyPromotionHooks(candidate, receipt, { afterPromote: hooks.afterPromote });
   }
 
+  // Emit promotion outcome telemetry
+  try {
+    telemetry.recordPromotionOutcome(cwd, candidate, receipt);
+  } catch (_) { /* telemetry failures must not break promotion */ }
+
   return { promoted: true, receipt, rule_path: ruleResult.rulePath };
 }
 
@@ -1475,6 +1481,11 @@ function rejectDetection(cwd, candidate, options) {
   if (fs.existsSync(candidateFile)) {
     fs.writeFileSync(candidateFile, JSON.stringify(candidate, null, 2), 'utf-8');
   }
+
+  // Emit rejection outcome telemetry
+  try {
+    telemetry.recordPromotionOutcome(cwd, candidate, receipt);
+  } catch (_) { /* telemetry failures must not break rejection */ }
 
   return { rejected: true, receipt };
 }
