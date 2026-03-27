@@ -1,9 +1,13 @@
 /**
- * EvidenceManifest — Canonical manifest schema, serialization, validation, and content hashing
+ * EvidenceManifest — Canonical manifest schema, serialization, validation, content hashing,
+ * manifest-level integrity hashing, provenance metadata, signature hooks, and integrity verification
  *
  * This module is a pure schema/serialization module with ZERO dependencies on evidence.cjs
  * (avoids circular requires per Research pitfall 3). Evidence.cjs imports from this module,
  * not the other way around.
+ *
+ * Documented exception: verifyManifestIntegrity requires fs/path for read-only disk I/O
+ * to re-read artifacts and verify content hashes. It never writes.
  *
  * Provides:
  * - createEvidenceManifest(input) — builds a canonical manifest from query/receipt data
@@ -12,18 +16,26 @@
  * - sortKeysDeep(value) — recursive key sorting for canonical output
  * - computeContentHash(content) — SHA-256 content hash with "sha256:" prefix
  * - normalizeTimestamp(ts) — converts any ISO-8601 string to UTC with trailing Z
- * - MANIFEST_VERSION — schema version constant ("1.0")
+ * - computeManifestHash(manifest) — deterministic SHA-256 of manifest body (excludes manifest_hash, signature)
+ * - buildProvenance(options) — structured signer + environment + signed_at metadata
+ * - detectRuntimeName() — detect AI coding agent from environment variables
+ * - applySignatureHooks(manifest, hooks) — call beforeSign/afterSign hooks in order
+ * - verifyManifestIntegrity(manifest, basePath) — on-demand integrity check against disk
+ * - MANIFEST_VERSION — schema version constant ("1.1")
  */
 
 'use strict';
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const MANIFEST_VERSION = '1.0';
+const MANIFEST_VERSION = '1.1';
 
 // ---------------------------------------------------------------------------
 // Internal Helpers (not exported)
@@ -213,6 +225,169 @@ function validateManifest(manifest) {
 }
 
 // ---------------------------------------------------------------------------
+// Manifest-Level Hashing (Phase 14)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a deterministic SHA-256 hash of the manifest body.
+ * Excludes manifest_hash and signature fields (hash-everything-except-hash pattern).
+ *
+ * @param {object} manifest — manifest object (may or may not have manifest_hash/signature)
+ * @returns {string} "sha256:" + hex digest
+ */
+function computeManifestHash(manifest) {
+  // eslint-disable-next-line no-unused-vars
+  const { manifest_hash, signature, ...body } = manifest;
+  const serialized = canonicalSerialize(body);
+  return computeContentHash(serialized);
+}
+
+// ---------------------------------------------------------------------------
+// Runtime Agent Detection (Phase 14)
+// ---------------------------------------------------------------------------
+
+/**
+ * Detect the AI coding agent runtime from environment variables.
+ * Checks in priority order: Claude, Gemini, Codex, Cursor.
+ * Returns "unknown" if no recognized agent env var is set.
+ *
+ * @returns {string} "claude" | "gemini" | "codex" | "cursor" | "unknown"
+ */
+function detectRuntimeName() {
+  if (process.env.CLAUDECODE) return 'claude';
+  if (process.env.GEMINI_CLI) return 'gemini';
+  if (process.env.CODEX_HOME) return 'codex';
+  if (process.env.CURSOR_AGENT) return 'cursor';
+  return 'unknown';
+}
+
+// ---------------------------------------------------------------------------
+// Provenance Metadata (Phase 14)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build structured provenance metadata for a manifest.
+ * Identifies the signer (type, id, context) and execution environment.
+ *
+ * @param {object} [options={}] — optional overrides
+ * @param {string} [options.signer_type="system"] — signer type
+ * @param {string} [options.signer_id="thrunt-runtime"] — signer identifier
+ * @param {object} [options.signer_context] — signer context (defaults to { cli_version })
+ * @returns {{ signer: object, environment: object, signed_at: string }}
+ */
+function buildProvenance(options = {}) {
+  const pkg = require(path.resolve(__dirname, '..', '..', '..', 'package.json'));
+  return {
+    signer: {
+      signer_type: options.signer_type || 'system',
+      signer_id: options.signer_id || 'thrunt-runtime',
+      signer_context: options.signer_context || { cli_version: pkg.version },
+    },
+    environment: {
+      os_platform: os.platform(),
+      node_version: process.version,
+      thrunt_version: pkg.version,
+      runtime_name: detectRuntimeName(),
+    },
+    signed_at: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Signature Hooks (Phase 14)
+// ---------------------------------------------------------------------------
+
+/**
+ * Apply optional signature hooks to a manifest.
+ * If no hooks are provided, returns the manifest unchanged.
+ * Calls beforeSign first, then afterSign, in that order.
+ *
+ * @param {object} manifest — manifest object
+ * @param {object} [hooks={}] — optional hook functions
+ * @param {function} [hooks.beforeSign] — called before signing, may return modified manifest
+ * @param {function} [hooks.afterSign] — called after signing
+ * @returns {object} the (possibly modified) manifest
+ */
+function applySignatureHooks(manifest, hooks = {}) {
+  if (!hooks.beforeSign && !hooks.afterSign) return manifest;
+
+  let result = { ...manifest };
+
+  if (typeof hooks.beforeSign === 'function') {
+    result = hooks.beforeSign(result) || result;
+  }
+
+  if (typeof hooks.afterSign === 'function') {
+    hooks.afterSign(result);
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Integrity Verification (Phase 14)
+// ---------------------------------------------------------------------------
+
+/**
+ * Verify manifest integrity by re-computing hashes and checking artifacts on disk.
+ * Returns structured failures, never throws. On-demand only.
+ *
+ * @param {object} manifest — manifest object to verify
+ * @param {string} basePath — base directory for resolving artifact paths
+ * @returns {{ valid: boolean, failures: Array<{ type: string, ... }> }}
+ */
+function verifyManifestIntegrity(manifest, basePath) {
+  const failures = [];
+
+  // 1. Verify manifest-level hash (skip if absent for pre-Phase-14 manifests)
+  const expectedHash = manifest.manifest_hash;
+  if (expectedHash) {
+    const actualHash = computeManifestHash(manifest);
+    if (actualHash !== expectedHash) {
+      failures.push({
+        type: 'manifest_hash',
+        expected: expectedHash,
+        actual: actualHash,
+        message: 'Manifest-level hash mismatch',
+      });
+    }
+  }
+
+  // 2. Verify each artifact's content_hash against disk
+  for (const artifact of manifest.artifacts || []) {
+    const artifactPath = path.resolve(basePath, artifact.path);
+    try {
+      const content = fs.readFileSync(artifactPath, 'utf-8');
+      const actualHash = computeContentHash(content);
+      if (actualHash !== artifact.content_hash) {
+        const stat = fs.statSync(artifactPath);
+        failures.push({
+          type: 'artifact_hash',
+          artifact_id: artifact.id,
+          artifact_path: artifact.path,
+          expected: artifact.content_hash,
+          actual: actualHash,
+          last_modified: stat.mtime.toISOString(),
+          message: `Artifact content hash mismatch: ${artifact.id}`,
+        });
+      }
+    } catch (err) {
+      failures.push({
+        type: 'artifact_missing',
+        artifact_id: artifact.id,
+        artifact_path: artifact.path,
+        expected: artifact.content_hash,
+        actual: null,
+        last_modified: null,
+        message: `Artifact not found on disk: ${artifact.path}`,
+      });
+    }
+  }
+
+  return { valid: failures.length === 0, failures };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -224,4 +399,9 @@ module.exports = {
   sortKeysDeep,
   computeContentHash,
   normalizeTimestamp,
+  computeManifestHash,
+  buildProvenance,
+  detectRuntimeName,
+  applySignatureHooks,
+  verifyManifestIntegrity,
 };
