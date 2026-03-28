@@ -555,4 +555,10 @@ module.exports = {
   summarizeMetrics,
   cmdMetricsSummary,
   cmdMetricsList,
+  // Shared helpers re-exported for scoring.cjs
+  nowUtc,
+  hash5,
+  dateStamp,
+  atomicWrite,
+  safeReadJson,
 };

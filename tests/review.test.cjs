@@ -695,8 +695,8 @@ describe('promotion coverage feedback', () => {
     const result = review.scoreEvidenceQuality(tmpDir, {});
     assert.equal(result.promotion_coverage.promoted_count, 1);
     assert.equal(result.promotion_coverage.bonus, 0.05);
-    // Vacuously-true 1.0 + 0.05 = 1.05
-    assert.ok(result.score > 1.0, `Expected score > 1.0 but got ${result.score}`);
+    // Vacuously-true 1.0 + 0.05 clamped to 1.0
+    assert.equal(result.score, 1.0);
   });
 
   it('adds +0.10 bonus for 2 promoted detections', () => {

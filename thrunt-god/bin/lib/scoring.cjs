@@ -22,18 +22,13 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const crypto = require('node:crypto');
 const { planningDir, output, error } = require('./core.cjs');
 const { sortKeysDeep, canonicalSerialize } = require('./manifest.cjs');
-const { listMetrics } = require('./telemetry.cjs');
+const { listMetrics, nowUtc, hash5, dateStamp, atomicWrite, safeReadJson } = require('./telemetry.cjs');
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function nowUtc() {
-  return new Date().toISOString();
-}
 
 function feedbackDir(cwd) {
   return path.join(planningDir(cwd), 'FEEDBACK');
@@ -43,30 +38,6 @@ function ensureFeedbackDir(cwd) {
   const dir = feedbackDir(cwd);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
-}
-
-function hash5(input) {
-  return crypto.createHash('sha256').update(input).digest('hex').slice(0, 5);
-}
-
-function dateStamp() {
-  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
-}
-
-function atomicWrite(filePath, content) {
-  const dir = path.dirname(filePath);
-  fs.mkdirSync(dir, { recursive: true });
-  const tmpFile = path.join(dir, `.tmp-${path.basename(filePath)}`);
-  fs.writeFileSync(tmpFile, content, 'utf-8');
-  fs.renameSync(tmpFile, filePath);
-}
-
-function safeReadJson(filePath) {
-  try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  } catch {
-    return null;
-  }
 }
 
 // ---------------------------------------------------------------------------

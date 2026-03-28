@@ -355,7 +355,7 @@ function scoreEvidenceQuality(cwd, options) {
 
   // --- Composite score ---
   const avgDimensions = (receiptScore + integrityScore + provenanceScore) / 3;
-  const score = Math.max(0, avgDimensions - contradictionPenalty + promotionBonus);
+  const score = Math.min(1, Math.max(0, avgDimensions - contradictionPenalty + promotionBonus));
   // Round to avoid floating-point noise
   const roundedScore = Math.round(score * 10000) / 10000;
 
