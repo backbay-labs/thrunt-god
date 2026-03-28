@@ -30,7 +30,7 @@
   <a href="#the-five-phases">Phases</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#hunt-commands">Commands</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#common-flows">Flows</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
-  <a href="#canonical-artifacts">Artifacts</a>
+  <a href="#artifacts">Artifacts</a>
 </p>
 
 ---
@@ -154,25 +154,59 @@ Runs all remaining phases end-to-end: discuss, plan, execute. Pauses only for op
 
 ---
 
-## Canonical Artifacts
+## Artifacts
 
-Every hunt produces a structured artifact tree. These are the canonical hunt artifacts and the system of record — not prose, not summaries.
+All hunt state lives in a planning directory at the project root (`.planning/` by default). Every query, receipt, and finding is a file, not a summary.
 
 ```text
 .planning/
+├── config.json             # Project settings (mode, profile, connectors, workflow toggles)
 ├── MISSION.md              # Hunt program mission and scope
-├── HYPOTHESES.md           # Testable hypotheses with status
-├── SUCCESS_CRITERIA.md     # What "done" looks like
-├── HUNTMAP.md              # Data sources and access map
-├── STATE.md                # Current hunt state
+├── HYPOTHESES.md           # Testable hypotheses with status tracking
+├── SUCCESS_CRITERIA.md     # Definition of done for the program
+├── HUNTMAP.md              # Phase breakdown and execution roadmap
+├── STATE.md                # Current phase, progress, blockers
 ├── FINDINGS.md             # Validated findings only
-├── EVIDENCE_REVIEW.md      # Evidence chain review
-├── QUERIES/                # Exact queries, reproducible
-├── RECEIPTS/               # Signed execution receipts
+├── EVIDENCE_REVIEW.md      # Evidence chain audit
+├── QUERIES/                # Exact queries run, with timestamps
+├── RECEIPTS/               # Execution receipts per phase task
+├── DETECTIONS/             # Detection rules promoted from findings
 ├── environment/
-│   └── ENVIRONMENT.md      # Environment inventory
-├── phases/                 # Per-phase plans and results
+│   └── ENVIRONMENT.md      # Data source inventory and access map
+├── phases/                 # Per-phase plans, research, and results
+├── workstreams/            # Parallel hunt cases (optional)
+├── milestones/             # Archived completed milestones
 └── published/              # Final deliverables
 ```
 
-> Exact queries, receipts, timestamps, and lineage are the finding. If it cannot be reproduced, it does not exist.
+### Configuration
+
+Settings live in `.planning/config.json`, created by `/hunt:new-program` and editable via `/thrunt:settings`. Global defaults in `~/.thrunt/defaults.json` are merged into every new project config.
+
+| Setting | Default | What it controls |
+| ------- | ------- | ---------------- |
+| `mode` | `interactive` | `interactive` confirms at each step, `yolo` auto-approves |
+| `granularity` | `standard` | Phase count: `coarse` (3-5), `standard` (5-8), `fine` (8-12) |
+| `model_profile` | `balanced` | Model tier per agent: `quality`, `balanced`, `budget`, `inherit` |
+| `planning.commit_docs` | `true` | Whether `.planning/` is committed to git |
+| `git.branching_strategy` | `none` | `none`, `phase` (branch per phase), `milestone` (branch per version) |
+
+Full schema and connector profiles: [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md)
+
+### Custom planning directory
+
+Set `THRUNT_PLANNING_DIR` to change the directory name. This affects all path resolution, project root detection, and artifact storage.
+
+```bash
+export THRUNT_PLANNING_DIR=".hunt"
+```
+
+### Storage
+
+By default, `.planning/` is committed to git so hunt artifacts travel with the repo. To keep artifacts local:
+
+1. Add `.planning/` to `.gitignore`
+2. Set `planning.commit_docs: false` and `planning.search_gitignored: true` in config
+3. If previously tracked: `git rm -r --cached .planning/`
+
+Workstreams (`/thrunt:new-workspace`) create isolated artifact trees under `.planning/workstreams/{name}/` for parallel hunts in the same project.

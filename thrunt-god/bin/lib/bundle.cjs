@@ -35,6 +35,7 @@ const {
   output,
   error,
   toPosixPath,
+  PLANNING_DIR_NAME,
 } = require('./core.cjs');
 
 const { requireSafePath } = require('./security.cjs');
@@ -313,7 +314,7 @@ function discoverArtifacts(cwd, filters = {}) {
     for (const file of fs.readdirSync(paths.queries)) {
       if (!file.endsWith('.md')) continue;
       const fullPath = path.join(paths.queries, file);
-      const relativePath = toPosixPath(path.relative(path.join(cwd, '.planning'), fullPath));
+      const relativePath = toPosixPath(path.relative(path.join(cwd, PLANNING_DIR_NAME), fullPath));
       const planningRelPath = `.planning/${relativePath}`;
 
       // Find if any manifest references this artifact
@@ -344,7 +345,7 @@ function discoverArtifacts(cwd, filters = {}) {
     for (const file of fs.readdirSync(paths.receipts)) {
       if (!file.endsWith('.md')) continue;
       const fullPath = path.join(paths.receipts, file);
-      const relativePath = toPosixPath(path.relative(path.join(cwd, '.planning'), fullPath));
+      const relativePath = toPosixPath(path.relative(path.join(cwd, PLANNING_DIR_NAME), fullPath));
       const planningRelPath = `.planning/${relativePath}`;
 
       const manifestId = manifestArtifactPaths.get(planningRelPath) || null;

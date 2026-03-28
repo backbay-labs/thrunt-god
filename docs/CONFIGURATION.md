@@ -542,6 +542,7 @@ The intent is the same as the Claude profile tiers -- use a stronger model for p
 
 | Variable | Purpose |
 |----------|---------|
+| `THRUNT_PLANNING_DIR` | Override planning directory name (default: `.planning`) |
 | `CLAUDE_CONFIG_DIR` | Override default config directory (`~/.claude/`) |
 | `GEMINI_API_KEY` | Detected by context monitor to switch hook event name |
 | `WSL_DISTRO_NAME` | Detected by installer for WSL path handling |

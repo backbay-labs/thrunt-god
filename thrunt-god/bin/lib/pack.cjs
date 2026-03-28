@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const runtime = require('./runtime.cjs');
+const { PLANNING_DIR_NAME } = require('./core.cjs');
 
 const PACK_SCHEMA_VERSION = '1.0';
 const PACK_KINDS = ['technique', 'domain', 'family', 'campaign', 'custom', 'example'];
@@ -92,7 +93,7 @@ function getBuiltInPackRegistryDir() {
 }
 
 function getProjectPackRegistryDir(cwd) {
-  return path.join(cwd, '.planning', 'packs');
+  return path.join(cwd, PLANNING_DIR_NAME, 'packs');
 }
 
 function getPackRegistryPaths(cwd, options = {}) {

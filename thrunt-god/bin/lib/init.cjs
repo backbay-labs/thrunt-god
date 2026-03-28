@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { loadConfig, resolveModelInternal, findPhaseInternal, getHuntmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, normalizePhaseName, planningPaths, planningDir, planningRoot, getMissionDocInfo, getHuntmapDocInfo, toPosixPath, output, error, checkAgentsInstalled } = require('./core.cjs');
+const { loadConfig, resolveModelInternal, findPhaseInternal, getHuntmapPhaseInternal, pathExistsInternal, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, stripShippedMilestones, extractCurrentMilestone, normalizePhaseName, planningPaths, planningDir, planningRoot, getMissionDocInfo, getHuntmapDocInfo, toPosixPath, output, error, checkAgentsInstalled, PLANNING_DIR_NAME } = require('./core.cjs');
 
 function getLatestCompletedMilestone(cwd) {
   const milestonesPath = path.join(planningRoot(cwd), 'MILESTONES.md');
@@ -284,7 +284,7 @@ function cmdInitNewProgram(cwd, raw) {
       '.ex', '.exs',           // Elixir
       '.clj',                  // Clojure
     ]);
-    const skipDirs = new Set(['node_modules', '.git', '.planning', '.claude', '__pycache__', 'target', 'dist', 'build']);
+    const skipDirs = new Set(['node_modules', '.git', PLANNING_DIR_NAME, '.claude', '__pycache__', 'target', 'dist', 'build']);
     function findCodeFiles(dir, depth) {
       if (depth > 3) return false;
       let entries;
@@ -329,7 +329,7 @@ function cmdInitNewProgram(cwd, raw) {
     // Existing state
     mission_exists: projectDoc.exists,
     has_codebase_map: pathExistsInternal(cwd, '.planning/codebase'),
-    planning_exists: pathExistsInternal(cwd, '.planning'),
+    planning_exists: pathExistsInternal(cwd, PLANNING_DIR_NAME),
 
     // Brownfield detection
     has_existing_code: hasCode,
@@ -811,7 +811,7 @@ function cmdInitMapEnvironment(cwd, raw) {
     has_maps: existingMaps.length > 0,
 
     // File existence
-    planning_exists: pathExistsInternal(cwd, '.planning'),
+    planning_exists: pathExistsInternal(cwd, PLANNING_DIR_NAME),
     codebase_dir_exists: pathExistsInternal(cwd, '.planning/codebase'),
   };
 
@@ -979,7 +979,7 @@ function cmdInitManager(cwd, raw) {
   // Check for WAITING.json signal
   let waitingSignal = null;
   try {
-    const waitingPath = path.join(cwd, '.planning', 'WAITING.json');
+    const waitingPath = path.join(cwd, PLANNING_DIR_NAME, 'WAITING.json');
     if (fs.existsSync(waitingPath)) {
       waitingSignal = JSON.parse(fs.readFileSync(waitingPath, 'utf-8'));
     }
@@ -1305,8 +1305,8 @@ function cmdInitListWorkspaces(cwd, raw) {
         repoCount = tableRows.length;
       } catch { /* best-effort */ }
       hasProject =
-        fs.existsSync(path.join(wsPath, '.planning', 'MISSION.md')) ||
-        fs.existsSync(path.join(wsPath, '.planning', 'MISSION.md'));
+        fs.existsSync(path.join(wsPath, PLANNING_DIR_NAME, 'MISSION.md')) ||
+        fs.existsSync(path.join(wsPath, PLANNING_DIR_NAME, 'MISSION.md'));
 
       workspaces.push({
         name: entry.name,

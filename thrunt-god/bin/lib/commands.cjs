@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo } = require('./core.cjs');
+const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, PLANNING_DIR_NAME } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
@@ -1018,7 +1018,7 @@ function cmdCommit(cwd, message, files, raw, amend, noVerify) {
   }
 
   // Check if .planning is gitignored
-  if (isGitIgnored(cwd, '.planning')) {
+  if (isGitIgnored(cwd, PLANNING_DIR_NAME)) {
     const result = { committed: false, hash: null, reason: 'skipped_gitignored' };
     output(result, raw, 'skipped');
     return;

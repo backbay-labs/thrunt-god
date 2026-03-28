@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { safeReadFile, loadConfig, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, planningDir, planningRoot, getMissionDocInfo, getHuntmapDocInfo, output, error, checkAgentsInstalled } = require('./core.cjs');
+const { safeReadFile, loadConfig, normalizePhaseName, execGit, findPhaseInternal, getMilestoneInfo, stripShippedMilestones, extractCurrentMilestone, planningDir, planningRoot, getMissionDocInfo, getHuntmapDocInfo, output, error, checkAgentsInstalled, PLANNING_DIR_NAME } = require('./core.cjs');
 const { extractFrontmatter, parseMustHavesBlock } = require('./frontmatter.cjs');
 const { writeStateMd, stateExtractField } = require('./state.cjs');
 
@@ -850,8 +850,8 @@ function cmdValidateHealth(cwd, options, raw) {
             // Generate minimal STATE.md from HUNTMAP.md structure
             const milestone = getMilestoneInfo(cwd);
             const projectRef = projectDoc.exists
-              ? path.posix.join('.planning', projectDoc.source)
-              : path.posix.join('.planning', expectedProjectDoc);
+              ? path.posix.join(PLANNING_DIR_NAME, projectDoc.source)
+              : path.posix.join(PLANNING_DIR_NAME, expectedProjectDoc);
             let stateContent = `# Session State\n\n`;
             stateContent += `## Mission Reference\n\n`;
             stateContent += `See: ${projectRef}\n\n`;

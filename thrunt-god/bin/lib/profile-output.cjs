@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { output, error, safeReadFile, getMissionDocInfo } = require('./core.cjs');
+const { output, error, safeReadFile, getMissionDocInfo, PLANNING_DIR_NAME } = require('./core.cjs');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -363,8 +363,8 @@ function generateMissionSection(cwd) {
 }
 
 function generateStackSection(cwd) {
-  const codebasePath = path.join(cwd, '.planning', 'codebase', 'STACK.md');
-  const researchPath = path.join(cwd, '.planning', 'research', 'STACK.md');
+  const codebasePath = path.join(cwd, PLANNING_DIR_NAME, 'codebase', 'STACK.md');
+  const researchPath = path.join(cwd, PLANNING_DIR_NAME, 'research', 'STACK.md');
   let content = safeReadFile(codebasePath);
   let source = 'codebase/STACK.md';
   if (!content) {
@@ -391,7 +391,7 @@ function generateStackSection(cwd) {
 }
 
 function generateConventionsSection(cwd) {
-  const conventionsPath = path.join(cwd, '.planning', 'codebase', 'CONVENTIONS.md');
+  const conventionsPath = path.join(cwd, PLANNING_DIR_NAME, 'codebase', 'CONVENTIONS.md');
   const content = safeReadFile(conventionsPath);
   if (!content) {
     return { content: CLAUDE_MD_FALLBACKS.conventions, source: 'CONVENTIONS.md', hasFallback: true };
@@ -407,7 +407,7 @@ function generateConventionsSection(cwd) {
 }
 
 function generateArchitectureSection(cwd) {
-  const architecturePath = path.join(cwd, '.planning', 'codebase', 'ARCHITECTURE.md');
+  const architecturePath = path.join(cwd, PLANNING_DIR_NAME, 'codebase', 'ARCHITECTURE.md');
   const content = safeReadFile(architecturePath);
   if (!content) {
     return { content: CLAUDE_MD_FALLBACKS.architecture, source: 'ARCHITECTURE.md', hasFallback: true };

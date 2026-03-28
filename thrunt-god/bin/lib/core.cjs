@@ -9,6 +9,9 @@ const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
 // ─── Path helpers ────────────────────────────────────────────────────────────
 
+/** Name of the planning directory. Override with THRUNT_PLANNING_DIR env var. */
+const PLANNING_DIR_NAME = process.env.THRUNT_PLANNING_DIR || '.planning';
+
 /** Normalize a relative path to always use forward slashes (cross-platform). */
 function toPosixPath(p) {
   return p.split(path.sep).join('/');
@@ -60,7 +63,7 @@ function findProjectRoot(startDir) {
 
   // If startDir already contains .planning/, it IS the project root.
   // Do not walk up to a parent workspace that also has .planning/ (#1362).
-  const ownPlanning = path.join(resolved, '.planning');
+  const ownPlanning = path.join(resolved, PLANNING_DIR_NAME);
   if (fs.existsSync(ownPlanning) && fs.statSync(ownPlanning).isDirectory()) {
     return startDir;
   }
@@ -85,7 +88,7 @@ function findProjectRoot(startDir) {
     if (parent === dir) break; // filesystem root
     if (parent === homedir) break; // never go above home
 
-    const parentPlanning = path.join(parent, '.planning');
+    const parentPlanning = path.join(parent, PLANNING_DIR_NAME);
     if (fs.existsSync(parentPlanning) && fs.statSync(parentPlanning).isDirectory()) {
       const configPath = path.join(parentPlanning, 'config.json');
       try {
@@ -195,7 +198,7 @@ function safeReadFile(filePath) {
 }
 
 function loadConfig(cwd) {
-  const configPath = path.join(cwd, '.planning', 'config.json');
+  const configPath = path.join(cwd, PLANNING_DIR_NAME, 'config.json');
   const defaults = {
     model_profile: 'balanced',
     commit_docs: true,
@@ -477,7 +480,7 @@ function execGit(cwd, args) {
 function resolveWorktreeRoot(cwd) {
   // If the current directory already has its own .planning/, respect it.
   // This handles linked worktrees with independent planning state (e.g., Conductor workspaces).
-  if (fs.existsSync(path.join(cwd, '.planning'))) {
+  if (fs.existsSync(path.join(cwd, PLANNING_DIR_NAME))) {
     return cwd;
   }
 
@@ -563,13 +566,13 @@ function withPlanningLock(cwd, fn) {
  */
 function planningDir(cwd, ws) {
   if (ws === undefined) ws = process.env.THRUNT_WORKSTREAM || null;
-  if (!ws) return path.join(cwd, '.planning');
-  return path.join(cwd, '.planning', 'workstreams', ws);
+  if (!ws) return path.join(cwd, PLANNING_DIR_NAME);
+  return path.join(cwd, PLANNING_DIR_NAME, 'workstreams', ws);
 }
 
-/** Always returns the root .planning/ path, ignoring workstreams. For shared resources. */
+/** Always returns the root planning path, ignoring workstreams. For shared resources. */
 function planningRoot(cwd) {
-  return path.join(cwd, '.planning');
+  return path.join(cwd, PLANNING_DIR_NAME);
 }
 
 /** Get common .planning file paths, workstream-aware. */
@@ -766,7 +769,7 @@ function findPhaseInternal(cwd, phase) {
   if (current) return current;
 
   // Search archived milestone phases (newest first)
-  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  const milestonesDir = path.join(cwd, PLANNING_DIR_NAME, 'milestones');
   if (!fs.existsSync(milestonesDir)) return null;
 
   try {
@@ -793,7 +796,7 @@ function findPhaseInternal(cwd, phase) {
 }
 
 function getArchivedPhaseDirs(cwd) {
-  const milestonesDir = path.join(cwd, '.planning', 'milestones');
+  const milestonesDir = path.join(cwd, PLANNING_DIR_NAME, 'milestones');
   const results = [];
 
   if (!fs.existsSync(milestonesDir)) return results;
@@ -816,7 +819,7 @@ function getArchivedPhaseDirs(cwd) {
         results.push({
           name: dir,
           milestone: version,
-          basePath: path.join('.planning', 'milestones', archiveName),
+          basePath: path.join(PLANNING_DIR_NAME, 'milestones', archiveName),
           fullPath: path.join(archivePath, dir),
         });
       }
@@ -1271,6 +1274,7 @@ module.exports = {
   detectSubRepos,
   reapStaleTempFiles,
   MODEL_ALIAS_MAP,
+  PLANNING_DIR_NAME,
   planningDir,
   planningRoot,
   planningPaths,

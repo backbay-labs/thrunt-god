@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { escapeRegex, getMilestonePhaseFilter, extractOneLinerFromBody, normalizeMd, planningPaths, getMissionDocInfo, getHuntmapDocInfo, output, error } = require('./core.cjs');
+const { escapeRegex, getMilestonePhaseFilter, extractOneLinerFromBody, normalizeMd, planningPaths, getMissionDocInfo, getHuntmapDocInfo, output, error, PLANNING_DIR_NAME } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { writeStateMd, stateReplaceFieldWithFallback } = require('./state.cjs');
 
@@ -152,8 +152,8 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
   const projectDoc = getMissionDocInfo(cwd);
   const roadmapDoc = getHuntmapDocInfo(cwd);
   const statePath = paths.state;
-  const milestonesPath = path.join(cwd, '.planning', 'MILESTONES.md');
-  const archiveDir = path.join(cwd, '.planning', 'milestones');
+  const milestonesPath = path.join(cwd, PLANNING_DIR_NAME, 'MILESTONES.md');
+  const archiveDir = path.join(cwd, PLANNING_DIR_NAME, 'milestones');
   const phasesDir = paths.phases;
   const today = new Date().toISOString().split('T')[0];
   const milestoneName = options.name || version;
@@ -227,7 +227,7 @@ function cmdMilestoneComplete(cwd, version, options, raw) {
   }
 
   // Archive audit file if exists
-  const auditFile = path.join(cwd, '.planning', `${version}-MILESTONE-AUDIT.md`);
+  const auditFile = path.join(cwd, PLANNING_DIR_NAME, `${version}-MILESTONE-AUDIT.md`);
   if (fs.existsSync(auditFile)) {
     fs.renameSync(auditFile, path.join(archiveDir, `${version}-MILESTONE-AUDIT.md`));
     archived.audit = true;

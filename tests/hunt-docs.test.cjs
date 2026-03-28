@@ -11,7 +11,7 @@ describe('hunt docs', () => {
   test('README describes hunt-native docs as the only active artifact set', () => {
     const readme = readRepoFile('README.md');
 
-    assert.match(readme, /These are the canonical hunt artifacts/);
+    assert.match(readme, /Every query, receipt, and finding is a file/);
     assert.doesNotMatch(readme, /Legacy mirrors/);
   });
 
