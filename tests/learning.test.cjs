@@ -13,6 +13,7 @@ const path = require('node:path');
 const commands = require('../thrunt-god/bin/lib/commands.cjs');
 const detection = require('../thrunt-god/bin/lib/detection.cjs');
 const packLib = require('../thrunt-god/bin/lib/pack.cjs');
+const recommend = require('../thrunt-god/bin/lib/recommend.cjs');
 const runtime = require('../thrunt-god/bin/lib/runtime.cjs');
 const scoring = require('../thrunt-god/bin/lib/scoring.cjs');
 const telemetry = require('../thrunt-god/bin/lib/telemetry.cjs');
@@ -212,6 +213,95 @@ describe('human-readable command output', () => {
 });
 
 describe('feedback semantics and detection filtering', () => {
+  it('scores pack executions from aggregate pack metrics without double-counting target hunts', () => {
+    const tmpDir = makeTempProject();
+
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-PACK-1',
+      connector: { id: 'splunk' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: [] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 100 },
+      counts: { events: 10 },
+    }, { pack_id: 'pack.alpha' });
+
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-PACK-2',
+      connector: { id: 'splunk' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: [] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 100 },
+      counts: { events: 10 },
+    }, { pack_id: 'pack.alpha' });
+
+    telemetry.recordPackExecution(tmpDir, 'pack.alpha', '1.0.0', [
+      { connector_id: 'splunk', dataset_kind: 'events' },
+      { connector_id: 'splunk', dataset_kind: 'events' },
+    ], [
+      { status: 'ok', counts: { events: 10 }, timing: { duration_ms: 100 } },
+      { status: 'ok', counts: { events: 10 }, timing: { duration_ms: 100 } },
+    ]);
+
+    const score = scoring.scoreEntity(tmpDir, 'pack', 'pack.alpha');
+    assert.equal(score.execution_count, 1);
+    assert.equal(score.yield_score, 1);
+    assert.equal(score.success_rate, 1);
+  });
+
+  it('preserves legacy hunt-only pack runs alongside aggregate pack telemetry', () => {
+    const tmpDir = makeTempProject();
+
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-LEGACY',
+      connector: { id: 'splunk' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: [] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 50 },
+      counts: { events: 8 },
+    }, { pack_id: 'pack.alpha' });
+
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-NEW-1',
+      connector: { id: 'splunk' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: [] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 50 },
+      counts: { events: 6 },
+    }, { pack_id: 'pack.alpha' });
+
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-NEW-2',
+      connector: { id: 'splunk' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: [] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 50 },
+      counts: { events: 6 },
+    }, { pack_id: 'pack.alpha' });
+
+    telemetry.recordPackExecution(tmpDir, 'pack.alpha', '1.0.0', [
+      { connector_id: 'splunk', dataset_kind: 'events' },
+      { connector_id: 'splunk', dataset_kind: 'events' },
+    ], [
+      { status: 'ok', counts: { events: 6 }, timing: { duration_ms: 50 } },
+      { status: 'ok', counts: { events: 6 }, timing: { duration_ms: 50 } },
+    ]);
+
+    const score = scoring.scoreEntity(tmpDir, 'pack', 'pack.alpha');
+    assert.equal(score.execution_count, 2);
+    assert.equal(score.yield_score, 0.5);
+    assert.equal(score.success_rate, 1);
+  });
+
   it('applies low_yield and high_quality feedback to composite scoring', () => {
     const tmpDir = makeTempProject();
 
@@ -247,6 +337,48 @@ describe('feedback semantics and detection filtering', () => {
     assert.equal(lowYield.low_yield_count, 1);
     assert.ok(highQuality.composite_score > lowYield.composite_score);
     assert.equal(highQuality.high_quality_count, 1);
+  });
+
+  it('keeps noisy summary aligned with classifyOutcome and filtered summaries', () => {
+    const tmpDir = makeTempProject();
+
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-NOISY',
+      connector: { id: 'splunk' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: ['HYP-1'] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 100 },
+      counts: { events: 1, warnings: 6, errors: 0 },
+    });
+    telemetry.recordHuntExecution(tmpDir, {
+      query_id: 'QRY-NOT-NOISY',
+      connector: { id: 'sentinel' },
+      dataset: { kind: 'events' },
+      evidence: { hypothesis_ids: ['HYP-2'] },
+    }, {
+      status: 'ok',
+      timing: { duration_ms: 100 },
+      counts: { events: 1, warnings: 1, errors: 0 },
+    });
+    telemetry.recordPackExecution(tmpDir, 'pack.reasoning', '1.0.0', [
+      { connector_id: 'splunk', dataset_kind: 'events' },
+    ], [
+      { status: 'ok', counts: { events: 16 }, timing: { duration_ms: 100 } },
+    ]);
+
+    const allSummary = telemetry.summarizeMetrics(tmpDir);
+    const filteredSummary = telemetry.summarizeMetrics(tmpDir, { connector_id: 'splunk' });
+    const recommendations = recommend.recommendPacks(tmpDir, {});
+
+    assert.equal(allSummary.yield_summary.noisy, 1);
+    assert.equal(filteredSummary.total_executions, 1);
+    assert.equal(filteredSummary.yield_summary.noisy, 1);
+    assert.ok(recommendations.recommendations.length > 0);
+    assert.ok(recommendations.recommendations.every(rec =>
+      rec.reasoning.every(reason => !reason.includes('>100 events avg'))
+    ));
   });
 
   it('fires promotion hooks once in the correct sequence during promotion', () => {

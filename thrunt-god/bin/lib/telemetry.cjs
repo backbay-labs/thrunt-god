@@ -14,7 +14,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { planningDir, output, error } = require('./core.cjs');
-const { sortKeysDeep, canonicalSerialize } = require('./manifest.cjs');
+const { canonicalSerialize } = require('./manifest.cjs');
 
 function nowUtc() {
   return new Date().toISOString();
@@ -321,10 +321,7 @@ function summarizeMetrics(cwd, options = {}) {
     high_yield: huntRecords.filter(r =>
       (r.evidence_yield && r.evidence_yield.events) > 100
     ).length,
-    noisy: huntRecords.filter(r =>
-      r.evidence_yield &&
-      r.evidence_yield.warnings > r.evidence_yield.errors
-    ).length,
+    noisy: huntRecords.filter(r => classifyOutcome(r) === 'noisy').length,
     inconclusive: huntRecords.filter(r =>
       r.outcome === 'empty' ||
       (r.outcome === 'partial' && r.evidence_yield && r.evidence_yield.events === 0)
@@ -366,7 +363,7 @@ function cmdMetricsSummary(cwd, raw) {
 
   lines.push('## Yield');
   lines.push(`  High-yield (>100 events): ${summary.yield_summary.high_yield}`);
-  lines.push(`  Noisy (warnings > errors): ${summary.yield_summary.noisy}`);
+  lines.push(`  Noisy (warnings > errors and >5 warnings): ${summary.yield_summary.noisy}`);
   lines.push(`  Inconclusive: ${summary.yield_summary.inconclusive}`);
   lines.push('');
 

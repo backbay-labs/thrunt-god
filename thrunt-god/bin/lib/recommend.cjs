@@ -23,7 +23,7 @@ function buildBaseReasoning(score) {
     reasons.push(`Analyst adjusted by ${sign}${score.analyst_adjustment}`);
   }
   if (score.yield_score >= 0.8) {
-    reasons.push('High yield in prior runs (>100 events avg)');
+    reasons.push('High yield in prior runs relative to the entity baseline');
   }
   if (score.yield_score < 0.3 && score.execution_count > 2) {
     reasons.push('Low yield — consider alternatives');

@@ -1242,6 +1242,7 @@ function promoteDetection(cwd, candidate, options) {
   const receipt = {
     promotion_id: promotionId,
     candidate_id: candidate.candidate_id,
+    source_phase: candidate.source_phase || null,
     rule_path: ruleResult.rulePath,
     target_format: candidate.target_format || 'sigma',
     promoted_at: nowUtc(),

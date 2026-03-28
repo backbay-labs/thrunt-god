@@ -666,17 +666,24 @@ describe('promotion coverage feedback', () => {
     cleanup(tmpDir);
   });
 
-  function writePromotionReceipt(tmpDir, promotionId) {
+  function writePromotionReceipt(tmpDir, promotionId, sourcePhase = null) {
     const dir = path.join(tmpDir, '.planning', 'DETECTIONS', 'promotions');
+    const detectionsDir = path.join(tmpDir, '.planning', 'DETECTIONS');
     fs.mkdirSync(dir, { recursive: true });
     const receipt = {
       promotion_id: promotionId,
       candidate_id: `DET-TEST-${promotionId}`,
+      source_phase: sourcePhase,
       promoted_at: '2026-03-27T15:00:00.000Z',
       promoted_by: 'test',
       content_hash: 'sha256:test',
     };
     fs.writeFileSync(path.join(dir, `${promotionId}.json`), JSON.stringify(receipt, null, 2), 'utf-8');
+    fs.writeFileSync(path.join(detectionsDir, `${receipt.candidate_id}.json`), JSON.stringify({
+      candidate_id: receipt.candidate_id,
+      source_phase: sourcePhase,
+      metadata: { status: 'promoted' },
+    }, null, 2), 'utf-8');
   }
 
   it('returns bonus 0 when no promotions directory exists', () => {
@@ -726,6 +733,17 @@ describe('promotion coverage feedback', () => {
     const result = review.scoreEvidenceQuality(tmpDir, {});
     assert.ok(Array.isArray(result.promotion_coverage.receipts));
     assert.ok(result.promotion_coverage.receipts.includes('PROM-20260327-XXX'));
+  });
+
+  it('filters promotion coverage by phase when review is phase-scoped', () => {
+    const review = require('../thrunt-god/bin/lib/review.cjs');
+    writePromotionReceipt(tmpDir, 'PROM-20260327-P01', '01-detection/FINDINGS.md');
+    writePromotionReceipt(tmpDir, 'PROM-20260327-P02', '02-detection/FINDINGS.md');
+
+    const result = review.scoreEvidenceQuality(tmpDir, { phase: '01' });
+    assert.equal(result.promotion_coverage.promoted_count, 1);
+    assert.equal(result.promotion_coverage.bonus, 0.05);
+    assert.deepEqual(result.promotion_coverage.receipts, ['PROM-20260327-P01']);
   });
 
   it('score is floored at 0.0 and rounded to 4 decimal places', () => {

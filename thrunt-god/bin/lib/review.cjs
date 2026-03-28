@@ -158,6 +158,24 @@ function readPromotionReceipts(cwd) {
   return receipts;
 }
 
+function promotionMatchesPhase(cwd, receipt, phase) {
+  if (!phase) return true;
+  if (receipt && typeof receipt.source_phase === 'string') {
+    return receipt.source_phase.startsWith(phase);
+  }
+  if (!receipt || !receipt.candidate_id) return false;
+
+  const candidatePath = path.join(planningPaths(cwd).detections, `${receipt.candidate_id}.json`);
+  if (!fs.existsSync(candidatePath)) return false;
+
+  try {
+    const candidate = JSON.parse(fs.readFileSync(candidatePath, 'utf-8'));
+    return typeof candidate.source_phase === 'string' && candidate.source_phase.startsWith(phase);
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Core Functions
 // ---------------------------------------------------------------------------
@@ -281,7 +299,9 @@ function scoreEvidenceQuality(cwd, options) {
   const blindSpots = detectBlindSpots(cwd, options);
   const chainOfCustody = buildChainOfCustody(cwd, options);
 
-  const promotionReceipts = readPromotionReceipts(cwd);
+  const promotionReceipts = readPromotionReceipts(cwd).filter(receipt =>
+    promotionMatchesPhase(cwd, receipt, options && options.phase)
+  );
   const promotionBonus = Math.min(0.15, promotionReceipts.length * 0.05);
 
   const avgDimensions = (receiptScore + integrityScore + provenanceScore) / 3;

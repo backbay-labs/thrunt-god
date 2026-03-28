@@ -101,6 +101,69 @@ function listFeedback(cwd, options = {}) {
 
 const YIELD_BASELINES = { connector: 50, pack: 20, hypothesis: 30 };
 
+function computePackExecutionStats(huntMetrics, packMetrics) {
+  const hunts = huntMetrics.map((record, index) => ({
+    index,
+    record,
+    timestamp_ms: Date.parse(record.timestamp || ''),
+  }));
+  const packs = packMetrics.map(record => ({
+    record,
+    timestamp_ms: Date.parse(record.timestamp || ''),
+  }));
+  const matchedHuntIndexes = new Set();
+
+  hunts.sort((a, b) => {
+    if (Number.isFinite(a.timestamp_ms) && Number.isFinite(b.timestamp_ms)) {
+      return a.timestamp_ms - b.timestamp_ms;
+    }
+    if (Number.isFinite(a.timestamp_ms)) return -1;
+    if (Number.isFinite(b.timestamp_ms)) return 1;
+    return a.index - b.index;
+  });
+  packs.sort((a, b) => {
+    if (Number.isFinite(a.timestamp_ms) && Number.isFinite(b.timestamp_ms)) {
+      return a.timestamp_ms - b.timestamp_ms;
+    }
+    if (Number.isFinite(a.timestamp_ms)) return -1;
+    if (Number.isFinite(b.timestamp_ms)) return 1;
+    return 0;
+  });
+
+  let totalEvents = 0;
+  let okCount = 0;
+  let executionCount = 0;
+
+  for (const pack of packs) {
+    executionCount++;
+    totalEvents += pack.record.total_events || 0;
+    if (pack.record.failed_targets === 0) okCount++;
+
+    const targetCount = Math.max(0, Math.trunc(pack.record.target_count || 0));
+    if (!Number.isFinite(pack.timestamp_ms) || targetCount === 0) continue;
+
+    let matched = 0;
+    for (let i = hunts.length - 1; i >= 0 && matched < targetCount; i--) {
+      const hunt = hunts[i];
+      if (matchedHuntIndexes.has(hunt.index)) continue;
+      if (!Number.isFinite(hunt.timestamp_ms)) continue;
+      if (hunt.timestamp_ms <= pack.timestamp_ms) {
+        matchedHuntIndexes.add(hunt.index);
+        matched++;
+      }
+    }
+  }
+
+  for (const hunt of hunts) {
+    if (matchedHuntIndexes.has(hunt.index)) continue;
+    executionCount++;
+    totalEvents += (hunt.record.evidence_yield && hunt.record.evidence_yield.events) || 0;
+    if (hunt.record.outcome === 'ok') okCount++;
+  }
+
+  return { totalEvents, okCount, executionCount };
+}
+
 function scoreEntity(cwd, entityType, entityId) {
   const filterKey = entityType === 'connector' ? 'connector_id'
     : entityType === 'pack' ? 'pack_id'
@@ -113,15 +176,16 @@ function scoreEntity(cwd, entityType, entityId) {
   const baseline = YIELD_BASELINES[entityType] || 30;
   let totalEvents = 0;
   let okCount = 0;
-  const executionCount = huntMetrics.length + packMetrics.length;
+  let executionCount = 0;
 
-  for (const r of huntMetrics) {
-    totalEvents += (r.evidence_yield && r.evidence_yield.events) || 0;
-    if (r.outcome === 'ok') okCount++;
-  }
-  for (const r of packMetrics) {
-    totalEvents += r.total_events || 0;
-    if (r.failed_targets === 0) okCount++;
+  if (entityType === 'pack') {
+    ({ totalEvents, okCount, executionCount } = computePackExecutionStats(huntMetrics, packMetrics));
+  } else {
+    executionCount = huntMetrics.length;
+    for (const r of huntMetrics) {
+      totalEvents += (r.evidence_yield && r.evidence_yield.events) || 0;
+      if (r.outcome === 'ok') okCount++;
+    }
   }
 
   const avgEvents = executionCount > 0 ? totalEvents / executionCount : 0;
