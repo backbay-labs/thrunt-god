@@ -175,7 +175,7 @@ function recordPromotionOutcome(cwd, candidate, promotionReceipt) {
     record_type: 'promotion_outcome',
     timestamp: ts,
     candidate_id: candId,
-    finding_id: (candidate && candidate.finding_id) || null,
+    finding_id: (candidate && candidate.source_finding_id) || null,
     technique_ids: (candidate && candidate.technique_ids) || [],
     promotion_status: isPromotion ? 'promoted' : isRejection ? 'rejected' : 'unknown',
     readiness_score: (candidate && candidate.promotion_readiness) || 0,

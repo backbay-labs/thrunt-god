@@ -1133,8 +1133,8 @@ function checkPromotionGates(candidate, cwd, options) {
       : 'No backtest found for candidate',
   });
 
-  const threshold = config.promotion_readiness_threshold || 0.6;
-  const readiness = candidate.promotion_readiness || 0;
+  const threshold = config.promotion_readiness_threshold ?? 0.6;
+  const readiness = candidate.promotion_readiness ?? 0;
   const readinessPassed = readiness >= threshold;
   gates.push({
     gate: 'readiness_threshold',
@@ -1229,7 +1229,7 @@ function promoteDetection(cwd, candidate, options) {
   const hooksEnabled = config.promotion_hooks_enabled;
   const hooks = options && options.hooks;
   if (hooksEnabled && hooks) {
-    applyPromotionHooks(candidate, null, hooks);
+    candidate = applyPromotionHooks(candidate, null, hooks);
   }
 
   const ruleResult = writePromotedRule(candidate, cwd);
