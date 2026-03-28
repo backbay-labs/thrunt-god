@@ -985,7 +985,7 @@ function writeBacktestResult(backtestsDir, backtestResult) {
  */
 function updateCandidateReadiness(detectionsDir, candidate, delta) {
   const baseScore = scorePromotionReadiness(candidate, {
-    finding_status: candidate.confidence,
+    finding_status: { high: 'confirmed', medium: 'supported', low: 'inconclusive' }[candidate.confidence] || 'unknown',
   });
   candidate.promotion_readiness = Math.max(0, Math.min(1,
     Math.round((baseScore + delta) * 10000) / 10000
@@ -1005,7 +1005,7 @@ function updateCandidateReadiness(detectionsDir, candidate, delta) {
  * Compute promotion_readiness_delta from validation and noise results.
  */
 function computeReadinessDelta(validation, noiseScore) {
-  const validationPenalty = validation.passed ? 0 : -0.2;
+  const validationPenalty = validation.valid ? 0 : -0.2;
   const noisePenalties = { high: -0.15, medium: -0.05, low: 0 };
   const noisePenalty = noisePenalties[noiseScore.noise_risk] || 0;
   return validationPenalty + noisePenalty;
