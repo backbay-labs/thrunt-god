@@ -374,14 +374,18 @@ describe('feedback semantics and detection filtering', () => {
     const allSummary = telemetry.summarizeMetrics(tmpDir);
     const filteredSummary = telemetry.summarizeMetrics(tmpDir, { connector_id: 'splunk' });
     const recommendations = recommend.recommendPacks(tmpDir, {});
+    const packRecommendation = recommendations.recommendations.find(rec => rec.entity_id === 'pack.reasoning');
 
     assert.equal(allSummary.yield_summary.noisy, 1);
     assert.equal(filteredSummary.total_executions, 1);
     assert.equal(filteredSummary.yield_summary.noisy, 1);
-    assert.ok(recommendations.recommendations.length > 0);
-    assert.ok(recommendations.recommendations.every(rec =>
-      rec.reasoning.every(reason => !reason.includes('>100 events avg'))
-    ));
+    assert.ok(packRecommendation, 'expected recommendation for pack.reasoning');
+    assert.ok(
+      packRecommendation.reasoning.includes('High yield in prior runs relative to the entity baseline')
+    );
+    assert.ok(
+      packRecommendation.reasoning.every(reason => !reason.includes('>100 events avg'))
+    );
   });
 
   it('fires promotion hooks once in the correct sequence during promotion', () => {
