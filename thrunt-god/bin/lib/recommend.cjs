@@ -1,35 +1,9 @@
-/**
- * Recommend — Recommendation engine and adaptive planning hints.
- *
- * Uses scoring (Phase 21) and telemetry (Phase 20) outputs to recommend
- * which packs, connectors, and hypotheses to prioritize. Each recommendation
- * includes a reasoning array so operators can audit and override rankings.
- *
- * Provides:
- * - recommendPacks(cwd, options) — ranked pack recommendations with reasoning
- * - recommendConnectors(cwd, options) — ranked connector recommendations
- * - recommendHypotheses(cwd, options) — ranked hypothesis recommendations
- * - generatePlanningHints(cwd, options) — aggregate planning hints
- * - cmdRecommend(cwd, entityType, filterArgs, raw) — CLI: recommend
- * - cmdPlanningHints(cwd, raw) — CLI: planning-hints
- */
-
 'use strict';
 
 const { output, error } = require('./core.cjs');
 const { computeEntityScores } = require('./scoring.cjs');
 const { summarizeMetrics } = require('./telemetry.cjs');
 
-// ---------------------------------------------------------------------------
-// Recommendation builders
-// ---------------------------------------------------------------------------
-
-/**
- * Build reasoning array for a scored entity.
- * @param {object} score - entity score object from scoring.cjs
- * @param {object} [extra] - additional context { by_connector, by_pack, by_hypothesis }
- * @returns {string[]} reasoning lines
- */
 function buildBaseReasoning(score) {
   const reasons = [];
 
@@ -55,9 +29,6 @@ function buildBaseReasoning(score) {
   return reasons;
 }
 
-/**
- * Apply filters (limit, min_score) and format results.
- */
 function applyFilters(scores, options) {
   let filtered = scores;
   const filtersApplied = [];
@@ -76,13 +47,6 @@ function applyFilters(scores, options) {
   return { filtered, filtersApplied };
 }
 
-// ---------------------------------------------------------------------------
-// Recommendation functions
-// ---------------------------------------------------------------------------
-
-/**
- * Recommend packs ranked by composite score with reasoning.
- */
 function recommendPacks(cwd, options = {}) {
   const scores = computeEntityScores(cwd, 'pack');
   const summary = summarizeMetrics(cwd);
@@ -90,7 +54,6 @@ function recommendPacks(cwd, options = {}) {
   const recommendations = scores.map((score, i) => {
     const reasoning = buildBaseReasoning(score);
 
-    // Pack-specific reasoning from summary
     const packData = summary.by_pack[score.entity_id];
     if (packData) {
       if (packData.runs > 5) {
@@ -117,14 +80,10 @@ function recommendPacks(cwd, options = {}) {
   };
 }
 
-/**
- * Recommend connectors ranked by composite score with reasoning.
- */
 function recommendConnectors(cwd, options = {}) {
   const scores = computeEntityScores(cwd, 'connector');
   const summary = summarizeMetrics(cwd);
 
-  // Find fastest connector for comparison
   const connectorData = summary.by_connector;
   let fastestId = null;
   let fastestDuration = Infinity;
@@ -138,7 +97,6 @@ function recommendConnectors(cwd, options = {}) {
   const recommendations = scores.map((score, i) => {
     const reasoning = buildBaseReasoning(score);
 
-    // Connector-specific reasoning
     const data = connectorData[score.entity_id];
     if (data) {
       if (score.entity_id === fastestId) {
@@ -168,9 +126,6 @@ function recommendConnectors(cwd, options = {}) {
   };
 }
 
-/**
- * Recommend hypotheses ranked by composite score with reasoning.
- */
 function recommendHypotheses(cwd, options = {}) {
   const scores = computeEntityScores(cwd, 'hypothesis');
   const summary = summarizeMetrics(cwd);
@@ -178,7 +133,6 @@ function recommendHypotheses(cwd, options = {}) {
   const recommendations = scores.map((score, i) => {
     const reasoning = buildBaseReasoning(score);
 
-    // Hypothesis-specific reasoning
     const data = summary.by_hypothesis[score.entity_id];
     if (data) {
       if (data.connectors_used.length > 1) {
@@ -212,9 +166,6 @@ function recommendHypotheses(cwd, options = {}) {
 // Planning hints
 // ---------------------------------------------------------------------------
 
-/**
- * Generate aggregate planning hints from scores and metrics.
- */
 function generatePlanningHints(cwd, options = {}) {
   const packScores = computeEntityScores(cwd, 'pack');
   const connectorScores = computeEntityScores(cwd, 'connector');
@@ -225,7 +176,6 @@ function generatePlanningHints(cwd, options = {}) {
   let totalScore = 0;
   let coverageGaps = 0;
 
-  // Top-scoring packs
   for (const s of packScores) {
     totalScored++;
     totalScore += s.composite_score;
@@ -241,7 +191,6 @@ function generatePlanningHints(cwd, options = {}) {
     }
   }
 
-  // Low-scoring connectors
   for (const s of connectorScores) {
     totalScored++;
     totalScore += s.composite_score;
@@ -254,7 +203,6 @@ function generatePlanningHints(cwd, options = {}) {
     }
   }
 
-  // Hypothesis insights
   for (const s of hypothesisScores) {
     totalScored++;
     totalScore += s.composite_score;
@@ -267,12 +215,10 @@ function generatePlanningHints(cwd, options = {}) {
     }
   }
 
-  // Coverage gaps
   if (coverageGaps > 0) {
     hints.push(`Coverage gap: no execution data for ${coverageGaps} entities — untested packs/connectors need runs`);
   }
 
-  // No data at all
   if (totalScored === 0) {
     hints.push('No scoring data available yet. Run hunts to generate recommendations.');
   }
@@ -293,9 +239,6 @@ function generatePlanningHints(cwd, options = {}) {
 // CLI handlers
 // ---------------------------------------------------------------------------
 
-/**
- * CLI: recommend packs|connectors|hypotheses
- */
 function cmdRecommend(cwd, entityType, filterArgs, raw) {
   const args = filterArgs || [];
   const options = {};
@@ -342,9 +285,6 @@ function cmdRecommend(cwd, entityType, filterArgs, raw) {
   output(result, raw, lines.join('\n'));
 }
 
-/**
- * CLI: planning-hints
- */
 function cmdPlanningHints(cwd, raw) {
   const result = generatePlanningHints(cwd);
 
@@ -366,10 +306,6 @@ function cmdPlanningHints(cwd, raw) {
 
   output(result, raw, lines.join('\n'));
 }
-
-// ---------------------------------------------------------------------------
-// Exports
-// ---------------------------------------------------------------------------
 
 module.exports = {
   recommendPacks,

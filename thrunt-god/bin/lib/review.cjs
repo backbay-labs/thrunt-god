@@ -2,17 +2,7 @@
  * Evidence Quality Review — Scoring, publish gating, contradiction detection,
  * blind-spot surfacing, chain-of-custody timeline, and Markdown rendering.
  *
- * This module is a pure consumer of manifest.cjs, core.cjs, and frontmatter.cjs.
  * One-way dependency: manifest.cjs and evidence.cjs must NEVER import from review.cjs.
- *
- * Provides:
- * - scoreEvidenceQuality(cwd, options) — composite quality score across three dimensions
- * - checkPublishGate(scoreResult, options) — pass/fail/force gate on quality score
- * - detectContradictions(cwd, options) — find hypotheses with conflicting findings
- * - detectBlindSpots(cwd, options) — find hypotheses with zero receipts
- * - buildChainOfCustody(cwd, options) — chronological provenance timeline from manifests
- * - renderReviewMarkdown(result, gateResult) — Markdown report of review results
- * - cmdEvidenceReview(cwd, options, raw) — CLI entry point for evidence review
  */
 
 'use strict';
@@ -27,10 +17,6 @@ const { extractFrontmatter } = require('./frontmatter.cjs');
 // Internal Helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Read all .json manifest files from the MANIFESTS directory.
- * Returns array of parsed manifest objects. Skips corrupt files.
- */
 function readManifests(cwd, options) {
   const manifestsDir = planningPaths(cwd).manifests;
   if (!fs.existsSync(manifestsDir)) return [];
@@ -43,17 +29,14 @@ function readManifests(cwd, options) {
       const content = fs.readFileSync(path.join(manifestsDir, file), 'utf-8');
       manifests.push(JSON.parse(content));
     } catch {
-      // Skip corrupt JSON files
+      // skip corrupt files
     }
   }
 
-  // Phase filtering: if options.phase is set, filter to manifests with matching phase tag
   if (options && options.phase) {
     const phaseTag = `phase:${options.phase}`;
     return manifests.filter(m => {
-      // Check tags array for phase:XX
       if (Array.isArray(m.tags) && m.tags.includes(phaseTag)) return true;
-      // Check artifact paths for phase directory
       if (Array.isArray(m.artifacts)) {
         return m.artifacts.some(a =>
           a.path && a.path.includes(`phases/${options.phase}`)
@@ -66,10 +49,7 @@ function readManifests(cwd, options) {
   return manifests;
 }
 
-/**
- * Read all hypothesis IDs from HYPOTHESES.md.
- * Looks for lines matching `- [ ] **HYP-XX**` or `- [x] **HYP-XX**`.
- */
+// Parses `- [ ] **HYP-XX**` / `- [x] **HYP-XX**` lines from HYPOTHESES.md.
 function readHypothesisIds(cwd) {
   const hypPath = planningPaths(cwd).hypotheses;
   if (!fs.existsSync(hypPath)) return [];
@@ -84,10 +64,7 @@ function readHypothesisIds(cwd) {
   return ids;
 }
 
-/**
- * Read all receipt files from RECEIPTS/ and extract which hypothesis IDs they reference.
- * Returns a Set of hypothesis IDs that have at least one receipt.
- */
+// Returns Set of hypothesis IDs that have at least one receipt file.
 function readReceiptHypothesisIds(cwd) {
   const receiptsDir = planningPaths(cwd).receipts;
   if (!fs.existsSync(receiptsDir)) return new Set();
@@ -97,7 +74,6 @@ function readReceiptHypothesisIds(cwd) {
 
   for (const file of files) {
     const content = fs.readFileSync(path.join(receiptsDir, file), 'utf-8');
-    // Extract hypothesis IDs from frontmatter related_hypotheses or content
     const hypPattern = /\b(HYP-\d+)\b/g;
     let match;
     while ((match = hypPattern.exec(content)) !== null) {
@@ -108,11 +84,7 @@ function readReceiptHypothesisIds(cwd) {
   return covered;
 }
 
-/**
- * Scan FINDINGS.md files across all phase directories for finding items.
- * Each finding has: id, description, status, hypothesis_id.
- * Returns ALL findings (not just unresolved).
- */
+// Scan FINDINGS.md across phase dirs. Returns all findings (not just unresolved).
 function scanAllFindings(cwd, options) {
   const phasesDir = planningPaths(cwd).phases;
   if (!fs.existsSync(phasesDir)) return [];
@@ -128,7 +100,6 @@ function scanAllFindings(cwd, options) {
     return [];
   }
 
-  // Phase filtering
   if (options && options.phase) {
     dirs = dirs.filter(d => d.startsWith(options.phase));
   }
@@ -144,7 +115,6 @@ function scanAllFindings(cwd, options) {
 
     for (const file of files) {
       const content = fs.readFileSync(path.join(phaseDir, file), 'utf-8');
-      // Parse finding lines: - **F-001**: description | status: confirmed | hypothesis: HYP-01
       const findingPattern = /^-\s*\*\*([^*]+)\*\*:\s*(.+?)\s*\|\s*status:\s*(\w+)\s*\|\s*hypothesis:\s*([A-Z]+-\d+)/gm;
       let match;
       while ((match = findingPattern.exec(content)) !== null) {
@@ -162,11 +132,8 @@ function scanAllFindings(cwd, options) {
   return findings;
 }
 
-/**
- * Read promotion receipts (PROM-*.json) directly from DETECTIONS/promotions/.
- * Does NOT import detection.cjs to avoid circular dependency.
- * Returns array of parsed receipt objects.
- */
+// Reads PROM-*.json from DETECTIONS/promotions/ directly (not via detection.cjs,
+// to avoid circular dependency).
 function readPromotionReceipts(cwd) {
   const promotionsDir = path.join(planningPaths(cwd).detections, 'promotions');
   if (!fs.existsSync(promotionsDir)) return [];
@@ -181,11 +148,11 @@ function readPromotionReceipts(cwd) {
         const content = fs.readFileSync(path.join(promotionsDir, file), 'utf-8');
         receipts.push(JSON.parse(content));
       } catch {
-        // Skip corrupt receipt files
+        // skip corrupt files
       }
     }
   } catch {
-    // Promotions directory unreadable
+    // unreadable
   }
 
   return receipts;
@@ -195,19 +162,11 @@ function readPromotionReceipts(cwd) {
 // Core Functions
 // ---------------------------------------------------------------------------
 
-/**
- * Detect contradictions — hypotheses that have findings with both
- * "confirmed" and "refuted" statuses.
- *
- * @param {string} cwd - project root
- * @param {object} options - { phase?: string }
- * @returns {Array<{ hypothesis_id, conflicting_findings }>}
- */
+// Hypotheses with both "confirmed" and "refuted" findings.
 function detectContradictions(cwd, options) {
   const findings = scanAllFindings(cwd, options);
   if (findings.length === 0) return [];
 
-  // Group findings by hypothesis_id
   const byHypothesis = {};
   for (const f of findings) {
     if (!byHypothesis[f.hypothesis_id]) {
@@ -236,13 +195,6 @@ function detectContradictions(cwd, options) {
   return contradictions;
 }
 
-/**
- * Detect blind spots — hypotheses that have zero receipts.
- *
- * @param {string} cwd - project root
- * @param {object} options - (reserved for future phase filtering)
- * @returns {string[]} hypothesis IDs with no receipts
- */
 function detectBlindSpots(cwd, options) {
   const hypothesisIds = readHypothesisIds(cwd);
   if (hypothesisIds.length === 0) return [];
@@ -251,13 +203,6 @@ function detectBlindSpots(cwd, options) {
   return hypothesisIds.filter(id => !coveredIds.has(id));
 }
 
-/**
- * Build chain-of-custody timeline from manifest provenance.
- *
- * @param {string} cwd - project root
- * @param {object} options - { phase?: string }
- * @returns {Array<{ manifest_id, signer_type, signer_id, signed_at, runtime_name, thrunt_version }>}
- */
 function buildChainOfCustody(cwd, options) {
   const manifests = readManifests(cwd, options);
   const chain = [];
@@ -281,7 +226,6 @@ function buildChainOfCustody(cwd, options) {
     chain.push(entry);
   }
 
-  // Sort chronologically by signed_at
   chain.sort((a, b) => {
     if (!a.signed_at && !b.signed_at) return 0;
     if (!a.signed_at) return 1;
@@ -292,25 +236,18 @@ function buildChainOfCustody(cwd, options) {
   return chain;
 }
 
-/**
- * Score evidence quality across three dimensions plus contradiction penalty.
- *
- * @param {string} cwd - project root
- * @param {object} options - { phase?: string }
- * @returns {object} quality score result
- */
+// Composite quality score: receipt coverage + integrity + provenance,
+// minus contradiction penalty, plus promotion bonus.
 function scoreEvidenceQuality(cwd, options) {
   const config = loadConfig(cwd);
   const threshold = config.publish_quality_threshold || 0.7;
 
-  // --- Receipt coverage ---
   const hypothesisIds = readHypothesisIds(cwd);
   const coveredIds = readReceiptHypothesisIds(cwd);
   const receiptTotal = hypothesisIds.length;
   const receiptCovered = hypothesisIds.filter(id => coveredIds.has(id)).length;
   const receiptScore = receiptTotal === 0 ? 1.0 : receiptCovered / receiptTotal;
 
-  // --- Integrity ---
   const manifests = readManifests(cwd, options);
   const integrityTotal = manifests.length;
   let integrityPassed = 0;
@@ -329,7 +266,6 @@ function scoreEvidenceQuality(cwd, options) {
   }
   const integrityScore = integrityTotal === 0 ? 1.0 : integrityPassed / integrityTotal;
 
-  // --- Provenance completeness ---
   let withSigner = 0;
   for (const manifest of manifests) {
     if (manifest.provenance && manifest.provenance.signer && manifest.provenance.signer.signer_id) {
@@ -339,25 +275,18 @@ function scoreEvidenceQuality(cwd, options) {
   const provenanceTotal = manifests.length;
   const provenanceScore = provenanceTotal === 0 ? 1.0 : withSigner / provenanceTotal;
 
-  // --- Contradictions ---
   const contradictions = detectContradictions(cwd, options);
   const contradictionPenalty = 0.1 * contradictions.length;
 
-  // --- Blind spots ---
   const blindSpots = detectBlindSpots(cwd, options);
-
-  // --- Chain of custody ---
   const chainOfCustody = buildChainOfCustody(cwd, options);
 
-  // --- Promotion coverage bonus ---
   const promotionReceipts = readPromotionReceipts(cwd);
   const promotionBonus = Math.min(0.15, promotionReceipts.length * 0.05);
 
-  // --- Composite score ---
   const avgDimensions = (receiptScore + integrityScore + provenanceScore) / 3;
   const score = Math.min(1, Math.max(0, avgDimensions - contradictionPenalty + promotionBonus));
-  // Round to avoid floating-point noise
-  const roundedScore = Math.round(score * 10000) / 10000;
+  const roundedScore = Math.round(score * 10000) / 10000; // avoid floating-point noise
 
   return {
     score: roundedScore,
@@ -396,19 +325,11 @@ function scoreEvidenceQuality(cwd, options) {
   };
 }
 
-/**
- * Check publish gate — pass/fail/force decision based on quality score.
- *
- * @param {object} scoreResult - output of scoreEvidenceQuality
- * @param {object} options - { force?: boolean, override_reason?: string }
- * @returns {object} gate result
- */
 function checkPublishGate(scoreResult, options) {
   const threshold = scoreResult.threshold || 0.7;
   const force = options && options.force;
   const passed = scoreResult.score >= threshold;
 
-  // Determine which dimensions are below threshold
   const failedDimensions = [];
   if (scoreResult.dimensions) {
     for (const [name, dim] of Object.entries(scoreResult.dimensions)) {
@@ -453,20 +374,12 @@ function checkPublishGate(scoreResult, options) {
   };
 }
 
-/**
- * Render a Markdown report of the evidence quality review.
- *
- * @param {object} result - output of scoreEvidenceQuality
- * @param {object} gateResult - output of checkPublishGate
- * @returns {string} Markdown string
- */
 function renderReviewMarkdown(result, gateResult) {
   const lines = [];
 
   lines.push('# Evidence Quality Review');
   lines.push('');
 
-  // Score Summary
   lines.push('## Score Summary');
   lines.push('');
   lines.push(`- **Composite Score:** ${result.score}`);
@@ -477,7 +390,6 @@ function renderReviewMarkdown(result, gateResult) {
   }
   lines.push('');
 
-  // Dimension Breakdown
   lines.push('## Dimension Breakdown');
   lines.push('');
   lines.push('| Dimension | Score | Detail |');
@@ -491,7 +403,6 @@ function renderReviewMarkdown(result, gateResult) {
   }
   lines.push('');
 
-  // Contradictions
   lines.push('## Contradictions');
   lines.push('');
   if (result.contradictions.length === 0) {
@@ -508,7 +419,6 @@ function renderReviewMarkdown(result, gateResult) {
   }
   lines.push('');
 
-  // Blind Spots
   lines.push('## Blind Spots');
   lines.push('');
   if (result.blind_spots.length === 0) {
@@ -522,7 +432,6 @@ function renderReviewMarkdown(result, gateResult) {
   }
   lines.push('');
 
-  // Chain of Custody
   lines.push('## Chain of Custody');
   lines.push('');
   if (result.chain_of_custody.length === 0) {
@@ -536,7 +445,6 @@ function renderReviewMarkdown(result, gateResult) {
   }
   lines.push('');
 
-  // Gate Status
   lines.push('## Gate Status');
   lines.push('');
   if (gateResult.forced) {
@@ -555,13 +463,6 @@ function renderReviewMarkdown(result, gateResult) {
   return lines.join('\n');
 }
 
-/**
- * CLI entry point for evidence review.
- *
- * @param {string} cwd - project root
- * @param {object} options - { phase?, format?, force? }
- * @param {boolean} raw - if true, output JSON; otherwise output Markdown
- */
 function cmdEvidenceReview(cwd, options, raw) {
   const scoreResult = scoreEvidenceQuality(cwd, options || {});
   const gateResult = checkPublishGate(scoreResult, options || {});
@@ -575,15 +476,10 @@ function cmdEvidenceReview(cwd, options, raw) {
     output(result, raw);
   } else {
     const md = renderReviewMarkdown(scoreResult, gateResult);
-    // Use raw=true with md as rawValue so output() writes the Markdown text
-    // (when raw is false, output() always serializes to JSON)
+    // Pass raw=true so output() emits the markdown string instead of JSON
     output(result, true, md);
   }
 }
-
-// ---------------------------------------------------------------------------
-// Exports
-// ---------------------------------------------------------------------------
 
 module.exports = {
   scoreEvidenceQuality,

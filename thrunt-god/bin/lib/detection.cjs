@@ -692,21 +692,12 @@ const FORMAT_EXTENSIONS = {
   kql: '.kql',
 };
 
-/**
- * Generate a backtest ID following the makeCandidateId pattern.
- * Format: BT-{YYYYMMDDHHMMSS}-{RANDOM8}
- */
 function makeBacktestId() {
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `BT-${stamp}-${suffix}`;
 }
 
-/**
- * Validate Sigma structural requirements.
- * Required: title (string), logsource (object), detection (object with condition).
- * Warns on: empty logsource (no category/product/service), empty selection.
- */
 function validateSigmaStructure(candidate) {
   const errors = [];
   const warnings = [];
@@ -730,10 +721,6 @@ function validateSigmaStructure(candidate) {
   return { valid: errors.length === 0, errors, warnings };
 }
 
-/**
- * Validate stub format structure (SPL/EQL/KQL).
- * Checks detection_logic is non-empty. Flags as stub with limited validation.
- */
 function validateStubStructure(candidate, format) {
   const errors = [];
   const warnings = [`stub format (${format}) -- limited validation`];
@@ -744,14 +731,6 @@ function validateStubStructure(candidate, format) {
   return { valid: errors.length === 0, errors, warnings };
 }
 
-/**
- * Validate candidate structure per target format.
- * Dispatches to format-specific validators.
- *
- * @param {object} candidate
- * @param {string} format - sigma, splunk_spl, elastic_eql, kql
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
- */
 function validateStructure(candidate, format) {
   if (format === 'sigma') return validateSigmaStructure(candidate);
   if (format === 'splunk_spl' || format === 'elastic_eql' || format === 'kql') {
@@ -760,21 +739,11 @@ function validateStructure(candidate, format) {
   return { valid: false, errors: [`unsupported format: ${format}`], warnings: [] };
 }
 
-/**
- * Score noise risk for a detection candidate.
- *
- * Stub formats (SPL/EQL/KQL) return default medium risk with stub flag.
- * Sigma: scores detection section content for wildcard density,
- * field specificity, time window breadth, and negation usage.
- *
- * @param {object} candidate
- * @param {string} renderedContent
- * @returns {{ noise_risk: string, dimensions: object, score: number, stub?: boolean }}
- */
+// Stub formats return default medium risk. Sigma: scores wildcard density,
+// field specificity, time window breadth, and negation usage.
 function scoreNoise(candidate, renderedContent) {
   const format = candidate.target_format;
 
-  // Stub formats get default medium noise
   if (format === 'splunk_spl' || format === 'elastic_eql' || format === 'kql') {
     return {
       noise_risk: 'medium',
@@ -789,27 +758,23 @@ function scoreNoise(candidate, renderedContent) {
     };
   }
 
-  // Sigma: extract detection section from rendered content
   const detectionContent = extractDetectionSection(renderedContent);
   const dl = (candidate.detection_logic && candidate.detection_logic.detection) || {};
   const selection = dl.selection || {};
   const condition = (dl.condition || '').toLowerCase();
 
-  // Wildcard density
   const wildcardCount = (detectionContent.match(/\*/g) || []).length;
   const tokenCount = detectionContent.split(/\s+/).filter(Boolean).length;
   const wildcardDensity = Math.min(1.0, wildcardCount / Math.max(tokenCount * 0.1, 1));
 
-  // Field specificity: more named fields = lower noise
   const fieldCount = Object.keys(selection).length;
   const fieldSpecificity = Math.max(0, 1.0 - (fieldCount / 5));
 
-  // Time window breadth: 1.0 if no timeframe, 0.0 if timeframe present
   const hasTimeframe = candidate.detection_logic &&
     (candidate.detection_logic.timeframe || (dl.timeframe));
   const timeWindowBreadth = hasTimeframe ? 0.0 : 1.0;
 
-  // Negation only: 1.0 if condition uses only NOT/exclude without positive selection
+  // 1.0 if condition uses only NOT/exclude without positive selection
   const hasPositiveSelection = /\bselection\b/.test(condition) && !/^\s*not\b/i.test(condition);
   const hasNegation = /\bnot\b/i.test(condition) || /\bexclude\b/i.test(condition);
   const negationOnly = (hasNegation && !hasPositiveSelection) ? 1.0 : 0.0;
@@ -832,10 +797,6 @@ function scoreNoise(candidate, renderedContent) {
   return { noise_risk: noiseRisk, dimensions, score: roundedScore };
 }
 
-/**
- * Extract the detection section from rendered Sigma YAML content.
- * Returns lines between 'detection:' and the next top-level key.
- */
 function extractDetectionSection(content) {
   const lines = content.split('\n');
   let collecting = false;
@@ -858,13 +819,6 @@ function extractDetectionSection(content) {
   return detectionLines.join('\n');
 }
 
-/**
- * Validate expected outcome schema.
- * Returns { valid, errors, warnings }.
- *
- * @param {object|null|undefined} outcomes
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
- */
 function validateExpectedOutcomes(outcomes) {
   if (outcomes === null || outcomes === undefined) {
     return { valid: true, errors: [], warnings: ['no expected outcomes defined'] };
@@ -873,20 +827,17 @@ function validateExpectedOutcomes(outcomes) {
   const errors = [];
   const warnings = [];
 
-  // expected_matches must have numeric min and max
   if (!outcomes.expected_matches ||
       typeof outcomes.expected_matches.min !== 'number' ||
       typeof outcomes.expected_matches.max !== 'number') {
     errors.push('expected_matches must have numeric min and max');
   }
 
-  // expected_noise_level must be low/medium/high
   const validLevels = ['low', 'medium', 'high'];
   if (!validLevels.includes(outcomes.expected_noise_level)) {
     errors.push('expected_noise_level must be low, medium, or high');
   }
 
-  // time_window must be a string
   if (outcomes.time_window !== undefined && typeof outcomes.time_window !== 'string') {
     errors.push('time_window must be a string');
   }
@@ -894,20 +845,9 @@ function validateExpectedOutcomes(outcomes) {
   return { valid: errors.length === 0, errors, warnings };
 }
 
-/**
- * Generate detection rules from existing candidates.
- *
- * Reads candidates from DETECTIONS/, renders each via renderCandidate(),
- * and writes rule files to DETECTIONS/rules/ with format-specific extensions.
- *
- * @param {string} cwd - project root
- * @param {object} options - { phase?, candidate?, format? }
- * @returns {object} generation report
- */
 function generateDetectionRules(cwd, options) {
   let candidates = listDetectionCandidates(cwd, options || {});
 
-  // Candidate ID filter
   if (options && options.candidate) {
     candidates = candidates.filter(c => c.candidate_id === options.candidate);
   }
@@ -925,7 +865,6 @@ function generateDetectionRules(cwd, options) {
   };
 
   for (const candidate of candidates) {
-    // Skip candidates with missing or empty detection_logic
     if (!candidate.detection_logic ||
         (typeof candidate.detection_logic === 'object' &&
          Object.keys(candidate.detection_logic).length === 0)) {
@@ -947,7 +886,6 @@ function generateDetectionRules(cwd, options) {
       continue;
     }
 
-    // Ensure rules/ directory exists
     tryMkdir(rulesDir);
 
     const ext = FORMAT_EXTENSIONS[result.format] || '.txt';
@@ -969,9 +907,6 @@ function generateDetectionRules(cwd, options) {
   return report;
 }
 
-/**
- * Write a backtest result to backtests/ atomically (write to tmp, rename).
- */
 function writeBacktestResult(backtestsDir, backtestResult) {
   tryMkdir(backtestsDir);
   const tmpFile = path.join(backtestsDir, `.tmp-${backtestResult.backtest_id}.json`);
@@ -980,9 +915,6 @@ function writeBacktestResult(backtestsDir, backtestResult) {
   fs.renameSync(tmpFile, finalFile);
 }
 
-/**
- * Update candidate promotion_readiness with backtest delta and rewrite to disk.
- */
 function updateCandidateReadiness(detectionsDir, candidate, delta) {
   const baseScore = scorePromotionReadiness(candidate, {
     finding_status: { high: 'confirmed', medium: 'supported', low: 'inconclusive' }[candidate.confidence] || 'unknown',
@@ -1001,9 +933,6 @@ function updateCandidateReadiness(detectionsDir, candidate, delta) {
   }
 }
 
-/**
- * Compute promotion_readiness_delta from validation and noise results.
- */
 function computeReadinessDelta(validation, noiseScore) {
   const validationPenalty = validation.valid ? 0 : -0.2;
   const noisePenalties = { high: -0.15, medium: -0.05, low: 0 };
@@ -1011,28 +940,15 @@ function computeReadinessDelta(validation, noiseScore) {
   return validationPenalty + noisePenalty;
 }
 
-/**
- * Backtest a single detection candidate.
- *
- * Renders the candidate, runs structural validation and noise scoring,
- * validates expected outcomes, computes promotion_readiness_delta,
- * writes result to backtests/ atomically, and updates the candidate JSON.
- *
- * @param {string} cwd - project root
- * @param {object} candidate - detection candidate object
- * @returns {object} backtest result
- */
 function backtestDetection(cwd, candidate) {
   const paths = planningPaths(cwd);
   const format = candidate.target_format || 'sigma';
 
-  // Render candidate
   const renderResult = renderCandidate(candidate);
   const renderedContent = renderResult.error ? '' : renderResult.content;
   const ruleFile = renderResult.error ? null :
     `rules/${candidate.candidate_id}-${renderResult.format}${FORMAT_EXTENSIONS[renderResult.format] || '.txt'}`;
 
-  // Validation and scoring
   const validation = validateStructure(candidate, format);
   const noiseScore = scoreNoise(candidate, renderedContent);
   const outcomeValidation = validateExpectedOutcomes(
@@ -1040,7 +956,6 @@ function backtestDetection(cwd, candidate) {
   );
   const delta = computeReadinessDelta(validation, noiseScore);
 
-  // Build backtest result
   const backtestResult = {
     backtest_id: makeBacktestId(),
     candidate_id: candidate.candidate_id,
@@ -1053,7 +968,6 @@ function backtestDetection(cwd, candidate) {
   };
   backtestResult.content_hash = computeContentHash(canonicalSerialize(backtestResult));
 
-  // Persist results and update candidate
   writeBacktestResult(path.join(paths.detections, 'backtests'), backtestResult);
   updateCandidateReadiness(paths.detections, candidate, delta);
 
@@ -1064,13 +978,6 @@ function backtestDetection(cwd, candidate) {
 // CLI Entry Points: Generation and Backtesting
 // ---------------------------------------------------------------------------
 
-/**
- * CLI: detection generate -- generate detection rule files from candidates.
- *
- * Follows output(result, raw, humanText) convention:
- * - --raw => output(report, raw) => JSON
- * - no --raw => human-readable Markdown summary
- */
 function cmdDetectionGenerate(cwd, options, raw) {
   const report = generateDetectionRules(cwd, options || {});
 
@@ -1109,13 +1016,6 @@ function cmdDetectionGenerate(cwd, options, raw) {
   output(report, true, lines.join('\n'));
 }
 
-/**
- * CLI: detection backtest -- run backtests on detection candidates.
- *
- * Follows output(result, raw, humanText) convention:
- * - --raw => output(summary, raw) => JSON
- * - no --raw => human-readable Markdown with pass/fail and noise breakdown
- */
 function cmdDetectionBacktest(cwd, options, raw) {
   let candidates = listDetectionCandidates(cwd, options || {});
 
@@ -1180,37 +1080,18 @@ function cmdDetectionBacktest(cwd, options, raw) {
   output(summary, true, lines.join('\n'));
 }
 
-// ---------------------------------------------------------------------------
-// Promotion ID Generators
-// ---------------------------------------------------------------------------
-
-/**
- * Generate a promotion receipt ID. Format: PROM-{YYYYMMDDHHMMSS}-{RANDOM8}
- */
 function makePromotionId() {
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `PROM-${stamp}-${suffix}`;
 }
 
-/**
- * Generate a rejection receipt ID. Format: REJ-{YYYYMMDDHHMMSS}-{RANDOM8}
- */
 function makeRejectionId() {
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   const suffix = crypto.randomUUID().slice(0, 8).toUpperCase();
   return `REJ-${stamp}-${suffix}`;
 }
 
-// ---------------------------------------------------------------------------
-// Promotion: Backtest Lookup
-// ---------------------------------------------------------------------------
-
-/**
- * Find the latest backtest result for a candidate.
- * Scans DETECTIONS/backtests/ for JSON files matching candidate_id.
- * Returns latest by backtest_id (timestamp-based sort), or null.
- */
 function findLatestBacktest(candidateId, cwd) {
   const backtestsDir = path.join(planningPaths(cwd).detections, 'backtests');
   if (!fs.existsSync(backtestsDir)) return null;
@@ -1237,23 +1118,11 @@ function findLatestBacktest(candidateId, cwd) {
   return backtests[0];
 }
 
-// ---------------------------------------------------------------------------
-// Promotion: Gate Checking
-// ---------------------------------------------------------------------------
-
-/**
- * Evaluate three promotion gates (cheapest first):
- * 1. backtest_passed - has a passing backtest
- * 2. readiness_threshold - promotion_readiness >= config threshold
- * 3. analyst_approval - --approve flag set
- *
- * @returns {{ all_passed: boolean, gates: Array<{ gate, passed, detail }> }}
- */
+// Gates evaluated cheapest-first: backtest_passed, readiness_threshold, analyst_approval
 function checkPromotionGates(candidate, cwd, options) {
   const config = loadConfig(cwd);
   const gates = [];
 
-  // Gate 1: Backtest passed
   const backtest = findLatestBacktest(candidate.candidate_id, cwd);
   const backtestPassed = backtest ? (backtest.validation && backtest.validation.passed === true) : false;
   gates.push({
@@ -1264,7 +1133,6 @@ function checkPromotionGates(candidate, cwd, options) {
       : 'No backtest found for candidate',
   });
 
-  // Gate 2: Readiness threshold
   const threshold = config.promotion_readiness_threshold || 0.6;
   const readiness = candidate.promotion_readiness || 0;
   const readinessPassed = readiness >= threshold;
@@ -1276,7 +1144,6 @@ function checkPromotionGates(candidate, cwd, options) {
       : `Readiness ${readiness} < threshold ${threshold}`,
   });
 
-  // Gate 3: Analyst approval
   const approved = options && options.approve === true;
   gates.push({
     gate: 'analyst_approval',
@@ -1290,15 +1157,7 @@ function checkPromotionGates(candidate, cwd, options) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// Promotion: Hooks
-// ---------------------------------------------------------------------------
-
-/**
- * Apply promotion hooks following applySignatureHooks pattern from manifest.cjs.
- * Calls beforePromote(candidate) before, afterPromote(candidate, receipt) after.
- * Returns potentially mutated candidate.
- */
+// Follows applySignatureHooks pattern from manifest.cjs
 function applyPromotionHooks(candidate, receipt, hooks) {
   if (!hooks || (!hooks.beforePromote && !hooks.afterPromote)) return candidate;
 
@@ -1315,14 +1174,7 @@ function applyPromotionHooks(candidate, receipt, hooks) {
   return result;
 }
 
-// ---------------------------------------------------------------------------
-// Promotion: Write Promoted Rule
-// ---------------------------------------------------------------------------
-
-/**
- * Render candidate and write rule file + meta.json sidecar to DETECTIONS/promotions/rules/.
- * Returns { rulePath, metaPath } as relative paths from DETECTIONS/.
- */
+// Writes rule file + meta.json sidecar to DETECTIONS/promotions/rules/
 function writePromotedRule(candidate, cwd) {
   const detectionsDir = planningPaths(cwd).detections;
   const promotionRulesDir = path.join(detectionsDir, 'promotions', 'rules');
@@ -1359,20 +1211,11 @@ function writePromotedRule(candidate, cwd) {
 // Promotion: Core Promote/Reject/Status
 // ---------------------------------------------------------------------------
 
-/**
- * Promote a detection candidate through three-gate workflow.
- *
- * @param {string} cwd - project root
- * @param {object} candidate - detection candidate object
- * @param {object} options - { approve, 'promoted-by'?, hooks? }
- * @returns {object} promotion result
- */
 function promoteDetection(cwd, candidate, options) {
   const config = loadConfig(cwd);
   const detectionsDir = planningPaths(cwd).detections;
   const promotionsDir = path.join(detectionsDir, 'promotions');
 
-  // Check gates
   const gateResult = checkPromotionGates(candidate, cwd, options);
   if (!gateResult.all_passed) {
     const failedGates = gateResult.gates.filter(g => !g.passed);
@@ -1383,17 +1226,14 @@ function promoteDetection(cwd, candidate, options) {
     };
   }
 
-  // Hooks: beforePromote
   const hooksEnabled = config.promotion_hooks_enabled;
   const hooks = options && options.hooks;
   if (hooksEnabled && hooks) {
     applyPromotionHooks(candidate, null, hooks);
   }
 
-  // Write promoted rule + sidecar
   const ruleResult = writePromotedRule(candidate, cwd);
 
-  // Build promotion receipt
   const promotionId = makePromotionId();
   const promotedBy = (options && options['promoted-by']) || detectRuntimeName();
   const receipt = {
@@ -1407,18 +1247,15 @@ function promoteDetection(cwd, candidate, options) {
     evidence_chain: candidate.evidence_links || [],
   };
 
-  // Compute content hash for receipt integrity
   const receiptCopy = { ...receipt };
   receipt.content_hash = computeContentHash(canonicalSerialize(receiptCopy));
 
-  // Write receipt atomically
   tryMkdir(promotionsDir);
   const tmpFile = path.join(promotionsDir, `.tmp-${promotionId}.json`);
   const finalFile = path.join(promotionsDir, `${promotionId}.json`);
   fs.writeFileSync(tmpFile, JSON.stringify(receipt, null, 2), 'utf-8');
   fs.renameSync(tmpFile, finalFile);
 
-  // Update candidate status on disk
   candidate.metadata.status = 'promoted';
   const candidateCopy = { ...candidate };
   delete candidateCopy.content_hash;
@@ -1428,27 +1265,17 @@ function promoteDetection(cwd, candidate, options) {
     fs.writeFileSync(candidateFile, JSON.stringify(candidate, null, 2), 'utf-8');
   }
 
-  // Hooks: afterPromote
   if (hooksEnabled && hooks) {
     applyPromotionHooks(candidate, receipt, { afterPromote: hooks.afterPromote });
   }
 
-  // Emit promotion outcome telemetry
   try {
     telemetry.recordPromotionOutcome(cwd, candidate, receipt);
-  } catch (_) { /* telemetry failures must not break promotion */ }
+  } catch (_) { /* telemetry must not break promotion */ }
 
   return { promoted: true, receipt, rule_path: ruleResult.rulePath };
 }
 
-/**
- * Reject a detection candidate with a reason, creating an audit trail.
- *
- * @param {string} cwd - project root
- * @param {object} candidate - detection candidate object
- * @param {object} options - { reason, 'rejected-by'? }
- * @returns {object} rejection result
- */
 function rejectDetection(cwd, candidate, options) {
   const detectionsDir = planningPaths(cwd).detections;
   const promotionsDir = path.join(detectionsDir, 'promotions');
@@ -1464,14 +1291,12 @@ function rejectDetection(cwd, candidate, options) {
   };
   receipt.content_hash = computeContentHash(canonicalSerialize({ ...receipt }));
 
-  // Write receipt atomically
   tryMkdir(promotionsDir);
   const tmpFile = path.join(promotionsDir, `.tmp-${rejectionId}.json`);
   const finalFile = path.join(promotionsDir, `${rejectionId}.json`);
   fs.writeFileSync(tmpFile, JSON.stringify(receipt, null, 2), 'utf-8');
   fs.renameSync(tmpFile, finalFile);
 
-  // Update candidate status on disk
   candidate.metadata.status = 'rejected';
   candidate.metadata.rejection_reason = receipt.reason;
   const candidateCopy = { ...candidate };
@@ -1482,21 +1307,13 @@ function rejectDetection(cwd, candidate, options) {
     fs.writeFileSync(candidateFile, JSON.stringify(candidate, null, 2), 'utf-8');
   }
 
-  // Emit rejection outcome telemetry
   try {
     telemetry.recordPromotionOutcome(cwd, candidate, receipt);
-  } catch (_) { /* telemetry failures must not break rejection */ }
+  } catch (_) { /* telemetry must not break rejection */ }
 
   return { rejected: true, receipt };
 }
 
-/**
- * Scan DETECTIONS/ for all candidates, group by status with counts and scores.
- *
- * @param {string} cwd - project root
- * @param {object} options - (reserved for future use)
- * @returns {object} { by_status, counts }
- */
 function detectionStatus(cwd, options) {
   const candidates = listDetectionCandidates(cwd, {});
 
@@ -1528,14 +1345,10 @@ function detectionStatus(cwd, options) {
 // CLI Entry Points: Promote, Reject, Status
 // ---------------------------------------------------------------------------
 
-/**
- * CLI: detection promote -- promote single candidate or bulk by phase.
- */
 function cmdDetectionPromote(cwd, options, raw) {
   const detectionsDir = planningPaths(cwd).detections;
 
   if (options && options.candidate) {
-    // Single candidate promote
     const candidateFile = path.join(detectionsDir, `${options.candidate}.json`);
     if (!fs.existsSync(candidateFile)) {
       error(`Candidate not found: ${options.candidate}`);
@@ -1557,7 +1370,6 @@ function cmdDetectionPromote(cwd, options, raw) {
   }
 
   if (options && options.phase) {
-    // Bulk promote
     const candidates = listDetectionCandidates(cwd, {}).filter(c =>
       c.metadata && c.metadata.status === 'draft' &&
       c.source_phase && c.source_phase.startsWith(options.phase)
@@ -1612,9 +1424,6 @@ function cmdDetectionPromote(cwd, options, raw) {
   error('Usage: detection promote --candidate ID --approve  OR  detection promote --phase N --approve');
 }
 
-/**
- * CLI: detection reject -- reject a candidate with reason.
- */
 function cmdDetectionReject(cwd, options, raw) {
   if (!options || !options.candidate) {
     error('Usage: detection reject --candidate ID --reason "text"');
@@ -1639,9 +1448,6 @@ function cmdDetectionReject(cwd, options, raw) {
   output(result, true, `Rejected ${options.candidate}\nReceipt: ${result.receipt.rejection_id}\nReason: ${result.receipt.reason}`);
 }
 
-/**
- * CLI: detection status -- show candidates grouped by lifecycle status.
- */
 function cmdDetectionStatus(cwd, options, raw) {
   const result = detectionStatus(cwd, options || {});
 

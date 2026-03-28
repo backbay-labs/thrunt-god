@@ -6,16 +6,6 @@
  * Scores are computed on-the-fly, not pre-materialized.
  *
  * Storage: Feedback records in `.planning/FEEDBACK/` (JSON, atomic writes).
- *
- * Provides:
- * - scoreEntity(cwd, entityType, entityId) — composite score for one entity
- * - submitFeedback(cwd, feedbackInput) — record analyst feedback
- * - listFeedback(cwd, options) — read/filter feedback records
- * - computeEntityScores(cwd, entityType) — score all entities of a type
- * - cmdScoreSummary(cwd, raw) — CLI: score summary
- * - cmdScoreEntity(cwd, entityType, entityId, raw) — CLI: score entity
- * - cmdFeedbackSubmit(cwd, feedbackArgs, raw) — CLI: feedback submit
- * - cmdFeedbackList(cwd, filterArgs, raw) — CLI: feedback list
  */
 
 'use strict';
@@ -25,10 +15,6 @@ const path = require('node:path');
 const { planningDir, output, error } = require('./core.cjs');
 const { sortKeysDeep, canonicalSerialize } = require('./manifest.cjs');
 const { listMetrics, nowUtc, hash5, dateStamp, atomicWrite, safeReadJson } = require('./telemetry.cjs');
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function feedbackDir(cwd) {
   return path.join(planningDir(cwd), 'FEEDBACK');
@@ -46,13 +32,6 @@ function ensureFeedbackDir(cwd) {
 
 const VALID_FEEDBACK_TYPES = ['false_positive', 'low_yield', 'high_quality', 'correction', 'note'];
 
-/**
- * Record analyst feedback for an entity.
- *
- * @param {string} cwd - project root
- * @param {object} feedbackInput - { entity_type, entity_id, feedback_type, annotation, score_adjustment, analyst }
- * @returns {object} the written feedback record
- */
 function submitFeedback(cwd, feedbackInput) {
   const ts = nowUtc();
   const id = `FB-${dateStamp()}-${hash5((feedbackInput.entity_id || '') + ts)}`;
@@ -88,13 +67,6 @@ function submitFeedback(cwd, feedbackInput) {
   return record;
 }
 
-/**
- * Read and filter feedback records.
- *
- * @param {string} cwd - project root
- * @param {object} [options] - { entity_type, entity_id, feedback_type, limit }
- * @returns {Array} filtered feedback records sorted by timestamp descending
- */
 function listFeedback(cwd, options = {}) {
   const dir = feedbackDir(cwd);
   if (!fs.existsSync(dir)) return [];
@@ -127,30 +99,17 @@ function listFeedback(cwd, options = {}) {
 // Scoring
 // ---------------------------------------------------------------------------
 
-/** Yield baseline by entity type. */
 const YIELD_BASELINES = { connector: 50, pack: 20, hypothesis: 30 };
 
-/**
- * Compute a composite score for a single entity.
- *
- * @param {string} cwd - project root
- * @param {string} entityType - 'pack' | 'hypothesis' | 'connector'
- * @param {string} entityId - the entity identifier
- * @returns {object} score breakdown
- */
 function scoreEntity(cwd, entityType, entityId) {
-  // Get relevant metrics
   const filterKey = entityType === 'connector' ? 'connector_id'
     : entityType === 'pack' ? 'pack_id'
     : 'hypothesis_id';
 
   const huntMetrics = listMetrics(cwd, { type: 'hunt', [filterKey]: entityId });
   const packMetrics = entityType === 'pack' ? listMetrics(cwd, { type: 'pack', pack_id: entityId }) : [];
-
-  // Get feedback for this entity
   const feedback = listFeedback(cwd, { entity_type: entityType, entity_id: entityId });
 
-  // Compute yield score
   const baseline = YIELD_BASELINES[entityType] || 30;
   let totalEvents = 0;
   let okCount = 0;
@@ -169,7 +128,6 @@ function scoreEntity(cwd, entityType, entityId) {
   const yieldScore = Math.min(1.0, avgEvents / baseline);
   const successRate = executionCount > 0 ? okCount / executionCount : 0;
 
-  // Feedback adjustments
   const falsePositives = feedback.filter(f => f.feedback_type === 'false_positive').length;
   const noisePenalty = falsePositives * 0.1;
 
@@ -181,7 +139,6 @@ function scoreEntity(cwd, entityType, entityId) {
   }
   analystAdjustment = Math.max(-0.5, Math.min(0.5, analystAdjustment));
 
-  // Composite
   const rawScore = executionCount > 0
     ? (yieldScore + successRate) / 2
     : 0;
@@ -202,17 +159,8 @@ function scoreEntity(cwd, entityType, entityId) {
   };
 }
 
-/**
- * Score all entities of a given type.
- *
- * @param {string} cwd - project root
- * @param {string} entityType - 'pack' | 'hypothesis' | 'connector'
- * @returns {Array} score objects sorted by composite_score descending
- */
 function computeEntityScores(cwd, entityType) {
   const allMetrics = listMetrics(cwd, {});
-
-  // Collect unique entity IDs
   const ids = new Set();
 
   if (entityType === 'connector') {
@@ -238,7 +186,7 @@ function computeEntityScores(cwd, entityType) {
     }
   }
 
-  // Also include entities with feedback but no metrics
+  // Include entities with feedback but no metrics
   const allFeedback = listFeedback(cwd, { entity_type: entityType });
   for (const f of allFeedback) {
     if (f.entity_id) ids.add(f.entity_id);
@@ -257,9 +205,6 @@ function computeEntityScores(cwd, entityType) {
 // CLI handlers
 // ---------------------------------------------------------------------------
 
-/**
- * CLI: score summary — display scores for all entity types.
- */
 function cmdScoreSummary(cwd, raw) {
   const connectorScores = computeEntityScores(cwd, 'connector');
   const packScores = computeEntityScores(cwd, 'pack');
@@ -299,9 +244,6 @@ function cmdScoreSummary(cwd, raw) {
   output(result, raw, lines.join('\n'));
 }
 
-/**
- * CLI: score entity — detailed score for one entity.
- */
 function cmdScoreEntity(cwd, entityType, entityId, raw) {
   if (!entityType || !entityId) {
     error('Usage: score entity <type> <id>  (type: connector|pack|hypothesis)');
@@ -325,9 +267,6 @@ function cmdScoreEntity(cwd, entityType, entityId, raw) {
   output(score, raw, lines.join('\n'));
 }
 
-/**
- * CLI: feedback submit — record analyst feedback.
- */
 function cmdFeedbackSubmit(cwd, feedbackArgs, raw) {
   const args = feedbackArgs || [];
   const input = {};
@@ -353,9 +292,6 @@ function cmdFeedbackSubmit(cwd, feedbackArgs, raw) {
   }
 }
 
-/**
- * CLI: feedback list — list feedback records.
- */
 function cmdFeedbackList(cwd, filterArgs, raw) {
   const args = filterArgs || [];
   const options = {};
@@ -383,10 +319,6 @@ function cmdFeedbackList(cwd, filterArgs, raw) {
 
   output(records, raw, lines.join('\n'));
 }
-
-// ---------------------------------------------------------------------------
-// Exports
-// ---------------------------------------------------------------------------
 
 module.exports = {
   scoreEntity,

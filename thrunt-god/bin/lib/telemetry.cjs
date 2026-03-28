@@ -6,15 +6,6 @@
  *
  * Storage: JSON files in `.planning/METRICS/` (flat directory, matching
  * QUERIES/, RECEIPTS/, MANIFESTS/ pattern). Atomic writes via tmp+rename.
- *
- * Provides:
- * - recordHuntExecution(cwd, spec, envelope, options) — emit hunt execution metric
- * - recordPackExecution(cwd, packId, packVersion, targets, results) — emit pack metric
- * - recordPromotionOutcome(cwd, candidate, promotionReceipt) — emit promotion metric
- * - listMetrics(cwd, options) — read and filter metric records
- * - summarizeMetrics(cwd, options) — aggregate metrics into summary
- * - cmdMetricsSummary(cwd, raw) — CLI handler for metrics summary
- * - cmdMetricsList(cwd, filterArgs, raw) — CLI handler for metrics list
  */
 
 'use strict';
@@ -24,10 +15,6 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { planningDir, output, error } = require('./core.cjs');
 const { sortKeysDeep, canonicalSerialize } = require('./manifest.cjs');
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function nowUtc() {
   return new Date().toISOString();
@@ -43,18 +30,15 @@ function ensureMetricsDir(cwd) {
   return dir;
 }
 
-/** 5-character hash from input string. */
 function hash5(input) {
   return crypto.createHash('sha256').update(input).digest('hex').slice(0, 5);
 }
 
-/** Date-stamp for metric IDs: YYYYMMDD. */
 function dateStamp() {
   const d = new Date();
   return d.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-/** Atomic write: tmp file then rename. */
 function atomicWrite(filePath, content) {
   const dir = path.dirname(filePath);
   fs.mkdirSync(dir, { recursive: true });
@@ -63,7 +47,6 @@ function atomicWrite(filePath, content) {
   fs.renameSync(tmpFile, filePath);
 }
 
-/** Safely read and parse a JSON file, returning null on failure. */
 function safeReadJson(filePath) {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
@@ -72,7 +55,6 @@ function safeReadJson(filePath) {
   }
 }
 
-/** Compute time window in minutes from a spec time_window. */
 function timeWindowMinutes(tw) {
   if (!tw) return null;
   if (tw.lookback_minutes) return tw.lookback_minutes;
@@ -84,17 +66,9 @@ function timeWindowMinutes(tw) {
 }
 
 // ---------------------------------------------------------------------------
-// Recording functions
+// Recording
 // ---------------------------------------------------------------------------
 
-/**
- * Record a hunt execution metric after writeRuntimeArtifacts.
- *
- * @param {string} cwd - project root
- * @param {object} spec - QuerySpec used for execution
- * @param {object} envelope - ResultEnvelope from execution
- * @param {object} [options] - { pack_id, receipt_ids, manifest_ids }
- */
 function recordHuntExecution(cwd, spec, envelope, options = {}) {
   const ts = nowUtc();
   const stamp = dateStamp();
@@ -142,15 +116,6 @@ function recordHuntExecution(cwd, spec, envelope, options = {}) {
   return record;
 }
 
-/**
- * Record a pack execution metric.
- *
- * @param {string} cwd - project root
- * @param {string} packId - pack identifier
- * @param {string} packVersion - pack version
- * @param {Array} targets - array of execution targets
- * @param {Array} results - array of result envelopes per target
- */
 function recordPackExecution(cwd, packId, packVersion, targets, results) {
   const ts = nowUtc();
   const stamp = dateStamp();
@@ -186,24 +151,15 @@ function recordPackExecution(cwd, packId, packVersion, targets, results) {
   return record;
 }
 
-/**
- * Record a detection promotion outcome metric.
- *
- * @param {string} cwd - project root
- * @param {object} candidate - detection candidate object
- * @param {object} promotionReceipt - promotion or rejection receipt
- */
 function recordPromotionOutcome(cwd, candidate, promotionReceipt) {
   const ts = nowUtc();
   const stamp = dateStamp();
   const candId = (candidate && candidate.candidate_id) || 'unknown';
   const id = `PO-${stamp}-${hash5(candId + ts)}`;
 
-  // Determine status from receipt shape
   const isPromotion = !!(promotionReceipt && promotionReceipt.promotion_id);
   const isRejection = !!(promotionReceipt && promotionReceipt.rejection_id);
 
-  // Extract hypothesis IDs from evidence links if available
   const evidenceLinks = (candidate && candidate.evidence_links) || [];
   const hypothesisIds = [];
   for (const link of evidenceLinks) {
@@ -234,15 +190,10 @@ function recordPromotionOutcome(cwd, candidate, promotionReceipt) {
 }
 
 // ---------------------------------------------------------------------------
-// Classification helpers
+// Classification
 // ---------------------------------------------------------------------------
 
-/**
- * Classify a hunt execution record by outcome quality.
- *
- * @param {object} record - a hunt execution metric record
- * @returns {string} classification: high_yield|productive|noisy|inconclusive|failed|low_yield
- */
+/** Returns: high_yield | productive | noisy | inconclusive | failed | low_yield */
 function classifyOutcome(record) {
   const events = (record.evidence_yield && record.evidence_yield.events) || 0;
   const warnings = (record.evidence_yield && record.evidence_yield.warnings) || 0;
@@ -259,21 +210,13 @@ function classifyOutcome(record) {
 }
 
 // ---------------------------------------------------------------------------
-// Query functions
+// Query
 // ---------------------------------------------------------------------------
 
-/**
- * Read and filter metric records from METRICS/.
- *
- * @param {string} cwd - project root
- * @param {object} [options] - { type, connector_id, pack_id, hypothesis_id, limit }
- * @returns {Array} filtered metric records sorted by timestamp descending
- */
 function listMetrics(cwd, options = {}) {
   const dir = metricsDir(cwd);
   if (!fs.existsSync(dir)) return [];
 
-  // Map filter type to file prefix
   const prefixMap = { hunt: 'HE-', pack: 'PE-', promotion: 'PO-' };
   const prefix = options.type ? prefixMap[options.type] : null;
 
@@ -286,7 +229,6 @@ function listMetrics(cwd, options = {}) {
     const record = safeReadJson(path.join(dir, file));
     if (!record) continue;
 
-    // Apply field filters
     if (options.connector_id && record.connector_id !== options.connector_id) continue;
     if (options.pack_id && record.pack_id !== options.pack_id) continue;
     if (options.hypothesis_id) {
@@ -297,10 +239,8 @@ function listMetrics(cwd, options = {}) {
     records.push(record);
   }
 
-  // Sort by timestamp descending
   records.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
 
-  // Apply limit
   if (options.limit && options.limit > 0) {
     records = records.slice(0, options.limit);
   }
@@ -308,13 +248,6 @@ function listMetrics(cwd, options = {}) {
   return records;
 }
 
-/**
- * Aggregate metrics into a summary.
- *
- * @param {string} cwd - project root
- * @param {object} [options] - filter options passed to listMetrics
- * @returns {object} aggregated summary
- */
 function summarizeMetrics(cwd, options = {}) {
   const all = listMetrics(cwd, options);
 
@@ -322,7 +255,6 @@ function summarizeMetrics(cwd, options = {}) {
   const packRecords = all.filter(r => r.record_type === 'pack_execution');
   const promoRecords = all.filter(r => r.record_type === 'promotion_outcome');
 
-  // By connector
   const byConnector = {};
   for (const r of huntRecords) {
     const cid = r.connector_id || 'unknown';
@@ -342,7 +274,6 @@ function summarizeMetrics(cwd, options = {}) {
     delete c.success_count;
   }
 
-  // By pack
   const byPack = {};
   for (const r of packRecords) {
     const pid = r.pack_id || 'unknown';
@@ -362,7 +293,6 @@ function summarizeMetrics(cwd, options = {}) {
     delete p.success_count;
   }
 
-  // By hypothesis
   const byHypothesis = {};
   for (const r of huntRecords) {
     const hids = r.hypothesis_ids || [];
@@ -381,14 +311,12 @@ function summarizeMetrics(cwd, options = {}) {
     }
   }
 
-  // By outcome
   const byOutcome = { ok: 0, partial: 0, error: 0, empty: 0 };
   for (const r of huntRecords) {
     const o = r.outcome || 'unknown';
     if (o in byOutcome) byOutcome[o]++;
   }
 
-  // Yield summary
   const yieldSummary = {
     high_yield: huntRecords.filter(r =>
       (r.evidence_yield && r.evidence_yield.events) > 100
@@ -422,9 +350,6 @@ function summarizeMetrics(cwd, options = {}) {
 // CLI handlers
 // ---------------------------------------------------------------------------
 
-/**
- * CLI handler: metrics summary
- */
 function cmdMetricsSummary(cwd, raw) {
   const summary = summarizeMetrics(cwd);
 
@@ -435,19 +360,16 @@ function cmdMetricsSummary(cwd, raw) {
   lines.push(`Promotions:       ${summary.total_promotions.promoted} promoted, ${summary.total_promotions.rejected} rejected`);
   lines.push('');
 
-  // Outcome breakdown
   lines.push('## Outcomes');
   lines.push(`  ok: ${summary.by_outcome.ok}  partial: ${summary.by_outcome.partial}  error: ${summary.by_outcome.error}  empty: ${summary.by_outcome.empty}`);
   lines.push('');
 
-  // Yield
   lines.push('## Yield');
   lines.push(`  High-yield (>100 events): ${summary.yield_summary.high_yield}`);
   lines.push(`  Noisy (warnings > errors): ${summary.yield_summary.noisy}`);
   lines.push(`  Inconclusive: ${summary.yield_summary.inconclusive}`);
   lines.push('');
 
-  // By connector
   const connectors = Object.keys(summary.by_connector);
   if (connectors.length) {
     lines.push('## By Connector');
@@ -460,7 +382,6 @@ function cmdMetricsSummary(cwd, raw) {
     lines.push('');
   }
 
-  // By pack
   const packs = Object.keys(summary.by_pack);
   if (packs.length) {
     lines.push('## By Pack');
@@ -473,7 +394,6 @@ function cmdMetricsSummary(cwd, raw) {
     lines.push('');
   }
 
-  // By hypothesis
   const hyps = Object.keys(summary.by_hypothesis);
   if (hyps.length) {
     lines.push('## By Hypothesis');
@@ -493,18 +413,10 @@ function cmdMetricsSummary(cwd, raw) {
   output(summary, raw, lines.join('\n'));
 }
 
-/**
- * CLI handler: metrics list
- *
- * @param {string} cwd - project root
- * @param {Array} filterArgs - CLI args: --type, --connector, --pack, --hypothesis, --limit
- * @param {boolean} raw - output mode
- */
 function cmdMetricsList(cwd, filterArgs, raw) {
   const args = filterArgs || [];
   const options = {};
 
-  // Parse filter flags
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--type' && args[i + 1]) options.type = args[++i];
     else if (args[i] === '--connector' && args[i + 1]) options.connector_id = args[++i];
@@ -541,10 +453,6 @@ function cmdMetricsList(cwd, filterArgs, raw) {
 
   output(records, raw, lines.join('\n'));
 }
-
-// ---------------------------------------------------------------------------
-// Exports
-// ---------------------------------------------------------------------------
 
 module.exports = {
   recordHuntExecution,
