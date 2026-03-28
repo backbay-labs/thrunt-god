@@ -23,6 +23,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { planningDir, output, error } = require('./core.cjs');
+const { sortKeysDeep, canonicalSerialize } = require('./manifest.cjs');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -51,24 +52,6 @@ function hash5(input) {
 function dateStamp() {
   const d = new Date();
   return d.toISOString().slice(0, 10).replace(/-/g, '');
-}
-
-/** Recursively sort object keys for deterministic serialization. */
-function sortKeysDeep(val) {
-  if (Array.isArray(val)) return val.map(sortKeysDeep);
-  if (val && typeof val === 'object' && !Buffer.isBuffer(val)) {
-    const sorted = {};
-    for (const k of Object.keys(val).sort()) {
-      sorted[k] = sortKeysDeep(val[k]);
-    }
-    return sorted;
-  }
-  return val;
-}
-
-/** Deterministic JSON serialization with recursively sorted keys. */
-function canonicalSerialize(obj) {
-  return JSON.stringify(sortKeysDeep(obj), null, 2);
 }
 
 /** Atomic write: tmp file then rename. */
@@ -333,7 +316,7 @@ function listMetrics(cwd, options = {}) {
  * @returns {object} aggregated summary
  */
 function summarizeMetrics(cwd, options = {}) {
-  const all = listMetrics(cwd, {});
+  const all = listMetrics(cwd, options);
 
   const huntRecords = all.filter(r => r.record_type === 'hunt_execution');
   const packRecords = all.filter(r => r.record_type === 'pack_execution');
