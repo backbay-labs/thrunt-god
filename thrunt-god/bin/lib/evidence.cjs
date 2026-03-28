@@ -576,8 +576,9 @@ function writeRuntimeArtifacts(cwd, spec, envelope, options = {}) {
   fs.writeFileSync(manifestPath, manifestJson, 'utf-8');
 
   // Emit hunt execution telemetry
+  let huntExecution = null;
   try {
-    telemetry.recordHuntExecution(cwd, spec, envelope, {
+    huntExecution = telemetry.recordHuntExecution(cwd, spec, envelope, {
       pack_id: (options && options.pack_id) || null,
       receipt_ids: [receiptId],
       manifest_ids: [manifest.manifest_id],
@@ -598,6 +599,11 @@ function writeRuntimeArtifacts(cwd, spec, envelope, options = {}) {
     manifest: {
       id: manifest.manifest_id,
       path: toPosixPath(path.relative(cwd, manifestPath)),
+    },
+    telemetry: {
+      hunt_execution_id: huntExecution && huntExecution.hunt_execution_id
+        ? huntExecution.hunt_execution_id
+        : null,
     },
   };
 }

@@ -105,6 +105,7 @@ function computePackExecutionStats(huntMetrics, packMetrics) {
   const hunts = huntMetrics.map((record, index) => ({
     index,
     record,
+    hunt_execution_id: record.hunt_execution_id || null,
     timestamp_ms: Date.parse(record.timestamp || ''),
   }));
   const packs = packMetrics.map(record => ({
@@ -112,6 +113,13 @@ function computePackExecutionStats(huntMetrics, packMetrics) {
     timestamp_ms: Date.parse(record.timestamp || ''),
   }));
   const matchedHuntIndexes = new Set();
+  const huntIndexById = new Map();
+
+  for (const hunt of hunts) {
+    if (hunt.hunt_execution_id) {
+      huntIndexById.set(hunt.hunt_execution_id, hunt.index);
+    }
+  }
 
   hunts.sort((a, b) => {
     if (Number.isFinite(a.timestamp_ms) && Number.isFinite(b.timestamp_ms)) {
@@ -140,9 +148,20 @@ function computePackExecutionStats(huntMetrics, packMetrics) {
     if (pack.record.failed_targets === 0) okCount++;
 
     const targetCount = Math.max(0, Math.trunc(pack.record.target_count || 0));
-    if (!Number.isFinite(pack.timestamp_ms) || targetCount === 0) continue;
+    const explicitHuntIds = Array.isArray(pack.record.hunt_execution_ids)
+      ? pack.record.hunt_execution_ids.filter(Boolean)
+      : [];
 
     let matched = 0;
+    for (const huntExecutionId of explicitHuntIds) {
+      const huntIndex = huntIndexById.get(huntExecutionId);
+      if (huntIndex === undefined || matchedHuntIndexes.has(huntIndex)) continue;
+      matchedHuntIndexes.add(huntIndex);
+      matched++;
+    }
+
+    if (!Number.isFinite(pack.timestamp_ms) || targetCount === 0 || matched >= targetCount) continue;
+
     for (let i = hunts.length - 1; i >= 0 && matched < targetCount; i--) {
       const hunt = hunts[i];
       if (matchedHuntIndexes.has(hunt.index)) continue;

@@ -116,10 +116,13 @@ function recordHuntExecution(cwd, spec, envelope, options = {}) {
   return record;
 }
 
-function recordPackExecution(cwd, packId, packVersion, targets, results) {
+function recordPackExecution(cwd, packId, packVersion, targets, results, options = {}) {
   const ts = nowUtc();
   const stamp = dateStamp();
   const id = `PE-${stamp}-${hash5(packId + ts)}`;
+  const huntExecutionIds = Array.isArray(options.hunt_execution_ids)
+    ? Array.from(new Set(options.hunt_execution_ids.filter(Boolean)))
+    : [];
 
   const perTarget = (targets || []).map((t, i) => {
     const r = (results && results[i]) || {};
@@ -141,6 +144,7 @@ function recordPackExecution(cwd, packId, packVersion, targets, results) {
     target_count: (targets || []).length,
     successful_targets: perTarget.filter(t => t.status === 'ok').length,
     failed_targets: perTarget.filter(t => t.status === 'error').length,
+    hunt_execution_ids: huntExecutionIds,
     total_events: perTarget.reduce((sum, t) => sum + t.events, 0),
     total_duration_ms: perTarget.reduce((sum, t) => sum + t.duration_ms, 0),
     per_target: perTarget,

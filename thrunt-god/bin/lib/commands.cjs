@@ -517,7 +517,12 @@ async function cmdRuntimeExecute(cwd, args, raw) {
           status: item.result.status,
           counts: item.result.counts,
           timing: item.result.timing,
-        }))
+        })),
+        {
+          hunt_execution_ids: results
+            .map(item => item.artifacts && item.artifacts.telemetry && item.artifacts.telemetry.hunt_execution_id)
+            .filter(Boolean),
+        }
       );
     } catch {
       // Telemetry failures must not break pack execution output.

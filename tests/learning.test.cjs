@@ -255,7 +255,7 @@ describe('feedback semantics and detection filtering', () => {
   it('preserves legacy hunt-only pack runs alongside aggregate pack telemetry', () => {
     const tmpDir = makeTempProject();
 
-    telemetry.recordHuntExecution(tmpDir, {
+    const legacy = telemetry.recordHuntExecution(tmpDir, {
       query_id: 'QRY-LEGACY',
       connector: { id: 'splunk' },
       dataset: { kind: 'events' },
@@ -266,7 +266,7 @@ describe('feedback semantics and detection filtering', () => {
       counts: { events: 8 },
     }, { pack_id: 'pack.alpha' });
 
-    telemetry.recordHuntExecution(tmpDir, {
+    const newRun1 = telemetry.recordHuntExecution(tmpDir, {
       query_id: 'QRY-NEW-1',
       connector: { id: 'splunk' },
       dataset: { kind: 'events' },
@@ -277,7 +277,7 @@ describe('feedback semantics and detection filtering', () => {
       counts: { events: 6 },
     }, { pack_id: 'pack.alpha' });
 
-    telemetry.recordHuntExecution(tmpDir, {
+    const newRun2 = telemetry.recordHuntExecution(tmpDir, {
       query_id: 'QRY-NEW-2',
       connector: { id: 'splunk' },
       dataset: { kind: 'events' },
@@ -294,12 +294,15 @@ describe('feedback semantics and detection filtering', () => {
     ], [
       { status: 'ok', counts: { events: 6 }, timing: { duration_ms: 50 } },
       { status: 'ok', counts: { events: 6 }, timing: { duration_ms: 50 } },
-    ]);
+    ], {
+      hunt_execution_ids: [newRun1.hunt_execution_id, newRun2.hunt_execution_id],
+    });
 
     const score = scoring.scoreEntity(tmpDir, 'pack', 'pack.alpha');
     assert.equal(score.execution_count, 2);
     assert.equal(score.yield_score, 0.5);
     assert.equal(score.success_rate, 1);
+    assert.ok(legacy.hunt_execution_id);
   });
 
   it('applies low_yield and high_quality feedback to composite scoring', () => {
