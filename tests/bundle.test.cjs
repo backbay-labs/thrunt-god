@@ -30,7 +30,8 @@ function loadBundle() {
  * Creates QUERIES, RECEIPTS, and MANIFESTS directories with sample files.
  */
 function setupBundleProject(tmpDir, opts = {}) {
-  const planningDir = path.join(tmpDir, '.planning');
+  const planningDirName = opts.planningDirName || '.planning';
+  const planningDir = path.join(tmpDir, planningDirName);
   const queriesDir = path.join(planningDir, 'QUERIES');
   const receiptsDir = path.join(planningDir, 'RECEIPTS');
   const manifestsDir = path.join(planningDir, 'MANIFESTS');
@@ -68,13 +69,13 @@ function setupBundleProject(tmpDir, opts = {}) {
       {
         id: queryId,
         type: 'query_log',
-        path: `.planning/QUERIES/${queryId}.md`,
+        path: `${planningDirName}/QUERIES/${queryId}.md`,
         content_hash: computeContentHash(queryContent),
       },
       {
         id: receiptId,
         type: 'receipt',
-        path: `.planning/RECEIPTS/${receiptId}.md`,
+        path: `${planningDirName}/RECEIPTS/${receiptId}.md`,
         content_hash: computeContentHash(receiptContent),
       },
     ],
@@ -879,6 +880,36 @@ describe('CLI integration', () => {
       const result = JSON.parse(output);
       assert.ok(result.bundlePath.includes('exports'), 'bundle in exports dir');
       assert.ok(fs.existsSync(result.bundlePath), 'file exists in output dir');
+    } finally {
+      cln(tmpDir);
+    }
+  });
+
+  it('bundle export preserves manifest linkage when THRUNT_PLANNING_DIR is customized', () => {
+    const tmpDir = ctp('bundle-cli-custom-planning-');
+    try {
+      setupBundleProject(tmpDir, { planningDirName: '.planx' });
+
+      const { success, output } = runThruntTools(
+        ['bundle', 'export'],
+        tmpDir,
+        { THRUNT_PLANNING_DIR: '.planx' }
+      );
+      assert.ok(success, 'command succeeds');
+      const result = JSON.parse(output);
+
+      const { readZipEntries } = loadBundle();
+      const zipBuf = fs.readFileSync(result.bundlePath);
+      const entries = readZipEntries(zipBuf);
+      const bundleEntry = entries.find(e => e.filename === 'bundle.json');
+      const bundleJson = JSON.parse(bundleEntry.data.toString('utf-8'));
+
+      const queryArtifact = bundleJson.artifacts.find(a => a.type === 'query_log');
+      const receiptArtifact = bundleJson.artifacts.find(a => a.type === 'receipt');
+
+      assert.ok(queryArtifact && queryArtifact.manifest_id, 'query artifact should stay linked to its manifest');
+      assert.ok(receiptArtifact && receiptArtifact.manifest_id, 'receipt artifact should stay linked to its manifest');
+      assert.equal(bundleJson.artifacts.filter(a => a.status === 'missing').length, 0, 'custom planning dir should not create missing artifacts');
     } finally {
       cln(tmpDir);
     }

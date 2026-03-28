@@ -148,7 +148,14 @@ describe('pack telemetry attribution', () => {
           counts: { events: 5 },
           timing: { duration_ms: 10 },
         },
-        artifacts: { query_log: null, receipts: [], manifest: null },
+        artifacts: {
+          query_log: null,
+          receipts: [],
+          manifest: null,
+          telemetry: {
+            hunt_execution_id: `HE-TEST-${seenOptions.length}`,
+          },
+        },
         pagination: {},
       };
     };
@@ -178,6 +185,10 @@ describe('pack telemetry attribution', () => {
     );
     assert.ok(recordedArgs, 'aggregate pack execution telemetry should be recorded');
     assert.equal(recordedArgs[1], 'technique.t1078-valid-accounts');
+    assert.deepEqual(
+      recordedArgs[5].hunt_execution_ids,
+      seenOptions.map((_, index) => `HE-TEST-${index + 1}`)
+    );
   });
 });
 

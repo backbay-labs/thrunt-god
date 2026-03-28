@@ -12,6 +12,16 @@ function isPlainObject(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
+function collectPackHuntExecutionIds(results = []) {
+  return results
+    .map(item =>
+      (item && item.artifacts && item.artifacts.telemetry && item.artifacts.telemetry.hunt_execution_id) ||
+      (item && item.result && item.result.metadata && item.result.metadata.hunt_execution_id) ||
+      null
+    )
+    .filter(Boolean);
+}
+
 function cmdGenerateSlug(text, raw) {
   if (!text) {
     error('text required for slug generation');
@@ -519,9 +529,7 @@ async function cmdRuntimeExecute(cwd, args, raw) {
           timing: item.result.timing,
         })),
         {
-          hunt_execution_ids: results
-            .map(item => item.artifacts && item.artifacts.telemetry && item.artifacts.telemetry.hunt_execution_id)
-            .filter(Boolean),
+          hunt_execution_ids: collectPackHuntExecutionIds(results),
         }
       );
     } catch {
@@ -1062,7 +1070,7 @@ function cmdCommit(cwd, message, files, raw, amend, noVerify) {
   }
 
   // Stage files
-  const filesToStage = files && files.length > 0 ? files : ['.planning/'];
+  const filesToStage = files && files.length > 0 ? files : [`${PLANNING_DIR_NAME}/`];
   for (const file of filesToStage) {
     const fullPath = path.join(cwd, file);
     if (!fs.existsSync(fullPath)) {

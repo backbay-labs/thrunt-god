@@ -54,6 +54,26 @@ function makeBundleId() {
   return `BDL-${stamp}-${suffix}`;
 }
 
+function stripKnownPlanningPrefix(artifactPath = '') {
+  const normalized = toPosixPath(String(artifactPath));
+  const prefixes = [`${PLANNING_DIR_NAME}/`, '.planning/'];
+  for (const prefix of prefixes) {
+    if (normalized.startsWith(prefix)) {
+      return normalized.slice(prefix.length);
+    }
+  }
+  return normalized;
+}
+
+function artifactLookupAliases(artifactPath = '') {
+  const relativePath = stripKnownPlanningPrefix(artifactPath);
+  return Array.from(new Set([
+    relativePath,
+    `${PLANNING_DIR_NAME}/${relativePath}`,
+    `.planning/${relativePath}`,
+  ]));
+}
+
 // ---------------------------------------------------------------------------
 // ZIP Primitives (internal helpers, also exported for testing)
 // ---------------------------------------------------------------------------
@@ -304,7 +324,9 @@ function discoverArtifacts(cwd, filters = {}) {
   for (const { manifest } of manifestObjects) {
     for (const art of manifest.artifacts || []) {
       if (art.path) {
-        manifestArtifactPaths.set(art.path, manifest.manifest_id);
+        for (const alias of artifactLookupAliases(art.path)) {
+          manifestArtifactPaths.set(alias, manifest.manifest_id);
+        }
       }
     }
   }
@@ -315,10 +337,9 @@ function discoverArtifacts(cwd, filters = {}) {
       if (!file.endsWith('.md')) continue;
       const fullPath = path.join(paths.queries, file);
       const relativePath = toPosixPath(path.relative(path.join(cwd, PLANNING_DIR_NAME), fullPath));
-      const planningRelPath = `.planning/${relativePath}`;
-
-      // Find if any manifest references this artifact
-      const manifestId = manifestArtifactPaths.get(planningRelPath) || null;
+      const manifestId = artifactLookupAliases(relativePath)
+        .map(alias => manifestArtifactPaths.get(alias))
+        .find(Boolean) || null;
 
       // If phase filter is active and this artifact is not referenced by any included manifest,
       // skip it (unless it matches the phase in its path)
@@ -346,9 +367,9 @@ function discoverArtifacts(cwd, filters = {}) {
       if (!file.endsWith('.md')) continue;
       const fullPath = path.join(paths.receipts, file);
       const relativePath = toPosixPath(path.relative(path.join(cwd, PLANNING_DIR_NAME), fullPath));
-      const planningRelPath = `.planning/${relativePath}`;
-
-      const manifestId = manifestArtifactPaths.get(planningRelPath) || null;
+      const manifestId = artifactLookupAliases(relativePath)
+        .map(alias => manifestArtifactPaths.get(alias))
+        .find(Boolean) || null;
 
       if (filters.phase && !manifestId && !file.includes(filters.phase)) continue;
 
@@ -398,9 +419,9 @@ function createExportBundle(cwd, options = {}) {
   // Build a map of discovered artifact paths (normalized) -> artifact
   const discoveredPaths = new Map();
   for (const art of artifacts) {
-    discoveredPaths.set(art.path, art);
-    // Also map the .planning/ prefixed path
-    discoveredPaths.set(`.planning/${art.path}`, art);
+    for (const alias of artifactLookupAliases(art.path)) {
+      discoveredPaths.set(alias, art);
+    }
   }
 
   // Process manifests: cross-reference artifacts, find missing ones
@@ -418,10 +439,12 @@ function createExportBundle(cwd, options = {}) {
     // Process each artifact referenced by this manifest
     for (const mArt of manifest.artifacts || []) {
       if (!mArt.path) continue;
+      const artifactKey = stripKnownPlanningPrefix(mArt.path);
 
       // Try to find the discovered artifact
-      const discovered = discoveredPaths.get(mArt.path) ||
-        discoveredPaths.get(mArt.path.replace(/^\.planning\//, ''));
+      const discovered = artifactLookupAliases(mArt.path)
+        .map(alias => discoveredPaths.get(alias))
+        .find(Boolean) || null;
 
       if (discovered && !processedArtifactPaths.has(discovered.path)) {
         processedArtifactPaths.add(discovered.path);
@@ -449,10 +472,10 @@ function createExportBundle(cwd, options = {}) {
           manifest_id: manifest.manifest_id,
           _content: artifactContent, // internal, not serialized into bundle.json
         });
-      } else if (!processedArtifactPaths.has(mArt.path)) {
+      } else if (!processedArtifactPaths.has(artifactKey)) {
         // Missing artifact
-        const artPath = mArt.path.replace(/^\.planning\//, '');
-        processedArtifactPaths.add(mArt.path);
+        const artPath = artifactKey;
+        processedArtifactPaths.add(artifactKey);
         bundleArtifacts.push({
           path: toPosixPath(artPath),
           type: mArt.type || 'unknown',
@@ -501,7 +524,7 @@ function createExportBundle(cwd, options = {}) {
 
   // Add any discovered artifacts not referenced by a manifest
   for (const art of artifacts) {
-    if (!processedArtifactPaths.has(art.path) && !processedArtifactPaths.has(`.planning/${art.path}`)) {
+    if (!processedArtifactPaths.has(art.path)) {
       let artifactContent = art.content;
 
       if (redactFn) {

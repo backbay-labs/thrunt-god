@@ -1246,6 +1246,24 @@ describe('commit command', () => {
     assert.ok(gitLog.includes(output.hash), 'git log should contain the returned hash');
   });
 
+  test('stages the configured planning dir when THRUNT_PLANNING_DIR is set', () => {
+    fs.mkdirSync(path.join(tmpDir, '.planx'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.planx', 'custom-file.md'), '# Custom\n');
+
+    const result = runThruntTools(
+      'commit "docs: add custom planning file"',
+      tmpDir,
+      { THRUNT_PLANNING_DIR: '.planx' }
+    );
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.committed, true, 'should commit custom planning dir changes');
+
+    const gitLog = execSync('git log --oneline -1', { cwd: tmpDir, encoding: 'utf-8' }).trim();
+    assert.ok(gitLog.includes('docs: add custom planning file'), 'git log should contain the commit message');
+  });
+
   test('amend mode works without crashing', () => {
     // Create a file and commit it first
     fs.writeFileSync(path.join(tmpDir, '.planning', 'amend-file.md'), '# Initial\n');
