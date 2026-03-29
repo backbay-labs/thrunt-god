@@ -100,6 +100,8 @@ import { huntReportScreen } from "./screens/hunt-report"
 import { huntReportHistoryScreen } from "./screens/hunt-report-history"
 import { huntMitreScreen } from "./screens/hunt-mitre"
 import { huntPlaybookScreen } from "./screens/hunt-playbook"
+import { huntPhasesScreen } from "./screens/hunt-phases"
+import { huntEvidenceScreen } from "./screens/hunt-evidence"
 import { huntDetectionsScreen } from "./screens/hunt-detections"
 import { huntConnectorsScreen } from "./screens/hunt-connectors"
 import { huntPacksScreen } from "./screens/hunt-packs"
@@ -325,6 +327,8 @@ export class TUIApp implements AppController {
       ["hunt-report-history", huntReportHistoryScreen],
       ["hunt-mitre", huntMitreScreen],
       ["hunt-playbook", huntPlaybookScreen],
+      ["hunt-phases", huntPhasesScreen],
+      ["hunt-evidence", huntEvidenceScreen],
       ["hunt-detections", huntDetectionsScreen],
       ["hunt-connectors", huntConnectorsScreen],
       ["hunt-packs", huntPacksScreen],
@@ -825,6 +829,11 @@ export class TUIApp implements AppController {
               severity: this.state.hunt.reportHistory.entries[0].severity,
             }
           : null,
+        thruntPhase: this.state.thruntContext ? {
+          number: this.state.thruntContext.phase.number ?? "?",
+          plan: `${this.state.thruntContext.plan.current ?? "?"}/${this.state.thruntContext.plan.total ?? "?"}`,
+          progress: this.state.thruntContext.progressPercent ?? 0,
+        } : null,
       },
       this.width,
       THEME,

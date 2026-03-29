@@ -30,7 +30,7 @@ import { stripAnsi } from "../src/tui/components/types"
 import { updateInvestigation, buildInvestigationReport } from "../src/tui/investigation"
 import { exportReportBundle } from "../src/tui/report-export"
 import { Hushd } from "../src/hushd"
-import type { CheckEventData } from "../src/hushd"
+// CheckEventData import removed -- hushd event ticker no longer on main screen
 import { createManagedRun } from "../src/tui/runs"
 
 class TestApp implements AppController {
@@ -224,8 +224,9 @@ describe("main screen", () => {
     const screen = createMainScreen([])
     const ctx = createContext(state, app)
 
-    expect(screen.handleInput("W", ctx)).toBe(true)
-    expect(app.screen).toBe("hunt-watch")
+    // THRUNT home actions: D=Dispatch, P=Phases, E=Evidence, T=Detections, K=Packs, C=Connectors
+    expect(screen.handleInput("P", ctx)).toBe(true)
+    expect(app.screen).toBe("hunt-phases")
     expect(state.promptBuffer).toBe("")
     expect(state.homeFocus).toBe("prompt")
   })
@@ -234,31 +235,37 @@ describe("main screen", () => {
     const state = createState()
     state.homeFocus = "nav"
     const screen = createMainScreen([])
-    const securityApp = new TestApp(tempDir)
-    const securityCtx = createContext(state, securityApp)
 
-    expect(screen.handleInput("S", securityCtx)).toBe(true)
-    expect(securityApp.screen).toBe("security")
+    // THRUNT home actions: D=Dispatch, P=Phases, E=Evidence, T=Detections, K=Packs, C=Connectors
+    const dispatchApp = new TestApp(tempDir)
+    const dispatchCtx = createContext(state, dispatchApp)
+    expect(screen.handleInput("D", dispatchCtx)).toBe(true)
+    expect(dispatchApp.screen).toBe("dispatch-sheet")
 
-    const auditApp = new TestApp(tempDir)
-    const auditCtx = createContext(state, auditApp)
-    expect(screen.handleInput("A", auditCtx)).toBe(true)
-    expect(auditApp.screen).toBe("audit")
+    const phasesApp = new TestApp(tempDir)
+    const phasesCtx = createContext(state, phasesApp)
+    expect(screen.handleInput("P", phasesCtx)).toBe(true)
+    expect(phasesApp.screen).toBe("hunt-phases")
 
-    const policyApp = new TestApp(tempDir)
-    const policyCtx = createContext(state, policyApp)
-    expect(screen.handleInput("P", policyCtx)).toBe(true)
-    expect(policyApp.screen).toBe("policy")
+    const evidenceApp = new TestApp(tempDir)
+    const evidenceCtx = createContext(state, evidenceApp)
+    expect(screen.handleInput("E", evidenceCtx)).toBe(true)
+    expect(evidenceApp.screen).toBe("hunt-evidence")
 
-    const integrationsApp = new TestApp(tempDir)
-    const integrationsCtx = createContext(state, integrationsApp)
-    expect(screen.handleInput("I", integrationsCtx)).toBe(true)
-    expect(integrationsApp.screen).toBe("integrations")
+    const detectionsApp = new TestApp(tempDir)
+    const detectionsCtx = createContext(state, detectionsApp)
+    expect(screen.handleInput("T", detectionsCtx)).toBe(true)
+    expect(detectionsApp.screen).toBe("hunt-detections")
 
-    const runsApp = new TestApp(tempDir)
-    const runsCtx = createContext(state, runsApp)
-    expect(screen.handleInput("R", runsCtx)).toBe(true)
-    expect(runsApp.screen).toBe("runs")
+    const packsApp = new TestApp(tempDir)
+    const packsCtx = createContext(state, packsApp)
+    expect(screen.handleInput("K", packsCtx)).toBe(true)
+    expect(packsApp.screen).toBe("hunt-packs")
+
+    const connectorsApp = new TestApp(tempDir)
+    const connectorsCtx = createContext(state, connectorsApp)
+    expect(screen.handleInput("C", connectorsCtx)).toBe(true)
+    expect(connectorsApp.screen).toBe("hunt-connectors")
   })
 
   test("supports tab into actions, arrow-key selection, and enter to open", () => {
@@ -270,14 +277,17 @@ describe("main screen", () => {
     expect(screen.handleInput("\t", ctx)).toBe(true)
     expect(state.homeFocus).toBe("actions")
 
+    // Down arrow from index 0 (D=Dispatch) with 2-column grid lands on index 2 (E=Evidence)
     expect(screen.handleInput("\x1b[B", ctx)).toBe(true)
     expect(state.homeActionIndex).toBe(2)
 
+    // Right arrow from index 2 (E=Evidence) lands on index 3 (T=Detections)
     expect(screen.handleInput("\x1b[C", ctx)).toBe(true)
     expect(state.homeActionIndex).toBe(3)
 
+    // Enter opens Detections screen
     expect(screen.handleInput("\r", ctx)).toBe(true)
-    expect(app.screen).toBe("integrations")
+    expect(app.screen).toBe("hunt-detections")
   })
 
   test("uses esc to toggle prompt and nav focus without clearing prompt text", () => {
@@ -365,23 +375,23 @@ describe("main screen", () => {
     expect(promptOutput).toContain("Prompt focus:")
     expect(promptOutput).toContain("Enter dispatch sheet")
     expect(promptOutput).toContain("empty prompt keeps")
-    expect(promptOutput).toContain("W/X/T/Q/E/H live")
+    expect(promptOutput).toContain("D/P/E/T/K/C live")
 
     state.homeFocus = "actions"
     const actionsOutput = stripAnsi(screen.render(createContext(state, app, 120, 36)))
     expect(actionsOutput).toContain("Dispatch [actions]")
     expect(actionsOutput).toContain("Actions focus:")
-    expect(actionsOutput).toContain("Ops Snapshot • actions")
-    expect(actionsOutput).toContain("Selected [S] Security overview")
+    expect(actionsOutput).toContain("Hunt Status • actions")
+    expect(actionsOutput).toContain("Selected [D] Dispatch agent task")
 
     state.homeFocus = "nav"
     const navOutput = stripAnsi(screen.render(createContext(state, app, 120, 36)))
     expect(navOutput).toContain("Dispatch [nav]")
     expect(navOutput).toContain("Nav mode:")
-    expect(navOutput).toContain("Ops Snapshot • nav")
+    expect(navOutput).toContain("Hunt Status • nav")
   })
 
-  test("renders degraded health, stale stream state, and last deny summary", () => {
+  test("renders degraded health in hunt status panel", () => {
     const state = createState()
     state.hushdConnected = true
     state.hushdStatus = "connected"
@@ -392,28 +402,41 @@ describe("main screen", () => {
       mcp: [],
       checkedAt: Date.now(),
     }
-    state.recentEvents = [
-      {
-        type: "check",
-        timestamp: new Date(Date.now() - 8 * 60_000).toISOString(),
-        data: {
-          action_type: "shell",
-          target: "/very/long/path/that/should/still/appear/in/the/deny/summary.txt",
-          decision: "deny",
-          guard: "shell.policy",
-          severity: "error",
-        } satisfies CheckEventData,
-      },
-    ]
 
     const app = new TestApp(tempDir)
     const screen = createMainScreen([])
     const output = stripAnsi(screen.render(createContext(state, app, 120, 36)))
 
     expect(output).toContain("Health: degraded")
-    expect(output).toContain("Stream: stale")
-    expect(output).toContain("Last deny:")
-    expect(output).toContain("shell.policy")
+    expect(output).toContain("No hunt state loaded")
+  })
+
+  test("renders hunt status panel with thruntContext", () => {
+    const state = createState()
+    state.thruntContext = {
+      phase: { number: "24", name: "hunt-observation-screens", totalPhases: 26 },
+      plan: { current: 2, total: 3 },
+      status: "in-progress",
+      progressPercent: 33,
+      lastActivity: "2026-03-29",
+      blockers: ["Streaming subprocess output uncharacterized"],
+      decisions: [],
+      roadmap: null,
+      config: null,
+      error: null,
+      lastRefreshedAt: new Date(),
+    }
+
+    const app = new TestApp(tempDir)
+    const screen = createMainScreen([])
+    const output = stripAnsi(screen.render(createContext(state, app, 120, 36)))
+
+    expect(output).toContain("Phase 24:")
+    expect(output).toContain("hunt-observation-screens")
+    expect(output).toContain("Plan 2/3")
+    expect(output).toContain("in-progress")
+    expect(output).toContain("33%")
+    expect(output).toContain("! Streaming subprocess output uncharacterized")
   })
 
   test("renders full home navigation copy without truncating the shortcut hint", () => {
@@ -425,8 +448,8 @@ describe("main screen", () => {
     const output = stripAnsi(screen.render(createContext(state, app, 120, 36)))
 
     expect(output).toContain("Prompt focus:")
-    expect(output).toContain("Integrations runtime status")
-    expect(output).toContain("Timeline event replay")
+    expect(output).toContain("Dispatch agent task")
+    expect(output).toContain("Phases hunt progress")
   })
 })
 
