@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: TUI Operator Console
-status: in-progress
-stopped_at: Completed 24-01-PLAN.md
-last_updated: "2026-03-29T22:57:48Z"
-last_activity: 2026-03-29 -- Completed 24-01 domain bridge modules and TUI type infrastructure
+status: executing
+stopped_at: Completed 24-02-PLAN.md
+last_updated: "2026-03-29T23:15:47.069Z"
+last_activity: 2026-03-29 -- Completed 24-02 hunt observation screens (main, phases, evidence)
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
+  percent: 80
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 ## Current Position
 
 Phase: 24 of 26 (Hunt Observation Screens)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In Progress
-Last activity: 2026-03-29 -- Completed 24-01 domain bridge modules and TUI type infrastructure
+Last activity: 2026-03-29 -- Completed 24-02 hunt observation screens (main, phases, evidence)
 
-Progress: [███-------] 33%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -53,6 +53,8 @@ Progress: [███-------] 33%
 | Phase 23-bridge-foundation P01 | 3min | 2 tasks | 7 files |
 | Phase 23-bridge-foundation P02 | 18min | 2 tasks | 8 files |
 | Phase 24-hunt-observation-screens P01 | 63min | 2 tasks | 14 files |
+| Phase 24-hunt-observation-screens P03 | 4min | 2 tasks | 4 files |
+| Phase 24-hunt-observation-screens P02 | 12min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -71,6 +73,11 @@ Recent decisions affecting current work:
 - [Phase 23-bridge-foundation]: Content-hash deduplication in watcher prevents redundant TUI re-renders when subprocess state unchanged
 - [Phase 24-hunt-observation-screens]: Domain Zod schemas co-located in each bridge module (not centralized in types.ts) for domain knowledge proximity
 - [Phase 24-hunt-observation-screens]: Array bridge functions use safeParse per item (partial resilience); object functions use parse with try/catch (all-or-nothing)
+- [Phase 24-hunt-observation-screens]: Connector screen uses runtimeDoctor() as primary data source for health-enriched view
+- [Phase 24-hunt-observation-screens]: Score bar uses block chars with 3-tier color thresholds (0.7 success, 0.4 warning, <0.4 error)
+- [Phase 24-hunt-observation-screens]: Pack tree uses flattenTree to resolve selected node key for toggleExpand
+- [Phase 24-hunt-observation-screens]: Replaced 11 hushd-centric HOME_ACTIONS with 6 THRUNT hunt actions (D/P/E/T/K/C)
+- [Phase 24-hunt-observation-screens]: Hunt status panel reads thruntContext for phase/plan/progress/blockers instead of hushd event ticker
 
 ### Pending Todos
 
@@ -83,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T22:57:48Z
-Stopped at: Completed 24-01-PLAN.md
+Last session: 2026-03-29T23:15:47.067Z
+Stopped at: Completed 24-02-PLAN.md
 Resume file: None

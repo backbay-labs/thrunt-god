@@ -18,13 +18,13 @@ Requirements for the TUI Operator Console milestone. Each maps to roadmap phases
 
 ### Hunt Screens
 
-- [ ] **HUNT-01**: Operator sees hunt status dashboard with phase, plan, progress, and blockers from STATE.md
-- [ ] **HUNT-02**: Operator can navigate phases from HUNTMAP and drill into plan details
+- [x] **HUNT-01**: Operator sees hunt status dashboard with phase, plan, progress, and blockers from STATE.md
+- [x] **HUNT-02**: Operator can navigate phases from HUNTMAP and drill into plan details
 - [ ] **HUNT-03**: Operator can trigger query execution from the console and see results
-- [ ] **HUNT-04**: Operator can inspect evidence manifests and verify chain-of-custody integrity
-- [ ] **HUNT-05**: Operator can view detection candidates with promotion scores
-- [ ] **HUNT-06**: Operator can see connector configuration status and health
-- [ ] **HUNT-07**: Operator can browse available hunt packs and view pack details
+- [x] **HUNT-04**: Operator can inspect evidence manifests and verify chain-of-custody integrity
+- [x] **HUNT-05**: Operator can view detection candidates with promotion scores
+- [x] **HUNT-06**: Operator can see connector configuration status and health
+- [x] **HUNT-07**: Operator can browse available hunt packs and view pack details
 
 ### Verification Gates
 
@@ -81,13 +81,13 @@ Deferred to future release. Tracked but not in current roadmap.
 | BRIDGE-04 | Phase 23 | Complete |
 | BRIDGE-05 | Phase 24 | Complete |
 | BRIDGE-06 | Phase 23 | Complete |
-| HUNT-01 | Phase 24 | Pending |
-| HUNT-02 | Phase 24 | Pending |
+| HUNT-01 | Phase 24 | Complete |
+| HUNT-02 | Phase 24 | Complete |
 | HUNT-03 | Phase 25 | Pending |
-| HUNT-04 | Phase 24 | Pending |
-| HUNT-05 | Phase 24 | Pending |
-| HUNT-06 | Phase 24 | Pending |
-| HUNT-07 | Phase 24 | Pending |
+| HUNT-04 | Phase 24 | Complete |
+| HUNT-05 | Phase 24 | Complete |
+| HUNT-06 | Phase 24 | Complete |
+| HUNT-07 | Phase 24 | Complete |
 | GATE-01 | Phase 25 | Pending |
 | GATE-02 | Phase 25 | Pending |
 | BRAND-01 | Phase 26 | Pending |
