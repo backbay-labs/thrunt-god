@@ -25,7 +25,7 @@
 - [x] **Phase 34: Connector Scaffolding CLI** - thrunt-tools init connector command with interactive mode, zero-dep templates, post-scaffold validation (completed 2026-03-30)
 - [x] **Phase 35: Pack Authoring Interactive CLI** - MITRE ATT&CK technique picker, hypothesis builder with quality checks, pack type selection (completed 2026-03-30)
 - [x] **Phase 36: Pack Query Wiring & Validation** - Per-connector query template starters for all 10 connectors, entity extraction rule builder, schema validation pipeline (completed 2026-03-30)
-- [ ] **Phase 37: Pack Testing & Publishing** - Enhanced pack test with mock data and coverage, fixture generation, pack distribution
+- [x] **Phase 37: Pack Testing & Publishing** - Enhanced pack test with mock data and coverage, fixture generation, pack distribution (completed 2026-03-30)
 
 ## Phase Details
 
@@ -117,7 +117,7 @@ Plans:
 **Goal**: Ship enhanced pack test with mock data support, fixture generation, and pack distribution mechanisms
 **Depends on**: Phase 36 (query wiring and validation exist)
 **Requirements**: PACK-03
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 37-01-PLAN.md -- Test fixture generation, mock response fixtures, enhanced cmdPackTest with --verbose/--mock-data/--coverage/--validate-only
 - [ ] 37-02-PLAN.md -- Pack promote command, registry extension with pack_registries config, deprecation warnings, comprehensive test coverage
@@ -277,7 +277,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 34. Connector Scaffolding CLI | 2/2 | Complete    | 2026-03-30 |
 | 35. Pack Authoring Interactive CLI | 3/3 | Complete    | 2026-03-30 |
 | 36. Pack Query Wiring & Validation | 3/3 | Complete    | 2026-03-30 |
-| 37. Pack Testing & Publishing | 1/2 | In Progress|  |
+| 37. Pack Testing & Publishing | 2/2 | Complete   | 2026-03-30 |
 | 38. Replay Engine Core | 0/0 | Not Started | |
 | 39. Per-Language Query Rewriters | 0/0 | Not Started | |
 | 40. Source Retargeting & IOC Injection | 0/0 | Not Started | |

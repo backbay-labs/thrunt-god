@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Developer Experience & CI
-status: Active
-stopped_at: Completed 37-01-PLAN.md
-last_updated: "2026-03-30T21:28:47.509Z"
-last_activity: 2026-03-30 -- Completed 37-01 Pack Test Infrastructure & Mock Fixtures
+status: completed
+stopped_at: Completed 37-02-PLAN.md
+last_updated: "2026-03-30T21:40:16.804Z"
+last_activity: 2026-03-30 -- Completed 37-02 Pack Promote, Registry Extension & Comprehensive Tests
 progress:
   total_phases: 19
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 37 of 37 (Pack Testing & Publishing)
-Plan: 1 of 2 (Pack Test Infrastructure & Mock Fixtures)
-Status: Active
-Last activity: 2026-03-30 -- Completed 37-01 Pack Test Infrastructure & Mock Fixtures
+Plan: 2 of 2 (Pack Promote, Registry Extension & Comprehensive Tests)
+Status: Complete
+Last activity: 2026-03-30 -- Completed 37-02 Pack Promote, Registry Extension & Comprehensive Tests
 
-Progress: [█████████░] 92% (12/13 plans complete)
+Progress: [██████████] 100% (13/13 plans complete)
 
 ## Upcoming Milestones
 
@@ -75,6 +75,9 @@ All historical decisions logged in PROJECT.md Key Decisions table.
 - [Phase 36]: SUITE-NUMBERING-CONTIGUOUS: Numbered new test suites 11-16 contiguously following existing suites 1-10 in the test file
 - [Phase 37]: CANONICAL-FOLDER-FN: Consolidated getPackFolderForKind into pack.cjs as single source of truth, re-exported from pack-author.cjs for backward compatibility
 - [Phase 37]: SCHEMA-ALWAYS-VALIDATE: cmdPackTest now always runs schema validation even in non-validate-only mode, surfacing warnings alongside errors
+- [Phase 37]: PACK-PROMOTE-COPY: Promote copies pack JSON to built-in directory rather than moving -- source local pack preserved for continued development
+- [Phase 37]: REGISTRY-WARNINGS-ARRAY: loadPackRegistry returns warnings array as additional property -- backward compatible, existing callers unaffected
+- [Phase 37]: GIT-REGISTRY-STUB: Git-based pack_registries emit clear warning rather than failing silently -- actionable guidance to clone and use local type
 
 ### Research Specs Available
 
@@ -104,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T21:28:47.506Z
-Stopped at: Completed 37-01-PLAN.md
+Last session: 2026-03-30T21:40:16.798Z
+Stopped at: Completed 37-02-PLAN.md
 Resume file: None
