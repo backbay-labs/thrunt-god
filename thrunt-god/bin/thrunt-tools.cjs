@@ -35,6 +35,7 @@
  *   pack test [<pack-id>]              Smoke-test packs using example parameters
  *   pack init <pack-id>                Scaffold a local pack under .planning/packs/
  *     [--param key=value] [--params '{json}']
+ *   init connector <id>                Scaffold a new connector adapter with tests and Docker boilerplate
  *   runtime list-connectors            List built-in runtime connector capabilities
  *   runtime doctor [<connector-id>]    Score connector readiness and preflight config
  *   runtime smoke [<connector-id>]     Run live connector smoke tests
@@ -933,8 +934,11 @@ async function runCommand(command, args, cwd, raw) {
         case 'remove-workspace':
           init.cmdInitRemoveWorkspace(cwd, args[2], raw);
           break;
+        case 'connector':
+          await commands.cmdInitConnector(cwd, args.slice(2), raw);
+          break;
         default:
-          error(`Unknown init workflow: ${workflow}\nAvailable: run, plan, new-program, new-milestone, quick, resume, validate-findings, phase-op, todos, milestone-op, map-environment, progress, manager, new-workspace, list-workspaces, remove-workspace`);
+          error(`Unknown init workflow: ${workflow}\nAvailable: run, plan, new-program, new-milestone, quick, resume, validate-findings, phase-op, todos, milestone-op, map-environment, progress, manager, new-workspace, list-workspaces, remove-workspace, connector`);
       }
       break;
     }

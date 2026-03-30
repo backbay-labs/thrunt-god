@@ -1726,6 +1726,447 @@ function cmdStats(cwd, format, raw) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Connector Scaffolding
+// ---------------------------------------------------------------------------
+
+/**
+ * Render a template string by replacing {{#IF_KEY}}...{{/IF_KEY}} block
+ * conditionals and {{KEY}} simple substitutions.
+ */
+function renderTemplate(template, vars) {
+  let result = template;
+  // Block conditionals: {{#IF_KEY}}content{{/IF_KEY}}
+  result = result.replace(/\{\{#IF_(\w+)\}\}([\s\S]*?)\{\{\/IF_\1\}\}/g, (_, key, content) => {
+    return vars[key] ? content : '';
+  });
+  // Simple substitution: {{KEY}}
+  result = result.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    return vars[key] !== undefined ? String(vars[key]) : `{{${key}}}`;
+  });
+  return result;
+}
+
+/**
+ * Convert snake_case or lower_case to PascalCase.
+ * e.g. crowdstrike_falcon -> CrowdStrikeFalcon
+ */
+function toPascalCase(str) {
+  return str
+    .split('_')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+}
+
+/**
+ * Parse CLI flags for init connector command.
+ * Handles repeatable flags and comma-separated values.
+ */
+function parseConnectorArgs(args = []) {
+  const options = {
+    authTypes: [],
+    datasetKinds: [],
+    languages: [],
+    paginationModes: [],
+    docsUrl: null,
+    dockerImage: null,
+    dockerPort: null,
+    noDocker: false,
+    noSmoke: false,
+    outputDir: null,
+    dryRun: false,
+    raw: false,
+    displayName: null,
+  };
+
+  const repeatableFlags = new Set(['auth', 'datasets', 'languages', 'pagination']);
+
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i];
+    if (!token.startsWith('--')) continue;
+    const key = token.slice(2);
+
+    if (key === 'no-docker') { options.noDocker = true; continue; }
+    if (key === 'no-smoke') { options.noSmoke = true; continue; }
+    if (key === 'dry-run') { options.dryRun = true; continue; }
+    if (key === 'raw') { options.raw = true; continue; }
+
+    const nextVal = args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : null;
+
+    if (key === 'display-name' && nextVal) { options.displayName = nextVal; i++; continue; }
+    if (key === 'docs-url' && nextVal) { options.docsUrl = nextVal; i++; continue; }
+    if (key === 'docker-image' && nextVal) { options.dockerImage = nextVal; i++; continue; }
+    if (key === 'docker-port' && nextVal) { options.dockerPort = nextVal; i++; continue; }
+    if (key === 'output-dir' && nextVal) { options.outputDir = nextVal; i++; continue; }
+
+    if (key === 'auth' && nextVal) {
+      options.authTypes.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+    if (key === 'datasets' && nextVal) {
+      options.datasetKinds.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+    if (key === 'languages' && nextVal) {
+      options.languages.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+    if (key === 'pagination' && nextVal) {
+      options.paginationModes.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+  }
+
+  return options;
+}
+
+/**
+ * Derive a title-cased display name from snake_case connector id.
+ * e.g. crowdstrike_edr -> Crowdstrike Edr
+ */
+function toTitleCase(str) {
+  return str
+    .split('_')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+/**
+ * Scaffold a new connector adapter with tests and Docker boilerplate.
+ * thrunt-tools init connector <id> [flags]
+ */
+async function cmdInitConnector(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const connectorTemplatesDir = path.join(__dirname, '../../templates/connector');
+
+  // --- 4a: Argument parsing + interactive mode ---
+
+  let connectorId = args[0] && !args[0].startsWith('--') ? args[0] : null;
+  const cliOptions = parseConnectorArgs(args.slice(connectorId ? 1 : 0));
+
+  // Merge raw flag from CLI
+  if (cliOptions.raw) raw = true;
+
+  if (!connectorId) {
+    // Interactive mode
+    const { createInterface } = require('node:readline/promises');
+    const rl = createInterface({ input: process.stdin, output: process.stderr });
+
+    try {
+      connectorId = (await rl.question('  Connector ID (lowercase, underscores): ')).trim();
+      const displayNameInput = await rl.question(`  Display name [${toTitleCase(connectorId || 'my_connector')}]: `);
+      cliOptions.displayName = displayNameInput.trim() || null;
+
+      const authInput = await rl.question('  Auth types (comma-separated) [api_key]: ');
+      if (authInput.trim()) cliOptions.authTypes = authInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const datasetsInput = await rl.question('  Dataset kinds (comma-separated) [events]: ');
+      if (datasetsInput.trim()) cliOptions.datasetKinds = datasetsInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const langsInput = await rl.question('  Query language(s) (comma-separated) [api]: ');
+      if (langsInput.trim()) cliOptions.languages = langsInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const paginationInput = await rl.question('  Pagination mode(s) (comma-separated) [none]: ');
+      if (paginationInput.trim()) cliOptions.paginationModes = paginationInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const docsInput = await rl.question('  API docs URL (optional): ');
+      if (docsInput.trim()) cliOptions.docsUrl = docsInput.trim();
+
+      const dockerInput = (await rl.question('  Include Docker integration tests? [y/N]: ')).trim().toLowerCase();
+      if (dockerInput === 'y' || dockerInput === 'yes') {
+        cliOptions.dockerImage = (await rl.question('    Docker image (e.g. vendor/product:tag): ')).trim();
+        cliOptions.dockerPort = (await rl.question('    Container port: ')).trim();
+      }
+
+      const smokeInput = (await rl.question('  Include smoke spec? [Y/n]: ')).trim().toLowerCase();
+      cliOptions.noSmoke = smokeInput === 'n' || smokeInput === 'no';
+    } finally {
+      rl.close();
+    }
+  }
+
+  // --- 4b: Input validation ---
+
+  if (!connectorId || !/^[a-z][a-z0-9_]*$/.test(connectorId)) {
+    error(`connector ID must match /^[a-z][a-z0-9_]*$/ (lowercase, underscores, starts with letter). Got: ${connectorId || '(empty)'}`);
+  }
+
+  // Collision check against built-in connectors
+  const builtInRegistry = runtime.createBuiltInConnectorRegistry();
+  if (builtInRegistry.has(connectorId)) {
+    const builtIns = builtInRegistry.list().map(c => c.id).join(', ');
+    error(`connector ID '${connectorId}' collides with a built-in connector. Built-in IDs: ${builtIns}`);
+  }
+
+  // Apply defaults
+  const authTypes = cliOptions.authTypes.length > 0 ? cliOptions.authTypes : ['api_key'];
+  const datasetKinds = cliOptions.datasetKinds.length > 0 ? cliOptions.datasetKinds : ['events'];
+  const languages = cliOptions.languages.length > 0 ? cliOptions.languages : ['api'];
+  const paginationModes = cliOptions.paginationModes.length > 0 ? cliOptions.paginationModes : ['none'];
+  const displayName = cliOptions.displayName || toTitleCase(connectorId);
+  const docsUrl = cliOptions.docsUrl || null;
+  const dockerImage = cliOptions.dockerImage || null;
+  const dockerPort = cliOptions.dockerPort || null;
+  const noDocker = cliOptions.noDocker || false;
+  const noSmoke = cliOptions.noSmoke || false;
+  const dryRun = cliOptions.dryRun || false;
+  const outputDir = cliOptions.outputDir ? path.resolve(cwd, cliOptions.outputDir) : cwd;
+
+  // Validate enum values
+  const invalidAuth = authTypes.filter(a => !runtime.AUTH_TYPES.includes(a));
+  if (invalidAuth.length > 0) {
+    error(`Invalid auth type(s): ${invalidAuth.join(', ')}. Valid values: ${runtime.AUTH_TYPES.join(', ')}`);
+  }
+
+  const invalidDatasets = datasetKinds.filter(d => !runtime.DATASET_KINDS.includes(d));
+  if (invalidDatasets.length > 0) {
+    error(`Invalid dataset kind(s): ${invalidDatasets.join(', ')}. Valid values: ${runtime.DATASET_KINDS.join(', ')}`);
+  }
+
+  const invalidPagination = paginationModes.filter(p => !runtime.PAGINATION_MODES.includes(p));
+  if (invalidPagination.length > 0) {
+    error(`Invalid pagination mode(s): ${invalidPagination.join(', ')}. Valid values: ${runtime.PAGINATION_MODES.join(', ')}`);
+  }
+
+  // Docker flag validation
+  if (dockerImage && !dockerPort) {
+    error('--docker-image requires --docker-port');
+  }
+  if (dockerPort && !dockerImage) {
+    error('--docker-port requires --docker-image');
+  }
+  if (noDocker && dockerImage) {
+    error('--no-docker and --docker-image are conflicting flags');
+  }
+
+  const hasDocker = Boolean(dockerImage && dockerPort && !noDocker);
+  const hasSmoke = !noSmoke;
+
+  // --- 4c: Template variable computation ---
+
+  const functionName = toPascalCase(connectorId);
+  const envPrefix = connectorId.toUpperCase();
+  const authTypesArray = JSON.stringify(authTypes).replace(/"/g, "'");
+  const datasetKindsArray = JSON.stringify(datasetKinds).replace(/"/g, "'");
+  const languagesArray = JSON.stringify(languages).replace(/"/g, "'");
+  const paginationModesArray = JSON.stringify(paginationModes).replace(/"/g, "'");
+  const docsUrlVal = docsUrl ? `'${docsUrl}'` : 'null';
+  const dateStr = new Date().toISOString().split('T')[0];
+  const datasetKindsFirst = datasetKinds[0];
+  const languagesFirst = languages[0];
+  const smokeQuery = '* | head 1';
+
+  // Auto-assign Docker host port by scanning existing docker-compose.yml
+  let dockerHostPort = 19300;
+  if (hasDocker) {
+    const composeFile = path.join(outputDir, 'tests/integration/docker-compose.yml');
+    if (fs.existsSync(composeFile)) {
+      const composeContent = fs.readFileSync(composeFile, 'utf8');
+      const portMatches = [...composeContent.matchAll(/- "(\d+):/g)];
+      const existingPorts = portMatches
+        .map(m => parseInt(m[1], 10))
+        .filter(p => p >= 19000 && p < 20000);
+      if (existingPorts.length > 0) {
+        dockerHostPort = Math.max(...existingPorts) + 1;
+      }
+    }
+  }
+
+  const vars = {
+    CONNECTOR_ID: connectorId,
+    CONNECTOR_DISPLAY_NAME: displayName,
+    CONNECTOR_FUNCTION_NAME: functionName,
+    AUTH_TYPES_ARRAY: authTypesArray,
+    AUTH_TYPES_FIRST: authTypes[0],
+    DATASET_KINDS_ARRAY: datasetKindsArray,
+    DATASET_KINDS_FIRST: datasetKindsFirst,
+    LANGUAGES_ARRAY: languagesArray,
+    LANGUAGES_FIRST: languagesFirst,
+    PAGINATION_MODES_ARRAY: paginationModesArray,
+    DOCS_URL: docsUrlVal,
+    ENV_PREFIX: envPrefix,
+    DATE: dateStr,
+    HAS_DOCKER: hasDocker,
+    DOCKER_IMAGE: dockerImage || '',
+    DOCKER_PORT: dockerPort || '',
+    DOCKER_HOST_PORT: String(dockerHostPort),
+    HAS_SMOKE: hasSmoke,
+    SMOKE_QUERY: smokeQuery,
+  };
+
+  // --- 4d: File generation manifest ---
+
+  const manifest = [];
+
+  // Always generated
+  manifest.push({
+    path: path.join(outputDir, 'thrunt-god/bin/lib/connectors', `${connectorId}.cjs`),
+    templateFile: 'adapter.cjs.tmpl',
+    mode: 'create',
+    label: `thrunt-god/bin/lib/connectors/${connectorId}.cjs`,
+  });
+  manifest.push({
+    path: path.join(outputDir, 'tests', `connectors-${connectorId}.test.cjs`),
+    templateFile: 'unit-test.cjs.tmpl',
+    mode: 'create',
+    label: `tests/connectors-${connectorId}.test.cjs`,
+  });
+  manifest.push({
+    path: path.join(outputDir, 'docs/connectors', `${connectorId}.md`),
+    templateFile: 'README.md.tmpl',
+    mode: 'create',
+    label: `docs/connectors/${connectorId}.md`,
+  });
+
+  // Docker-related (conditional)
+  if (hasDocker) {
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration', `${connectorId}.integration.test.cjs`),
+      templateFile: 'integration-test.cjs.tmpl',
+      mode: 'create',
+      label: `tests/integration/${connectorId}.integration.test.cjs`,
+    });
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration/docker-compose.yml'),
+      templateFile: 'docker-compose.yml.tmpl',
+      mode: 'append',
+      label: 'tests/integration/docker-compose.yml (append)',
+    });
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration/fixtures/seed-data.cjs'),
+      templateFile: 'seed-data.cjs.tmpl',
+      mode: 'append-before-exports',
+      label: 'tests/integration/fixtures/seed-data.cjs (append)',
+    });
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration/helpers.cjs'),
+      templateFile: 'helpers-entry.cjs.tmpl',
+      mode: 'append-to-helpers',
+      label: 'tests/integration/helpers.cjs (append)',
+    });
+  }
+
+  // --- 4e: Dry-run mode ---
+
+  if (dryRun) {
+    output({
+      dry_run: true,
+      connector_id: connectorId,
+      files: manifest.map(item => ({
+        path: toPosixPath(path.relative(outputDir, item.path)),
+        template: item.templateFile,
+        mode: item.mode,
+      })),
+    }, raw);
+    return;
+  }
+
+  // --- 4f: File writing ---
+
+  const generatedPaths = [];
+
+  for (const item of manifest) {
+    const tmplPath = path.join(connectorTemplatesDir, item.templateFile);
+    const tmplContent = fs.readFileSync(tmplPath, 'utf8');
+    const rendered = renderTemplate(tmplContent, vars);
+    const dir = path.dirname(item.path);
+
+    if (item.mode === 'create') {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(item.path, rendered);
+      generatedPaths.push(item.path);
+    } else if (item.mode === 'append') {
+      // Append to docker-compose.yml
+      if (!fs.existsSync(item.path)) {
+        error(`Cannot append to ${item.path}: file does not exist`);
+      }
+      const existing = fs.readFileSync(item.path, 'utf8');
+      fs.writeFileSync(item.path, existing + '\n' + rendered);
+      generatedPaths.push(item.path);
+    } else if (item.mode === 'append-before-exports') {
+      // Insert seed function before module.exports in seed-data.cjs
+      if (!fs.existsSync(item.path)) {
+        error(`Cannot append to ${item.path}: file does not exist`);
+      }
+      let existing = fs.readFileSync(item.path, 'utf8');
+      const exportIdx = existing.lastIndexOf('module.exports');
+      if (exportIdx === -1) {
+        // No module.exports found, just append at end
+        existing = existing + '\n' + rendered + '\n';
+      } else {
+        existing = existing.slice(0, exportIdx) + rendered + '\n' + existing.slice(exportIdx);
+      }
+      // Also add the function name to the exports object
+      const seedFnName = `seed${functionName}`;
+      existing = existing.replace(
+        /module\.exports\s*=\s*\{/,
+        `module.exports = {\n  ${seedFnName},`
+      );
+      fs.writeFileSync(item.path, existing);
+      generatedPaths.push(item.path);
+    } else if (item.mode === 'append-to-helpers') {
+      // Add URL constant and export entry to helpers.cjs
+      if (!fs.existsSync(item.path)) {
+        error(`Cannot append to ${item.path}: file does not exist`);
+      }
+      let existing = fs.readFileSync(item.path, 'utf8');
+      const exportIdx = existing.lastIndexOf('module.exports');
+      const constName = `${envPrefix}_URL`;
+      if (exportIdx === -1) {
+        existing = existing + '\n' + rendered + '\n';
+      } else {
+        existing = existing.slice(0, exportIdx) + rendered + existing.slice(exportIdx);
+      }
+      // Add constant to module.exports block
+      existing = existing.replace(
+        /module\.exports\s*=\s*\{/,
+        `module.exports = {\n  ${constName},`
+      );
+      fs.writeFileSync(item.path, existing);
+      generatedPaths.push(item.path);
+    }
+  }
+
+  // --- 4g: Post-scaffold contract validation ---
+
+  let validationResult = null;
+  try {
+    const adapterPath = path.join(outputDir, 'thrunt-god/bin/lib/connectors', `${connectorId}.cjs`);
+    // Clear require cache in case a previous scaffold run cached something
+    delete require.cache[require.resolve(adapterPath)];
+    const adapterModule = require(adapterPath);
+    const factoryFn = adapterModule[`create${functionName}Adapter`];
+    if (typeof factoryFn !== 'function') {
+      validationResult = { valid: false, errors: [`create${functionName}Adapter is not a function`], warnings: [] };
+    } else {
+      const adapter = factoryFn();
+      validationResult = runtime.validateConnectorAdapter(adapter);
+    }
+  } catch (err) {
+    validationResult = { valid: false, errors: [`Failed to load generated adapter: ${err.message}`], warnings: [] };
+  }
+
+  // --- 4h: Output ---
+
+  output({
+    created: true,
+    connector_id: connectorId,
+    files_generated: generatedPaths.map(p => toPosixPath(path.relative(outputDir, p))),
+    contract_validation: validationResult,
+    next_steps: [
+      `Fill in prepareQuery() with your API endpoint and request body format`,
+      `Fill in normalizeResponse() with your response parser and entity mappings`,
+      `Add the adapter to createBuiltInConnectorRegistry() in thrunt-god/bin/lib/runtime.cjs:`,
+      `  const { create${functionName}Adapter } = require('./connectors/${connectorId}.cjs');`,
+      `Run: node --test tests/connectors-${connectorId}.test.cjs`,
+    ],
+  }, raw);
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -1754,4 +2195,5 @@ module.exports = {
   cmdTodoMatchPhase,
   cmdScaffold,
   cmdStats,
+  cmdInitConnector,
 };
