@@ -434,6 +434,211 @@ function resolveMetricsId(metricsId, metricsDir, queriesDir, manifestsDir, cache
   }
 }
 
+// ─── Per-Language Time Rewriters ─────────────────────────────────────────────
+
+/**
+ * SPL rewriter: replaces earliest=/latest= patterns with absolute ISO timestamps.
+ * Handles relative times (-24h, -7d, now) and quoted ISO timestamps.
+ */
+function rewriteSplTime(statement, originalTW, newTW, options) {
+  const modifications = [];
+  const warnings = [];
+  let rewritten = statement;
+
+  rewritten = rewritten.replace(
+    /(earliest)\s*=\s*(?:"([^"]+)"|(\S+))/gi,
+    (match, key) => {
+      const replaced = `${key}="${newTW.start}"`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  rewritten = rewritten.replace(
+    /(latest)\s*=\s*(?:"([^"]+)"|(\S+))/gi,
+    (match, key) => {
+      const replaced = `${key}="${newTW.end}"`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  if (modifications.length === 0) {
+    warnings.push({ code: 'STATEMENT_TIME_UNCHANGED', message: 'No inline time references found in SPL statement' });
+  }
+
+  if (/\|\s*eval\b[\s\S]*?\b(relative_time|now\(\)|strftime)\b/i.test(statement)) {
+    warnings.push({ code: 'EVAL_TIME_REFERENCE', message: 'SPL statement contains eval block with time math -- verify manually' });
+  }
+
+  return { rewritten, modifications, warnings };
+}
+
+/**
+ * ES|QL rewriter: replaces @timestamp comparisons with new timestamps.
+ * Handles >=, >, <=, < operators and BETWEEN pattern.
+ */
+function rewriteEsqlTime(statement, originalTW, newTW, options) {
+  const modifications = [];
+  const warnings = [];
+  let rewritten = statement;
+
+  // Handle BETWEEN pattern first (more specific)
+  rewritten = rewritten.replace(
+    /@timestamp\s+BETWEEN\s+"([^"]+)"\s+AND\s+"([^"]+)"/gi,
+    (match, startTs, endTs) => {
+      const replaced = `@timestamp BETWEEN "${newTW.start}" AND "${newTW.end}"`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  // Handle individual comparisons
+  rewritten = rewritten.replace(
+    /@timestamp\s*(>=?|<=?)\s*"([^"]+)"/gi,
+    (match, operator, ts) => {
+      const isStart = operator === '>=' || operator === '>';
+      const newTs = isStart ? newTW.start : newTW.end;
+      const replaced = `@timestamp ${operator} "${newTs}"`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  if (modifications.length === 0) {
+    warnings.push({ code: 'STATEMENT_TIME_UNCHANGED', message: 'No inline time references found in ES|QL statement' });
+  }
+
+  if (/DATE_FORMAT|NOW\(\)/i.test(statement)) {
+    warnings.push({ code: 'COMPUTED_TIMESTAMP', message: 'ES|QL statement contains computed timestamps -- verify manually' });
+  }
+
+  return { rewritten, modifications, warnings };
+}
+
+/**
+ * EQL rewriter: sets spec.parameters.filter with range filter instead of rewriting statement.
+ * Merges with existing filter if options.existingFilter is provided.
+ */
+function rewriteEqlTime(statement, originalTW, newTW, options) {
+  const modifications = [];
+  const warnings = [];
+  const opts = options || {};
+
+  const rangeFilter = { range: { '@timestamp': { gte: newTW.start, lte: newTW.end } } };
+
+  let filter;
+  if (opts.existingFilter) {
+    filter = { bool: { must: [opts.existingFilter, rangeFilter] } };
+  } else {
+    filter = rangeFilter;
+  }
+
+  modifications.push({ type: 'filter_param', original: 'none', replaced: JSON.stringify(filter) });
+
+  return { rewritten: statement, modifications, warnings, filter };
+}
+
+/**
+ * KQL rewriter: handles both TimeGenerated (Sentinel) and Timestamp (Defender XDR) fields.
+ * Replaces ago() and datetime() with absolute datetime() timestamps.
+ */
+function rewriteKqlTime(statement, originalTW, newTW, options) {
+  const modifications = [];
+  const warnings = [];
+  const opts = options || {};
+  let rewritten = statement;
+
+  rewritten = rewritten.replace(
+    /(TimeGenerated|Timestamp)\s*(>=?)\s*(ago\([^)]+\)|datetime\([^)]+\))/gi,
+    (match, field, operator, timeExpr) => {
+      const replaced = `${field} >= datetime(${newTW.start})`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  if (modifications.length === 0) {
+    warnings.push({ code: 'STATEMENT_TIME_UNCHANGED', message: 'No inline time references found in KQL statement' });
+  }
+
+  // Defender XDR retention check
+  if (opts.connectorId === 'defender_xdr') {
+    const startMs = Date.parse(newTW.start);
+    const thirtyDaysAgo = Date.now() - (30 * 86400000);
+    if (startMs < thirtyDaysAgo) {
+      warnings.push({ code: 'RETENTION_EXCEEDED', message: 'Defender XDR retains only 30 days of data; new time window start exceeds retention' });
+    }
+  }
+
+  return { rewritten, modifications, warnings };
+}
+
+/**
+ * OpenSearch SQL rewriter: replaces WHERE timestamp clauses with single-quoted ISO timestamps.
+ * Handles @timestamp and timestamp field names, plus BETWEEN pattern.
+ */
+function rewriteOpenSearchSqlTime(statement, originalTW, newTW, options) {
+  const modifications = [];
+  const warnings = [];
+  let rewritten = statement;
+
+  // Handle BETWEEN pattern first (more specific)
+  rewritten = rewritten.replace(
+    /(@?timestamp)\s+BETWEEN\s+'([^']+)'\s+AND\s+'([^']+)'/gi,
+    (match, field, startTs, endTs) => {
+      const replaced = `${field} BETWEEN '${newTW.start}' AND '${newTW.end}'`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  // Handle individual comparisons
+  rewritten = rewritten.replace(
+    /(@?timestamp)\s*(>=?|<=?)\s*'([^']+)'/gi,
+    (match, field, operator, ts) => {
+      const isStart = operator === '>=' || operator === '>';
+      const newTs = isStart ? newTW.start : newTW.end;
+      const replaced = `${field} ${operator} '${newTs}'`;
+      modifications.push({ type: 'inline_time', original: match, replaced });
+      return replaced;
+    }
+  );
+
+  if (modifications.length === 0) {
+    warnings.push({ code: 'STATEMENT_TIME_UNCHANGED', message: 'No inline time references found in OpenSearch SQL statement' });
+  }
+
+  return { rewritten, modifications, warnings };
+}
+
+/**
+ * TIME_REWRITERS registry: maps language keys to rewriter functions.
+ */
+const TIME_REWRITERS = {
+  spl: rewriteSplTime,
+  esql: rewriteEsqlTime,
+  eql: rewriteEqlTime,
+  kql: rewriteKqlTime,
+  sql: rewriteOpenSearchSqlTime,
+};
+
+/**
+ * rewriteQueryTime: dispatches to the correct per-language rewriter.
+ * Returns NO_TIME_REWRITER warning for unknown languages.
+ */
+function rewriteQueryTime(language, statement, originalTW, newTW, options) {
+  const rewriter = TIME_REWRITERS[language];
+  if (!rewriter) {
+    return {
+      rewritten: statement,
+      modifications: [],
+      warnings: [{ code: 'NO_TIME_REWRITER', message: `No time rewriter for language: ${language}` }],
+    };
+  }
+  return rewriter(statement, originalTW, newTW, options);
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -443,4 +648,11 @@ module.exports = {
   applyMutations,
   makeReplayId,
   resolveReplaySource,
+  rewriteSplTime,
+  rewriteEsqlTime,
+  rewriteEqlTime,
+  rewriteKqlTime,
+  rewriteOpenSearchSqlTime,
+  rewriteQueryTime,
+  TIME_REWRITERS,
 };
