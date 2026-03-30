@@ -178,6 +178,10 @@ Plans:
 **Goal**: Ship entity-level result comparison and replay receipt lineage chain linking replays to originals
 **Depends on**: Phase 40 (retargeting and IOC injection exist)
 **Requirements**: REPLAY-04
+**Plans:** 1/2 plans executed
+Plans:
+- [ ] 41-01-PLAN.md -- buildDiff engine with 3 modes, lineage extensions to evidence/manifest/telemetry, unit tests
+- [ ] 41-02-PLAN.md -- CLI commands (runtime replay, replay list, replay diff), routing in thrunt-tools.cjs, CLI tests
 **Success Criteria** (what must be TRUE):
   1. Entity-level diffing supports three modes: full, counts_only, entities_only
   2. Diff report identifies new, missing, and changed entities between original and replay
@@ -289,8 +293,8 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 37. Pack Testing & Publishing | 2/2 | Complete    | 2026-03-30 |
 | 38. Replay Engine Core | 1/1 | Complete    | 2026-03-30 |
 | 39. Per-Language Query Rewriters | 1/1 | Complete    | 2026-03-30 |
-| 40. Source Retargeting & IOC Injection | 1/1 | Complete   | 2026-03-30 |
-| 41. Replay Diffing & Receipt Lineage | 0/0 | Not Started | |
+| 40. Source Retargeting & IOC Injection | 1/1 | Complete    | 2026-03-30 |
+| 41. Replay Diffing & Receipt Lineage | 1/2 | In Progress|  |
 | 42. Tenant Registry & Auth | 0/0 | Not Started | |
 | 43. Dispatch Coordinator | 0/0 | Not Started | |
 | 44. Cross-Tenant Aggregation & Heatmap | 0/0 | Not Started | |

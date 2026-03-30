@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Developer Experience & CI
-status: completed
-stopped_at: Completed 40-01-PLAN.md
-last_updated: "2026-03-30T22:31:16.000Z"
-last_activity: 2026-03-30 -- Completed 40-01 Source Retargeting & IOC Injection
+status: in_progress
+stopped_at: Completed 41-01-PLAN.md
+last_updated: "2026-03-30T22:49:20.000Z"
+last_activity: 2026-03-30 -- Completed 41-01 Replay Diffing & Receipt Lineage (core)
 progress:
   total_phases: 19
   completed_phases: 10
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 17
+  completed_plans: 17
   percent: 100
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.1 Advanced Hunt Features — Phase 40 (Source Retargeting & IOC Injection)
+**Current focus:** v2.1 Advanced Hunt Features — Phase 41 (Replay Diffing & Receipt Lineage)
 
 ## Current Milestone: v2.1 Advanced Hunt Features
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 40 of 44 (Source Retargeting & IOC Injection)
-Plan: 1 of 1 (Source Retargeting & IOC Injection)
-Status: Complete
-Last activity: 2026-03-30 -- Completed 40-01 Source Retargeting & IOC Injection
+Phase: 41 of 44 (Replay Diffing & Receipt Lineage)
+Plan: 1 of 2 (Replay Diffing & Receipt Lineage - core)
+Status: In Progress
+Last activity: 2026-03-30 -- Completed 41-01 Replay Diffing & Receipt Lineage (core)
 
-Progress: [██████████] 100% (16/16 plans complete)
+Progress: [██████████] 100% (17/17 plans complete)
 
 ## Upcoming Milestones
 
@@ -90,6 +90,9 @@ All historical decisions logged in PROJECT.md Key Decisions table.
 - [Phase 40-source-retargeting-ioc-injection]: SANITIZE-BEFORE-INJECT: IOC values validated then sanitized per-language before injection -- prevents query injection at both validation and sanitization layers
 - [Phase 40-source-retargeting-ioc-injection]: FIELD-SCAN-FIRST-MATCH: injectIoc scans statement for first matching field from IOC_FIELD_MAP rather than requiring exact field specification -- handles diverse query patterns automatically
 - [Phase 40-source-retargeting-ioc-injection]: APPEND-NO-FIELD-FALLBACK: When no matching field found in statement, injectIoc appends filter clause using first field from IOC_FIELD_MAP -- ensures IOC always gets injected
+- [Phase 41-replay-diffing-receipt-lineage]: ENTITY-SET-COMPOSITE-KEY: Entity comparison uses Set of kind:value composite keys for O(n) diff rather than nested loops
+- [Phase 41-replay-diffing-receipt-lineage]: LINEAGE-TEMPLATE-INLINE: Lineage section rendered via template literal conditional rather than separate render function -- minimal surface area
+- [Phase 41-replay-diffing-receipt-lineage]: REPLAY-CONTEXT-NULL-DEFAULT: replay_context and lineage fields default to null (not undefined) for consistent JSON serialization
 
 ### Research Specs Available
 
@@ -119,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T22:31:16.000Z
-Stopped at: Completed 40-01-PLAN.md
+Last session: 2026-03-30T22:49:20.000Z
+Stopped at: Completed 41-01-PLAN.md
 Resume file: None
