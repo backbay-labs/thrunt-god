@@ -424,6 +424,11 @@ export class TUIApp implements AppController {
     this.thruntWatcher?.stop()
     this.thruntWatcher = null
 
+    if (this._activeQueryHandle) {
+      this._activeQueryHandle.kill()
+      this._activeQueryHandle = null
+    }
+
     try {
       await MCP.stop()
     } catch {

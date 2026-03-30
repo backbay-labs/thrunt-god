@@ -25,6 +25,7 @@ export function spawnThruntStream(
   try {
     proc = Bun.spawn(["node", toolsPath, ...args], {
       cwd: opts?.cwd,
+      env: opts?.env ? { ...process.env, ...opts.env } : undefined,
       stdout: "pipe",
       stderr: "pipe",
     })
