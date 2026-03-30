@@ -160,7 +160,7 @@ export namespace Router {
         (g) => g === "evidence-integrity" // Evidence integrity is the critical gate
       )
 
-      if (criticalGates.length < originalDecision.gates.length) {
+      if (criticalGates.length > 0 && criticalGates.length < originalDecision.gates.length) {
         return {
           ...originalDecision,
           gates: criticalGates,
