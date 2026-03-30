@@ -22,7 +22,7 @@
 
 - [x] **Phase 27: SDK Contract Hardening & New Adapter Stubs** - All five connectors satisfy validateConnectorAdapter() and unit tests establish correctness baseline (completed 2026-03-30)
 - [x] **Phase 28: Docker Test Infrastructure** - Splunk, Elasticsearch, and OpenSearch containers provision and seed end-to-end before any connector logic is wired to them (completed 2026-03-30)
-- [ ] **Phase 29: Splunk Integration** - Real SPL query against live Docker container with bearer token bootstrap, entity extraction, and async job fallback
+- [x] **Phase 29: Splunk Integration** - Real SPL query against live Docker container with bearer token bootstrap, entity extraction, and async job fallback (completed 2026-03-30)
 - [ ] **Phase 30: Elastic & OpenSearch Integration** - ES|QL and EQL queries against live containers, is_partial handling validated, OpenSearch SigV4 path complete
 
 ## Phase Details
@@ -92,5 +92,5 @@ Phases execute in numeric order: 27 -> 28 -> 29 -> 30
 |-------|----------------|--------|-----------|
 | 27. SDK Contract Hardening & New Adapter Stubs | 2/2 | Complete    | 2026-03-30 |
 | 28. Docker Test Infrastructure | 1/1 | Complete    | 2026-03-30 |
-| 29. Splunk Integration | 0/1 | Not started | - |
+| 29. Splunk Integration | 1/1 | Complete   | 2026-03-30 |
 | 30. Elastic & OpenSearch Integration | 0/? | Not started | - |

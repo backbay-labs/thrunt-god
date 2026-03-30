@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Live Connector Integrations
 status: completed
-stopped_at: Completed 28-01-PLAN.md -- phase 28 complete (Docker test infrastructure)
-last_updated: "2026-03-30T07:09:13.799Z"
-last_activity: 2026-03-30 -- Completed 28-01 Docker test infrastructure
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-03-30T07:30:28.013Z"
+last_activity: 2026-03-30 -- Completed 29-01 Splunk integration
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
   percent: 100
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v1.6 Phase 28 — Docker Test Infrastructure
+**Current focus:** v1.6 Phase 29 — Splunk Integration
 
 ## Current Milestone: v1.6 Live Connector Integrations
 
@@ -29,19 +29,19 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 28 of 30 (Docker Test Infrastructure)
+Phase: 29 of 30 (Splunk Integration)
 Plan: 1 of 1 (complete)
 Status: Phase Complete
-Last activity: 2026-03-30 -- Completed 28-01 Docker test infrastructure
+Last activity: 2026-03-30 -- Completed 29-01 Splunk integration
 
-Progress: [██████████] 100% (v1.6 phase 28)
+Progress: [██████████] 100% (v1.6 phase 29)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3 (v1.6)
+- Total plans completed: 4 (v1.6)
 - Average duration: 4min
-- Total execution time: 0.2 hours
+- Total execution time: 0.3 hours
 
 **By Phase:**
 
@@ -49,8 +49,10 @@ Progress: [██████████] 100% (v1.6 phase 28)
 |-------|-------|-------|----------|
 | 27 | 2 | 6min | 3min |
 | 28 | 1 | 5min | 5min |
+| 29 | 1 | 5min | 5min |
 
 *Updated after each plan completion*
+| Phase 29 P01 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -59,6 +61,10 @@ Progress: [██████████] 100% (v1.6 phase 28)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [29-01]: executeSplunkAsyncJob catches 504 inside adapter executeRequest rather than relying on outer retry loop
+- [29-01]: Async job poll uses options.sleep injection for zero-delay unit tests
+- [29-01]: Bearer token bootstrapped via /services/authorization/tokens with type=static
+- [29-01]: Integration test folds metadata assertions into adapter round-trip test to avoid test coupling
 - [28-01]: Non-standard host ports (18089, 18088, 19200, 19201) to avoid collisions with local services
 - [28-01]: Seed events use ECS-compatible fields for Elastic/OpenSearch and Splunk-native fields for Splunk
 - [28-01]: Splunk healthcheck polls /services/server/info with basic auth for reliable readiness detection
@@ -73,6 +79,8 @@ Recent decisions affecting current work:
 - [v1.6 roadmap]: Sentinel/Defender XDR tested via startJsonServer() fixture only — no Docker image exists for SaaS services
 - [v1.6 roadmap]: EQL surface (CONN-05) and SigV4 (CONN-07) grouped with Elastic/OpenSearch integration (Phase 30)
 - [v1.6 roadmap]: Splunk async job fallback (CONN-06) grouped with Splunk integration (Phase 29)
+- [Phase 29]: executeSplunkAsyncJob catches 504 inside adapter executeRequest rather than outer retry loop
+- [Phase 29]: Bearer token bootstrapped via /services/authorization/tokens with type=static for integration tests
 
 ### Pending Todos
 
@@ -80,12 +88,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- Splunk token creation bootstrap sequence in testcontainers context unverified — validate during Phase 29 planning
+- ~Splunk token creation bootstrap sequence in testcontainers context unverified~ — RESOLVED in 29-01: createSplunkBearerToken validated
 - OpenSearch /_plugins/_esql/query endpoint path in OpenSearch 3.x not confirmed — verify before Phase 30
 - Retry-After header access in executeConnectorRequest retry loop may need targeted refactor
 
 ## Session Continuity
 
-Last session: 2026-03-30T07:09:13.795Z
-Stopped at: Completed 28-01-PLAN.md -- phase 28 complete (Docker test infrastructure)
+Last session: 2026-03-30T07:30:22.072Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None

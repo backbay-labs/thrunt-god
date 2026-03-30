@@ -14,7 +14,7 @@ Requirements for the Live Connector Integrations milestone. Each maps to roadmap
 - [x] **CONN-03**: Elastic adapter reports `status:'partial'` when ES|QL 10K-row ceiling is hit instead of silently truncating
 - [x] **CONN-04**: Sentinel adapter detects `PartialError` in HTTP 200 responses and reports `status:'partial'` instead of silent data loss
 - [ ] **CONN-05**: User can run EQL sequence queries against Elasticsearch via `/_eql/search` as a second query surface
-- [ ] **CONN-06**: Splunk adapter falls back to async job mode (create-job + poll) for queries exceeding export endpoint timeout
+- [x] **CONN-06**: Splunk adapter falls back to async job mode (create-job + poll) for queries exceeding export endpoint timeout
 - [ ] **CONN-07**: OpenSearch adapter supports AWS SigV4 authentication for Amazon OpenSearch Service managed clusters
 
 ### Test Infrastructure
@@ -25,7 +25,7 @@ Requirements for the Live Connector Integrations milestone. Each maps to roadmap
 
 ### Integration Tests
 
-- [ ] **INTG-01**: Splunk integration test executes real SPL query against Docker container, validates bearer token bootstrap and host/user entity extraction
+- [x] **INTG-01**: Splunk integration test executes real SPL query against Docker container, validates bearer token bootstrap and host/user entity extraction
 - [ ] **INTG-02**: Elastic integration test executes real ES|QL query against Docker container, validates API key auth, dotted-column parsing, and `is_partial` behavior
 - [ ] **INTG-03**: OpenSearch integration test executes real ES|QL query against Docker container, validates shared `normalizeElasticRows()` against live response
 
@@ -68,12 +68,12 @@ Deferred to future release. Tracked but not in current roadmap.
 | CONN-03 | Phase 27 | Complete |
 | CONN-04 | Phase 27 | Complete |
 | CONN-05 | Phase 30 | Pending |
-| CONN-06 | Phase 29 | Pending |
+| CONN-06 | Phase 29 | Complete |
 | CONN-07 | Phase 30 | Pending |
 | TEST-01 | Phase 28 | Complete |
 | TEST-02 | Phase 28 | Complete |
 | TEST-03 | Phase 28 | Complete |
-| INTG-01 | Phase 29 | Pending |
+| INTG-01 | Phase 29 | Complete |
 | INTG-02 | Phase 30 | Pending |
 | INTG-03 | Phase 30 | Pending |
 
