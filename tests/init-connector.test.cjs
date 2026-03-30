@@ -326,15 +326,14 @@ describe('init connector — file generation', () => {
       const testPath = path.join(PROJECT_ROOT, 'tests', `connectors-${id}.test.cjs`);
       assert.ok(fs.existsSync(testPath), 'Generated test file should exist');
 
-      // Verify the file parses as valid JavaScript by requiring it
-      // The test itself may not pass (connector not registered), but it should parse
+      // Verify the file parses as valid JavaScript without executing node:test hooks.
       try {
-        require(testPath);
+        execFileSync(process.execPath, ['--check', testPath], {
+          cwd: PROJECT_ROOT,
+          stdio: 'pipe',
+        });
       } catch (err) {
-        if (err instanceof SyntaxError) {
-          assert.fail(`Generated test file has syntax error: ${err.message}`);
-        }
-        // Non-syntax errors are acceptable (e.g., assertion failures during require)
+        assert.fail(`Generated test file has syntax error: ${(err.stderr || err.message || '').toString().trim()}`);
       }
     } finally {
       cleanupGeneratedFiles(id);
