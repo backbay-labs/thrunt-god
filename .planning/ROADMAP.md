@@ -59,6 +59,9 @@ Plans:
 **Goal**: Export ~15 internal runtime.cjs functions to module.exports so standalone connector files in connectors/ can import them without closure access
 **Depends on**: Nothing (can run in parallel with Phases 31-32)
 **Requirements**: SDK-01
+**Plans:** 1 plan
+Plans:
+- [ ] 33-01-PLAN.md -- Add 18 SDK functions to module.exports and create export verification tests
 **Success Criteria** (what must be TRUE):
   1. normalizeBaseUrl, joinUrl, buildUrl, executeConnectorRequest, addEntitiesFromRecord, normalizeEvent, toArray, getNestedValue, isPlainObject, parseResponseBody, parseLinkHeader, getSecret, normalizeSecretRef are exported from runtime.cjs
   2. All existing tests pass unchanged after exports are added
@@ -251,8 +254,8 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 31. Core CI Pipeline | 1/1 | Complete    | 2026-03-30 |
-| 32. Integration Test CI & Pack Validation | 1/1 | Complete   | 2026-03-30 |
-| 33. SDK Export Surface | 0/0 | Not Started | |
+| 32. Integration Test CI & Pack Validation | 1/1 | Complete    | 2026-03-30 |
+| 33. SDK Export Surface | 0/1 | Planned | |
 | 34. Connector Scaffolding CLI | 0/0 | Not Started | |
 | 35. Pack Authoring Interactive CLI | 0/0 | Not Started | |
 | 36. Pack Query Wiring & Validation | 0/0 | Not Started | |
