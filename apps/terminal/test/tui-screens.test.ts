@@ -213,7 +213,7 @@ async function waitForWatchError(state: AppState, timeoutMs = 2500): Promise<voi
 let tempDir: string
 
 beforeEach(async () => {
-  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "clawdstrike-tui-screen-"))
+  tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-god-tui-screen-"))
 })
 
 afterEach(async () => {
@@ -513,7 +513,7 @@ describe("supported surface polish", () => {
     const state = createState()
     state.runtimeInfo = {
       source: "repo-source",
-      scriptPath: "/Users/connor/Medica/backbay/standalone/clawdstrike-sdks/apps/terminal/src/cli/index.ts",
+      scriptPath: "/Users/connor/Medica/backbay/standalone/thrunt-god/apps/terminal/src/cli/index.ts",
       bunVersion: "1.3.3",
     }
     state.desktopAgent = {
@@ -521,7 +521,7 @@ describe("supported surface polish", () => {
       enabled: true,
       enrolled: true,
       enrollmentInProgress: false,
-      settingsPath: "/Users/connor/Library/Application Support/clawdstrike/agent.json",
+      settingsPath: "/Users/connor/Library/Application Support/thrunt-god/agent.json",
       localAgentId: "endpoint-e5a1cf6a-3311-4882-a596-4151d240d241",
       daemonPort: 9876,
       mcpPort: 9877,
@@ -826,7 +826,7 @@ describe("hunt report screen", () => {
     expect(huntReportScreen.handleInput("x", ctx)).toBe(true)
     await Bun.sleep(25)
 
-    const reportDir = path.join(tempDir, ".clawdstrike", "reports")
+    const reportDir = path.join(tempDir, ".thrunt-god", "reports")
     const entries = await fs.readdir(reportDir)
 
     expect(entries.some((entry) => entry.endsWith(".json"))).toBe(true)
@@ -852,7 +852,7 @@ describe("hunt report screen", () => {
     expect(huntReportScreen.handleInput("x", ctx)).toBe(true)
     await Bun.sleep(25)
 
-    const reportDir = path.join(tempDir, ".clawdstrike", "reports")
+    const reportDir = path.join(tempDir, ".thrunt-god", "reports")
     const entries = await fs.readdir(reportDir)
 
     expect(entries.some((entry) => entry.endsWith(".json"))).toBe(true)
@@ -1008,8 +1008,8 @@ describe("hunt watch screen", () => {
       enrollment: { enrolled: false, enrollment_in_progress: false },
     }))
 
-    const original = process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-    process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = settingsPath
+    const original = process.env.THRUNT_AGENT_SETTINGS_PATH
+    process.env.THRUNT_AGENT_SETTINGS_PATH = settingsPath
     state.desktopAgent = loadDesktopAgentSnapshotSync()
 
     try {
@@ -1026,8 +1026,8 @@ describe("hunt watch screen", () => {
       expect(rendered).toContain("Use Security or Audit for local")
       expect(rendered).toContain("events, or enroll the desktop agent")
     } finally {
-      if (original == null) delete process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-      else process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = original
+      if (original == null) delete process.env.THRUNT_AGENT_SETTINGS_PATH
+      else process.env.THRUNT_AGENT_SETTINGS_PATH = original
     }
   })
 
@@ -1035,13 +1035,13 @@ describe("hunt watch screen", () => {
     const state = createState()
     const app = new TestApp(tempDir)
     const ctx = createContext(state, app, 96, 18)
-    const fakeBinary = path.join(tempDir, "clawdstrike-watch-stub")
+    const fakeBinary = path.join(tempDir, "thrunt-god-watch-stub")
 
     await fs.writeFile(fakeBinary, "#!/bin/sh\necho 'stub watch failed' >&2\nexit 5\n")
     await fs.chmod(fakeBinary, 0o755)
 
-    const original = process.env.CLAWDSTRIKE_TUI_HUNT_BINARY
-    process.env.CLAWDSTRIKE_TUI_HUNT_BINARY = fakeBinary
+    const original = process.env.THRUNT_TUI_HUNT_BINARY
+    process.env.THRUNT_TUI_HUNT_BINARY = fakeBinary
 
     try {
       huntWatchScreen.onEnter?.(ctx)
@@ -1054,8 +1054,8 @@ describe("hunt watch screen", () => {
       expect(rendered).toContain("Cluster watch unavailable")
       expect(rendered).toContain("stub watch failed")
     } finally {
-      if (original == null) delete process.env.CLAWDSTRIKE_TUI_HUNT_BINARY
-      else process.env.CLAWDSTRIKE_TUI_HUNT_BINARY = original
+      if (original == null) delete process.env.THRUNT_TUI_HUNT_BINARY
+      else process.env.THRUNT_TUI_HUNT_BINARY = original
     }
   })
 
@@ -1063,7 +1063,7 @@ describe("hunt watch screen", () => {
     const state = createState()
     const app = new TestApp(tempDir)
     const ctx = createContext(state, app, 96, 18)
-    const fakeBinary = path.join(tempDir, "clawdstrike-watch-json-stub")
+    const fakeBinary = path.join(tempDir, "thrunt-god-watch-json-stub")
 
     await fs.writeFile(
       fakeBinary,
@@ -1071,8 +1071,8 @@ describe("hunt watch screen", () => {
     )
     await fs.chmod(fakeBinary, 0o755)
 
-    const original = process.env.CLAWDSTRIKE_TUI_HUNT_BINARY
-    process.env.CLAWDSTRIKE_TUI_HUNT_BINARY = fakeBinary
+    const original = process.env.THRUNT_TUI_HUNT_BINARY
+    process.env.THRUNT_TUI_HUNT_BINARY = fakeBinary
 
     try {
       huntWatchScreen.onEnter?.(ctx)
@@ -1086,8 +1086,8 @@ describe("hunt watch screen", () => {
       expect(rendered).toContain("Watch failed: NATS error: connection refused")
       expect(rendered).not.toContain("Failed to parse stream line")
     } finally {
-      if (original == null) delete process.env.CLAWDSTRIKE_TUI_HUNT_BINARY
-      else process.env.CLAWDSTRIKE_TUI_HUNT_BINARY = original
+      if (original == null) delete process.env.THRUNT_TUI_HUNT_BINARY
+      else process.env.THRUNT_TUI_HUNT_BINARY = original
     }
   })
 
@@ -1095,7 +1095,7 @@ describe("hunt watch screen", () => {
     const state = createState()
     const app = new TestApp(tempDir)
     const ctx = createContext(state, app, 96, 18)
-    const fakeBinary = path.join(tempDir, "clawdstrike-watch-token-stub")
+    const fakeBinary = path.join(tempDir, "thrunt-god-watch-token-stub")
     const settingsPath = path.join(tempDir, "agent.json")
 
     await fs.writeFile(settingsPath, JSON.stringify({
@@ -1122,17 +1122,17 @@ describe("hunt watch screen", () => {
         "case \" $* \" in",
         "  *\" --nats-token \"*) echo 'token leaked on argv' >&2; exit 7 ;;",
         "esac",
-        "if [ \"$CLAWDSTRIKE_HUNT_NATS_TOKEN\" != \"secret-token\" ]; then echo 'missing token env' >&2; exit 6; fi",
+        "if [ \"$THRUNT_HUNT_NATS_TOKEN\" != \"secret-token\" ]; then echo 'missing token env' >&2; exit 6; fi",
         "echo 'cluster connect failed' >&2",
         "exit 5",
       ].join("\n"),
     )
     await fs.chmod(fakeBinary, 0o755)
 
-    const originalBinary = process.env.CLAWDSTRIKE_TUI_HUNT_BINARY
-    const originalSettings = process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-    process.env.CLAWDSTRIKE_TUI_HUNT_BINARY = fakeBinary
-    process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = settingsPath
+    const originalBinary = process.env.THRUNT_TUI_HUNT_BINARY
+    const originalSettings = process.env.THRUNT_AGENT_SETTINGS_PATH
+    process.env.THRUNT_TUI_HUNT_BINARY = fakeBinary
+    process.env.THRUNT_AGENT_SETTINGS_PATH = settingsPath
     state.desktopAgent = loadDesktopAgentSnapshotSync()
 
     try {
@@ -1144,10 +1144,10 @@ describe("hunt watch screen", () => {
       expect(state.hunt.watch.error).not.toContain("missing token env")
       expect(state.hunt.watch.error).not.toContain("token leaked on argv")
     } finally {
-      if (originalBinary == null) delete process.env.CLAWDSTRIKE_TUI_HUNT_BINARY
-      else process.env.CLAWDSTRIKE_TUI_HUNT_BINARY = originalBinary
-      if (originalSettings == null) delete process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-      else process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = originalSettings
+      if (originalBinary == null) delete process.env.THRUNT_TUI_HUNT_BINARY
+      else process.env.THRUNT_TUI_HUNT_BINARY = originalBinary
+      if (originalSettings == null) delete process.env.THRUNT_AGENT_SETTINGS_PATH
+      else process.env.THRUNT_AGENT_SETTINGS_PATH = originalSettings
     }
   })
 })
@@ -1170,8 +1170,8 @@ describe("integrations screen", () => {
       enrollment: { enrolled: false, enrollment_in_progress: false },
     }))
 
-    const original = process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-    process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = settingsPath
+    const original = process.env.THRUNT_AGENT_SETTINGS_PATH
+    process.env.THRUNT_AGENT_SETTINGS_PATH = settingsPath
     state.desktopAgent = loadDesktopAgentSnapshotSync()
 
     try {
@@ -1183,8 +1183,8 @@ describe("integrations screen", () => {
       expect(rendered).toContain("cluster stream: disabled")
       expect(rendered).toContain("Use Security or Audit for local events")
     } finally {
-      if (original == null) delete process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-      else process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = original
+      if (original == null) delete process.env.THRUNT_AGENT_SETTINGS_PATH
+      else process.env.THRUNT_AGENT_SETTINGS_PATH = original
     }
   })
 
@@ -1211,8 +1211,8 @@ describe("integrations screen", () => {
       enrollment: { enrolled: true, enrollment_in_progress: false },
     }))
 
-    const original = process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-    process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = settingsPath
+    const original = process.env.THRUNT_AGENT_SETTINGS_PATH
+    process.env.THRUNT_AGENT_SETTINGS_PATH = settingsPath
     state.desktopAgent = loadDesktopAgentSnapshotSync()
 
     try {
@@ -1224,8 +1224,8 @@ describe("integrations screen", () => {
       expect(rendered).toContain("watch auth: token")
       expect(rendered).not.toContain("Use Security or Audit for local events")
     } finally {
-      if (original == null) delete process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH
-      else process.env.CLAWDSTRIKE_AGENT_SETTINGS_PATH = original
+      if (original == null) delete process.env.THRUNT_AGENT_SETTINGS_PATH
+      else process.env.THRUNT_AGENT_SETTINGS_PATH = original
     }
   })
 })

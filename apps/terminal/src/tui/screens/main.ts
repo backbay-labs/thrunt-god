@@ -534,7 +534,7 @@ function renderMainContent(ctx: ScreenContext, _commands: Command[]): string {
   const statusHeight = state.statusMessage ? 2 : 0
 
   // Calculate vertical centering for logo + input
-  const contentHeight = LOGO.main.length + LOGO.strike.length + 10 + opsHeight + statusHeight
+  const contentHeight = LOGO.main.length + LOGO.god.length + 10 + opsHeight + statusHeight
   const startY = Math.max(1, Math.floor((height - contentHeight) / 3))
 
   // Top padding

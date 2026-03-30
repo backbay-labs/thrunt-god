@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "sandbox": "inplace",
+  "toolchain": "claude",
+  "adapters": {
+    "codex": {
+      "available": true
+    },
+    "claude": {
+      "available": true
+    },
+    "opencode": {
+      "available": true
+    },
+    "crush": {
+      "available": true
+    }
+  },
+  "git_available": true,
+  "project_id": "default"
+}

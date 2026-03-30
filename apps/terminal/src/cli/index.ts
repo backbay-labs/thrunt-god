@@ -4,9 +4,7 @@
  *
  * Usage:
  *   thrunt-god dispatch <prompt>     Submit task for execution
- *   thrunt-god speculate <prompt>    Run task with multiple agents
  *   thrunt-god gate [gates...]       Run quality gates
- *   thrunt-god beads <subcommand>    Manage work graph
  *   thrunt-god status                Show kernel status
  *   thrunt-god init                  Initialize thrunt-god
  *   thrunt-god doctor                Inspect local environment and services
@@ -128,7 +126,7 @@ ${TUI.info("Dispatch Options:")}
 ${TUI.info("Examples:")}
   thrunt-god dispatch "Fix the bug in auth.ts"
   thrunt-god dispatch -t claude "Add unit tests for utils.ts"
-  thrunt-god gate pytest mypy
+  thrunt-god gate evidence-integrity receipt-completeness
   thrunt-god doctor
 `
 }
@@ -316,7 +314,6 @@ async function cmdInit(options: CLIOptions): Promise<void> {
     // Show detection summary
     const rows: [string, string][] = [
       ["Config", ".thrunt-god/config.json"],
-      ["Beads", ".beads/issues.jsonl"],
       ["Telemetry", ".thrunt-god/runs/"],
       ["Sandbox", project.recommended_sandbox],
       ["Git", project.git_available ? "detected" : "not found"],

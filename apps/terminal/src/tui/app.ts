@@ -325,7 +325,6 @@ export class TUIApp implements AppController {
   async start(): Promise<void> {
     if (!isInitialized()) {
       await init({
-        beadsPath: `${this.cwd}/.beads`,
         telemetryDir: `${this.cwd}/.thrunt-god/runs`,
       })
     }
