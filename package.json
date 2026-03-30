@@ -49,6 +49,9 @@
     "build:hooks": "node scripts/build-hooks.js",
     "prepublishOnly": "npm run build:hooks",
     "test": "node scripts/run-tests.cjs",
-    "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'thrunt-god/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs"
+    "test:coverage": "c8 --check-coverage --lines 70 --reporter text --include 'thrunt-god/bin/lib/*.cjs' --exclude 'tests/**' --all node scripts/run-tests.cjs",
+    "test:integration:up": "docker compose -f tests/integration/docker-compose.yml up -d --wait",
+    "test:integration:down": "docker compose -f tests/integration/docker-compose.yml down -v",
+    "test:integration": "npm run test:integration:up && node scripts/run-integration-tests.cjs; EXIT=$?; npm run test:integration:down; exit $EXIT"
   }
 }
