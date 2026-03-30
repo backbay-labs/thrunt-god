@@ -270,6 +270,70 @@ describe('built-in SIEM connectors', () => {
     }
   });
 
+  test('opensearch executes SQL and normalizes JDBC response with entities', async () => {
+    process.env.OPENSEARCH_USER = 'admin';
+    process.env.OPENSEARCH_PASS = 'admin';
+    const fixture = await startJsonServer(async ({ req, body }) => {
+      assert.strictEqual(req.method, 'POST');
+      assert.strictEqual(req.url, '/_plugins/_sql');
+      assert.ok(req.headers.authorization.startsWith('Basic '), 'should use basic auth');
+      const parsed = JSON.parse(body);
+      assert.ok(parsed.query, 'body should contain query field');
+      return {
+        json: {
+          schema: [
+            { name: '@timestamp', type: 'timestamp' },
+            { name: 'host.name', type: 'keyword' },
+            { name: 'user.name', type: 'keyword' },
+          ],
+          datarows: [
+            ['2026-03-24T14:00:00.000Z', 'os-node-01', 'dave'],
+          ],
+          total: 1,
+          size: 1,
+          status: 200,
+        },
+      };
+    });
+
+    try {
+      const result = await runtime.executeQuerySpec({
+        connector: { id: 'opensearch', profile: 'prod' },
+        dataset: { kind: 'events' },
+        time_window: {
+          start: '2026-03-24T00:00:00.000Z',
+          end: '2026-03-25T00:00:00.000Z',
+        },
+        query: { language: 'sql', statement: "SELECT * FROM logs WHERE @timestamp > '2026-03-24'" },
+      }, runtime.createBuiltInConnectorRegistry(), {
+        config: {
+          connector_profiles: {
+            opensearch: {
+              prod: {
+                auth_type: 'basic',
+                base_url: fixture.baseUrl,
+                secret_refs: {
+                  username: { type: 'env', value: 'OPENSEARCH_USER' },
+                  password: { type: 'env', value: 'OPENSEARCH_PASS' },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      assert.strictEqual(result.envelope.status, 'ok');
+      assert.strictEqual(result.envelope.counts.events, 1);
+      assert.ok(result.envelope.entities.some(e => e.kind === 'host' && e.value === 'os-node-01'));
+      assert.ok(result.envelope.entities.some(e => e.kind === 'user' && e.value === 'dave'));
+      assert.strictEqual(result.envelope.metadata.endpoint, '/_plugins/_sql');
+    } finally {
+      delete process.env.OPENSEARCH_USER;
+      delete process.env.OPENSEARCH_PASS;
+      await fixture.close();
+    }
+  });
+
   test('sentinel reports status partial when response contains PartialError', async () => {
     process.env.SENTINEL_CLIENT_ID = 'sentinel-client';
     process.env.SENTINEL_CLIENT_SECRET = 'sentinel-secret';
