@@ -36,10 +36,10 @@ Requirements for the TUI Operator Console milestone. Each maps to roadmap phases
 - [ ] **BRAND-01**: All ClawdStrike references renamed to THRUNT GOD across source and config
 - [ ] **BRAND-02**: Theme and logo updated from ClawdStrike gothic to THRUNT GOD identity
 - [ ] **BRAND-03**: Environment variables renamed from CLAWDSTRIKE_* to THRUNT_*
-- [ ] **BRAND-04**: Hushd security daemon module and all integration points removed
-- [ ] **BRAND-05**: Beads work graph module replaced with .planning/ state
-- [ ] **BRAND-06**: Speculate/voting module removed
-- [ ] **BRAND-07**: Desktop-agent module removed
+- [x] **BRAND-04**: Hushd security daemon module and all integration points removed
+- [x] **BRAND-05**: Beads work graph module replaced with .planning/ state
+- [x] **BRAND-06**: Speculate/voting module removed
+- [x] **BRAND-07**: Desktop-agent module removed
 
 ## v2 Requirements
 
@@ -93,10 +93,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | BRAND-01 | Phase 26 | Pending |
 | BRAND-02 | Phase 26 | Pending |
 | BRAND-03 | Phase 26 | Pending |
-| BRAND-04 | Phase 26 | Pending |
-| BRAND-05 | Phase 26 | Pending |
-| BRAND-06 | Phase 26 | Pending |
-| BRAND-07 | Phase 26 | Pending |
+| BRAND-04 | Phase 26 | Complete |
+| BRAND-05 | Phase 26 | Complete |
+| BRAND-06 | Phase 26 | Complete |
+| BRAND-07 | Phase 26 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 22 total

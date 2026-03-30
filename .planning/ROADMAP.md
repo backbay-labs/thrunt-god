@@ -83,7 +83,7 @@ Plans:
   3. All environment variables use THRUNT_* prefix; no CLAWDSTRIKE_* variables referenced anywhere
   4. The hushd/, beads/, desktop-agent/, and speculate/voting modules are deleted and no import references remain
   5. The application starts cleanly with no dead-code warnings or missing-module errors
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 26-01-PLAN.md — Delete dead modules (hushd, beads, speculate, desktop-agent, old gates) and scrub all import references
@@ -99,4 +99,4 @@ Phases execute in numeric order: 23 -> 24 -> 25 -> 26
 | 23. Bridge Foundation | 2/2 | Complete    | 2026-03-29 |
 | 24. Hunt Observation Screens | 3/3 | Complete    | 2026-03-29 |
 | 25. Execution & Verification | 2/2 | Complete    | 2026-03-30 |
-| 26. Rebrand & Dead Code Removal | 0/2 | Not started | - |
+| 26. Rebrand & Dead Code Removal | 1/2 | In Progress|  |
