@@ -1,0 +1,53 @@
+name: Pack Validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'thrunt-god/packs/**'
+      - 'thrunt-god/bin/lib/pack.cjs'
+      - 'thrunt-god/bin/lib/runtime.cjs'
+      - 'tests/pack*.test.cjs'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  validate-packs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint all shipped packs
+        run: node thrunt-god/bin/thrunt-tools.cjs pack lint
+
+      - name: Test each pack (bootstrap + render)
+        run: node scripts/validate-all-packs.cjs
+
+      - name: Run pack unit tests
+        run: node --test tests/pack.test.cjs tests/pack-library.test.cjs tests/pack-command.test.cjs
+
+      - name: Upload pack validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pack-validation-report
+          path: pack-validation-report.json
+          retention-days: 30
