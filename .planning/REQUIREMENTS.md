@@ -26,8 +26,8 @@ Requirements for the Live Connector Integrations milestone. Each maps to roadmap
 ### Integration Tests
 
 - [x] **INTG-01**: Splunk integration test executes real SPL query against Docker container, validates bearer token bootstrap and host/user entity extraction
-- [ ] **INTG-02**: Elastic integration test executes real ES|QL query against Docker container, validates API key auth, dotted-column parsing, and `is_partial` behavior
-- [ ] **INTG-03**: OpenSearch integration test executes real ES|QL query against Docker container, validates shared `normalizeElasticRows()` against live response
+- [x] **INTG-02**: Elastic integration test executes real ES|QL query against Docker container, validates API key auth, dotted-column parsing, and `is_partial` behavior
+- [x] **INTG-03**: OpenSearch integration test executes real ES|QL query against Docker container, validates shared `normalizeElasticRows()` against live response
 
 ## v2 Requirements
 
@@ -74,8 +74,8 @@ Deferred to future release. Tracked but not in current roadmap.
 | TEST-02 | Phase 28 | Complete |
 | TEST-03 | Phase 28 | Complete |
 | INTG-01 | Phase 29 | Complete |
-| INTG-02 | Phase 30 | Pending |
-| INTG-03 | Phase 30 | Pending |
+| INTG-02 | Phase 30 | Complete |
+| INTG-03 | Phase 30 | Complete |
 
 **Coverage:**
 - v1.6 requirements: 13 total

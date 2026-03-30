@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Live Connector Integrations
-status: in_progress
-stopped_at: Completed 30-01-PLAN.md
-last_updated: "2026-03-30T07:51:34Z"
-last_activity: 2026-03-30 -- Completed 30-01 EQL & SigV4
+status: completed
+stopped_at: Completed 30-02-PLAN.md (v1.6 milestone complete)
+last_updated: "2026-03-30T07:55:32.859Z"
+last_activity: 2026-03-30 -- Completed 30-02 Elastic/OpenSearch integration tests
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 5
-  completed_plans: 5
+  completed_phases: 4
+  total_plans: 6
+  completed_plans: 6
   percent: 100
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v1.6 Phase 30 — Elastic/OpenSearch Integration
+**Current focus:** v1.6 Phase 30 — Elastic/OpenSearch Integration (Complete)
 
 ## Current Milestone: v1.6 Live Connector Integrations
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 30 of 30 (Elastic/OpenSearch Integration)
-Plan: 1 of 2
-Status: In Progress
-Last activity: 2026-03-30 -- Completed 30-01 EQL & SigV4
+Plan: 2 of 2 (complete)
+Status: Milestone Complete
+Last activity: 2026-03-30 -- Completed 30-02 Elastic/OpenSearch integration tests
 
-Progress: [█████████░] 90% (v1.6 phase 30 plan 1/2)
+Progress: [██████████] 100% (v1.6 complete)
 
 ## Performance Metrics
 
@@ -50,10 +50,11 @@ Progress: [█████████░] 90% (v1.6 phase 30 plan 1/2)
 | 27 | 2 | 6min | 3min |
 | 28 | 1 | 5min | 5min |
 | 29 | 1 | 5min | 5min |
-| 30 | 1 | 3min | 3min |
+| 30 | 2 | 8min | 4min |
 
 *Updated after each plan completion*
 | Phase 30 P01 | 3min | 2 tasks | 2 files |
+| Phase 30 P02 | 5min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,10 @@ Progress: [█████████░] 90% (v1.6 phase 30 plan 1/2)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [30-02]: Elastic integration uses api_key auth with dummy token since xpack.security.enabled=false ignores auth
+- [30-02]: OpenSearch integration uses basic auth with dummy admin/admin since DISABLE_SECURITY_PLUGIN=true ignores auth
+- [30-02]: is_partial not tested in integration (requires 10K+ rows); covered by unit tests in connectors-siem.test.cjs
+- [30-02]: OpenSearch SQL uses backtick-quoted index name for hyphenated test-sysmon
 - [30-01]: EQL detection uses hits.events array presence rather than spec.query.language for robust normalizeResponse
 - [30-01]: SigV4 for OpenSearch reuses signAwsRequest with service='es' (same pattern as AWS CloudTrail with service='cloudtrail')
 - [30-01]: EQL prepareQuery sends {query, filter, size} body shape per Elasticsearch EQL search API
@@ -98,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T07:51:34Z
-Stopped at: Completed 30-01-PLAN.md
+Last session: 2026-03-30T07:55:32.855Z
+Stopped at: Completed 30-02-PLAN.md (v1.6 milestone complete)
 Resume file: None
