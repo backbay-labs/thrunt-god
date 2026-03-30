@@ -3155,4 +3155,28 @@ module.exports = {
   createResultEnvelope,
   performHttpRequest,
   executeQuerySpec,
+
+  // --- SDK export surface (Phase 33) ---
+  // Exported for standalone connector adapters in connectors/.
+  // These functions were previously internal-only, accessed via closure scope
+  // by the 10 built-in adapters defined inside this file.
+  // Total: 18 additional symbols.
+  normalizeBaseUrl,
+  joinUrl,
+  buildUrl,
+  executeConnectorRequest,
+  authorizeRequest,
+  toArray,
+  isPlainObject,
+  cloneObject,
+  getSecret,
+  normalizeSecretRef,
+  getNestedValue,
+  addEntitiesFromRecord,
+  addEntity,
+  normalizeEvent,
+  toIsoOrNull,
+  toUnixSeconds,
+  parseResponseBody,
+  parseLinkHeader,
 };
