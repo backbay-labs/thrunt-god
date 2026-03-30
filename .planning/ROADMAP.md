@@ -64,10 +64,10 @@ Plans:
   1. The Splunk integration test executes a real SPL query against the splunk/splunk:9.4 container, validates bearer token creation, and asserts host and user entities are extracted from result rows
   2. When a Splunk query exceeds the export endpoint timeout, the adapter automatically falls back to async job mode (create-job then poll) and returns the same result envelope shape
   3. The integration test passes end-to-end in a Docker-available environment with no hand-holding of container startup
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 29-01: TBD
+- [ ] 29-01-PLAN.md -- Splunk async job fallback in adapter + Docker integration test with bearer token bootstrap and entity extraction
 
 ### Phase 30: Elastic & OpenSearch Integration
 **Goal**: ES|QL queries execute against live Elasticsearch and OpenSearch containers with partial-result detection validated, EQL sequence queries work as a second Elastic query surface, and OpenSearch supports AWS SigV4 authentication for managed clusters
@@ -91,6 +91,6 @@ Phases execute in numeric order: 27 -> 28 -> 29 -> 30
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 27. SDK Contract Hardening & New Adapter Stubs | 2/2 | Complete    | 2026-03-30 |
-| 28. Docker Test Infrastructure | 1/1 | Complete   | 2026-03-30 |
-| 29. Splunk Integration | 0/? | Not started | - |
+| 28. Docker Test Infrastructure | 1/1 | Complete    | 2026-03-30 |
+| 29. Splunk Integration | 0/1 | Not started | - |
 | 30. Elastic & OpenSearch Integration | 0/? | Not started | - |

@@ -421,6 +421,90 @@ describe('built-in SIEM connectors', () => {
     }
   });
 
+  test('splunk falls back to async job mode when export endpoint returns 504', async () => {
+    process.env.SPLUNK_TOKEN_ASYNC = 'splunk-async-token';
+    let requestCount = 0;
+    const fixture = await startJsonServer(async ({ req, body }) => {
+      requestCount++;
+      if (requestCount === 1) {
+        // First request: POST to /services/search/v2/jobs/export -> 504
+        assert.strictEqual(req.method, 'POST');
+        assert.ok(req.url.startsWith('/services/search/v2/jobs/export'));
+        return { status: 504 };
+      }
+      if (requestCount === 2) {
+        // Second request: POST to /services/search/jobs -> create job
+        assert.strictEqual(req.method, 'POST');
+        assert.ok(req.url.startsWith('/services/search/jobs'));
+        return { json: { sid: 'test_sid_123' } };
+      }
+      if (requestCount === 3) {
+        // Third request: GET to /services/search/jobs/test_sid_123 -> poll status
+        assert.strictEqual(req.method, 'GET');
+        assert.ok(req.url.startsWith('/services/search/jobs/test_sid_123'));
+        assert.ok(!req.url.includes('/results'));
+        return { json: { entry: [{ content: { isDone: '1', resultCount: '1' } }] } };
+      }
+      if (requestCount === 4) {
+        // Fourth request: GET to /services/search/jobs/test_sid_123/results -> fetch results
+        assert.strictEqual(req.method, 'GET');
+        assert.ok(req.url.includes('/services/search/jobs/test_sid_123/results'));
+        return {
+          json: {
+            results: [
+              {
+                _cd: '2:99',
+                _time: '2026-03-28T12:00:00.000Z',
+                host: 'dc-01',
+                user: 'svc-admin',
+                sourcetype: 'sysmon',
+              },
+            ],
+            messages: [],
+          },
+        };
+      }
+      return { status: 500 };
+    });
+
+    try {
+      const result = await runtime.executeQuerySpec({
+        connector: { id: 'splunk', profile: 'async' },
+        dataset: { kind: 'events' },
+        time_window: {
+          start: '2026-03-28T00:00:00.000Z',
+          end: '2026-03-29T00:00:00.000Z',
+        },
+        query: { language: 'spl', statement: 'index=sysmon host=dc-01' },
+      }, runtime.createBuiltInConnectorRegistry(), {
+        config: {
+          connector_profiles: {
+            splunk: {
+              async: {
+                auth_type: 'bearer',
+                base_url: fixture.baseUrl,
+                secret_refs: {
+                  access_token: { type: 'env', value: 'SPLUNK_TOKEN_ASYNC' },
+                },
+              },
+            },
+          },
+        },
+        sleep: () => Promise.resolve(), // no-op sleep to avoid delays in tests
+      });
+
+      assert.strictEqual(result.envelope.status, 'ok');
+      assert.strictEqual(result.envelope.counts.events, 1);
+      assert.ok(result.envelope.entities.some(item => item.kind === 'host' && item.value === 'dc-01'));
+      assert.ok(result.envelope.entities.some(item => item.kind === 'user' && item.value === 'svc-admin'));
+      assert.strictEqual(result.envelope.metadata.endpoint, 'search/jobs');
+      assert.strictEqual(requestCount, 4, 'Should have made exactly 4 requests (export, create, poll, results)');
+    } finally {
+      delete process.env.SPLUNK_TOKEN_ASYNC;
+      await fixture.close();
+    }
+  });
+
   test('sentinel reports status partial when response contains PartialError', async () => {
     process.env.SENTINEL_CLIENT_ID = 'sentinel-client';
     process.env.SENTINEL_CLIENT_SECRET = 'sentinel-secret';
