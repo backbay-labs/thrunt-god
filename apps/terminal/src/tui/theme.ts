@@ -1,36 +1,36 @@
 /**
- * Theme - Techno Classical Gothic
+ * Theme - Sovereign
  *
- * Extracted from app.ts. Contains all visual constants:
- * colors, logo, animation, escape sequences, and agent definitions.
+ * Regal gothic: obsidian background, royal purple primary, sovereign gold secondary.
+ * Authority without blood. Crown energy.
  */
 
 // =============================================================================
 // COLORS
 // =============================================================================
 
-// Background color - deep obsidian black (defined first so reset can use it)
+// Background color - deep obsidian black (kept from gothic era)
 export const BG_COLOR = "\x1b[48;2;12;12;16m"
 
 export const THEME = {
-  // Primary accent - deep crimson (gothic blood)
-  accent: BG_COLOR + "\x1b[38;5;124m",
-  // Secondary accent - antique gold (classical elegance)
-  secondary: BG_COLOR + "\x1b[38;5;178m",
-  // Tertiary - deep violet (gothic shadow)
-  tertiary: BG_COLOR + "\x1b[38;5;97m",
-  // Success - verdigris/aged copper
-  success: BG_COLOR + "\x1b[38;5;30m",
-  // Warning - burnt sienna
-  warning: BG_COLOR + "\x1b[38;5;166m",
-  // Error - dark crimson
-  error: BG_COLOR + "\x1b[38;5;160m",
-  // Muted text - stone gray
-  muted: BG_COLOR + "\x1b[38;5;246m",
-  // Dimmer muted - charcoal
-  dim: BG_COLOR + "\x1b[38;5;240m",
-  // White text - ivory/pearl
-  white: BG_COLOR + "\x1b[38;5;188m",
+  // Primary accent - royal purple (sovereign authority)
+  accent: BG_COLOR + "\x1b[38;2;155;89;182m",
+  // Secondary accent - sovereign gold (crown elegance)
+  secondary: BG_COLOR + "\x1b[38;2;212;168;67m",
+  // Tertiary - midnight blue (deep court shadow)
+  tertiary: BG_COLOR + "\x1b[38;2;44;62;107m",
+  // Success - emerald (royal seal)
+  success: BG_COLOR + "\x1b[38;2;39;174;96m",
+  // Warning - burnished orange (herald flame)
+  warning: BG_COLOR + "\x1b[38;2;230;126;34m",
+  // Error - deep carmine (blood oath)
+  error: BG_COLOR + "\x1b[38;2;192;57;43m",
+  // Muted text - pewter
+  muted: BG_COLOR + "\x1b[38;2;127;140;141m",
+  // Dimmer muted - dark pewter
+  dim: BG_COLOR + "\x1b[38;2;90;100;105m",
+  // White text - marble
+  white: BG_COLOR + "\x1b[38;2;236;240;241m",
   // Background - deep obsidian black
   bg: BG_COLOR,
   // Reset - resets foreground but keeps background
@@ -49,8 +49,8 @@ export type ThemeColors = typeof THEME
 // LOGO
 // =============================================================================
 
-// Gothic ASCII logo - THRUNT GOD stacked two-part layout
-// "THRUNT" is static crimson, "GOD" is animated with gold shimmer
+// Sovereign ASCII logo - THRUNT GOD stacked two-part layout
+// "THRUNT" is static royal purple, "GOD" is animated with gold shimmer
 export const LOGO = {
   // "THRUNT" - static crimson
   main: [

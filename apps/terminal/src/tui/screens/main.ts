@@ -543,7 +543,7 @@ function renderMainContent(ctx: ScreenContext, _commands: Command[]): string {
   }
 
   // Logo - stacked layout: THRUNT on top, GOD below
-  // Render THRUNT lines in crimson
+  // Render THRUNT lines in royal purple
   lines.push(...centerBlock(
     LOGO.main.map((line) => `${THEME.accent}${line}${THEME.reset}`),
     width,
