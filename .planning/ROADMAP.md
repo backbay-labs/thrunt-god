@@ -163,7 +163,7 @@ Plans:
 **Goal**: Ship cross-connector replay via pack-based target selection and IOC injection with input sanitization
 **Depends on**: Phase 39 (time rewriters exist for all languages)
 **Requirements**: REPLAY-03
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 40-01-PLAN.md -- Source retargeting (pack-based + same-language), IOC injection engine (field map, validation, sanitization, per-language injection)
 **Success Criteria** (what must be TRUE):
@@ -289,7 +289,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 37. Pack Testing & Publishing | 2/2 | Complete    | 2026-03-30 |
 | 38. Replay Engine Core | 1/1 | Complete    | 2026-03-30 |
 | 39. Per-Language Query Rewriters | 1/1 | Complete    | 2026-03-30 |
-| 40. Source Retargeting & IOC Injection | 0/1 | Planning    | |
+| 40. Source Retargeting & IOC Injection | 1/1 | Complete   | 2026-03-30 |
 | 41. Replay Diffing & Receipt Lineage | 0/0 | Not Started | |
 | 42. Tenant Registry & Auth | 0/0 | Not Started | |
 | 43. Dispatch Coordinator | 0/0 | Not Started | |

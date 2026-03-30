@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Developer Experience & CI
 status: completed
-stopped_at: Completed 39-01-PLAN.md
-last_updated: "2026-03-30T22:10:14.977Z"
-last_activity: 2026-03-30 -- Completed 39-01 Per-Language Query Rewriters (SPL, ES|QL, EQL, KQL, OpenSearch SQL)
+stopped_at: Completed 40-01-PLAN.md
+last_updated: "2026-03-30T22:31:16.000Z"
+last_activity: 2026-03-30 -- Completed 40-01 Source Retargeting & IOC Injection
 progress:
   total_phases: 19
-  completed_phases: 9
-  total_plans: 15
-  completed_plans: 15
-  percent: 14
+  completed_phases: 10
+  total_plans: 16
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.1 Advanced Hunt Features — Phase 39 (Per-Language Query Rewriters)
+**Current focus:** v2.1 Advanced Hunt Features — Phase 40 (Source Retargeting & IOC Injection)
 
 ## Current Milestone: v2.1 Advanced Hunt Features
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 39 of 44 (Per-Language Query Rewriters)
-Plan: 1 of 1 (Per-Language Time Rewriters & Registry)
+Phase: 40 of 44 (Source Retargeting & IOC Injection)
+Plan: 1 of 1 (Source Retargeting & IOC Injection)
 Status: Complete
-Last activity: 2026-03-30 -- Completed 39-01 Per-Language Query Rewriters (SPL, ES|QL, EQL, KQL, OpenSearch SQL)
+Last activity: 2026-03-30 -- Completed 40-01 Source Retargeting & IOC Injection
 
-Progress: [██████████] 100% (15/15 plans complete)
+Progress: [██████████] 100% (16/16 plans complete)
 
 ## Upcoming Milestones
 
@@ -86,6 +86,10 @@ All historical decisions logged in PROJECT.md Key Decisions table.
 - [Phase 39-per-language-query-rewriters]: EQL-FILTER-PARAM: EQL uses filter-parameter approach (returns filter object) rather than statement rewriting -- aligns with how prepareQuery passes spec.parameters.filter
 - [Phase 39-per-language-query-rewriters]: ABSOLUTE-ISO-ALWAYS: All rewriters replace with absolute ISO timestamps to remove relative-time ambiguity
 - [Phase 39-per-language-query-rewriters]: BETWEEN-FIRST: BETWEEN patterns matched before individual comparisons in ES|QL and OpenSearch SQL to avoid double-matching
+- [Phase 40-source-retargeting-ioc-injection]: PACK-RETARGET-VIA-RESOLVE: retargetPackExecution delegates to resolvePack/renderPackTemplate rather than reimplementing pack resolution -- reuses existing pack infrastructure
+- [Phase 40-source-retargeting-ioc-injection]: SANITIZE-BEFORE-INJECT: IOC values validated then sanitized per-language before injection -- prevents query injection at both validation and sanitization layers
+- [Phase 40-source-retargeting-ioc-injection]: FIELD-SCAN-FIRST-MATCH: injectIoc scans statement for first matching field from IOC_FIELD_MAP rather than requiring exact field specification -- handles diverse query patterns automatically
+- [Phase 40-source-retargeting-ioc-injection]: APPEND-NO-FIELD-FALLBACK: When no matching field found in statement, injectIoc appends filter clause using first field from IOC_FIELD_MAP -- ensures IOC always gets injected
 
 ### Research Specs Available
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T22:09:24.000Z
-Stopped at: Completed 39-01-PLAN.md
+Last session: 2026-03-30T22:31:16.000Z
+Stopped at: Completed 40-01-PLAN.md
 Resume file: None
