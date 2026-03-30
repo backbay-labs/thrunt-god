@@ -1,16 +1,16 @@
 #!/usr/bin/env bun
 /**
- * clawdstrike CLI - Command-line interface for the orchestration engine
+ * thrunt-god CLI - Command-line interface for the orchestration engine
  *
  * Usage:
- *   clawdstrike dispatch <prompt>     Submit task for execution
- *   clawdstrike speculate <prompt>    Run task with multiple agents
- *   clawdstrike gate [gates...]       Run quality gates
- *   clawdstrike beads <subcommand>    Manage work graph
- *   clawdstrike status                Show kernel status
- *   clawdstrike init                  Initialize clawdstrike
- *   clawdstrike doctor                Inspect local environment and services
- *   clawdstrike version               Show version
+ *   thrunt-god dispatch <prompt>     Submit task for execution
+ *   thrunt-god speculate <prompt>    Run task with multiple agents
+ *   thrunt-god gate [gates...]       Run quality gates
+ *   thrunt-god beads <subcommand>    Manage work graph
+ *   thrunt-god status                Show kernel status
+ *   thrunt-god init                  Initialize thrunt-god
+ *   thrunt-god doctor                Inspect local environment and services
+ *   thrunt-god version               Show version
  */
 
 import { parseArgs } from "util"
@@ -99,15 +99,15 @@ function parseCliArgs(): { command: string; args: string[]; options: CLIOptions 
 
 function getHelpText(): string {
   return `
-${TUI.header("clawdstrike - Security-Aware AI Coding Agent Orchestrator")}
+${TUI.header("thrunt-god - Security-Aware AI Coding Agent Orchestrator")}
 
-${TUI.info("Usage:")} clawdstrike <command> [options] [args]
+${TUI.info("Usage:")} thrunt-god <command> [options] [args]
 
 ${TUI.info("Commands:")}
   dispatch <prompt>       Submit task for execution by an AI agent
   gate [gates...]         Run quality gates on current directory
   status                  Show active rollouts and kernel status
-  init                    Initialize clawdstrike in current directory
+  init                    Initialize thrunt-god in current directory
   doctor                  Inspect local environment and services
   version                 Show version information
   help                    Show this help message
@@ -126,10 +126,10 @@ ${TUI.info("Dispatch Options:")}
   --timeout <ms>          Execution timeout in milliseconds
 
 ${TUI.info("Examples:")}
-  clawdstrike dispatch "Fix the bug in auth.ts"
-  clawdstrike dispatch -t claude "Add unit tests for utils.ts"
-  clawdstrike gate pytest mypy
-  clawdstrike doctor
+  thrunt-god dispatch "Fix the bug in auth.ts"
+  thrunt-god dispatch -t claude "Add unit tests for utils.ts"
+  thrunt-god gate pytest mypy
+  thrunt-god doctor
 `
 }
 
@@ -141,7 +141,7 @@ ${TUI.info("Examples:")}
 async function cmdDispatch(args: string[], options: CLIOptions): Promise<void> {
   const prompt = args.join(" ")
   if (!prompt) {
-    console.error(TUI.error("Missing prompt. Usage: clawdstrike dispatch <prompt>"))
+    console.error(TUI.error("Missing prompt. Usage: thrunt-god dispatch <prompt>"))
     process.exit(1)
   }
 
@@ -268,7 +268,7 @@ async function cmdStatus(options: CLIOptions): Promise<void> {
     const rollouts = await Promise.all(active.map((id) => Telemetry.getRollout(id)))
     console.log(JSON.stringify({ active: rollouts.filter(Boolean) }, null, 2))
   } else {
-    console.log(TUI.header("clawdstrike Status"))
+    console.log(TUI.header("thrunt-god Status"))
     console.log(
       TUI.formatTable([
         ["Version", VERSION],
@@ -292,11 +292,11 @@ async function cmdStatus(options: CLIOptions): Promise<void> {
 async function cmdInit(options: CLIOptions): Promise<void> {
   const cwd = options.cwd ?? process.cwd()
 
-  console.log(TUI.progress(`Initializing clawdstrike in ${cwd}...`))
+  console.log(TUI.progress(`Initializing thrunt-god in ${cwd}...`))
 
   try {
     await init({
-      telemetryDir: `${cwd}/.clawdstrike/runs`,
+      telemetryDir: `${cwd}/.thrunt-god/runs`,
     })
 
     // Keep init lightweight and deterministic; richer probing belongs in doctor.
@@ -311,16 +311,16 @@ async function cmdInit(options: CLIOptions): Promise<void> {
     }
     await Config.save(cwd, config)
 
-    console.log(TUI.success("clawdstrike initialized"))
+    console.log(TUI.success("thrunt-god initialized"))
 
     // Show detection summary
     const rows: [string, string][] = [
-      ["Config", ".clawdstrike/config.json"],
+      ["Config", ".thrunt-god/config.json"],
       ["Beads", ".beads/issues.jsonl"],
-      ["Telemetry", ".clawdstrike/runs/"],
+      ["Telemetry", ".thrunt-god/runs/"],
       ["Sandbox", project.recommended_sandbox],
       ["Git", project.git_available ? "detected" : "not found"],
-      ["Next", "run clawdstrike doctor"],
+      ["Next", "run thrunt-god doctor"],
     ]
 
     console.log(TUI.formatTable(rows, { indent: 2 }))
@@ -344,8 +344,8 @@ function formatHealthStatus(status: HealthStatus | undefined): string {
 }
 
 function detectRuntimeInfo(): { source: string; script_path: string | null; bun_version: string | null } {
-  const scriptPath = process.env.CLAWDSTRIKE_TUI_RUNTIME_SCRIPT ?? Bun.main ?? process.argv[1] ?? null
-  const envSource = process.env.CLAWDSTRIKE_TUI_RUNTIME_SOURCE
+  const scriptPath = process.env.THRUNT_TUI_RUNTIME_SCRIPT ?? Bun.main ?? process.argv[1] ?? null
+  const envSource = process.env.THRUNT_TUI_RUNTIME_SOURCE
 
   if (envSource) {
     return {
@@ -413,7 +413,7 @@ async function cmdDoctor(options: CLIOptions): Promise<void> {
       ["Git", project.git_available ? "detected" : "not found"],
     ]
 
-    console.log(TUI.header("clawdstrike Doctor"))
+    console.log(TUI.header("thrunt-god Doctor"))
     console.log(TUI.formatTable(rows))
 
     const sections: Array<[string, HealthStatus[]]> = [
@@ -442,7 +442,7 @@ async function cmdDoctor(options: CLIOptions): Promise<void> {
 }
 
 async function cmdVersion(): Promise<void> {
-  console.log(`clawdstrike ${VERSION}`)
+  console.log(`thrunt-god ${VERSION}`)
 }
 
 async function cmdHelp(): Promise<void> {
@@ -457,7 +457,7 @@ async function ensureInitialized(options: CLIOptions): Promise<void> {
   if (!isInitialized()) {
     const cwd = options.cwd ?? process.cwd()
     await init({
-      telemetryDir: `${cwd}/.clawdstrike/runs`,
+      telemetryDir: `${cwd}/.thrunt-god/runs`,
     })
   }
 }

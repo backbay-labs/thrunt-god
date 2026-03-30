@@ -4,7 +4,7 @@
  * Exposes ClawdStrike tools (dispatch, speculate, gate) over MCP protocol.
  * Also supports connecting to external MCP servers (bidirectional hub).
  *
- * Discovery: Writes port to `.clawdstrike/mcp.json` for other tools to find.
+ * Discovery: Writes port to `.thrunt-god/mcp.json` for other tools to find.
  */
 
 import { createServer, type Server, Socket } from "node:net"
@@ -349,7 +349,7 @@ class McpServerImpl {
    */
   private async writeDiscovery(port: number, host: string): Promise<void> {
     const cwd = this.config.cwd ?? process.cwd()
-    const dir = path.join(cwd, ".clawdstrike")
+    const dir = path.join(cwd, ".thrunt-god")
     this.discoveryPath = path.join(dir, "mcp.json")
 
     await fs.mkdir(dir, { recursive: true })

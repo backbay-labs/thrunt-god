@@ -41,7 +41,7 @@ export interface ReportHistoryEntry {
   traceability: ReportTraceability
 }
 
-const REPORTS_DIR = ".clawdstrike/reports"
+const REPORTS_DIR = ".thrunt-god/reports"
 const REPORT_HISTORY_FILE = "index.jsonl"
 
 function sanitizeFilePart(value: string, fallback: string): string {

@@ -159,8 +159,8 @@ function createInitialExternalState() {
 // =============================================================================
 
 function resolveRuntimeInfo(): RuntimeInfo {
-  const scriptPath = process.env.CLAWDSTRIKE_TUI_RUNTIME_SCRIPT ?? Bun.main ?? process.argv[1] ?? null
-  const envSource = process.env.CLAWDSTRIKE_TUI_RUNTIME_SOURCE
+  const scriptPath = process.env.THRUNT_TUI_RUNTIME_SCRIPT ?? Bun.main ?? process.argv[1] ?? null
+  const envSource = process.env.THRUNT_TUI_RUNTIME_SOURCE
 
   if (
     envSource === "override" ||
@@ -326,7 +326,7 @@ export class TUIApp implements AppController {
     if (!isInitialized()) {
       await init({
         beadsPath: `${this.cwd}/.beads`,
-        telemetryDir: `${this.cwd}/.clawdstrike/runs`,
+        telemetryDir: `${this.cwd}/.thrunt-god/runs`,
       })
     }
 
@@ -1281,7 +1281,7 @@ export class TUIApp implements AppController {
   }
 
   private shouldUseEmbeddedInteractive(run: RunRecord): boolean {
-    const override = process.env.CLAWDSTRIKE_ATTACH_MODE?.trim().toLowerCase()
+    const override = process.env.THRUNT_ATTACH_MODE?.trim().toLowerCase()
     if (override === "raw") {
       return false
     }

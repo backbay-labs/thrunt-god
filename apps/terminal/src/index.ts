@@ -86,7 +86,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
   }
 
   const {
-    telemetryDir = ".clawdstrike/runs",
+    telemetryDir = ".thrunt-god/runs",
     telemetryEnabled = true,
   } = options
 
