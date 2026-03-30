@@ -18,8 +18,10 @@ describe('built-in SIEM connectors', () => {
     assert.ok(ids.includes('splunk'));
     assert.ok(ids.includes('elastic'));
     assert.ok(ids.includes('sentinel'));
+    assert.ok(ids.includes('opensearch'));
+    assert.ok(ids.includes('defender_xdr'));
 
-    for (const id of ['splunk', 'elastic', 'sentinel']) {
+    for (const id of ['splunk', 'elastic', 'sentinel', 'opensearch', 'defender_xdr']) {
       const connector = connectors.find(item => item.id === id);
       assert.ok(connector.docs_url, `${id} should publish docs_url`);
       assert.ok(Array.isArray(connector.limitations), `${id} should publish limitations`);
