@@ -34,6 +34,7 @@ export interface StatusBarData {
   huntScan?: { status: string } | null
   lastExportedReport?: { title: string; severity: string } | null
   thruntPhase?: { number: string; plan: string; progress: number } | null
+  gateResults?: { passed: number; failed: number; score: number } | null
 }
 
 function healthSummary(
@@ -126,6 +127,15 @@ export function renderStatusBar(
       `${theme.dim}phase${theme.reset} ${theme.secondary}${data.thruntPhase.number}${theme.reset} ` +
       `${theme.dim}${data.thruntPhase.plan}${theme.reset}`
     )
+  }
+
+  if (data.gateResults) {
+    const { passed, failed, score } = data.gateResults
+    if (failed === 0) {
+      segments.push(`${theme.dim}gates${theme.reset} ${theme.success}pass${theme.reset}`)
+    } else {
+      segments.push(`${theme.dim}gates${theme.reset} ${theme.error}${failed} fail${theme.reset}`)
+    }
   }
 
   if (data.huntWatch) {

@@ -519,6 +519,22 @@ export interface ThruntConnectorsState {
   error: string | null
 }
 
+export interface ThruntGateResults {
+  results: Array<{ gate: string; passed: boolean; output: string; diagnostics?: Array<{ severity: string; message: string; file?: string }> }>
+  allPassed: boolean
+  score: number
+  ranAt: string
+}
+
+export interface ThruntExecutionState {
+  running: boolean
+  connector: string | null
+  query: string | null
+  log: LogState
+  error: string | null
+  completedAt: string | null
+}
+
 export interface HuntState {
   investigation: HuntInvestigationState
   watch: HuntWatchState
@@ -610,6 +626,10 @@ export interface AppState {
   thruntDetections: ThruntDetectionsState
   thruntPacks: ThruntPacksState
   thruntConnectors: ThruntConnectorsState
+
+  // THRUNT execution and verification
+  thruntGateResults: ThruntGateResults | null
+  thruntExecution: ThruntExecutionState
 }
 
 // =============================================================================
@@ -864,5 +884,16 @@ export function createInitialThruntConnectorsState(): ThruntConnectorsState {
     list: { offset: 0, selected: 0 },
     loading: false,
     error: null,
+  }
+}
+
+export function createInitialThruntExecutionState(): ThruntExecutionState {
+  return {
+    running: false,
+    connector: null,
+    query: null,
+    log: { lines: [], maxLines: 1000, viewport: 0, paused: false },
+    error: null,
+    completedAt: null,
   }
 }
