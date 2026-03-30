@@ -164,7 +164,6 @@ export type InputMode =
   | "hunt-mitre"
   | "hunt-playbook"
   // THRUNT observation screens
-  | "hunt-dashboard"
   | "hunt-phases"
   | "hunt-evidence"
   | "hunt-detections"
@@ -439,11 +438,6 @@ export interface HuntPlaybookState {
 // THRUNT OBSERVATION SCREEN STATE
 // =============================================================================
 
-export interface ThruntDashboardState {
-  loading: boolean
-  error: string | null
-}
-
 export interface ThruntPhasesState {
   analysis: HuntmapAnalysis | null
   selectedPhaseIndex: number
@@ -572,7 +566,6 @@ export interface AppState {
 
   // THRUNT bridge state
   thruntContext: ThruntHuntContext | null
-  thruntDashboard: ThruntDashboardState
   thruntPhases: ThruntPhasesState
   thruntEvidence: ThruntEvidenceState
   thruntDetections: ThruntDetectionsState
@@ -761,10 +754,6 @@ export function createInitialRunListState(): RunListState {
     filter: "active",
     list: { offset: 0, selected: 0 },
   }
-}
-
-export function createInitialThruntDashboardState(): ThruntDashboardState {
-  return { loading: false, error: null }
 }
 
 export function createInitialThruntPhasesState(): ThruntPhasesState {

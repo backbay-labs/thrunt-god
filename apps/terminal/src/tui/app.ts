@@ -37,7 +37,6 @@ import {
   createInitialHuntState,
   createInitialInteractiveSessionState,
   createInitialRunListState,
-  createInitialThruntDashboardState,
   createInitialThruntPhasesState,
   createInitialThruntEvidenceState,
   createInitialThruntDetectionsState,
@@ -251,7 +250,6 @@ export class TUIApp implements AppController {
       setupSandboxIndex: 0,
       hunt: createInitialHuntState(),
       thruntContext: null,
-      thruntDashboard: createInitialThruntDashboardState(),
       thruntPhases: createInitialThruntPhasesState(),
       thruntEvidence: createInitialThruntEvidenceState(),
       thruntDetections: createInitialThruntDetectionsState(),
@@ -522,8 +520,8 @@ export class TUIApp implements AppController {
       return
     }
 
-    // Gate overlay toggle (G key from main screen when gate results exist)
-    if ((key === "G" || key === "g") && this.state.inputMode === "main" && this.state.thruntGateResults) {
+    // Gate overlay toggle (Shift+G from main screen when gate results exist)
+    if (key === "G" && this.state.inputMode === "main" && this.state.thruntGateResults) {
       this._showGateOverlay = !this._showGateOverlay
       this.render()
       return

@@ -29,7 +29,6 @@ const SURFACE_META: Record<InputMode, SurfaceMeta> = {
   "hunt-report-history": { label: "history", stage: "supported", group: "hunt" },
   "hunt-mitre": { label: "mitre", stage: "experimental", group: "hunt" },
   "hunt-playbook": { label: "playbook", stage: "experimental", group: "hunt" },
-  "hunt-dashboard": { label: "dashboard", stage: "supported", group: "hunt" },
   "hunt-phases": { label: "phases", stage: "supported", group: "hunt" },
   "hunt-evidence": { label: "evidence", stage: "supported", group: "hunt" },
   "hunt-detections": { label: "detections", stage: "supported", group: "hunt" },
