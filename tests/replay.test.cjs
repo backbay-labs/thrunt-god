@@ -1005,3 +1005,237 @@ describe('retargetPackExecution', () => {
     assert.ok(result.warnings.some(w => w.includes('TimeGenerated') || w.includes('Timestamp')));
   });
 });
+
+// ─── 15. IOC_FIELD_MAP ──────────────────────────────────────────────────────────
+
+describe('IOC_FIELD_MAP', () => {
+  const { IOC_FIELD_MAP } = require('../thrunt-god/bin/lib/replay.cjs');
+
+  test('has entry for splunk with ip, hash, domain, user arrays', () => {
+    assert.ok(IOC_FIELD_MAP.splunk);
+    assert.ok(Array.isArray(IOC_FIELD_MAP.splunk.ip));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.splunk.hash));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.splunk.domain));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.splunk.user));
+  });
+
+  test('has entry for elastic with ip, hash, domain, user arrays', () => {
+    assert.ok(IOC_FIELD_MAP.elastic);
+    assert.ok(Array.isArray(IOC_FIELD_MAP.elastic.ip));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.elastic.hash));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.elastic.domain));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.elastic.user));
+  });
+
+  test('has entry for sentinel with ip, hash, domain, user arrays', () => {
+    assert.ok(IOC_FIELD_MAP.sentinel);
+    assert.ok(Array.isArray(IOC_FIELD_MAP.sentinel.ip));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.sentinel.hash));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.sentinel.domain));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.sentinel.user));
+  });
+
+  test('has entry for defender_xdr with ip, hash, domain, user arrays', () => {
+    assert.ok(IOC_FIELD_MAP.defender_xdr);
+    assert.ok(Array.isArray(IOC_FIELD_MAP.defender_xdr.ip));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.defender_xdr.hash));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.defender_xdr.domain));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.defender_xdr.user));
+  });
+
+  test('has entry for opensearch with ip, hash, domain, user arrays', () => {
+    assert.ok(IOC_FIELD_MAP.opensearch);
+    assert.ok(Array.isArray(IOC_FIELD_MAP.opensearch.ip));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.opensearch.hash));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.opensearch.domain));
+    assert.ok(Array.isArray(IOC_FIELD_MAP.opensearch.user));
+  });
+});
+
+// ─── 16. validateIocValue ───────────────────────────────────────────────────────
+
+describe('validateIocValue', () => {
+  const { validateIocValue } = require('../thrunt-god/bin/lib/replay.cjs');
+
+  test('valid IPv4 (10.0.0.1)', () => {
+    const result = validateIocValue('ip', '10.0.0.1');
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('valid IPv6 (::1)', () => {
+    const result = validateIocValue('ip', '::1');
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('valid IPv6 (2001:db8::1)', () => {
+    const result = validateIocValue('ip', '2001:db8::1');
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('invalid IP (not-an-ip)', () => {
+    const result = validateIocValue('ip', 'not-an-ip');
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.error);
+  });
+
+  test('valid hash MD5 (32 hex chars)', () => {
+    const result = validateIocValue('hash', 'a'.repeat(32));
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('valid hash SHA1 (40 hex chars)', () => {
+    const result = validateIocValue('hash', 'b'.repeat(40));
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('valid hash SHA256 (64 hex chars)', () => {
+    const result = validateIocValue('hash', 'c'.repeat(64));
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('valid hash SHA512 (128 hex chars)', () => {
+    const result = validateIocValue('hash', 'd'.repeat(128));
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('invalid hash (too short / non-hex)', () => {
+    const result = validateIocValue('hash', 'xyz');
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.error);
+  });
+
+  test('valid domain (example.com)', () => {
+    const result = validateIocValue('domain', 'example.com');
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('valid domain (sub.domain.co.uk)', () => {
+    const result = validateIocValue('domain', 'sub.domain.co.uk');
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('invalid domain (..bad)', () => {
+    const result = validateIocValue('domain', '..bad');
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.error);
+  });
+
+  test('valid user (admin) -- any non-empty string', () => {
+    const result = validateIocValue('user', 'admin');
+    assert.strictEqual(result.valid, true);
+  });
+
+  test('empty user returns invalid', () => {
+    const result = validateIocValue('user', '');
+    assert.strictEqual(result.valid, false);
+    assert.ok(result.error);
+  });
+});
+
+// ─── 17. sanitizeIocForLanguage ─────────────────────────────────────────────────
+
+describe('sanitizeIocForLanguage', () => {
+  const { sanitizeIocForLanguage } = require('../thrunt-god/bin/lib/replay.cjs');
+
+  test('SPL: strips pipe, backtick, bracket characters', () => {
+    const result = sanitizeIocForLanguage('spl', '| delete index=main');
+    assert.ok(!result.includes('|'));
+    assert.ok(!result.includes('`'));
+  });
+
+  test('ES|QL: escapes double quotes', () => {
+    const result = sanitizeIocForLanguage('esql', 'value"with"quotes');
+    // Doubling: each " becomes "", so "with" becomes ""with""
+    assert.strictEqual(result, 'value""with""quotes');
+  });
+
+  test('KQL: escapes double quotes and semicolons', () => {
+    const result = sanitizeIocForLanguage('kql', 'value"test;drop');
+    assert.ok(!result.includes(';'));
+  });
+
+  test('SQL: escapes single quotes by doubling', () => {
+    const result = sanitizeIocForLanguage('sql', "value' OR 1=1--");
+    assert.ok(result.includes("''"));
+    assert.ok(!result.includes(";"));
+  });
+
+  test('SPL injection prevention: pipe delete command stripped', () => {
+    const result = sanitizeIocForLanguage('spl', '| delete index=main');
+    assert.ok(!result.includes('|'));
+  });
+});
+
+// ─── 18. injectIoc ──────────────────────────────────────────────────────────────
+
+describe('injectIoc', () => {
+  const { injectIoc } = require('../thrunt-god/bin/lib/replay.cjs');
+
+  test('SPL append ip: wraps in OR group', () => {
+    const result = injectIoc('spl', 'index=main src=10.0.0.1', 'ip', '203.0.113.50', 'append', 'splunk');
+    assert.ok(result.injected.includes('(src=10.0.0.1 OR src=203.0.113.50)'));
+    assert.ok(result.modifications.length > 0);
+  });
+
+  test('SPL replace ip: substitutes value', () => {
+    const result = injectIoc('spl', 'index=main src=10.0.0.1', 'ip', '203.0.113.50', 'replace', 'splunk');
+    assert.ok(result.injected.includes('src=203.0.113.50'));
+    assert.ok(!result.injected.includes('10.0.0.1'));
+  });
+
+  test('SPL append hash: wraps FileHash in OR group', () => {
+    const hash1 = 'a'.repeat(64);
+    const hash2 = 'b'.repeat(64);
+    const result = injectIoc('spl', `index=main FileHash=${hash1}`, 'hash', hash2, 'append', 'splunk');
+    assert.ok(result.injected.includes(`(FileHash=${hash1} OR FileHash=${hash2})`));
+  });
+
+  test('ES|QL append ip: produces IN clause', () => {
+    const result = injectIoc('esql', 'FROM logs-* | WHERE source.ip == "10.0.0.1"', 'ip', '203.0.113.50', 'append', 'elastic');
+    assert.ok(result.injected.includes('source.ip IN ("10.0.0.1", "203.0.113.50")'));
+  });
+
+  test('ES|QL replace ip: produces single value', () => {
+    const result = injectIoc('esql', 'FROM logs-* | WHERE source.ip == "10.0.0.1"', 'ip', '203.0.113.50', 'replace', 'elastic');
+    assert.ok(result.injected.includes('source.ip == "203.0.113.50"'));
+    assert.ok(!result.injected.includes('10.0.0.1'));
+  });
+
+  test('KQL append ip: produces in clause', () => {
+    const result = injectIoc('kql', 'SigninLogs | where IPAddress == "10.0.0.1"', 'ip', '203.0.113.50', 'append', 'sentinel');
+    assert.ok(result.injected.includes('IPAddress in ("10.0.0.1", "203.0.113.50")'));
+  });
+
+  test('KQL replace ip: replaces value', () => {
+    const result = injectIoc('kql', 'SigninLogs | where IPAddress == "10.0.0.1"', 'ip', '203.0.113.50', 'replace', 'sentinel');
+    assert.ok(result.injected.includes('IPAddress == "203.0.113.50"'));
+    assert.ok(!result.injected.includes('10.0.0.1'));
+  });
+
+  test('OpenSearch SQL append ip: produces IN clause with single quotes', () => {
+    const result = injectIoc('sql', "SELECT * FROM logs WHERE source_ip = '10.0.0.1'", 'ip', '203.0.113.50', 'append', 'opensearch');
+    assert.ok(result.injected.includes("source_ip IN ('10.0.0.1', '203.0.113.50')"));
+  });
+
+  test('IOC_FIELD_UNKNOWN warning when ioc type has no field mapping', () => {
+    const result = injectIoc('spl', 'index=main', 'unknown_type', 'value', 'append', 'splunk');
+    assert.ok(result.warnings.some(w => w.code === 'IOC_FIELD_UNKNOWN'));
+  });
+
+  test('COMPLEX_QUERY_WARNING for statement with lookup', () => {
+    const result = injectIoc('spl', 'index=main src=10.0.0.1 | lookup threat_intel ip AS src', 'ip', '203.0.113.50', 'append', 'splunk');
+    assert.ok(result.warnings.some(w => w.code === 'COMPLEX_QUERY_WARNING'));
+  });
+
+  test('no-field-found append: appends new filter clause', () => {
+    const result = injectIoc('spl', 'index=main | head 10', 'ip', '10.0.0.1', 'append', 'splunk');
+    assert.ok(result.injected.includes('src=10.0.0.1') || result.injected.includes('src="10.0.0.1"'));
+  });
+
+  test('injection prevention: sanitized IOC does not contain raw pipe', () => {
+    // Use 'user' type since it has permissive validation -- IP would reject '| delete index=main'
+    const result = injectIoc('spl', 'index=main user=admin', 'user', '| delete index=main', 'replace', 'splunk');
+    // The injected statement should NOT contain the raw pipe command
+    assert.ok(!result.injected.includes('| delete'));
+  });
+});

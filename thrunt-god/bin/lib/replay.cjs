@@ -738,6 +738,357 @@ function retargetPackExecution(cwd, packId, targetConnectorId, parameters, optio
   return { target, rendered: renderedQuery.rendered, warnings };
 }
 
+// ─── IOC Field Map ──────────────────────────────────────────────────────────
+
+const IOC_FIELD_MAP = {
+  splunk: {
+    ip: ['src', 'dest', 'src_ip', 'dest_ip', 'IPAddress'],
+    hash: ['FileHash', 'file_hash', 'SHA256', 'MD5'],
+    domain: ['dest_host', 'query', 'url_domain'],
+    user: ['user', 'src_user', 'dest_user', 'Account'],
+  },
+  elastic: {
+    ip: ['source.ip', 'destination.ip', 'client.ip'],
+    hash: ['file.hash.sha256', 'process.hash.sha256'],
+    domain: ['dns.question.name', 'url.domain'],
+    user: ['user.name'],
+  },
+  sentinel: {
+    ip: ['IPAddress', 'IP', 'RemoteIP'],
+    hash: ['FileHash', 'SHA256', 'MD5'],
+    domain: ['DomainName', 'DestinationHostName'],
+    user: ['Account', 'AccountName', 'UserPrincipalName'],
+  },
+  defender_xdr: {
+    ip: ['RemoteIP', 'LocalIP', 'IPAddress'],
+    hash: ['SHA256', 'MD5', 'SHA1'],
+    domain: ['RemoteUrl', 'FileName'],
+    user: ['AccountName', 'AccountUpn', 'InitiatingProcessAccountName'],
+  },
+  opensearch: {
+    ip: ['source.ip', 'destination.ip', 'client.ip', 'source_ip'],
+    hash: ['file.hash.sha256'],
+    domain: ['dns.question.name', 'url.domain'],
+    user: ['user.name', 'user', 'username'],
+  },
+};
+
+// ─── IOC Validation ─────────────────────────────────────────────────────────
+
+function validateIocValue(type, value) {
+  if (typeof value !== 'string') {
+    return { valid: false, error: `IOC value must be a string, got ${typeof value}` };
+  }
+
+  switch (type) {
+    case 'ip': {
+      // IPv4
+      const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+      const m4 = value.match(ipv4);
+      if (m4) {
+        const valid = [m4[1], m4[2], m4[3], m4[4]].every(o => {
+          const n = parseInt(o, 10);
+          return n >= 0 && n <= 255;
+        });
+        return valid
+          ? { valid: true }
+          : { valid: false, error: `Invalid IPv4 address: octets must be 0-255 (got ${value})` };
+      }
+      // IPv6: simplified check -- allow hex groups separated by colons, with :: shorthand
+      const ipv6 = /^([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}$|^::([0-9a-fA-F]{1,4}:){0,5}[0-9a-fA-F]{0,4}$|^([0-9a-fA-F]{1,4}:){1,6}:$|^::1?$|^[0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4}){7}$/;
+      if (ipv6.test(value)) {
+        return { valid: true };
+      }
+      return { valid: false, error: `Invalid IP address: ${value}` };
+    }
+
+    case 'hash': {
+      const hashPattern = /^[a-fA-F0-9]{32}$|^[a-fA-F0-9]{40}$|^[a-fA-F0-9]{64}$|^[a-fA-F0-9]{128}$/;
+      if (hashPattern.test(value)) {
+        return { valid: true };
+      }
+      return { valid: false, error: `Invalid hash: must be 32 (MD5), 40 (SHA1), 64 (SHA256), or 128 (SHA512) hex characters (got ${value.length} chars)` };
+    }
+
+    case 'domain': {
+      const domainPattern = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+      if (domainPattern.test(value)) {
+        return { valid: true };
+      }
+      return { valid: false, error: `Invalid domain: ${value}` };
+    }
+
+    case 'user': {
+      if (value.trim().length > 0) {
+        return { valid: true };
+      }
+      return { valid: false, error: 'User IOC value must be non-empty' };
+    }
+
+    default: {
+      // Permissive fallback for other types (hostname, url, email, filename)
+      if (value.trim().length > 0) {
+        return { valid: true };
+      }
+      return { valid: false, error: `IOC value for type "${type}" must be non-empty` };
+    }
+  }
+}
+
+// ─── IOC Sanitization ───────────────────────────────────────────────────────
+
+function sanitizeIocForLanguage(language, value) {
+  switch (language) {
+    case 'spl': {
+      // Remove pipe, backtick, brackets -- these can alter SPL pipeline
+      let sanitized = value.replace(/[|`\[\]]/g, '');
+      // Escape double quotes
+      sanitized = sanitized.replace(/"/g, '\\"');
+      return sanitized;
+    }
+
+    case 'esql': {
+      // Escape double quotes by doubling, remove semicolons
+      let sanitized = value.replace(/"/g, '""');
+      sanitized = sanitized.replace(/;/g, '');
+      return sanitized;
+    }
+
+    case 'kql': {
+      // Escape double quotes by doubling, remove semicolons
+      let sanitized = value.replace(/"/g, '""');
+      sanitized = sanitized.replace(/;/g, '');
+      return sanitized;
+    }
+
+    case 'sql': {
+      // Escape single quotes by doubling, remove semicolons
+      let sanitized = value.replace(/'/g, "''");
+      sanitized = sanitized.replace(/;/g, '');
+      return sanitized;
+    }
+
+    default: {
+      // Strip all dangerous characters
+      return value.replace(/[|`\[\];"']/g, '');
+    }
+  }
+}
+
+// ─── IOC Injection ──────────────────────────────────────────────────────────
+
+function injectIoc(language, statement, iocType, iocValue, mode, connectorId) {
+  const warnings = [];
+  const modifications = [];
+
+  // Validate the IOC value
+  const validation = validateIocValue(iocType, iocValue);
+  if (!validation.valid) {
+    const err = new Error(`Invalid IOC value: ${validation.error}`);
+    err.code = 'INVALID_IOC_VALUE';
+    throw err;
+  }
+
+  // Sanitize the IOC value for the target language
+  const sanitized = sanitizeIocForLanguage(language, iocValue);
+
+  // Look up fields from IOC_FIELD_MAP
+  const connectorMap = IOC_FIELD_MAP[connectorId];
+  const fields = connectorMap ? connectorMap[iocType] : undefined;
+
+  if (!fields) {
+    return {
+      injected: statement,
+      warnings: [{ code: 'IOC_FIELD_UNKNOWN', message: `No field mapping for IOC type "${iocType}" on connector "${connectorId}"` }],
+      modifications: [],
+    };
+  }
+
+  // Check for complex query patterns
+  if (/\|\s*lookup\b|\|\s*join\b|subquery|INNER JOIN|LEFT JOIN/i.test(statement)) {
+    warnings.push({ code: 'COMPLEX_QUERY_WARNING', message: 'Statement contains subqueries, joins, or lookups -- IOC injection may produce unexpected results' });
+  }
+
+  // Scan statement for any known field names
+  let matchedField = null;
+  let matchedPattern = null;
+
+  for (const field of fields) {
+    // Escape dots in field name for regex
+    const escapedField = field.replace(/\./g, '\\.');
+
+    // Try to find the field in the statement with different assignment patterns depending on language
+    let pattern;
+    switch (language) {
+      case 'spl':
+        // SPL: field=value or field="value"
+        pattern = new RegExp(`(${escapedField})\\s*=\\s*(?:"([^"]+)"|(\\S+))`, 'i');
+        break;
+      case 'esql':
+        // ES|QL: field == "value"
+        pattern = new RegExp(`(${escapedField})\\s*==\\s*"([^"]+)"`, 'i');
+        break;
+      case 'kql':
+        // KQL: field == "value"
+        pattern = new RegExp(`(${escapedField})\\s*==\\s*"([^"]+)"`, 'i');
+        break;
+      case 'sql':
+        // SQL: field = 'value'
+        pattern = new RegExp(`(${escapedField})\\s*=\\s*'([^']+)'`, 'i');
+        break;
+      default:
+        pattern = new RegExp(`(${escapedField})\\s*=\\s*(?:"([^"]+)"|'([^']+)'|(\\S+))`, 'i');
+    }
+
+    if (pattern.test(statement)) {
+      matchedField = field;
+      matchedPattern = pattern;
+      break;
+    }
+  }
+
+  if (matchedField) {
+    // Field found in statement -- perform injection
+    const escapedField = matchedField.replace(/\./g, '\\.');
+    let injected = statement;
+
+    switch (language) {
+      case 'spl': {
+        const splPattern = new RegExp(`(${escapedField})\\s*=\\s*(?:"([^"]+)"|(\\S+))`, 'i');
+        const splMatch = statement.match(splPattern);
+        if (splMatch) {
+          const fullMatch = splMatch[0];
+          const fname = splMatch[1];
+          const originalValue = splMatch[2] || splMatch[3];
+
+          if (mode === 'append') {
+            const replacement = `(${fname}=${originalValue} OR ${fname}=${sanitized})`;
+            injected = statement.replace(fullMatch, replacement);
+          } else {
+            // replace mode
+            const replacement = `${fname}=${sanitized}`;
+            injected = statement.replace(fullMatch, replacement);
+          }
+
+          modifications.push({ type: mode, original: fullMatch, replaced: mode === 'append' ? `(${fname}=${originalValue} OR ${fname}=${sanitized})` : `${fname}=${sanitized}` });
+        }
+        break;
+      }
+
+      case 'esql': {
+        const esqlPattern = new RegExp(`(${escapedField})\\s*==\\s*"([^"]+)"`, 'i');
+        const esqlMatch = statement.match(esqlPattern);
+        if (esqlMatch) {
+          const fullMatch = esqlMatch[0];
+          const fname = esqlMatch[1];
+          const originalValue = esqlMatch[2];
+
+          if (mode === 'append') {
+            const replacement = `${fname} IN ("${originalValue}", "${sanitized}")`;
+            injected = statement.replace(fullMatch, replacement);
+          } else {
+            const replacement = `${fname} == "${sanitized}"`;
+            injected = statement.replace(fullMatch, replacement);
+          }
+
+          modifications.push({ type: mode, original: fullMatch, replaced: injected.includes('IN') ? `${fname} IN (...)` : `${fname} == "${sanitized}"` });
+        }
+        break;
+      }
+
+      case 'kql': {
+        const kqlPattern = new RegExp(`(${escapedField})\\s*==\\s*"([^"]+)"`, 'i');
+        const kqlMatch = statement.match(kqlPattern);
+        if (kqlMatch) {
+          const fullMatch = kqlMatch[0];
+          const fname = kqlMatch[1];
+          const originalValue = kqlMatch[2];
+
+          if (mode === 'append') {
+            const replacement = `${fname} in ("${originalValue}", "${sanitized}")`;
+            injected = statement.replace(fullMatch, replacement);
+          } else {
+            const replacement = `${fname} == "${sanitized}"`;
+            injected = statement.replace(fullMatch, replacement);
+          }
+
+          modifications.push({ type: mode, original: fullMatch, replaced: injected.includes('in (') ? `${fname} in (...)` : `${fname} == "${sanitized}"` });
+        }
+        break;
+      }
+
+      case 'sql': {
+        const sqlPattern = new RegExp(`(${escapedField})\\s*=\\s*'([^']+)'`, 'i');
+        const sqlMatch = statement.match(sqlPattern);
+        if (sqlMatch) {
+          const fullMatch = sqlMatch[0];
+          const fname = sqlMatch[1];
+          const originalValue = sqlMatch[2];
+
+          if (mode === 'append') {
+            const replacement = `${fname} IN ('${originalValue}', '${sanitized}')`;
+            injected = statement.replace(fullMatch, replacement);
+          } else {
+            const replacement = `${fname} = '${sanitized}'`;
+            injected = statement.replace(fullMatch, replacement);
+          }
+
+          modifications.push({ type: mode, original: fullMatch, replaced: injected.includes('IN (') ? `${fname} IN (...)` : `${fname} = '${sanitized}'` });
+        }
+        break;
+      }
+    }
+
+    return { injected, modifications, warnings };
+  }
+
+  // No field found -- append new filter clause using first field from map
+  const defaultField = fields[0];
+  let injected = statement;
+
+  switch (language) {
+    case 'spl':
+      injected = `${statement} ${defaultField}=${sanitized}`;
+      break;
+    case 'esql':
+      injected = `${statement} | WHERE ${defaultField} == "${sanitized}"`;
+      break;
+    case 'kql':
+      injected = `${statement} | where ${defaultField} == "${sanitized}"`;
+      break;
+    case 'sql':
+      injected = `${statement} AND ${defaultField} = '${sanitized}'`;
+      break;
+    default:
+      injected = `${statement} ${defaultField}=${sanitized}`;
+  }
+
+  modifications.push({ type: 'appended_filter', original: '', replaced: `${defaultField}=${sanitized}` });
+
+  return { injected, modifications, warnings };
+}
+
+// ─── applyIocInjection ──────────────────────────────────────────────────────
+
+function applyIocInjection(statement, language, connectorId, iocInjection) {
+  const allModifications = [];
+  const allWarnings = [];
+  let currentStatement = statement;
+
+  if (!iocInjection || !Array.isArray(iocInjection.iocs)) {
+    return { statement: currentStatement, modifications: allModifications, warnings: allWarnings };
+  }
+
+  for (const ioc of iocInjection.iocs) {
+    const result = injectIoc(language, currentStatement, ioc.type, ioc.value, iocInjection.mode, connectorId);
+    currentStatement = result.injected;
+    allModifications.push(...result.modifications);
+    allWarnings.push(...result.warnings);
+  }
+
+  return { statement: currentStatement, modifications: allModifications, warnings: allWarnings };
+}
+
 // ─── Exports ─────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -758,4 +1109,9 @@ module.exports = {
   FIELD_MAPPING_WARNINGS,
   validateSameLanguageRetarget,
   retargetPackExecution,
+  IOC_FIELD_MAP,
+  validateIocValue,
+  sanitizeIocForLanguage,
+  injectIoc,
+  applyIocInjection,
 };
