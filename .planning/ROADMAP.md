@@ -20,7 +20,7 @@
 ## Phases
 
 - [x] **Phase 31: Core CI Pipeline** - GitHub Actions for unit tests with Node 20/22/24 matrix, c8 coverage gates with lcov reporting, artifact upload (completed 2026-03-30)
-- [ ] **Phase 32: Integration Test CI & Pack Validation** - Docker-compose in CI for Splunk/Elastic/OpenSearch, pack lint/test/validate as CI gates, reusable workflow template
+- [x] **Phase 32: Integration Test CI & Pack Validation** - Docker-compose in CI for Splunk/Elastic/OpenSearch, pack lint/test/validate as CI gates, reusable workflow template (completed 2026-03-30)
 - [ ] **Phase 33: SDK Export Surface** - Export ~15 internal runtime.cjs functions needed by standalone connector files
 - [ ] **Phase 34: Connector Scaffolding CLI** - thrunt-tools init connector command with interactive mode, zero-dep templates, post-scaffold validation
 - [ ] **Phase 35: Pack Authoring Interactive CLI** - MITRE ATT&CK technique picker, hypothesis builder with quality checks, pack type selection
@@ -46,7 +46,7 @@ Plans:
 **Goal**: Ship Docker-based integration test CI and pack validation gates that run on every PR
 **Depends on**: Phase 31 (base CI workflow exists)
 **Requirements**: CI-02
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 32-01-PLAN.md -- integration.yml, pack-validation.yml, validate-all-packs.cjs, reusable-pack-test.yml
 **Success Criteria** (what must be TRUE):
@@ -251,7 +251,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 31. Core CI Pipeline | 1/1 | Complete    | 2026-03-30 |
-| 32. Integration Test CI & Pack Validation | 0/1 | Not Started | |
+| 32. Integration Test CI & Pack Validation | 1/1 | Complete   | 2026-03-30 |
 | 33. SDK Export Surface | 0/0 | Not Started | |
 | 34. Connector Scaffolding CLI | 0/0 | Not Started | |
 | 35. Pack Authoring Interactive CLI | 0/0 | Not Started | |
