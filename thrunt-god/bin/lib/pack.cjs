@@ -997,11 +997,39 @@ function loadPackRegistry(cwd, options = {}) {
   const connectorRegistry = options.connectorRegistry || runtime.createBuiltInConnectorRegistry();
   const packMap = new Map();
   const overrides = [];
+  const warnings = [];
 
   const sources = [
     { name: 'built_in', dir: registryPaths.built_in },
     { name: 'local', dir: registryPaths.local },
   ];
+
+  // Load additional directories from pack_registries config
+  if (!options.skipExtraRegistries) {
+    const configPath = path.join(cwd, PLANNING_DIR_NAME, 'config.json');
+    if (fs.existsSync(configPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        const registries = Array.isArray(config.pack_registries) ? config.pack_registries : [];
+        for (const reg of registries) {
+          if (!reg.name || !reg.type || !reg.path) continue;
+          if (reg.type === 'git') {
+            // Git-based registries require cloning -- stub with warning
+            warnings.push(`pack_registry "${reg.name}": git-based registries are not yet supported (url: ${reg.url}). Clone the repo locally and use type: "local" instead.`);
+            continue;
+          }
+          if (reg.type === 'local') {
+            const resolvedPath = path.isAbsolute(reg.path) ? reg.path : path.join(cwd, reg.path);
+            if (fs.existsSync(resolvedPath)) {
+              sources.push({ name: reg.name, dir: resolvedPath });
+            }
+          }
+        }
+      } catch (_err) {
+        // config.json parse error -- ignore silently
+      }
+    }
+  }
 
   for (const source of sources) {
     const files = discoverPackFiles(source.dir);
@@ -1038,6 +1066,17 @@ function loadPackRegistry(cwd, options = {}) {
 
   const resolvedPackMap = resolvePackMap(packMap, { connectorRegistry });
 
+  // Check for deprecated packs
+  for (const pack of resolvedPackMap.values()) {
+    if (pack.stability === 'deprecated') {
+      const replacedBy = pack.metadata?.replaced_by;
+      const msg = replacedBy
+        ? `Pack "${pack.id}" is deprecated. Replaced by: ${replacedBy}`
+        : `Pack "${pack.id}" is deprecated.`;
+      warnings.push(msg);
+    }
+  }
+
   const packs = [...resolvedPackMap.values()].sort((a, b) => {
     if (a.kind !== b.kind) return a.kind.localeCompare(b.kind);
     return a.id.localeCompare(b.id);
@@ -1046,6 +1085,7 @@ function loadPackRegistry(cwd, options = {}) {
   return {
     packs,
     overrides,
+    warnings,
     paths: registryPaths,
   };
 }

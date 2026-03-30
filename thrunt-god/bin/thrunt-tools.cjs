@@ -566,8 +566,10 @@ async function runCommand(command, args, cwd, raw) {
         await commands.cmdPackInit(cwd, args.slice(2), raw);
       } else if (subcommand === 'create') {
         await commands.cmdPackCreate(cwd, args.slice(2), raw);
+      } else if (subcommand === 'promote') {
+        await commands.cmdPackPromote(cwd, args.slice(2), raw);
       } else {
-        error('Unknown pack subcommand. Available: list, show, bootstrap, validate, render-targets, lint, test, init, create');
+        error('Unknown pack subcommand. Available: list, show, bootstrap, validate, render-targets, lint, test, init, create, promote');
       }
       break;
     }

@@ -2355,6 +2355,80 @@ async function cmdInitConnector(cwd, args, raw) {
   }, raw);
 }
 
+async function cmdPackPromote(cwd, args, raw) {
+  const packLib = require('./pack.cjs');
+  const packId = args[0];
+
+  if (!packId) {
+    error('pack promote requires <pack-id>');
+  }
+
+  // Load registry to find the pack
+  let registry;
+  try {
+    registry = packLib.loadPackRegistry(cwd);
+  } catch (err) {
+    output({ promoted: false, errors: [err.message] }, raw, 'false');
+    return;
+  }
+
+  const pack = registry.packs.find(p => p.id === packId);
+  if (!pack) {
+    output({ promoted: false, errors: [`Pack "${packId}" not found in registry`] }, raw, 'false');
+    return;
+  }
+
+  // Must be local source
+  if (pack.source !== 'local') {
+    output({ promoted: false, errors: [`Pack "${packId}" is already ${pack.source} (only local packs can be promoted)`] }, raw, 'false');
+    return;
+  }
+
+  // Must be stable
+  if (pack.stability !== 'stable') {
+    output({ promoted: false, errors: [`Pack "${packId}" has stability "${pack.stability}" (only "stable" packs can be promoted)`] }, raw, 'false');
+    return;
+  }
+
+  // Full validation
+  const validation = packLib.validatePackDefinition(pack);
+  if (!validation.valid) {
+    output({ promoted: false, errors: validation.errors.map(e => `validation: ${e}`) }, raw, 'false');
+    return;
+  }
+
+  // Template usage check
+  const usage = packLib.getPackTemplateUsage(pack);
+  if (usage.undeclared.length > 0) {
+    output({ promoted: false, errors: [`Undeclared template parameters: ${usage.undeclared.join(', ')}`] }, raw, 'false');
+    return;
+  }
+
+  // Build target directory
+  const folder = packLib.getPackFolderForKind(pack.kind);
+  const slug = packId.includes('.') ? packId.split('.').slice(1).join('-') : packId;
+  const destDir = path.join(packLib.getBuiltInPackRegistryDir(), folder);
+  const destPath = path.join(destDir, `${slug}.json`);
+
+  // Read source pack JSON (from the local file), update source field
+  const sourcePath = path.join(cwd, pack.path);
+  const sourceContent = JSON.parse(fs.readFileSync(sourcePath, 'utf-8'));
+
+  // Write to built-in directory (copy, not move)
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.writeFileSync(destPath, JSON.stringify(sourceContent, null, 2) + '\n');
+
+  const relDest = path.relative(cwd, destPath);
+  output({
+    promoted: true,
+    pack_id: packId,
+    source: pack.path,
+    destination: toPosixPath(relDest),
+    kind: pack.kind,
+    folder,
+  }, raw, toPosixPath(relDest));
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -2371,6 +2445,7 @@ module.exports = {
   cmdPackTest,
   cmdPackInit,
   cmdPackCreate,
+  cmdPackPromote,
   cmdRuntimeListConnectors,
   cmdRuntimeDoctor,
   cmdRuntimeSmoke,
