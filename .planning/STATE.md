@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Developer Experience & CI
-status: completed
-stopped_at: Completed 41-02-PLAN.md
-last_updated: "2026-03-30T23:01:05.598Z"
-last_activity: 2026-03-30 -- Completed 41-02 Replay CLI Commands
+status: executing
+stopped_at: Completed 42-01-PLAN.md
+last_updated: "2026-03-30T23:16:45.342Z"
+last_activity: 2026-03-30 -- Completed 42-01 Tenant Registry Module
 progress:
   total_phases: 19
   completed_phases: 11
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 20
+  completed_plans: 19
   percent: 100
 ---
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 41 of 44 (Replay Diffing & Receipt Lineage)
-Plan: 2 of 2 (Replay CLI Commands)
-Status: Phase Complete
-Last activity: 2026-03-30 -- Completed 41-02 Replay CLI Commands
+Phase: 42 of 44 (Tenant Registry & Auth)
+Plan: 1 of 2 (Tenant Registry Module)
+Status: In Progress
+Last activity: 2026-03-30 -- Completed 42-01 Tenant Registry Module
 
-Progress: [██████████] 100% (18/18 plans complete)
+Progress: [██████████] 100% (19/19 plans complete)
 
 ## Upcoming Milestones
 
@@ -96,6 +96,9 @@ All historical decisions logged in PROJECT.md Key Decisions table.
 - [Phase 41]: SUBPROCESS-REPLAY-TESTS: CLI command tests use execFileSync subprocess approach because output() uses fs.writeSync(1,...) which cannot be monkey-patched in-process
 - [Phase 41]: PARSE-RUNTIME-ARGS-EXPORT: Exported parseRuntimeArgs from commands.cjs for direct testability of flag parsing
 - [Phase 41]: DIFF-NO-RAW-FLAG: cmdReplayDiff passes human_summary as rawValue so --raw outputs text; tests omit --raw to get JSON
+- [Phase 42-tenant-registry-auth]: MANUAL-VALIDATION: Manual schema validation instead of Zod -- Zod not available in project dependencies; equivalent validation with same error granularity
+- [Phase 42-tenant-registry-auth]: LAZY-REQUIRE-RUNTIME: Lazy-require runtime.cjs inside async functions to avoid circular dependency at load time
+- [Phase 42-tenant-registry-auth]: ENV-VAR-ISOLATION-CHECK: Credential isolation checks env vars starting with $ prefix in secret_ref and top-level profile fields across all tenants
 
 ### Research Specs Available
 
@@ -125,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T23:01:05.594Z
-Stopped at: Completed 41-02-PLAN.md
+Last session: 2026-03-30T23:16:45.336Z
+Stopped at: Completed 42-01-PLAN.md
 Resume file: None
