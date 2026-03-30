@@ -507,10 +507,11 @@ export async function executeManagedRun(
       return run
     }
 
-    emit(applyUpdate(run, { phase: "executing" }, { kind: "log", message: "Running speculation" }))
+    // Speculate module was removed — fall through to dispatch for speculate actions
+    emit(applyUpdate(run, { phase: "executing" }, { kind: "log", message: "Running dispatch (speculate removed)" }))
 
     const raw = await options.executeTool(
-      "speculate",
+      "dispatch",
       { prompt: run.prompt },
       { cwd: options.cwd, projectId: options.projectId },
     ) as Record<string, unknown>

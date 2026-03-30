@@ -512,6 +512,7 @@ class McpClientManager {
               const response = JSON.parse(line) as JsonRpcResponse
               if (response.id === id) {
                 socket.off("data", onData)
+                clearTimeout(timer)
                 if (response.error) {
                   reject(new Error(response.error.message))
                 } else {
@@ -528,8 +529,8 @@ class McpClientManager {
       socket.on("data", onData)
       socket.write(JSON.stringify(request) + "\n")
 
-      // Timeout after 10 seconds
-      setTimeout(() => {
+      // Timeout after 10 seconds (cleared when response arrives in onData)
+      const timer = setTimeout(() => {
         socket.off("data", onData)
         reject(new Error("Request timeout"))
       }, 10000)

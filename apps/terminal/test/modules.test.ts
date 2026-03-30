@@ -11,11 +11,9 @@ import { Router } from "../src/router"
 import { Dispatcher } from "../src/dispatcher"
 import { Workcell, PoolConfig } from "../src/workcell"
 import { Verifier } from "../src/verifier"
-import { Speculate } from "../src/speculate"
 import { PatchLifecycle } from "../src/patch"
-import { Beads } from "../src/beads"
 import { Telemetry } from "../src/telemetry"
-import { tools, getTool, dispatchTool, speculateTool, gateTool } from "../src/tools"
+import { tools, getTool, dispatchTool, gateTool } from "../src/tools"
 
 // Import adapters and gates
 import { adapters, getAdapter } from "../src/dispatcher/adapters"
@@ -60,29 +58,12 @@ describe("Module exports", () => {
     expect(Verifier.calculateScore).toBeFunction()
   })
 
-  test("Speculate namespace exists", () => {
-    expect(Speculate).toBeDefined()
-    expect(Speculate.run).toBeFunction()
-    expect(Speculate.vote).toBeFunction()
-    expect(Speculate.voteFirstPass).toBeFunction()
-    expect(Speculate.voteBestScore).toBeFunction()
-  })
-
   test("PatchLifecycle namespace exists", () => {
     expect(PatchLifecycle).toBeDefined()
     expect(PatchLifecycle.capture).toBeFunction()
     expect(PatchLifecycle.stage).toBeFunction()
     expect(PatchLifecycle.approve).toBeFunction()
     expect(PatchLifecycle.merge).toBeFunction()
-  })
-
-  test("Beads namespace exists", () => {
-    expect(Beads).toBeDefined()
-    expect(Beads.init).toBeFunction()
-    expect(Beads.query).toBeFunction()
-    expect(Beads.getReady).toBeFunction()
-    expect(Beads.create).toBeFunction()
-    expect(Beads.updateStatus).toBeFunction()
   })
 
   test("Telemetry namespace exists", () => {
@@ -96,13 +77,12 @@ describe("Module exports", () => {
 
 describe("Tools", () => {
   test("tools array contains all tools", () => {
-    expect(tools).toHaveLength(3)
-    expect(tools.map((t) => t.name)).toEqual(["dispatch", "speculate", "gate"])
+    expect(tools).toHaveLength(2)
+    expect(tools.map((t) => t.name)).toEqual(["dispatch", "gate"])
   })
 
   test("getTool returns correct tool", () => {
     expect(getTool("dispatch")).toBe(dispatchTool)
-    expect(getTool("speculate")).toBe(speculateTool)
     expect(getTool("gate")).toBe(gateTool)
     expect(getTool("nonexistent")).toBeUndefined()
   })
@@ -111,12 +91,6 @@ describe("Tools", () => {
     expect(dispatchTool.name).toBe("dispatch")
     expect(dispatchTool.parameters.required).toContain("prompt")
     expect(dispatchTool.parameters.properties).toHaveProperty("toolchain")
-  })
-
-  test("speculateTool has correct schema", () => {
-    expect(speculateTool.name).toBe("speculate")
-    expect(speculateTool.parameters.required).toContain("prompt")
-    expect(speculateTool.parameters.properties).toHaveProperty("voteStrategy")
   })
 
   test("gateTool has correct schema", () => {

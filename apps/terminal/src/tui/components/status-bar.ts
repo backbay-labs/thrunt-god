@@ -94,7 +94,7 @@ export function renderStatusBar(
   }
 
   if (data.gateResults) {
-    const { passed, failed, score } = data.gateResults
+    const { failed } = data.gateResults
     if (failed === 0) {
       segments.push(`${theme.dim}gates${theme.reset} ${theme.success}pass${theme.reset}`)
     } else {

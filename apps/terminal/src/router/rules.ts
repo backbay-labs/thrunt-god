@@ -31,7 +31,7 @@ export const DEFAULT_RULES: RoutingRule[] = [
         toolchains: ["codex", "claude", "opencode"],
         voteStrategy: "first_pass",
       },
-      gates: ["pytest", "mypy", "ruff"],
+      gates: ["evidence-integrity", "receipt-completeness"],
       retries: 2,
     },
   },
@@ -42,7 +42,7 @@ export const DEFAULT_RULES: RoutingRule[] = [
     action: {
       toolchain: "claude",
       strategy: "single",
-      gates: ["pytest", "mypy"],
+      gates: ["evidence-integrity", "receipt-completeness"],
       retries: 2,
     },
   },
@@ -53,24 +53,8 @@ export const DEFAULT_RULES: RoutingRule[] = [
     action: {
       toolchain: "opencode",
       strategy: "single",
-      gates: ["ruff"],
+      gates: ["evidence-integrity"],
       retries: 1,
-    },
-  },
-  {
-    name: "python-files",
-    priority: 50,
-    match: { filePatterns: ["**/*.py"] },
-    action: {
-      gatesAdd: ["mypy", "pytest"],
-    },
-  },
-  {
-    name: "typescript-files",
-    priority: 50,
-    match: { filePatterns: ["**/*.ts", "**/*.tsx"] },
-    action: {
-      gatesAdd: ["tsc"],
     },
   },
 ]

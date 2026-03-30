@@ -92,7 +92,7 @@ The task runs in an isolated workcell with quality gates.`,
       gates: {
         type: "array",
         items: { type: "string" },
-        description: "Quality gates to run (default: pytest, mypy, ruff)",
+        description: "Quality gates to run (default: evidence-integrity, receipt-completeness)",
       },
       timeout: {
         type: "number",
@@ -243,18 +243,17 @@ export const gateTool: ToolDefinition = {
   description: `Run quality gates on the current workspace.
 
 Available gates:
-- pytest: Run Python tests
-- mypy: Type check Python code
-- ruff: Lint and format Python code
+- evidence-integrity: Verify evidence manifest SHA-256 hashes
+- receipt-completeness: Check query-receipt-evidence chain
 
-Use before committing or after making changes to verify quality.`,
+Use after hunt execution to verify evidence quality.`,
   parameters: {
     type: "object",
     properties: {
       gates: {
         type: "array",
         items: { type: "string" },
-        description: "Specific gates to run (default: pytest, mypy, ruff)",
+        description: "Specific gates to run (default: evidence-integrity, receipt-completeness)",
       },
       failFast: {
         type: "boolean",
@@ -274,7 +273,7 @@ Use before committing or after making changes to verify quality.`,
     const p = params as GateParams
     const ctx = context ?? { cwd: process.cwd(), projectId: "default" }
 
-    const gates = p.gates ?? ["pytest", "mypy", "ruff"]
+    const gates = p.gates ?? ["evidence-integrity", "receipt-completeness"]
     const failFast = p.failFast ?? true
     const directory = p.directory ?? ctx.cwd
 

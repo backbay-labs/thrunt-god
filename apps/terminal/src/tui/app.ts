@@ -262,19 +262,14 @@ export class TUIApp implements AppController {
     // Build commands list (including hunt commands)
     this.commands = [
       { key: "d", label: "dispatch", description: "send task to agent", stage: "supported", action: () => this.submitPrompt("dispatch") },
-      { key: "s", label: "speculate", description: "parallel multi-agent", stage: "supported", action: () => this.submitPrompt("speculate") },
       { key: "g", label: "gates", description: "run quality gates", stage: "supported", action: () => this.runGates() },
-      { key: "S", label: "security", description: "security overview", stage: "supported", action: () => this.setScreen("security") },
-      { key: "a", label: "audit", description: "audit log", stage: "supported", action: () => this.setScreen("audit") },
-      { key: "p", label: "policy", description: "active policy", stage: "supported", action: () => this.setScreen("policy") },
       { key: "W", label: "watch", description: "live hunt stream", stage: "supported", action: () => this.setScreen("hunt-watch") },
-      { key: "X", label: "scan", description: "MCP scan explorer", stage: "supported", action: () => this.setScreen("hunt-scan") },
       { key: "T", label: "timeline", description: "timeline replay", stage: "supported", action: () => this.setScreen("hunt-timeline") },
-      { key: "R", label: "rules", description: "correlation rule builder", stage: "experimental", action: () => this.setScreen("hunt-rule-builder") },
       { key: "Q", label: "query", description: "hunt query REPL", stage: "supported", action: () => this.setScreen("hunt-query") },
-      { key: "D", label: "diff", description: "scan change detection", stage: "experimental", action: () => this.setScreen("hunt-diff") },
       { key: "E", label: "evidence", description: "evidence report", stage: "supported", action: () => this.setScreen("hunt-report") },
       { key: "H", label: "history", description: "exported report index", stage: "supported", action: () => this.setScreen("hunt-report-history") },
+      { key: "R", label: "rules", description: "correlation rule builder", stage: "experimental", action: () => this.setScreen("hunt-rule-builder") },
+      { key: "D", label: "diff", description: "scan change detection", stage: "experimental", action: () => this.setScreen("hunt-diff") },
       { key: "M", label: "mitre", description: "MITRE ATT&CK heatmap", stage: "experimental", action: () => this.setScreen("hunt-mitre") },
       { key: "P", label: "playbook", description: "playbook runner", stage: "experimental", action: () => this.setScreen("hunt-playbook") },
       { key: "r", label: "runs", description: "managed backlog", stage: "supported", action: () => this.showRuns() },
@@ -428,6 +423,11 @@ export class TUIApp implements AppController {
 
     this.thruntWatcher?.stop()
     this.thruntWatcher = null
+
+    if (this._activeQueryHandle) {
+      this._activeQueryHandle.kill()
+      this._activeQueryHandle = null
+    }
 
     try {
       await MCP.stop()
@@ -2336,7 +2336,6 @@ export class TUIApp implements AppController {
     console.log(THEME.white + THEME.bold + "  Hunt Commands" + THEME.reset)
     console.log("")
     console.log(`  ${THEME.secondary}W${THEME.reset}                   Watch (live stream) ${THEME.success}[beta]${THEME.reset}`)
-    console.log(`  ${THEME.secondary}X${THEME.reset}                   Scan (MCP explorer) ${THEME.success}[beta]${THEME.reset}`)
     console.log(`  ${THEME.secondary}T${THEME.reset}                   Timeline replay ${THEME.success}[beta]${THEME.reset}`)
     console.log(`  ${THEME.secondary}R${THEME.reset}                   Rule builder ${THEME.warning}[exp]${THEME.reset}`)
     console.log(`  ${THEME.secondary}Q${THEME.reset}                   Query REPL ${THEME.success}[beta]${THEME.reset}`)

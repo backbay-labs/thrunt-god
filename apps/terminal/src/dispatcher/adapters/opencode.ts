@@ -252,7 +252,7 @@ async function executeViaApi(
       return {
         success: false,
         output: "",
-        error: `Unsupported provider: ${provider}`,
+        error: `Unsupported provider for API mode: ${provider}. Only "anthropic" and "openai" are supported. Install the opencode CLI for Google provider support.`,
       }
     }
   } catch (error) {

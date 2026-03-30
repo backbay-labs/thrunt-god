@@ -69,8 +69,8 @@ export namespace Router {
     task: TaskInput,
     config: RouterConfig = DEFAULT_CONFIG
   ): Promise<RoutingDecision> {
-    // Combine default rules with config rules (config rules take precedence via priority)
-    const allRules = [...rules.DEFAULT_RULES, ...config.rules]
+    // Use config rules (which default to DEFAULT_RULES, may be overridden)
+    const allRules = config.rules
 
     // Evaluate rules to get merged action
     const action = rules.evaluateRules(task, allRules)
@@ -84,8 +84,8 @@ export namespace Router {
     // Determine strategy
     const strategy = action.strategy || "single"
 
-    // Determine gates (use rule result or default)
-    const gates = action.gates || config.defaults.gates
+    // Determine gates (prefer task-provided, then rule result, then default)
+    const gates = task.gates || action.gates || config.defaults.gates
 
     // Determine retries
     const retries = action.retries ?? config.defaults.retries
@@ -157,10 +157,10 @@ export namespace Router {
       // If gates failed, try with reduced gates
       // Remove non-critical gates on first reroute
       const criticalGates = originalDecision.gates.filter(
-        (g) => g === "pytest" // Only pytest is always critical
+        (g) => g === "evidence-integrity" // Evidence integrity is the critical gate
       )
 
-      if (criticalGates.length < originalDecision.gates.length) {
+      if (criticalGates.length > 0 && criticalGates.length < originalDecision.gates.length) {
         return {
           ...originalDecision,
           gates: criticalGates,
@@ -194,7 +194,10 @@ export namespace Router {
    * Get default configuration
    */
   export function getDefaultConfig(): RouterConfig {
-    return { ...DEFAULT_CONFIG }
+    return {
+      rules: [...DEFAULT_CONFIG.rules.map((r) => ({ ...r, match: { ...r.match }, action: { ...r.action } }))],
+      defaults: { ...DEFAULT_CONFIG.defaults, gates: [...DEFAULT_CONFIG.defaults.gates] },
+    }
   }
 }
 
