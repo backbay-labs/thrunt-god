@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Developer Experience & CI
 status: Not started — needs discuss -> plan -> execute
-stopped_at: Completed 34-01-PLAN.md
-last_updated: "2026-03-30T19:39:13.721Z"
+stopped_at: Completed 34-02-PLAN.md
+last_updated: "2026-03-30T19:47:46Z"
 last_activity: 2026-03-30 -- Activated v2.0/v2.1/v2.2 milestones from research specs
 progress:
   total_phases: 19
   completed_phases: 3
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -62,6 +62,8 @@ All historical decisions logged in PROJECT.md Key Decisions table.
 - [Phase 34-connector-scaffolding-cli]: TMPL-NO-DEPS: Plain {{VARIABLE}} substitution — no third-party template library (Handlebars/EJS/Mustache). Zero new dependencies.
 - [Phase 34-connector-scaffolding-cli]: ADAPTER-STANDALONE: Generated adapters are standalone .cjs files in connectors/ directory — scaffolder prints registration instructions rather than auto-patching runtime.cjs
 - [Phase 34-connector-scaffolding-cli]: PORT-AUTOSCAN: Docker host port auto-assigned by scanning docker-compose.yml for highest 19xxx port and incrementing; starts from 19300 if no 19xxx ports exist
+- [Phase 34-connector-scaffolding-cli]: SUBPROCESS-TESTING: Test cmdInitConnector via execFileSync subprocess rather than direct function call — tests full CLI dispatch path
+- [Phase 34-connector-scaffolding-cli]: INLINE-TEMPLATE-TEST: Reimplemented renderTemplate algorithm inline in test file since it is not exported from commands.cjs
 
 ### Research Specs Available
 
@@ -91,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T19:39:13.718Z
-Stopped at: Completed 34-01-PLAN.md
+Last session: 2026-03-30T19:47:46Z
+Stopped at: Completed 34-02-PLAN.md
 Resume file: None

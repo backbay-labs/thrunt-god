@@ -22,7 +22,7 @@
 - [x] **Phase 31: Core CI Pipeline** - GitHub Actions for unit tests with Node 20/22/24 matrix, c8 coverage gates with lcov reporting, artifact upload (completed 2026-03-30)
 - [x] **Phase 32: Integration Test CI & Pack Validation** - Docker-compose in CI for Splunk/Elastic/OpenSearch, pack lint/test/validate as CI gates, reusable workflow template (completed 2026-03-30)
 - [x] **Phase 33: SDK Export Surface** - Export ~15 internal runtime.cjs functions needed by standalone connector files (completed 2026-03-30)
-- [ ] **Phase 34: Connector Scaffolding CLI** - thrunt-tools init connector command with interactive mode, zero-dep templates, post-scaffold validation
+- [x] **Phase 34: Connector Scaffolding CLI** - thrunt-tools init connector command with interactive mode, zero-dep templates, post-scaffold validation (completed 2026-03-30)
 - [ ] **Phase 35: Pack Authoring Interactive CLI** - MITRE ATT&CK technique picker, hypothesis builder with quality checks, pack type selection
 - [ ] **Phase 36: Pack Query Wiring & Validation** - Per-connector query template starters for all 10 connectors, entity extraction rule builder, schema validation pipeline
 - [ ] **Phase 37: Pack Testing & Publishing** - Enhanced pack test with mock data and coverage, fixture generation, pack distribution
@@ -71,7 +71,7 @@ Plans:
 **Goal**: Ship thrunt-tools init connector command that scaffolds a complete connector with adapter, tests, and optional Docker integration test template
 **Depends on**: Phase 33 (SDK exports must exist for generated adapter to call them)
 **Requirements**: INIT-01
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 34-01-PLAN.md -- Template engine, 8 template files, cmdInitConnector command with interactive mode and Docker generation
 - [ ] 34-02-PLAN.md -- Scaffolder test suite covering validation, generation, dry-run, and contract checks
@@ -260,7 +260,7 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 31. Core CI Pipeline | 1/1 | Complete    | 2026-03-30 |
 | 32. Integration Test CI & Pack Validation | 1/1 | Complete    | 2026-03-30 |
 | 33. SDK Export Surface | 1/1 | Complete    | 2026-03-30 |
-| 34. Connector Scaffolding CLI | 1/2 | In Progress|  |
+| 34. Connector Scaffolding CLI | 2/2 | Complete   | 2026-03-30 |
 | 35. Pack Authoring Interactive CLI | 0/0 | Not Started | |
 | 36. Pack Query Wiring & Validation | 0/0 | Not Started | |
 | 37. Pack Testing & Publishing | 0/0 | Not Started | |
