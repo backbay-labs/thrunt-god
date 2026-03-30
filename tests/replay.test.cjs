@@ -1644,4 +1644,135 @@ describe('telemetry lineage', () => {
     const files = fs.readdirSync(metricsDir).filter(f => f.startsWith('RE-'));
     assert.strictEqual(files.length, 1);
   });
+
+  test('recordReplayExecution includes mutation_types from replay spec', () => {
+    const replaySpec = {
+      replay_id: 'RPL-20260330000000-AAAA1111',
+      source: { type: 'query', ids: ['QRY-001'] },
+      mutations: {
+        time_window: { mode: 'shift', shift_ms: 86400000 },
+        connector: null,
+        ioc_injection: { mode: 'append', iocs: [{ type: 'ip', value: '10.0.0.1' }] },
+      },
+    };
+
+    const record = recordReplayExecution(tmpDir, replaySpec, { events: 5, entities: 2, status: 'ok' });
+    // Only truthy mutations should appear
+    assert.ok(record.mutation_types.includes('time_window'));
+    assert.ok(record.mutation_types.includes('ioc_injection'));
+    assert.ok(!record.mutation_types.includes('connector')); // null is falsy
+  });
+
+  test('recordReplayExecution includes diff_mode from replay spec', () => {
+    const replaySpec = {
+      replay_id: 'RPL-20260330000000-BBBB2222',
+      source: { type: 'query', ids: ['QRY-002'] },
+      diff: { mode: 'entities_only' },
+    };
+
+    const record = recordReplayExecution(tmpDir, replaySpec, { events: 0, entities: 0, status: 'empty' });
+    assert.strictEqual(record.diff_mode, 'entities_only');
+    assert.strictEqual(record.results_summary.status, 'empty');
+  });
+});
+
+// ─── 23. buildDiff edge cases ──────────────────────────────────────────────────
+
+describe('buildDiff edge cases', () => {
+  const { buildDiff } = require('../thrunt-god/bin/lib/replay.cjs');
+
+  function makeEnvelope(overrides = {}) {
+    return {
+      version: '1.0',
+      query_id: overrides.query_id || 'QRY-20260330000000-AAAAAAAA',
+      connector: { id: overrides.connector_id || 'splunk' },
+      dataset: { kind: 'events' },
+      status: overrides.status || 'ok',
+      time_window: {
+        start: '2026-03-01T00:00:00Z',
+        end: '2026-03-02T00:00:00Z',
+      },
+      counts: {
+        events: overrides.events || 0,
+        entities: 0,
+        relationships: 0,
+        evidence: 0,
+        warnings: 0,
+        errors: 0,
+        raw_records: 0,
+      },
+      events: [],
+      entities: overrides.entities_arr || [],
+      evidence: overrides.evidence_arr || [],
+      warnings: [],
+      errors: [],
+      timing: {
+        started_at: '2026-03-01T00:00:00Z',
+        completed_at: '2026-03-01T00:00:05Z',
+        duration_ms: 5000,
+      },
+    };
+  }
+
+  test('full mode computes new_findings and missing_findings', () => {
+    const finding1 = { id: 'F-1', type: 'alert' };
+    const finding2 = { id: 'F-2', type: 'alert' };
+    const finding3 = { id: 'F-3', type: 'alert' };
+    const original = makeEnvelope({
+      query_id: 'QRY-ORIG',
+      evidence_arr: [finding1, finding2],
+    });
+    const replay = makeEnvelope({
+      query_id: 'QRY-REPLAY',
+      evidence_arr: [finding2, finding3],
+    });
+
+    const diff = buildDiff(original, replay, 'full');
+    assert.strictEqual(diff.delta.new_findings.length, 1);
+    assert.deepStrictEqual(diff.delta.new_findings[0], finding3);
+    assert.strictEqual(diff.delta.missing_findings.length, 1);
+    assert.deepStrictEqual(diff.delta.missing_findings[0], finding1);
+  });
+
+  test('entities_only mode does not compute event count delta', () => {
+    const original = makeEnvelope({ events: 10, query_id: 'QRY-ORIG' });
+    const replay = makeEnvelope({ events: 20, query_id: 'QRY-REPLAY' });
+
+    const diff = buildDiff(original, replay, 'entities_only');
+    // In entities_only mode, events delta should be zeros (not computed)
+    assert.strictEqual(diff.delta.events.added, 0);
+    assert.strictEqual(diff.delta.events.removed, 0);
+    assert.strictEqual(diff.delta.events.unchanged, 0);
+  });
+
+  test('replay_id in result equals replayEnvelope.query_id', () => {
+    const original = makeEnvelope({ query_id: 'QRY-ORIG' });
+    const replay = makeEnvelope({ query_id: 'QRY-REPLAY-RESULT' });
+
+    const diff = buildDiff(original, replay);
+    assert.strictEqual(diff.replay_id, 'QRY-REPLAY-RESULT');
+  });
+
+  test('baseline and replay contain correct connector_id and time_window', () => {
+    const original = makeEnvelope({ query_id: 'QRY-ORIG', connector_id: 'splunk' });
+    const replay = makeEnvelope({ query_id: 'QRY-REPLAY', connector_id: 'elastic' });
+
+    const diff = buildDiff(original, replay);
+    assert.strictEqual(diff.baseline.connector_id, 'splunk');
+    assert.strictEqual(diff.replay.connector_id, 'elastic');
+    assert.strictEqual(diff.baseline.time_window.start, '2026-03-01T00:00:00Z');
+  });
+
+  test('handles empty entities arrays gracefully', () => {
+    const original = makeEnvelope({ query_id: 'QRY-ORIG', entities_arr: [] });
+    const replay = makeEnvelope({
+      query_id: 'QRY-REPLAY',
+      entities_arr: [{ kind: 'ip', value: '10.0.0.1' }],
+    });
+
+    const diff = buildDiff(original, replay, 'full');
+    assert.strictEqual(diff.delta.entities.added.length, 1);
+    assert.strictEqual(diff.delta.entities.removed.length, 0);
+    assert.strictEqual(diff.delta.entities.unchanged, 0);
+  });
 });
