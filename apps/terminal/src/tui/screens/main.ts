@@ -10,7 +10,7 @@ import { fitString } from "../components/types"
 import type { AppState } from "../types"
 
 const HOME_ACTION_COLUMNS = 2
-const HOME_ACTION_SELECTED_BG = "\x1b[48;5;52m"
+const HOME_ACTION_SELECTED_BG = "\x1b[48;2;60;30;80m"
 const BOX_TRACE_FRAMES = 8
 
 interface HomeAction {
@@ -108,15 +108,8 @@ function cycleHomeFocus(focus: HomeFocus): HomeFocus {
   return focus === "prompt" ? "actions" : "prompt"
 }
 
-function homeFocusTitle(focus: HomeFocus): string {
-  switch (focus) {
-    case "actions":
-      return "Dispatch [actions]"
-    case "nav":
-      return "Dispatch [nav]"
-    default:
-      return "Dispatch [prompt]"
-  }
+function homeFocusTitle(_focus: HomeFocus): string {
+  return "Dispatch"
 }
 
 function setHomeFocus(state: AppState, focus: HomeFocus): void {
@@ -219,49 +212,12 @@ function renderPromptBox(title: string, contentLines: string[], width: number, s
   })
 }
 
-function renderHomeActionGuide(focus: HomeFocus, contentWidth: number): string[] {
-  switch (focus) {
-    case "actions":
-      return wrapText(
-        `${THEME.dim}Actions focus:${THEME.reset} ${THEME.white}↑↓←→${THEME.reset} move  ` +
-          `${THEME.white}Enter${THEME.reset} open  ${THEME.white}Tab${THEME.reset} prompt  ` +
-          `${THEME.white}Esc${THEME.reset} prompt`,
-        contentWidth,
-      )
-    case "nav":
-      return wrapText(
-        `${THEME.dim}Nav mode:${THEME.reset} ${THEME.white}D/P/E/T/K/C${THEME.reset} hunt actions  ` +
-          `${THEME.white}Esc${THEME.reset} prompt`,
-        contentWidth,
-      )
-    default:
-      return wrapText(
-        `${THEME.dim}Prompt focus:${THEME.reset} ${THEME.white}Tab${THEME.reset} actions  ` +
-          `${THEME.white}Enter${THEME.reset} dispatch sheet  ${THEME.white}Esc${THEME.reset} nav  ` +
-          `${THEME.dim}empty prompt keeps D/P/E/T/K/C live; once you type, keys stay in the prompt${THEME.reset}`,
-        contentWidth,
-      )
-  }
-}
-
 function renderHomeActionRows(ctx: ScreenContext, contentWidth: number): string[] {
   const rows: string[] = []
   const selection = Math.min(ctx.state.homeActionIndex, HOME_ACTIONS.length - 1)
   const activeSelection = ctx.state.homeFocus !== "prompt"
-  const selectedAction = HOME_ACTIONS[selection]
   const gap = 3
   const cellWidth = Math.max(22, Math.floor((contentWidth - gap) / HOME_ACTION_COLUMNS))
-
-  rows.push(...renderHomeActionGuide(ctx.state.homeFocus, contentWidth))
-  if (activeSelection && selectedAction) {
-    rows.push(
-      fitString(
-        `${THEME.accent}${THEME.bold}Selected${THEME.reset} ${THEME.secondary}[${selectedAction.key}]${THEME.reset} ` +
-          `${THEME.white}${selectedAction.label}${THEME.reset} ${THEME.dim}${selectedAction.description}${THEME.reset}`,
-        contentWidth,
-      ),
-    )
-  }
 
   for (let i = 0; i < HOME_ACTIONS.length; i += HOME_ACTION_COLUMNS) {
     const left = renderHomeActionCell(HOME_ACTIONS[i], activeSelection && selection === i, cellWidth)
@@ -490,51 +446,47 @@ function renderHuntStatusPanel(state: AppState): string[] {
   return lines
 }
 
-function buildOpsSnapshot(ctx: ScreenContext, width: number): { boxWidth: number; lines: string[] } | null {
+function buildOpsSnapshot(ctx: ScreenContext, width: number): { boxWidth: number; statusLines: string[]; actionLines: string[] } | null {
   const { state } = ctx
   const boxWidth = Math.min(84, width - 8)
   if (boxWidth < 28) {
     return null
   }
 
-  const lines: string[] = []
+  // Hunt status panel (compact box — data only)
+  const statusContent: string[] = []
+  statusContent.push(...renderHuntStatusPanel(state))
 
-  // Hunt status panel
-  lines.push(...renderHuntStatusPanel(state))
+  // Health + runs on same line as last status line for density
+  statusContent.push(`${THEME.dim}Health:${THEME.reset} ${renderHealthStatus(state)}  ` +
+    `${THEME.dim}Runs:${THEME.reset} ${THEME.white}${state.activeRuns}${THEME.reset}`)
 
-  // Health line
-  lines.push(`${THEME.dim}Health:${THEME.reset} ${renderHealthStatus(state)}  ` +
-    `${THEME.dim}runs:${THEME.reset} ${THEME.white}${state.activeRuns}${THEME.reset}`)
-
-  lines.push("")
-  lines.push(...renderHomeActionRows(ctx, boxWidth - 4))
-
-  return {
+  const statusLines = renderTracedBox(
+    "Hunt Status",
+    statusContent,
     boxWidth,
-    lines: renderTracedBox(
-      state.homeFocus === "prompt"
-        ? "Hunt Status"
-        : `Hunt Status • ${state.homeFocus}`,
-      lines,
-      boxWidth,
-      state,
-      {
-        focused: state.homeFocus !== "prompt",
-        traceStartFrame: state.homeActionsTraceStartFrame,
-      },
-    ),
-  }
+    state,
+    {
+      focused: false,
+      traceStartFrame: state.homeActionsTraceStartFrame,
+    },
+  )
+
+  // Action grid (standalone, not boxed)
+  const actionLines = renderHomeActionRows(ctx, boxWidth - 2)
+
+  return { boxWidth, statusLines, actionLines }
 }
 
 function renderMainContent(ctx: ScreenContext, _commands: Command[]): string {
   const { state, width, height } = ctx
   const lines: string[] = []
   const opsSnapshot = buildOpsSnapshot(ctx, width)
-  const opsHeight = opsSnapshot ? opsSnapshot.lines.length + 2 : 0
+  const opsHeight = opsSnapshot ? opsSnapshot.statusLines.length + opsSnapshot.actionLines.length + 3 : 0
   const statusHeight = state.statusMessage ? 2 : 0
 
   // Calculate vertical centering for logo + input
-  const contentHeight = LOGO.main.length + LOGO.god.length + 10 + opsHeight + statusHeight
+  const contentHeight = LOGO.main.length + LOGO.god.length + 8 + opsHeight + statusHeight
   const startY = Math.max(1, Math.floor((height - contentHeight) / 3))
 
   // Top padding
@@ -564,7 +516,6 @@ function renderMainContent(ctx: ScreenContext, _commands: Command[]): string {
   const promptFocused = state.homeFocus === "prompt"
   const promptTextColor = promptFocused ? THEME.white : THEME.muted
   const placeholderColor = promptFocused ? THEME.dim : THEME.dimAttr + THEME.muted
-  const metaColor = promptFocused ? THEME.dim : THEME.muted
 
   const innerWidth = inputWidth - 4
   const visiblePrompt = prompt.length > innerWidth - 2
@@ -579,39 +530,28 @@ function renderMainContent(ctx: ScreenContext, _commands: Command[]): string {
         ? `${promptTextColor}${inputContent}${THEME.reset}`
         : `${placeholderColor}${placeholder}${THEME.reset}`,
       "",
-      joinColumns(
-        `${THEME.accent}${agent.name}${THEME.reset}  ${metaColor}${agent.model}${THEME.reset} ${THEME.dim}${agent.provider}${THEME.reset}`,
-        `${metaColor}ctrl+n${THEME.reset} ${metaColor}next agent${THEME.reset}`,
-        inputWidth - 4,
-      ),
+      `${THEME.accent}${agent.name}${THEME.reset}  ${THEME.dim}${agent.model}${THEME.reset} ${THEME.dim}${agent.provider}${THEME.reset}`,
     ],
     inputWidth,
     state,
   )
   lines.push(...centerBlock(inputBox, width))
 
-  lines.push("")
-
-  // Hint bar - centered
-  const primaryHints = state.homeFocus === "prompt"
-    ? `${THEME.bold}Enter${THEME.reset}${THEME.muted} dispatch sheet${THEME.reset}    ` +
+  // Single hint line — context-sensitive
+  const hints = state.homeFocus === "prompt"
+    ? `${THEME.bold}Enter${THEME.reset}${THEME.muted} dispatch${THEME.reset}    ` +
       `${THEME.bold}Tab${THEME.reset}${THEME.muted} actions${THEME.reset}    ` +
       `${THEME.bold}Ctrl+P${THEME.reset}${THEME.muted} commands${THEME.reset}    ` +
-      `${THEME.bold}Esc${THEME.reset}${THEME.muted} nav${THEME.reset}`
+      `${THEME.bold}Ctrl+N${THEME.reset}${THEME.muted} agent${THEME.reset}`
     : state.homeFocus === "actions"
       ? `${THEME.bold}↑↓←→${THEME.reset}${THEME.muted} move${THEME.reset}    ` +
         `${THEME.bold}Enter${THEME.reset}${THEME.muted} open${THEME.reset}    ` +
         `${THEME.bold}Tab${THEME.reset}${THEME.muted} prompt${THEME.reset}    ` +
+        `${THEME.bold}Esc${THEME.reset}${THEME.muted} back${THEME.reset}`
+      : `${THEME.bold}D/P/E/T/K/C${THEME.reset}${THEME.muted} jump${THEME.reset}    ` +
         `${THEME.bold}Esc${THEME.reset}${THEME.muted} prompt${THEME.reset}`
-      : `${THEME.bold}D/P/E/T/K/C${THEME.reset}${THEME.muted} hunt actions${THEME.reset}    ` +
-        `${THEME.bold}Esc${THEME.reset}${THEME.muted} prompt${THEME.reset}`
-  const secondaryHints = state.homeFocus === "prompt"
-    ? `${THEME.bold}Ctrl+N${THEME.reset}${THEME.muted} next agent${THEME.reset}    ` +
-      `${THEME.bold}↑↓←→${THEME.reset}${THEME.muted} available after Tab${THEME.reset}`
-    : `${THEME.bold}Ctrl+P${THEME.reset}${THEME.muted} commands${THEME.reset}    ` +
-      `${THEME.bold}Ctrl+N${THEME.reset}${THEME.muted} next agent${THEME.reset}`
-  lines.push(centerLine(primaryHints, width))
-  lines.push(centerLine(secondaryHints, width))
+  lines.push("")
+  lines.push(centerLine(hints, width))
 
   // Status message (if any)
   if (state.statusMessage) {
@@ -619,9 +559,14 @@ function renderMainContent(ctx: ScreenContext, _commands: Command[]): string {
     lines.push(centerLine(state.statusMessage, width))
   }
 
+  // Hunt Status box (data only)
   if (opsSnapshot) {
     lines.push("")
-    lines.push(...centerBlock(opsSnapshot.lines, width))
+    lines.push(...centerBlock(opsSnapshot.statusLines, width))
+
+    // Action grid (standalone, below status)
+    lines.push("")
+    lines.push(...centerBlock(opsSnapshot.actionLines, width))
   }
 
   // Fill remaining space (leave room for status bar)
