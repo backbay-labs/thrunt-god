@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: TUI Operator Console
 status: executing
-stopped_at: Completed 24-02-PLAN.md
-last_updated: "2026-03-29T23:15:47.069Z"
-last_activity: 2026-03-29 -- Completed 24-02 hunt observation screens (main, phases, evidence)
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-03-30T04:16:08.565Z"
+last_activity: 2026-03-30 -- Completed 25-01 runtime bridge and THRUNT gate implementations
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 80
+  total_plans: 7
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-29)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** Phase 24 - Hunt Observation Screens
+**Current focus:** Phase 25 - Execution Verification
 
 ## Current Milestone: v1.5 TUI Operator Console
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-03-29)
 
 ## Current Position
 
-Phase: 24 of 26 (Hunt Observation Screens)
-Plan: 2 of 3 in current phase
+Phase: 25 of 26 (Execution Verification)
+Plan: 1 of 2 in current phase
 Status: In Progress
-Last activity: 2026-03-29 -- Completed 24-02 hunt observation screens (main, phases, evidence)
+Last activity: 2026-03-30 -- Completed 25-01 runtime bridge and THRUNT gate implementations
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 80%
 | Phase 24-hunt-observation-screens P01 | 63min | 2 tasks | 14 files |
 | Phase 24-hunt-observation-screens P03 | 4min | 2 tasks | 4 files |
 | Phase 24-hunt-observation-screens P02 | 12min | 3 tasks | 6 files |
+| Phase 25-execution-verification P01 | 4min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase 24-hunt-observation-screens]: Pack tree uses flattenTree to resolve selected node key for toggleExpand
 - [Phase 24-hunt-observation-screens]: Replaced 11 hushd-centric HOME_ACTIONS with 6 THRUNT hunt actions (D/P/E/T/K/C)
 - [Phase 24-hunt-observation-screens]: Hunt status panel reads thruntContext for phase/plan/progress/blockers instead of hushd event ticker
+- [Phase 25-execution-verification]: Both THRUNT gates use non-critical fail-open pattern (warn-only, pass on errors)
+- [Phase 25-execution-verification]: Gate registry fully replaced: 0 old gates (pytest/mypy/ruff/clawdstrike), 2 THRUNT gates (evidence-integrity, receipt-completeness)
+- [Phase 25-execution-verification]: Runtime bridge extends ThruntCommandOptions with optional profile field for spawnThruntStream wrapper
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29T23:15:47.067Z
-Stopped at: Completed 24-02-PLAN.md
+Last session: 2026-03-30T04:16:08.561Z
+Stopped at: Completed 25-01-PLAN.md
 Resume file: None

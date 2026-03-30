@@ -20,7 +20,7 @@ Requirements for the TUI Operator Console milestone. Each maps to roadmap phases
 
 - [x] **HUNT-01**: Operator sees hunt status dashboard with phase, plan, progress, and blockers from STATE.md
 - [x] **HUNT-02**: Operator can navigate phases from HUNTMAP and drill into plan details
-- [ ] **HUNT-03**: Operator can trigger query execution from the console and see results
+- [x] **HUNT-03**: Operator can trigger query execution from the console and see results
 - [x] **HUNT-04**: Operator can inspect evidence manifests and verify chain-of-custody integrity
 - [x] **HUNT-05**: Operator can view detection candidates with promotion scores
 - [x] **HUNT-06**: Operator can see connector configuration status and health
@@ -28,8 +28,8 @@ Requirements for the TUI Operator Console milestone. Each maps to roadmap phases
 
 ### Verification Gates
 
-- [ ] **GATE-01**: Gate framework runs evidence integrity verification (manifest hash checks) after agent execution
-- [ ] **GATE-02**: Gate framework runs receipt completeness verification (query-to-receipt-to-evidence chain) after agent execution
+- [x] **GATE-01**: Gate framework runs evidence integrity verification (manifest hash checks) after agent execution
+- [x] **GATE-02**: Gate framework runs receipt completeness verification (query-to-receipt-to-evidence chain) after agent execution
 
 ### Rebrand & Cleanup
 
@@ -83,13 +83,13 @@ Deferred to future release. Tracked but not in current roadmap.
 | BRIDGE-06 | Phase 23 | Complete |
 | HUNT-01 | Phase 24 | Complete |
 | HUNT-02 | Phase 24 | Complete |
-| HUNT-03 | Phase 25 | Pending |
+| HUNT-03 | Phase 25 | Complete |
 | HUNT-04 | Phase 24 | Complete |
 | HUNT-05 | Phase 24 | Complete |
 | HUNT-06 | Phase 24 | Complete |
 | HUNT-07 | Phase 24 | Complete |
-| GATE-01 | Phase 25 | Pending |
-| GATE-02 | Phase 25 | Pending |
+| GATE-01 | Phase 25 | Complete |
+| GATE-02 | Phase 25 | Complete |
 | BRAND-01 | Phase 26 | Pending |
 | BRAND-02 | Phase 26 | Pending |
 | BRAND-03 | Phase 26 | Pending |
