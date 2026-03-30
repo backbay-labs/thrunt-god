@@ -2429,7 +2429,7 @@ function createOpenSearchAdapter() {
     capabilities: createConnectorCapabilities({
       id: 'opensearch',
       display_name: 'OpenSearch SQL',
-      auth_types: ['basic', 'api_key', 'bearer'],
+      auth_types: ['basic', 'api_key', 'bearer', 'sigv4'],
       dataset_kinds: ['events', 'alerts', 'entities'],
       languages: ['sql'],
       pagination_modes: ['none'],
@@ -2437,12 +2437,16 @@ function createOpenSearchAdapter() {
       limitations: [
         'Uses /_plugins/_sql with JDBC response format. PPL surface not yet supported.',
         'Response format is {schema, datarows} -- different from Elastic ES|QL {columns, values}.',
+        'SigV4 authentication supported for Amazon OpenSearch Service managed clusters (requires region and AWS credentials).',
       ],
       supported_parameters: ['format'],
     }),
     preflight({ profile }) {
       if (!normalizeBaseUrl(profile)) {
         throw Object.assign(new Error('OpenSearch connector requires profile.base_url'), { code: 'OPENSEARCH_BASE_URL_REQUIRED' });
+      }
+      if (profile?.auth_type === 'sigv4' && !profile?.region && !profile?.base_url) {
+        throw Object.assign(new Error('OpenSearch SigV4 auth requires profile.region or profile.base_url'), { code: 'OPENSEARCH_SIGV4_REGION_REQUIRED' });
       }
     },
     prepareQuery({ spec, profile }) {
@@ -2456,11 +2460,14 @@ function createOpenSearchAdapter() {
       };
     },
     executeRequest({ prepared, profile, secrets, options }) {
+      const auth = profile?.auth_type === 'sigv4'
+        ? { type: 'sigv4', service: 'es' }
+        : { type: profile?.auth_type || 'basic' };
       return executeConnectorRequest({
         request: prepared.request,
         profile,
         secrets,
-        auth: { type: profile?.auth_type || 'basic' },
+        auth,
         options,
       });
     },
