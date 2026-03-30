@@ -75,6 +75,27 @@ async function createSplunkBearerToken(baseUrl, { user, password }) {
     body: 'name=integ_test_token&audience=search&type=static',
   });
 
+  if (resp.status === 409) {
+    // Token already exists — retrieve the existing token
+    const getResp = await fetch(`${baseUrl}/services/authorization/tokens/integ_test_token`, {
+      method: 'GET',
+      headers: {
+        Authorization: auth,
+        Accept: 'application/json',
+      },
+    });
+    if (!getResp.ok) {
+      const text = await getResp.text();
+      throw new Error(`Failed to retrieve existing Splunk bearer token: HTTP ${getResp.status} — ${text}`);
+    }
+    const getData = await getResp.json();
+    const existingToken = getData?.entry?.[0]?.content?.token;
+    if (!existingToken) {
+      throw new Error(`Existing Splunk token response missing entry[0].content.token: ${JSON.stringify(getData)}`);
+    }
+    return existingToken;
+  }
+
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(`Failed to create Splunk bearer token: HTTP ${resp.status} — ${text}`);
