@@ -46,6 +46,9 @@ Plans:
 **Goal**: Ship Docker-based integration test CI and pack validation gates that run on every PR
 **Depends on**: Phase 31 (base CI workflow exists)
 **Requirements**: CI-02
+**Plans:** 1 plan
+Plans:
+- [ ] 32-01-PLAN.md -- integration.yml, pack-validation.yml, validate-all-packs.cjs, reusable-pack-test.yml
 **Success Criteria** (what must be TRUE):
   1. Integration test workflow provisions Splunk 9.4, Elasticsearch, and OpenSearch via docker-compose in CI
   2. Pack validation job runs pack lint, pack test, and pack validate against all 16 shipped packs
@@ -247,8 +250,8 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 31. Core CI Pipeline | 1/1 | Complete   | 2026-03-30 |
-| 32. Integration Test CI & Pack Validation | 0/0 | Not Started | |
+| 31. Core CI Pipeline | 1/1 | Complete    | 2026-03-30 |
+| 32. Integration Test CI & Pack Validation | 0/1 | Not Started | |
 | 33. SDK Export Surface | 0/0 | Not Started | |
 | 34. Connector Scaffolding CLI | 0/0 | Not Started | |
 | 35. Pack Authoring Interactive CLI | 0/0 | Not Started | |

@@ -4,7 +4,7 @@ milestone: v2.0
 milestone_name: Developer Experience & CI
 status: Not started — needs discuss -> plan -> execute
 stopped_at: Completed 31-01-PLAN.md
-last_updated: "2026-03-30T18:44:22.667Z"
+last_updated: "2026-03-30T18:48:23.819Z"
 last_activity: 2026-03-30 -- Activated v2.0/v2.1/v2.2 milestones from research specs
 progress:
   total_phases: 19

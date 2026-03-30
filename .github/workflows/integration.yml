@@ -1,0 +1,62 @@
+name: Integration Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22]
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pull Docker images
+        run: docker compose -f tests/integration/docker-compose.yml pull
+
+      - name: Start SIEM containers
+        timeout-minutes: 8
+        run: docker compose -f tests/integration/docker-compose.yml up -d --wait
+
+      - name: Run integration tests
+        run: node scripts/run-integration-tests.cjs
+
+      - name: Collect container logs on failure
+        if: failure()
+        run: docker compose -f tests/integration/docker-compose.yml logs --no-color > siem-container-logs.txt
+
+      - name: Upload container logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: siem-container-logs
+          path: siem-container-logs.txt
+          retention-days: 7
+
+      - name: Tear down containers
+        if: always()
+        run: docker compose -f tests/integration/docker-compose.yml down -v
