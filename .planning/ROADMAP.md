@@ -23,7 +23,7 @@
 - [x] **Phase 32: Integration Test CI & Pack Validation** - Docker-compose in CI for Splunk/Elastic/OpenSearch, pack lint/test/validate as CI gates, reusable workflow template (completed 2026-03-30)
 - [x] **Phase 33: SDK Export Surface** - Export ~15 internal runtime.cjs functions needed by standalone connector files (completed 2026-03-30)
 - [x] **Phase 34: Connector Scaffolding CLI** - thrunt-tools init connector command with interactive mode, zero-dep templates, post-scaffold validation (completed 2026-03-30)
-- [ ] **Phase 35: Pack Authoring Interactive CLI** - MITRE ATT&CK technique picker, hypothesis builder with quality checks, pack type selection
+- [x] **Phase 35: Pack Authoring Interactive CLI** - MITRE ATT&CK technique picker, hypothesis builder with quality checks, pack type selection (completed 2026-03-30)
 - [ ] **Phase 36: Pack Query Wiring & Validation** - Per-connector query template starters for all 10 connectors, entity extraction rule builder, schema validation pipeline
 - [ ] **Phase 37: Pack Testing & Publishing** - Enhanced pack test with mock data and coverage, fixture generation, pack distribution
 
@@ -86,7 +86,7 @@ Plans:
 **Goal**: Ship thrunt pack create command with interactive guided flow for creating hunt packs including MITRE ATT&CK technique selection
 **Depends on**: Nothing (builds on existing pack init command)
 **Requirements**: PACK-01
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [ ] 35-01-PLAN.md -- MITRE ATT&CK data bundle, mitre-data.cjs module, and mitre-data tests
 - [ ] 35-02-PLAN.md -- pack-author.cjs interactive engine, cmdPackCreate routing
@@ -102,6 +102,11 @@ Plans:
 **Goal**: Ship per-connector query template starters and entity extraction rule builder with incremental schema validation
 **Depends on**: Phase 35 (interactive pack creation flow exists)
 **Requirements**: PACK-02
+**Plans:** 3 plans
+Plans:
+- [ ] 36-01-PLAN.md -- query-starters.cjs module with 10 connector starter templates, entity scope types, incremental validation helpers
+- [ ] 36-02-PLAN.md -- Extend pack-author.cjs with query starter integration, entity selection, and 4-checkpoint validation
+- [ ] 36-03-PLAN.md -- Test suite for query starters, entity types, incremental validation, and template parameter detection
 **Success Criteria** (what must be TRUE):
   1. Query template starters provided for all 10 connectors with correct language identifiers
   2. Entity extraction rule builder maps fields to entity types from the 13 runtime entity kinds
@@ -266,8 +271,8 @@ Phases execute in numeric order: 31 -> 32 -> 33 -> 34 -> 35 -> 36 -> 37 -> 38 ->
 | 32. Integration Test CI & Pack Validation | 1/1 | Complete    | 2026-03-30 |
 | 33. SDK Export Surface | 1/1 | Complete    | 2026-03-30 |
 | 34. Connector Scaffolding CLI | 2/2 | Complete    | 2026-03-30 |
-| 35. Pack Authoring Interactive CLI | 2/3 | In Progress|  |
-| 36. Pack Query Wiring & Validation | 0/0 | Not Started | |
+| 35. Pack Authoring Interactive CLI | 3/3 | Complete    | 2026-03-30 |
+| 36. Pack Query Wiring & Validation | 0/3 | Not Started | |
 | 37. Pack Testing & Publishing | 0/0 | Not Started | |
 | 38. Replay Engine Core | 0/0 | Not Started | |
 | 39. Per-Language Query Rewriters | 0/0 | Not Started | |

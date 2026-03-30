@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Developer Experience & CI
-status: executing
-stopped_at: Completed 35-02-PLAN.md
-last_updated: "2026-03-30T20:25:59.711Z"
-last_activity: 2026-03-30 -- Completed 35-02 Interactive Pack Author
+status: completed
+stopped_at: Completed 35-03-PLAN.md
+last_updated: "2026-03-30T20:31:54.999Z"
+last_activity: 2026-03-30 -- Completed 35-03 Pack Author Tests
 progress:
   total_phases: 19
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 ## Current Position
 
 Phase: 35 of 37 (Pack Authoring Interactive CLI)
-Plan: 2 of 3 (Interactive Pack Author)
-Status: In progress — executing phase 35
-Last activity: 2026-03-30 -- Completed 35-02 Interactive Pack Author
+Plan: 3 of 3 (Pack Author Tests)
+Status: Phase 35 complete
+Last activity: 2026-03-30 -- Completed 35-03 Pack Author Tests
 
-Progress: [█████████░] 88% (7/8 plans complete)
+Progress: [██████████] 100% (8/8 plans complete)
 
 ## Upcoming Milestones
 
@@ -68,6 +68,7 @@ All historical decisions logged in PROJECT.md Key Decisions table.
 - [Phase 35-pack-authoring-interactive-cli]: DUPLICATE-DEDUP: Removed duplicate T1548 entry during data bundle creation -- kept the version with sub-techniques
 - [Phase 35]: READLINE-PROMISES: Used node:readline/promises for async interactive prompts, consistent with cmdInitConnector pattern
 - [Phase 35]: PARTIAL-VALIDATION: Non-interactive mode uses requireComplete:false since scaffolds need manual editing
+- [Phase 35]: COMBINED-REGRESSION-GUARDS: Included regression guard tests (cmdPackCreate export, circular dependency, DATASET_KINDS) directly in main test file rather than separate file
 
 ### Research Specs Available
 
@@ -97,6 +98,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30T20:25:59.709Z
-Stopped at: Completed 35-02-PLAN.md
+Last session: 2026-03-30T20:31:54.996Z
+Stopped at: Completed 35-03-PLAN.md
 Resume file: None
