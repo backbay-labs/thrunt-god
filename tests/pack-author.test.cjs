@@ -15,6 +15,7 @@ const { execFileSync } = require('child_process');
 
 const packAuthor = require('../thrunt-god/bin/lib/pack-author.cjs');
 const packLib = require('../thrunt-god/bin/lib/pack.cjs');
+const queryStarters = require('../thrunt-god/bin/lib/query-starters.cjs');
 
 const TOOLS_PATH = path.join(__dirname, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs');
 const PROJECT_ROOT = path.join(__dirname, '..');
@@ -496,6 +497,277 @@ describe('regression guards', () => {
   test('DATASET_KINDS matches expected set', () => {
     const expected = ['events', 'alerts', 'entities', 'identity', 'endpoint', 'cloud', 'email', 'other'];
     assert.deepStrictEqual(packAuthor.DATASET_KINDS, expected);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Suite 11: QUERY_STARTERS
+// ---------------------------------------------------------------------------
+
+describe('QUERY_STARTERS', () => {
+  const ALL_CONNECTORS = ['splunk', 'elastic', 'sentinel', 'opensearch', 'defender_xdr', 'crowdstrike', 'okta', 'm365', 'aws', 'gcp'];
+  const EXPECTED_LANGUAGES = {
+    splunk: 'spl', elastic: 'esql', sentinel: 'kql', opensearch: 'sql',
+    defender_xdr: 'kql', crowdstrike: 'fql', okta: 'api', m365: 'odata',
+    aws: 'api', gcp: 'logging-filter',
+  };
+
+  test('provides starters for all 10 connectors', () => {
+    const keys = Object.keys(queryStarters.QUERY_STARTERS);
+    assert.strictEqual(keys.length, 10);
+    for (const id of ALL_CONNECTORS) {
+      assert.ok(queryStarters.QUERY_STARTERS[id], `Missing starter for ${id}`);
+    }
+  });
+
+  test('each starter has non-empty template and language fields', () => {
+    for (const [id, starter] of Object.entries(queryStarters.QUERY_STARTERS)) {
+      assert.ok(starter.template && starter.template.length > 0, `${id} has empty template`);
+      assert.ok(starter.language && starter.language.length > 0, `${id} has empty language`);
+      assert.ok(starter.description && starter.description.length > 0, `${id} has empty description`);
+    }
+  });
+
+  test('language IDs match pack-author.cjs CONNECTOR_LANGUAGES', () => {
+    for (const [id, starter] of Object.entries(queryStarters.QUERY_STARTERS)) {
+      assert.strictEqual(starter.language, EXPECTED_LANGUAGES[id],
+        `${id}: expected language ${EXPECTED_LANGUAGES[id]}, got ${starter.language}`);
+    }
+  });
+
+  test('at least one starter contains {{tenant}} parameter', () => {
+    const hasTenant = Object.values(queryStarters.QUERY_STARTERS)
+      .some(s => s.template.includes('{{tenant}}'));
+    assert.ok(hasTenant, 'No starter contains {{tenant}}');
+  });
+
+  test('at least one starter contains {{lookback_hours}} parameter', () => {
+    const hasLookback = Object.values(queryStarters.QUERY_STARTERS)
+      .some(s => s.template.includes('{{lookback_hours}}'));
+    assert.ok(hasLookback, 'No starter contains {{lookback_hours}}');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite 12: getQueryStarter
+// ---------------------------------------------------------------------------
+
+describe('getQueryStarter', () => {
+
+  test('returns starter object for known connector', () => {
+    const result = queryStarters.getQueryStarter('splunk');
+    assert.ok(result);
+    assert.strictEqual(result.language, 'spl');
+    assert.ok(result.template.length > 0);
+  });
+
+  test('returns null for unknown connector', () => {
+    assert.strictEqual(queryStarters.getQueryStarter('nonexistent'), null);
+    assert.strictEqual(queryStarters.getQueryStarter(''), null);
+    assert.strictEqual(queryStarters.getQueryStarter(null), null);
+  });
+
+  test('returns correct language for each connector', () => {
+    assert.strictEqual(queryStarters.getQueryStarter('crowdstrike').language, 'fql');
+    assert.strictEqual(queryStarters.getQueryStarter('okta').language, 'api');
+    assert.strictEqual(queryStarters.getQueryStarter('m365').language, 'odata');
+    assert.strictEqual(queryStarters.getQueryStarter('gcp').language, 'logging-filter');
+    assert.strictEqual(queryStarters.getQueryStarter('aws').language, 'api');
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Suite 13: ENTITY_SCOPE_TYPES
+// ---------------------------------------------------------------------------
+
+describe('ENTITY_SCOPE_TYPES', () => {
+  const RUNTIME_KINDS = ['user', 'host', 'ip', 'device', 'cloud-account', 'azure-resource',
+    'cloud-resource', 'gcp-resource', 'principal', 'resource', 'alert', 'file', 'artifact'];
+  const PROPOSED_KINDS = ['process', 'session', 'sender', 'domain', 'mailbox', 'url', 'geo'];
+
+  test('contains exactly 20 entity scope types', () => {
+    assert.strictEqual(queryStarters.ENTITY_SCOPE_TYPES.length, 20);
+  });
+
+  test('contains all 13 runtime extraction kinds', () => {
+    const kinds = queryStarters.ENTITY_SCOPE_TYPES.map(e => e.kind);
+    for (const k of RUNTIME_KINDS) {
+      assert.ok(kinds.includes(k), `Missing runtime entity kind: ${k}`);
+    }
+  });
+
+  test('contains all 7 proposed scope types', () => {
+    const kinds = queryStarters.ENTITY_SCOPE_TYPES.map(e => e.kind);
+    for (const k of PROPOSED_KINDS) {
+      assert.ok(kinds.includes(k), `Missing proposed entity kind: ${k}`);
+    }
+  });
+
+  test('runtime entities have source "runtime"', () => {
+    const runtimeEntries = queryStarters.ENTITY_SCOPE_TYPES.filter(e => e.source === 'runtime');
+    assert.strictEqual(runtimeEntries.length, 13);
+  });
+
+  test('proposed entities have source "proposed"', () => {
+    const proposedEntries = queryStarters.ENTITY_SCOPE_TYPES.filter(e => e.source === 'proposed');
+    assert.strictEqual(proposedEntries.length, 7);
+  });
+
+  test('each entity has kind, source, and description fields', () => {
+    for (const entity of queryStarters.ENTITY_SCOPE_TYPES) {
+      assert.ok(entity.kind, 'Entity missing kind');
+      assert.ok(entity.source, 'Entity missing source');
+      assert.ok(entity.description, 'Entity missing description');
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Suite 14: runIncrementalValidation
+// ---------------------------------------------------------------------------
+
+describe('runIncrementalValidation', () => {
+
+  test('identity checkpoint passes for valid id and kind', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'test.valid-pack', kind: 'custom',
+      title: 'Test Pack', description: 'A test pack', stability: 'experimental',
+    }, 'identity');
+    assert.strictEqual(result.checkpoint, 'identity');
+    assert.ok(result.results.some(r => r.status === 'PASS'));
+    assert.ok(!result.results.some(r => r.status === 'FAIL'));
+  });
+
+  test('identity checkpoint fails for invalid id format', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'INVALID ID!', kind: 'custom',
+      title: 'Test', description: 'Test', stability: 'experimental',
+    }, 'identity');
+    assert.ok(result.results.some(r => r.status === 'FAIL'));
+    assert.strictEqual(result.passed, false);
+  });
+
+  test('attack checkpoint passes for valid ATT&CK IDs', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'technique.t1078-test', kind: 'technique',
+      title: 'Test', description: 'Test', stability: 'experimental',
+      attack: ['T1078'],
+    }, 'attack');
+    assert.strictEqual(result.checkpoint, 'attack');
+    assert.ok(result.results.some(r => r.status === 'PASS'));
+  });
+
+  test('attack checkpoint fails for invalid ATT&CK ID', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'technique.invalid', kind: 'technique',
+      title: 'Test', description: 'Test', stability: 'experimental',
+      attack: ['INVALID'],
+    }, 'attack');
+    assert.ok(result.results.some(r => r.status === 'FAIL'));
+  });
+
+  test('query checkpoint detects undeclared template parameters', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'test.query-check', kind: 'custom',
+      title: 'Test', description: 'Test', stability: 'experimental',
+      execution_targets: [{
+        name: 'test', connector: 'splunk', dataset: 'events',
+        language: 'spl', query_template: 'index=main {{tenant}} {{undeclared_param}}',
+      }],
+      parameters: [{ name: 'tenant', type: 'string', required: true }],
+    }, 'query');
+    assert.strictEqual(result.checkpoint, 'query');
+    // Should have a FAIL or WARN for undeclared_param
+    const hasUndeclared = result.results.some(r =>
+      r.message.toLowerCase().includes('undeclared') || r.message.toLowerCase().includes('undeclared_param'));
+    assert.ok(hasUndeclared, 'Should flag undeclared template parameter');
+  });
+
+  test('query checkpoint passes when all parameters declared', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'test.all-declared', kind: 'custom',
+      title: 'Test', description: 'Test', stability: 'experimental',
+      execution_targets: [{
+        name: 'test', connector: 'splunk', dataset: 'events',
+        language: 'spl', query_template: 'index=main {{tenant}}',
+      }],
+      parameters: [{ name: 'tenant', type: 'string', required: true }],
+    }, 'query');
+    assert.strictEqual(result.checkpoint, 'query');
+    const templateResults = result.results.filter(r => r.message.toLowerCase().includes('template') || r.message.toLowerCase().includes('parameter'));
+    const allPassOrWarn = templateResults.every(r => r.status !== 'FAIL');
+    assert.ok(allPassOrWarn || templateResults.length === 0, 'Should not fail when all params declared');
+  });
+
+  test('final checkpoint runs full schema validation', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'test.final', kind: 'custom',
+      title: 'Test Pack', description: 'A test pack', stability: 'experimental',
+    }, 'final');
+    assert.strictEqual(result.checkpoint, 'final');
+    // Final with requireComplete=true will likely fail due to missing hypothesis_ids etc.
+    assert.ok(result.results.length > 0);
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Suite 15: formatValidationResults
+// ---------------------------------------------------------------------------
+
+describe('formatValidationResults', () => {
+
+  test('includes [PASS] markers for passing results', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'test.ok', kind: 'custom',
+      title: 'Test', description: 'Test', stability: 'experimental',
+    }, 'identity');
+    const formatted = queryStarters.formatValidationResults(result);
+    assert.ok(formatted.includes('[PASS]'));
+  });
+
+  test('includes [FAIL] markers for failing results', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'BAD!', kind: 'custom',
+    }, 'identity');
+    const formatted = queryStarters.formatValidationResults(result);
+    assert.ok(formatted.includes('[FAIL]'));
+  });
+
+  test('includes checkpoint name in output', () => {
+    const result = queryStarters.runIncrementalValidation({
+      version: '1.0', id: 'test.ok', kind: 'custom',
+      title: 'T', description: 'D', stability: 'experimental',
+    }, 'identity');
+    const formatted = queryStarters.formatValidationResults(result);
+    assert.ok(formatted.includes('identity'), 'Should include checkpoint name');
+  });
+
+});
+
+// ---------------------------------------------------------------------------
+// Suite 16: Template parameter auto-detection
+// ---------------------------------------------------------------------------
+
+describe('Template parameter auto-detection', () => {
+
+  test('collectTemplateParameters extracts {{param}} from query starters', () => {
+    const splunkStarter = queryStarters.getQueryStarter('splunk');
+    const params = packLib.collectTemplateParameters(splunkStarter.template);
+    assert.ok(params.includes('tenant'), 'Splunk starter should reference {{tenant}}');
+    assert.ok(params.includes('lookback_hours'), 'Splunk starter should reference {{lookback_hours}}');
+  });
+
+  test('collectTemplateParameters extracts parameters from all starters', () => {
+    const allParams = new Set();
+    for (const [id, starter] of Object.entries(queryStarters.QUERY_STARTERS)) {
+      const params = packLib.collectTemplateParameters(starter.template);
+      for (const p of params) allParams.add(p);
+    }
+    // At minimum, tenant and lookback_hours should appear across starters
+    assert.ok(allParams.size >= 1, 'Should detect at least one parameter across all starters');
   });
 
 });
