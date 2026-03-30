@@ -19,9 +19,9 @@ Requirements for the Live Connector Integrations milestone. Each maps to roadmap
 
 ### Test Infrastructure
 
-- [ ] **TEST-01**: Docker-compose provisions Splunk 9.4, Elasticsearch 9.3, and OpenSearch containers with seed security event data
-- [ ] **TEST-02**: Integration tests skip gracefully via `skipIfNoDocker()` when Docker is unavailable; `npm test` remains unit-only
-- [ ] **TEST-03**: `test:integration` scripts orchestrate full Docker lifecycle (up, run tests, down)
+- [x] **TEST-01**: Docker-compose provisions Splunk 9.4, Elasticsearch 9.3, and OpenSearch containers with seed security event data
+- [x] **TEST-02**: Integration tests skip gracefully via `skipIfNoDocker()` when Docker is unavailable; `npm test` remains unit-only
+- [x] **TEST-03**: `test:integration` scripts orchestrate full Docker lifecycle (up, run tests, down)
 
 ### Integration Tests
 
@@ -70,9 +70,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | CONN-05 | Phase 30 | Pending |
 | CONN-06 | Phase 29 | Pending |
 | CONN-07 | Phase 30 | Pending |
-| TEST-01 | Phase 28 | Pending |
-| TEST-02 | Phase 28 | Pending |
-| TEST-03 | Phase 28 | Pending |
+| TEST-01 | Phase 28 | Complete |
+| TEST-02 | Phase 28 | Complete |
+| TEST-03 | Phase 28 | Complete |
 | INTG-01 | Phase 29 | Pending |
 | INTG-02 | Phase 30 | Pending |
 | INTG-03 | Phase 30 | Pending |

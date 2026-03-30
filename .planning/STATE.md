@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Live Connector Integrations
-status: phase_complete
-stopped_at: Completed 27-02-PLAN.md -- OpenSearch and Defender XDR adapter stubs
-last_updated: "2026-03-30T06:50:01Z"
-last_activity: 2026-03-30 -- Completed phase 27 (all 2 plans)
+status: completed
+stopped_at: Completed 28-01-PLAN.md -- phase 28 complete (Docker test infrastructure)
+last_updated: "2026-03-30T07:09:13.799Z"
+last_activity: 2026-03-30 -- Completed 28-01 Docker test infrastructure
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v1.6 Phase 27 — SDK Contract Hardening & New Adapter Stubs
+**Current focus:** v1.6 Phase 28 — Docker Test Infrastructure
 
 ## Current Milestone: v1.6 Live Connector Integrations
 
@@ -29,25 +29,26 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 27 of 30 (SDK Contract Hardening & New Adapter Stubs)
-Plan: 2 of 2 (complete)
+Phase: 28 of 30 (Docker Test Infrastructure)
+Plan: 1 of 1 (complete)
 Status: Phase Complete
-Last activity: 2026-03-30 -- Completed 27-02 OpenSearch and Defender XDR adapter stubs
+Last activity: 2026-03-30 -- Completed 28-01 Docker test infrastructure
 
-Progress: [██████████] 100% (v1.6 phase 27)
+Progress: [██████████] 100% (v1.6 phase 28)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2 (v1.6)
-- Average duration: 3min
-- Total execution time: 0.1 hours
+- Total plans completed: 3 (v1.6)
+- Average duration: 4min
+- Total execution time: 0.2 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 27 | 2 | 6min | 3min |
+| 28 | 1 | 5min | 5min |
 
 *Updated after each plan completion*
 
@@ -58,6 +59,9 @@ Progress: [██████████] 100% (v1.6 phase 27)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- [28-01]: Non-standard host ports (18089, 18088, 19200, 19201) to avoid collisions with local services
+- [28-01]: Seed events use ECS-compatible fields for Elastic/OpenSearch and Splunk-native fields for Splunk
+- [28-01]: Splunk healthcheck polls /services/server/info with basic auth for reliable readiness detection
 - [27-02]: OpenSearch reuses normalizeElasticRows via adapter shim that maps {schema, datarows} to {columns, values}
 - [27-02]: Defender XDR uses dedicated normalizeDefenderResults since Results are pre-formed objects (no column mapping needed)
 - [27-02]: Defender XDR defaults to api.security.microsoft.com for both base URL and OAuth scope
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30
-Stopped at: Completed 27-02-PLAN.md -- phase 27 complete (OpenSearch + Defender XDR adapters)
+Last session: 2026-03-30T07:09:13.795Z
+Stopped at: Completed 28-01-PLAN.md -- phase 28 complete (Docker test infrastructure)
 Resume file: None

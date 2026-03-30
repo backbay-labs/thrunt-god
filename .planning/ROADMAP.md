@@ -21,7 +21,7 @@
 - Decimal phases (e.g., 27.1): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 27: SDK Contract Hardening & New Adapter Stubs** - All five connectors satisfy validateConnectorAdapter() and unit tests establish correctness baseline (completed 2026-03-30)
-- [ ] **Phase 28: Docker Test Infrastructure** - Splunk, Elasticsearch, and OpenSearch containers provision and seed end-to-end before any connector logic is wired to them
+- [x] **Phase 28: Docker Test Infrastructure** - Splunk, Elasticsearch, and OpenSearch containers provision and seed end-to-end before any connector logic is wired to them (completed 2026-03-30)
 - [ ] **Phase 29: Splunk Integration** - Real SPL query against live Docker container with bearer token bootstrap, entity extraction, and async job fallback
 - [ ] **Phase 30: Elastic & OpenSearch Integration** - ES|QL and EQL queries against live containers, is_partial handling validated, OpenSearch SigV4 path complete
 
@@ -51,10 +51,10 @@ Plans:
   1. Running npm run test:integration:up starts Splunk 9.4, Elasticsearch 9.3, and OpenSearch containers with seed security event data loaded and all health checks passing
   2. Running npm test on a machine without Docker completes successfully (all integration tests skipped via skipIfNoDocker()) with no failures
   3. Running npm run test:integration executes the full Docker lifecycle — containers up, tests run, containers down — and exits cleanly
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 28-01: TBD
+- [ ] 28-01-PLAN.md -- Docker-compose infrastructure, skipIfNoDocker gate, seed data fixtures, npm scripts, and lifecycle smoke test
 
 ### Phase 29: Splunk Integration
 **Goal**: A real SPL query executes against a live Splunk Docker container end-to-end, with bearer token authentication, host and user entity extraction validated against the live response, and async job fallback for long-running queries
@@ -90,7 +90,7 @@ Phases execute in numeric order: 27 -> 28 -> 29 -> 30
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 27. SDK Contract Hardening & New Adapter Stubs | 2/2 | Complete   | 2026-03-30 |
-| 28. Docker Test Infrastructure | 0/? | Not started | - |
+| 27. SDK Contract Hardening & New Adapter Stubs | 2/2 | Complete    | 2026-03-30 |
+| 28. Docker Test Infrastructure | 1/1 | Complete   | 2026-03-30 |
 | 29. Splunk Integration | 0/? | Not started | - |
 | 30. Elastic & OpenSearch Integration | 0/? | Not started | - |
