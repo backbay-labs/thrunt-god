@@ -1239,3 +1239,409 @@ describe('injectIoc', () => {
     assert.ok(!result.injected.includes('| delete'));
   });
 });
+
+// ─── 19. buildDiff ──────────────────────────────────────────────────────────────
+
+describe('buildDiff', () => {
+  const { buildDiff } = require('../thrunt-god/bin/lib/replay.cjs');
+
+  function makeEnvelope(overrides = {}) {
+    return {
+      version: '1.0',
+      query_id: overrides.query_id || 'QRY-20260330000000-AAAAAAAA',
+      connector: { id: overrides.connector_id || 'splunk' },
+      dataset: { kind: 'events' },
+      status: overrides.status || 'ok',
+      time_window: overrides.time_window || {
+        start: '2026-03-01T00:00:00Z',
+        end: '2026-03-02T00:00:00Z',
+      },
+      counts: {
+        events: overrides.events || 10,
+        entities: overrides.entities_count || 3,
+        relationships: 0,
+        evidence: overrides.evidence || 0,
+        warnings: 0,
+        errors: 0,
+        raw_records: 10,
+      },
+      events: overrides.events_arr || [],
+      entities: overrides.entities_arr || [
+        { kind: 'ip', value: '10.0.0.1', source_field: 'src' },
+        { kind: 'ip', value: '10.0.0.2', source_field: 'src' },
+        { kind: 'domain', value: 'example.com', source_field: 'dest_host' },
+      ],
+      warnings: [],
+      errors: [],
+      timing: {
+        started_at: '2026-03-01T00:00:00Z',
+        completed_at: '2026-03-01T00:00:05Z',
+        duration_ms: 5000,
+      },
+    };
+  }
+
+  test('full mode computes entity-level delta with added, removed, unchanged', () => {
+    const original = makeEnvelope({
+      query_id: 'QRY-ORIGINAL',
+      entities_arr: [
+        { kind: 'ip', value: '10.0.0.1' },
+        { kind: 'ip', value: '10.0.0.2' },
+        { kind: 'domain', value: 'example.com' },
+      ],
+      entities_count: 3,
+    });
+    const replay = makeEnvelope({
+      query_id: 'QRY-REPLAY',
+      entities_arr: [
+        { kind: 'ip', value: '10.0.0.1' },
+        { kind: 'domain', value: 'example.com' },
+        { kind: 'ip', value: '192.168.1.1' },
+        { kind: 'domain', value: 'evil.com' },
+        { kind: 'hash', value: 'abc123' },
+      ],
+      entities_count: 5,
+    });
+
+    const diff = buildDiff(original, replay, 'full');
+    assert.strictEqual(diff.mode, 'full');
+    assert.strictEqual(diff.delta.entities.added.length, 3); // 192.168.1.1, evil.com, abc123
+    assert.strictEqual(diff.delta.entities.removed.length, 1); // 10.0.0.2
+    assert.strictEqual(diff.delta.entities.unchanged, 2); // 10.0.0.1, example.com
+  });
+
+  test('full mode computes event count delta', () => {
+    const original = makeEnvelope({ events: 10 });
+    const replay = makeEnvelope({ events: 15, query_id: 'QRY-REPLAY' });
+
+    const diff = buildDiff(original, replay, 'full');
+    assert.strictEqual(diff.delta.events.added, 5);
+    assert.strictEqual(diff.delta.events.removed, 0);
+    assert.strictEqual(diff.delta.events.unchanged, 10);
+  });
+
+  test('counts_only mode returns only aggregate counts, no entity arrays', () => {
+    const original = makeEnvelope({ events: 10, entities_count: 3 });
+    const replay = makeEnvelope({ events: 15, entities_count: 5, query_id: 'QRY-REPLAY' });
+
+    const diff = buildDiff(original, replay, 'counts_only');
+    assert.strictEqual(diff.mode, 'counts_only');
+    assert.deepStrictEqual(diff.delta.entities.added, []);
+    assert.deepStrictEqual(diff.delta.entities.removed, []);
+    assert.strictEqual(diff.delta.events.added, 5);
+    assert.strictEqual(diff.delta.events.removed, 0);
+  });
+
+  test('entities_only mode returns entity diff without findings', () => {
+    const original = makeEnvelope({
+      entities_arr: [
+        { kind: 'ip', value: '10.0.0.1' },
+        { kind: 'ip', value: '10.0.0.2' },
+      ],
+      entities_count: 2,
+    });
+    const replay = makeEnvelope({
+      query_id: 'QRY-REPLAY',
+      entities_arr: [
+        { kind: 'ip', value: '10.0.0.1' },
+        { kind: 'domain', value: 'evil.com' },
+      ],
+      entities_count: 2,
+    });
+
+    const diff = buildDiff(original, replay, 'entities_only');
+    assert.strictEqual(diff.mode, 'entities_only');
+    assert.strictEqual(diff.delta.entities.added.length, 1); // evil.com
+    assert.strictEqual(diff.delta.entities.removed.length, 1); // 10.0.0.2
+    assert.strictEqual(diff.delta.entities.unchanged, 1); // 10.0.0.1
+    assert.deepStrictEqual(diff.delta.new_findings, []);
+    assert.deepStrictEqual(diff.delta.missing_findings, []);
+  });
+
+  test('identical envelopes produce zero-change diff', () => {
+    const original = makeEnvelope({ query_id: 'QRY-ORIGINAL' });
+    const replay = makeEnvelope({ query_id: 'QRY-REPLAY' });
+
+    const diff = buildDiff(original, replay, 'full');
+    assert.strictEqual(diff.delta.entities.added.length, 0);
+    assert.strictEqual(diff.delta.entities.removed.length, 0);
+    assert.strictEqual(diff.delta.entities.unchanged, 3);
+    assert.strictEqual(diff.delta.events.added, 0);
+    assert.strictEqual(diff.delta.events.removed, 0);
+    assert.ok(diff.summary.includes('No changes'));
+  });
+
+  test('summary string describes changes accurately', () => {
+    const original = makeEnvelope({
+      events: 5,
+      entities_arr: [{ kind: 'ip', value: '10.0.0.1' }],
+      entities_count: 1,
+    });
+    const replay = makeEnvelope({
+      query_id: 'QRY-REPLAY',
+      events: 10,
+      entities_arr: [
+        { kind: 'ip', value: '10.0.0.1' },
+        { kind: 'domain', value: 'evil.com' },
+      ],
+      entities_count: 2,
+    });
+
+    const diff = buildDiff(original, replay, 'full');
+    assert.ok(diff.summary.length > 0);
+    // Summary should mention new entities or events
+    assert.ok(diff.summary.includes('5') || diff.summary.includes('new'));
+  });
+
+  test('defaults to full mode when mode not specified', () => {
+    const original = makeEnvelope({ query_id: 'QRY-ORIGINAL' });
+    const replay = makeEnvelope({ query_id: 'QRY-REPLAY' });
+
+    const diff = buildDiff(original, replay);
+    assert.strictEqual(diff.mode, 'full');
+    assert.ok('events' in diff.delta);
+    assert.ok('entities' in diff.delta);
+  });
+
+  test('throws on invalid mode', () => {
+    const original = makeEnvelope({ query_id: 'QRY-ORIGINAL' });
+    const replay = makeEnvelope({ query_id: 'QRY-REPLAY' });
+
+    assert.throws(() => buildDiff(original, replay, 'invalid_mode'), /Invalid diff mode/);
+  });
+});
+
+// ─── 20. lineage in evidence artifacts ──────────────────────────────────────────
+
+describe('lineage in evidence artifacts', () => {
+  const { buildReceiptDocument, buildQueryLogDocument } = require('../thrunt-god/bin/lib/evidence.cjs');
+  const { createQuerySpec } = require('../thrunt-god/bin/lib/runtime.cjs');
+
+  function makeTestSpec() {
+    return createQuerySpec({
+      connector: { id: 'splunk', profile: 'default' },
+      dataset: { kind: 'events' },
+      time_window: {
+        start: '2026-03-01T00:00:00.000Z',
+        end: '2026-03-02T00:00:00.000Z',
+      },
+      query: { statement: 'index=main | head 10' },
+    });
+  }
+
+  function makeTestEnvelope() {
+    return {
+      status: 'ok',
+      counts: { events: 10, entities: 3, relationships: 0, evidence: 0, warnings: 0, errors: 0, raw_records: 10 },
+      events: [],
+      entities: [],
+      warnings: [],
+      errors: [],
+      timing: {
+        started_at: '2026-03-01T00:00:00Z',
+        completed_at: '2026-03-01T00:01:00Z',
+        duration_ms: 60000,
+      },
+      pagination: { pages_fetched: 1 },
+    };
+  }
+
+  test('buildReceiptDocument renders Lineage section when options.lineage provided', () => {
+    const spec = makeTestSpec();
+    const envelope = makeTestEnvelope();
+    const lineage = {
+      replay_id: 'RPL-20260330000000-ABCD1234',
+      original_query_ids: ['QRY-001', 'QRY-002'],
+      original_receipt_ids: ['RCT-001'],
+      mutations_applied: ['time_window', 'connector'],
+      replay_reason: 'Shifted time window for re-analysis',
+      related_diffs: ['DIFF-001'],
+    };
+
+    const doc = buildReceiptDocument(spec, envelope, { lineage });
+    assert.ok(doc.includes('## Lineage'));
+    assert.ok(doc.includes('RPL-20260330000000-ABCD1234'));
+    assert.ok(doc.includes('QRY-001'));
+    assert.ok(doc.includes('QRY-002'));
+  });
+
+  test('buildReceiptDocument omits Lineage section when options.lineage absent', () => {
+    const spec = makeTestSpec();
+    const envelope = makeTestEnvelope();
+
+    const doc = buildReceiptDocument(spec, envelope, {});
+    assert.ok(!doc.includes('## Lineage'));
+  });
+
+  test('buildQueryLogDocument renders Lineage section when options.lineage provided', () => {
+    const spec = makeTestSpec();
+    const envelope = makeTestEnvelope();
+    const lineage = {
+      replay_id: 'RPL-20260330000000-ABCD1234',
+      original_query_ids: ['QRY-001'],
+      original_receipt_ids: ['RCT-001'],
+      mutations_applied: ['time_window'],
+      replay_reason: 'Testing replay',
+    };
+
+    const doc = buildQueryLogDocument(spec, envelope, { lineage });
+    assert.ok(doc.includes('## Lineage'));
+    assert.ok(doc.includes('RPL-20260330000000-ABCD1234'));
+  });
+
+  test('buildQueryLogDocument omits Lineage section when options.lineage absent', () => {
+    const spec = makeTestSpec();
+    const envelope = makeTestEnvelope();
+
+    const doc = buildQueryLogDocument(spec, envelope, {});
+    assert.ok(!doc.includes('## Lineage'));
+  });
+});
+
+// ─── 21. manifest lineage ──────────────────────────────────────────────────────
+
+describe('manifest lineage', () => {
+  const { createEvidenceManifest } = require('../thrunt-god/bin/lib/manifest.cjs');
+
+  function makeManifestInput(lineage) {
+    return {
+      connector_id: 'splunk',
+      dataset: 'events',
+      execution: {
+        profile: 'default',
+        query_id: 'QRY-20260330000000-AAAAAAAA',
+        request_id: 'REQ-001',
+        status: 'ok',
+        started_at: '2026-03-01T00:00:00Z',
+        completed_at: '2026-03-01T00:01:00Z',
+        duration_ms: 60000,
+        dry_run: false,
+      },
+      artifacts: [
+        {
+          id: 'QRY-20260330000000-AAAAAAAA',
+          type: 'query_log',
+          path: '.planning/QUERIES/QRY-20260330000000-AAAAAAAA.md',
+          content: 'test query log content',
+        },
+      ],
+      lineage: lineage || undefined,
+    };
+  }
+
+  test('createEvidenceManifest includes lineage when input.lineage provided', () => {
+    const lineage = {
+      replay_id: 'RPL-20260330000000-ABCD1234',
+      original_manifest_ids: ['MAN-001'],
+      original_query_ids: ['QRY-001'],
+      mutations: { time_window: true, connector: false },
+    };
+    const manifest = createEvidenceManifest(makeManifestInput(lineage));
+    assert.ok(manifest.lineage);
+    assert.strictEqual(manifest.lineage.replay_id, 'RPL-20260330000000-ABCD1234');
+    assert.deepStrictEqual(manifest.lineage.original_manifest_ids, ['MAN-001']);
+    assert.deepStrictEqual(manifest.lineage.original_query_ids, ['QRY-001']);
+    assert.deepStrictEqual(manifest.lineage.mutations, { time_window: true, connector: false });
+  });
+
+  test('createEvidenceManifest sets lineage null when input.lineage absent', () => {
+    const manifest = createEvidenceManifest(makeManifestInput());
+    assert.strictEqual(manifest.lineage, null);
+  });
+});
+
+// ─── 22. telemetry lineage ──────────────────────────────────────────────────────
+
+describe('telemetry lineage', () => {
+  const os = require('os');
+  const { recordHuntExecution, recordReplayExecution } = require('../thrunt-god/bin/lib/telemetry.cjs');
+
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-replay-test-'));
+    fs.mkdirSync(path.join(tmpDir, '.planning'), { recursive: true });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function makeTestSpec() {
+    return {
+      query_id: 'QRY-20260330000000-AAAAAAAA',
+      connector: { id: 'splunk', profile: 'default' },
+      dataset: { kind: 'events' },
+      time_window: { start: '2026-03-01T00:00:00Z', end: '2026-03-02T00:00:00Z' },
+      pagination: { mode: 'auto' },
+      execution: { profile: 'default', request_id: 'REQ-001' },
+      evidence: { hypothesis_ids: ['H-001'] },
+    };
+  }
+
+  function makeTestEnvelope() {
+    return {
+      status: 'ok',
+      counts: { events: 10, entities: 3, relationships: 0, evidence: 0, warnings: 0, errors: 0 },
+      timing: { started_at: '2026-03-01T00:00:00Z', completed_at: '2026-03-01T00:01:00Z', duration_ms: 60000 },
+      pagination: { pages_fetched: 1 },
+      warnings: [],
+      errors: [],
+    };
+  }
+
+  test('recordHuntExecution includes replay_context when provided', () => {
+    const spec = makeTestSpec();
+    const envelope = makeTestEnvelope();
+    const replay_context = {
+      replay_id: 'RPL-20260330000000-ABCD1234',
+      original_hunt_execution_id: 'HE-20260330-ORIG1',
+      mutation_types: ['time_window', 'connector'],
+    };
+
+    const record = recordHuntExecution(tmpDir, spec, envelope, { replay_context });
+    assert.ok(record.replay_context);
+    assert.strictEqual(record.replay_context.replay_id, 'RPL-20260330000000-ABCD1234');
+    assert.strictEqual(record.replay_context.original_hunt_execution_id, 'HE-20260330-ORIG1');
+    assert.deepStrictEqual(record.replay_context.mutation_types, ['time_window', 'connector']);
+  });
+
+  test('recordHuntExecution sets replay_context null by default', () => {
+    const spec = makeTestSpec();
+    const envelope = makeTestEnvelope();
+
+    const record = recordHuntExecution(tmpDir, spec, envelope, {});
+    assert.strictEqual(record.replay_context, null);
+  });
+
+  test('recordReplayExecution writes RE- prefixed replay telemetry record', () => {
+    const replaySpec = {
+      replay_id: 'RPL-20260330000000-ABCD1234',
+      source: { type: 'query', ids: ['QRY-001'] },
+      mutations: { time_window: { mode: 'shift' }, connector: null },
+      diff: { mode: 'full' },
+      evidence: {
+        lineage: {
+          original_query_ids: ['QRY-001'],
+        },
+      },
+    };
+    const results = {
+      events: 15,
+      entities: 5,
+      status: 'ok',
+    };
+
+    const record = recordReplayExecution(tmpDir, replaySpec, results);
+    assert.ok(record.replay_execution_id.startsWith('RE-'));
+    assert.strictEqual(record.record_type, 'replay_execution');
+    assert.strictEqual(record.replay_id, 'RPL-20260330000000-ABCD1234');
+    assert.ok(record.timestamp);
+
+    // Verify file was written to METRICS/
+    const metricsDir = path.join(tmpDir, '.planning', 'METRICS');
+    assert.ok(fs.existsSync(metricsDir));
+    const files = fs.readdirSync(metricsDir).filter(f => f.startsWith('RE-'));
+    assert.strictEqual(files.length, 1);
+  });
+});
