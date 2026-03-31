@@ -151,7 +151,7 @@ describe('connectors init', () => {
   });
 
   test('creates output directory with all template files', () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-init-plugin-'));
+    const tmpDir = fs.mkdtempSync(path.join(PROJECT_ROOT, '.tmp-init-plugin-'));
     try {
       const result = runConnectors(['init', 'test_vendor', '--output-dir', tmpDir]);
       assert.strictEqual(result.success, true, `Command failed: ${result.stderr}`);
@@ -177,6 +177,15 @@ describe('connectors init', () => {
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+
+  test('rejects --output-dir outside project root', () => {
+    const result = runConnectors(['init', 'test_vendor', '--output-dir', '/tmp']);
+    assert.strictEqual(result.success, false);
+    assert.ok(
+      result.stderr.includes('output directory must be within project root'),
+      `Expected path containment error, got: ${result.stderr}`
+    );
   });
 
   test('--scoped flag uses @thrunt/ namespace in package name', () => {
