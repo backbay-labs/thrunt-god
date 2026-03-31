@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-current_plan: 48-02 -- COMPLETE
-status: All 10 connectors extracted to individual files, runtime.cjs is thin wrapper
-stopped_at: Completed 48-02-PLAN.md
-last_updated: "2026-03-31T03:29:34.426Z"
-last_activity: 2026-03-31 -- Completed Phase 48 Plan 02 (Remaining Connector Extraction)
+current_plan: 49-01 -- COMPLETE
+status: Reusable CI workflow and connector plugin starter template created
+stopped_at: Completed 49-01-PLAN.md
+last_updated: "2026-03-31T03:45:47.325Z"
+last_activity: 2026-03-31 -- Completed Phase 49 Plan 01 (Reusable CI Ecosystem Tooling)
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 13
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.2 Phase 48 — Built-in Connector Migration (COMPLETE -- all 10 connectors extracted)
+**Current focus:** v2.2 Phase 49 — Reusable CI Ecosystem Tooling (Plan 01 complete, Plan 02 pending)
 
 ## Current Milestone: v2.2 Connector Ecosystem
 
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 48 (Built-in Connector Migration) -- COMPLETE (2 of 2 plans done)
-Current Plan: 48-02 -- COMPLETE
-Status: All 10 connectors extracted to individual files, runtime.cjs is thin wrapper
-Last activity: 2026-03-31 -- Completed Phase 48 Plan 02 (Remaining Connector Extraction)
+Phase: 49 (Reusable CI Ecosystem Tooling) -- IN PROGRESS (1 of 2 plans done)
+Current Plan: 49-01 -- COMPLETE
+Status: Reusable CI workflow and connector plugin starter template created
+Last activity: 2026-03-31 -- Completed Phase 49 Plan 01 (Reusable CI Ecosystem Tooling)
 
-Progress: [██████████] 100% (11 of 11 plans complete)
+Progress: [█████████░] 92% (12 of 13 plans complete)
 
 ## Completed This Session
 
@@ -62,6 +62,7 @@ Progress: [██████████] 100% (11 of 11 plans complete)
 | 47 | Plugin Lifecycle Wiring (Plan 02) | 15 tests |
 | 48 | SIEM Connector Extraction (Plan 01) | 0 tests (pure refactor) |
 | 48 | Remaining Connector Extraction (Plan 02) | 0 tests (pure refactor) |
+| 49 | Reusable CI Ecosystem Tooling (Plan 01) | 14 tests |
 
 ## Accumulated Context
 
@@ -107,6 +108,9 @@ Progress: [██████████] 100% (11 of 11 plans complete)
 - [Phase 48]: createBuiltInConnectorRegistry moved from runtime.cjs into connectors/index.cjs barrel
 - [Phase 48]: runtime.cjs reduced to 50-line pure re-export wrapper with zero adapter code
 - [Phase 48]: decodeMaybeJson moved into aws.cjs as local helper (only used by CloudTrailEvent parsing)
+- [Phase 49]: Standalone plugin templates use require('thrunt-god/thrunt-god/bin/lib/connector-sdk.cjs') path for SDK imports
+- [Phase 49]: Plugin template exports createAdapter() (not create{Name}Adapter) matching plugin loading contract
+- [Phase 49]: Template uses peerDependencies for thrunt-god to avoid version conflicts in plugin consumers
 
 ### Research Specs Available
 
@@ -123,6 +127,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T03:29:28.287Z
-Stopped at: Completed 48-02-PLAN.md
-Resume: Phase 48 complete. All 10 built-in connectors extracted to individual files under connectors/ (splunk, elastic, sentinel, opensearch, defender-xdr, okta, m365, crowdstrike, aws, gcp). runtime.cjs is 50-line thin wrapper. 83 exports preserved, 10 connectors in registry, 2379 tests pass. All v2.2 Connector Ecosystem phases complete (45-48). Ready for Phase 49 (Ecosystem Tooling) if planned.
+Last session: 2026-03-31T03:44:13Z
+Stopped at: Completed 49-01-PLAN.md
+Resume: Phase 49 Plan 01 complete. Reusable CI workflow (.github/workflows/reusable-connector-test.yml) with workflow_call trigger, manifest validation, contract tests, c8 coverage. Connector plugin starter template (7 files) at thrunt-god/templates/connector-plugin/. 14 ecosystem tooling tests passing. Ready for Phase 49 Plan 02.

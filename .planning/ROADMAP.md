@@ -130,7 +130,7 @@ Plans:
 **Goal**: Ship GitHub Actions reusable workflow for plugin repos, starter template, and documentation
 **Depends on**: Phase 48 (migration validates the plugin pattern end-to-end)
 **Requirements**: ECO-05
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 49-01-PLAN.md — Reusable connector CI workflow (workflow_call), standalone plugin starter template directory (7 template files), structure tests
 - [ ] 49-02-PLAN.md — CLI commands (connectors list/search/init), third-party connector development guide, CLI tests
@@ -162,4 +162,4 @@ Plans:
 | 46. Plugin Manifest & Discovery | 2/2 | Complete    | 2026-03-31 |
 | 47. Contract Test Suite & Plugin Lifecycle | 2/2 | Complete    | 2026-03-31 |
 | 48. Built-in Connector Migration | 2/2 | Complete    | 2026-03-31 |
-| 49. Reusable CI & Ecosystem Tooling | 0/2 | Not Started | |
+| 49. Reusable CI & Ecosystem Tooling | 1/2 | In Progress|  |
