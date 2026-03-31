@@ -3,7 +3,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, PLANNING_DIR_NAME } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
@@ -2452,7 +2452,13 @@ async function cmdInitConnector(cwd, args, raw) {
   const noDocker = cliOptions.noDocker || false;
   const noSmoke = cliOptions.noSmoke || false;
   const dryRun = cliOptions.dryRun || false;
+  const force = args.includes('--force');
   const outputDir = cliOptions.outputDir ? path.resolve(cwd, cliOptions.outputDir) : cwd;
+
+  // Path containment: output directory must be within project root
+  if (!outputDir.startsWith(cwd + path.sep) && outputDir !== cwd) {
+    error(`output directory must be within project root. Got: ${outputDir}`);
+  }
 
   // Validate enum values
   const invalidAuth = authTypes.filter(a => !runtime.AUTH_TYPES.includes(a));
@@ -2603,7 +2609,18 @@ async function cmdInitConnector(cwd, args, raw) {
     return;
   }
 
-  // --- 4f: File writing ---
+  // --- 4f: Overwrite protection ---
+
+  if (!force) {
+    const conflicting = manifest
+      .filter(item => item.mode === 'create' && fs.existsSync(item.path))
+      .map(item => toPosixPath(path.relative(outputDir, item.path)));
+    if (conflicting.length > 0) {
+      error(`CONNECTOR_FILE_EXISTS: the following files already exist: ${conflicting.join(', ')}. Use --force to overwrite.`);
+    }
+  }
+
+  // --- 4g: File writing ---
 
   const generatedPaths = [];
 
@@ -3132,17 +3149,19 @@ async function cmdConnectorsSearch(cwd, args, raw) {
   try {
     let jsonResult;
     try {
-      const stdout = execSync(`npm search thrunt-connector ${term} --json --long 2>/dev/null`, {
+      const stdout = execFileSync('npm', ['search', 'thrunt-connector', term, '--json', '--long'], {
         encoding: 'utf8',
         timeout: 15000,
+        stdio: ['pipe', 'pipe', 'ignore'],
       });
       jsonResult = JSON.parse(stdout);
     } catch (_parseErr) {
       // JSON parse failed — try non-JSON fallback
       try {
-        const stdout = execSync(`npm search thrunt-connector ${term} 2>/dev/null`, {
+        const stdout = execFileSync('npm', ['search', 'thrunt-connector', term], {
           encoding: 'utf8',
           timeout: 15000,
+          stdio: ['pipe', 'pipe', 'ignore'],
         });
         // Non-JSON output — return as raw text
         output({ term, results: [], count: 0, raw_output: stdout.trim() }, raw);
@@ -3207,8 +3226,14 @@ async function cmdConnectorsInit(cwd, args, raw) {
   const paginationModes = cliOptions.paginationModes.length > 0 ? cliOptions.paginationModes : ['none'];
   const displayName = cliOptions.displayName || toTitleCase(connectorId);
   const dryRun = cliOptions.dryRun || false;
+  const force = args.includes('--force');
   const scoped = args.includes('--scoped');
   const outputBaseDir = cliOptions.outputDir ? path.resolve(cwd, cliOptions.outputDir) : cwd;
+
+  // Path containment: output directory must be within project root
+  if (!outputBaseDir.startsWith(cwd + path.sep) && outputBaseDir !== cwd) {
+    error(`output directory must be within project root. Got: ${outputBaseDir}`);
+  }
 
   // Determine package name
   const packageName = scoped
@@ -3290,6 +3315,16 @@ async function cmdConnectorsInit(cwd, args, raw) {
       })),
     }, raw);
     return;
+  }
+
+  // --- Overwrite protection ---
+  if (!force) {
+    const conflicting = manifest
+      .filter(item => fs.existsSync(item.path))
+      .map(item => item.relPath);
+    if (conflicting.length > 0) {
+      error(`CONNECTOR_FILE_EXISTS: the following files already exist: ${conflicting.join(', ')}. Use --force to overwrite.`);
+    }
   }
 
   // --- File writing ---
