@@ -182,3 +182,110 @@ describe('dataset-aware defaults', () => {
     assert.strictEqual(spec.pagination.max_pages, 3);
   });
 });
+
+describe('getDatasetDefaults introspection', () => {
+  test('typeof runtime.getDatasetDefaults is function (exported through runtime.cjs)', () => {
+    assert.strictEqual(typeof runtime.getDatasetDefaults, 'function');
+  });
+
+  test('identity returns pagination.limit=200, max_pages=10, timeout_ms=30000', () => {
+    const d = runtime.getDatasetDefaults('identity');
+    assert.strictEqual(d.pagination.limit, 200);
+    assert.strictEqual(d.pagination.max_pages, 10);
+    assert.strictEqual(d.execution.timeout_ms, 30000);
+  });
+
+  test('alerts returns pagination.limit=100', () => {
+    const d = runtime.getDatasetDefaults('alerts');
+    assert.strictEqual(d.pagination.limit, 100);
+  });
+
+  test('endpoint returns pagination.limit=1000, timeout_ms=60000', () => {
+    const d = runtime.getDatasetDefaults('endpoint');
+    assert.strictEqual(d.pagination.limit, 1000);
+    assert.strictEqual(d.execution.timeout_ms, 60000);
+  });
+
+  test('cloud returns timeout_ms=45000', () => {
+    const d = runtime.getDatasetDefaults('cloud');
+    assert.strictEqual(d.execution.timeout_ms, 45000);
+  });
+
+  test('entities returns pagination.limit=100, max_pages=5, timeout_ms=20000', () => {
+    const d = runtime.getDatasetDefaults('entities');
+    assert.strictEqual(d.pagination.limit, 100);
+    assert.strictEqual(d.pagination.max_pages, 5);
+    assert.strictEqual(d.execution.timeout_ms, 20000);
+  });
+
+  test('events returns pagination.limit=500 (matches old DEFAULT_PAGE_SIZE)', () => {
+    const d = runtime.getDatasetDefaults('events');
+    assert.strictEqual(d.pagination.limit, 500);
+  });
+
+  test('other returns pagination.limit=500', () => {
+    const d = runtime.getDatasetDefaults('other');
+    assert.strictEqual(d.pagination.limit, 500);
+  });
+
+  test('nonexistent kind falls back to events defaults (pagination.limit=500)', () => {
+    const d = runtime.getDatasetDefaults('nonexistent_kind');
+    assert.strictEqual(d.pagination.limit, 500);
+    assert.strictEqual(d.pagination.max_pages, 10);
+    assert.strictEqual(d.execution.timeout_ms, 30000);
+  });
+
+  test('undefined kind falls back to events defaults', () => {
+    const d = runtime.getDatasetDefaults(undefined);
+    assert.strictEqual(d.pagination.limit, 500);
+  });
+
+  test('null kind falls back to events defaults', () => {
+    const d = runtime.getDatasetDefaults(null);
+    assert.strictEqual(d.pagination.limit, 500);
+  });
+
+  test('mutating returned object does not change DATASET_DEFAULTS table', () => {
+    const d = runtime.getDatasetDefaults('identity');
+    d.pagination.limit = 999;
+    d.execution.timeout_ms = 1;
+    const d2 = runtime.getDatasetDefaults('identity');
+    assert.strictEqual(d2.pagination.limit, 200);
+    assert.strictEqual(d2.execution.timeout_ms, 30000);
+  });
+});
+
+describe('dataset defaults backward compatibility edge cases', () => {
+  const baseInput = (kind) => ({
+    connector: { id: 'test' },
+    dataset: { kind },
+    query: { statement: 'x' },
+    time_window: { lookback_minutes: 60 },
+  });
+
+  test('empty pagination object {} does not suppress identity defaults', () => {
+    const spec = runtime.createQuerySpec({
+      ...baseInput('identity'),
+      pagination: {},
+    });
+    assert.strictEqual(spec.pagination.limit, 200);
+    assert.strictEqual(spec.pagination.max_pages, 10);
+  });
+
+  test('empty execution object {} does not suppress endpoint defaults', () => {
+    const spec = runtime.createQuerySpec({
+      ...baseInput('endpoint'),
+      execution: {},
+    });
+    assert.strictEqual(spec.execution.timeout_ms, 60000);
+  });
+
+  test('partial pagination override: user provides max_pages only, limit comes from identity defaults', () => {
+    const spec = runtime.createQuerySpec({
+      ...baseInput('identity'),
+      pagination: { max_pages: 3 },
+    });
+    assert.strictEqual(spec.pagination.limit, 200);
+    assert.strictEqual(spec.pagination.max_pages, 3);
+  });
+});
