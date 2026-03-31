@@ -1164,6 +1164,48 @@ describe('sanitizeIocForLanguage', () => {
     const result = sanitizeIocForLanguage('spl', '| delete index=main');
     assert.ok(!result.includes('|'));
   });
+
+  test('SPL: strips $token$ variable expansion syntax', () => {
+    const result = sanitizeIocForLanguage('spl', 'admin$src$');
+    assert.ok(!result.includes('$'), `Expected no $ characters, got: ${result}`);
+    assert.strictEqual(result, 'adminsrc');
+  });
+
+  test('KQL: escapes backslash characters', () => {
+    const result = sanitizeIocForLanguage('kql', 'C:\\Windows\\System32');
+    assert.strictEqual(result, 'C:\\\\Windows\\\\System32');
+  });
+
+  test('KQL: strips newline characters', () => {
+    const result = sanitizeIocForLanguage('kql', 'value\ninjected');
+    assert.ok(!result.includes('\n'), `Expected no newlines, got: ${JSON.stringify(result)}`);
+    assert.strictEqual(result, 'valueinjected');
+  });
+
+  test('KQL: strips carriage return characters', () => {
+    const result = sanitizeIocForLanguage('kql', 'value\r\ninjected');
+    assert.ok(!result.includes('\r'), `Expected no CR, got: ${JSON.stringify(result)}`);
+    assert.ok(!result.includes('\n'), `Expected no LF, got: ${JSON.stringify(result)}`);
+    assert.strictEqual(result, 'valueinjected');
+  });
+
+  test('Universal pre-sanitization: strips control characters from SPL IOC', () => {
+    const result = sanitizeIocForLanguage('spl', 'admin\x00\x01\x1fvalue');
+    assert.ok(!/[\x00-\x08\x0a-\x1f]/.test(result), `Expected no control chars, got: ${JSON.stringify(result)}`);
+    assert.strictEqual(result, 'adminvalue');
+  });
+
+  test('Universal pre-sanitization: strips control characters from KQL IOC', () => {
+    const result = sanitizeIocForLanguage('kql', 'test\x07\x1bvalue');
+    assert.ok(!/[\x00-\x08\x0a-\x1f]/.test(result), `Expected no control chars, got: ${JSON.stringify(result)}`);
+    assert.strictEqual(result, 'testvalue');
+  });
+
+  test('Universal pre-sanitization: preserves tab characters', () => {
+    const result = sanitizeIocForLanguage('kql', 'before\tafter');
+    assert.ok(result.includes('\t'), 'Tab should be preserved');
+    assert.strictEqual(result, 'before\tafter');
+  });
 });
 
 // ─── 18. injectIoc ──────────────────────────────────────────────────────────────

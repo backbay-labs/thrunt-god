@@ -838,10 +838,15 @@ function validateIocValue(type, value) {
 // ─── IOC Sanitization ───────────────────────────────────────────────────────
 
 function sanitizeIocForLanguage(language, value) {
+  // Universal pre-sanitization: strip control characters (ASCII 0-31 except tab \x09)
+  let presanitized = value.replace(/[\x00-\x08\x0a-\x1f]/g, '');
+
   switch (language) {
     case 'spl': {
       // Remove pipe, backtick, brackets -- these can alter SPL pipeline
-      let sanitized = value.replace(/[|`\[\]]/g, '');
+      let sanitized = presanitized.replace(/[|`\[\]]/g, '');
+      // Strip $ to prevent Splunk $token$ field substitution
+      sanitized = sanitized.replace(/\$/g, '');
       // Escape double quotes
       sanitized = sanitized.replace(/"/g, '\\"');
       return sanitized;
@@ -849,28 +854,30 @@ function sanitizeIocForLanguage(language, value) {
 
     case 'esql': {
       // Escape double quotes by doubling, remove semicolons
-      let sanitized = value.replace(/"/g, '""');
+      let sanitized = presanitized.replace(/"/g, '""');
       sanitized = sanitized.replace(/;/g, '');
       return sanitized;
     }
 
     case 'kql': {
+      // Escape backslashes first (before other escaping that introduces backslashes)
+      let sanitized = presanitized.replace(/\\/g, '\\\\');
       // Escape double quotes by doubling, remove semicolons
-      let sanitized = value.replace(/"/g, '""');
+      sanitized = sanitized.replace(/"/g, '""');
       sanitized = sanitized.replace(/;/g, '');
       return sanitized;
     }
 
     case 'sql': {
       // Escape single quotes by doubling, remove semicolons
-      let sanitized = value.replace(/'/g, "''");
+      let sanitized = presanitized.replace(/'/g, "''");
       sanitized = sanitized.replace(/;/g, '');
       return sanitized;
     }
 
     default: {
       // Strip all dangerous characters
-      return value.replace(/[|`\[\];"']/g, '');
+      return presanitized.replace(/[|`\[\];"']/g, '');
     }
   }
 }
