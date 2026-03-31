@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Advanced Hunt Features
-status: completed
-stopped_at: Completed 44-02-PLAN.md
-last_updated: "2026-03-31T01:09:33Z"
-last_activity: 2026-03-31 -- Completed Phase 44 Plan 02 (Cross-Tenant Heatmap)
+milestone: v2.2
+milestone_name: Connector Ecosystem
+status: in_progress
+stopped_at: Completed 45-01-PLAN.md
+last_updated: "2026-03-31T01:34:44Z"
+last_activity: 2026-03-31 -- Completed Phase 45 Plan 01 (Connector SDK Package Extraction)
 progress:
-  total_phases: 7
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 1
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -21,19 +21,19 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.1 Phase 44 — Cross-Tenant Aggregation & Heatmap (Complete)
+**Current focus:** v2.2 Phase 45 — @thrunt/connector-sdk Package (Complete)
 
-## Current Milestone: v2.1 Advanced Hunt Features
+## Current Milestone: v2.2 Connector Ecosystem
 
-**Goal:** Ship hunt replay engine for retroactive hunting and multi-tenant coordination for MSSP/enterprise fan-out across customer environments.
+**Goal:** Extract SDK into standalone package, implement plugin manifest/discovery, contract testing, built-in connector migration, and ecosystem tooling.
 
 ## Current Position
 
-Phase: 44 (Cross-Tenant Aggregation & Heatmap) -- Complete (2 of 2 plans done)
-Status: Phase 44 complete -- aggregation + heatmap modules with 78 tests passing
-Last activity: 2026-03-31 -- Completed Phase 44 Plan 02 (Cross-Tenant Heatmap)
+Phase: 45 (@thrunt/connector-sdk Package) -- Complete (1 of 1 plans done)
+Status: Phase 45 complete -- connector-sdk.cjs extracted with 60 SDK symbols, runtime.cjs slimmed to 1216 lines
+Last activity: 2026-03-31 -- Completed Phase 45 Plan 01 (Connector SDK Package Extraction)
 
-Progress: [██████████] 100% (all plans complete)
+Progress: [██--------] 20% (1 of 5 phases started)
 
 ## Completed This Session
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100% (all plans complete)
 | 42 | Tenant Registry & Auth | 29 tests |
 | 43 | Dispatch Coordinator | 34 tests |
 | 44 | Cross-Tenant Aggregation & Heatmap | 78 tests |
+| 45 | @thrunt/connector-sdk Package | 0 tests (pure refactor) |
 
 ## Accumulated Context
 
@@ -74,6 +75,9 @@ Progress: [██████████] 100% (all plans complete)
 - [Phase 44]: Sparse heatmap cells: only cells with >0 events included, clear cells omitted
 - [Phase 44]: Technique inference from 3 sources: pack metadata, 12-keyword heuristic map, explicit tags
 - [Phase 44]: Heatmap severity 2-tier: >10=high, >0=medium, 0=clear (null severity)
+- [Phase 45]: connector-sdk.cjs has 60 SDK exports (15 constants + 45 functions), runtime.cjs re-exports via ...sdk spread
+- [Phase 45]: Lazy require pattern for _getDefaultRegistry() avoids circular dependency between sdk and runtime at load time
+- [Phase 45]: sleep and decodeMaybeJson duplicated in runtime.cjs (internal SDK helpers needed by adapter code)
 
 ### Research Specs Available
 
@@ -90,6 +94,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T01:09:33Z
-Stopped at: Completed 44-02-PLAN.md
-Resume: v2.1 milestone complete. Phase 44 (Cross-Tenant Aggregation & Heatmap) fully shipped.
+Last session: 2026-03-31T01:34:44Z
+Stopped at: Completed 45-01-PLAN.md
+Resume: Phase 45 complete. connector-sdk.cjs extracted. Ready for Phase 46 (Plugin Manifest & Discovery).

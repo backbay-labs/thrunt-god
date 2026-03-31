@@ -73,6 +73,9 @@ Plans:
 **Goal**: Extract SDK types, validators, test helpers, and auth utilities from runtime.cjs into a zero-dependency standalone npm package
 **Depends on**: Phase 33 (SDK exports already identified and exported)
 **Requirements**: ECO-01
+**Plans:** 1 plan
+Plans:
+- [x] 45-01-PLAN.md — Extract 60 SDK symbols into connector-sdk.cjs, refactor runtime.cjs to re-export via spread, verify full test suite
 **Success Criteria** (what must be TRUE):
   1. @thrunt/connector-sdk package created with zero production dependencies
   2. Exports: validateConnectorAdapter, createConnectorCapabilities, createWarning, createRuntimeError, startJsonServer, runContractTests
@@ -138,8 +141,8 @@ Plans:
 | 41. Replay Diffing & Receipt Lineage | 2/2 | Complete | 2026-03-30 |
 | 42. Tenant Registry & Auth | 2/2 | Complete | 2026-03-30 |
 | 43. Dispatch Coordinator | 2/2 | Complete    | 2026-03-31 |
-| 44. Cross-Tenant Aggregation & Heatmap | 2/2 | Complete | 2026-03-31 |
-| 45. @thrunt/connector-sdk Package | 0/0 | Not Started | |
+| 44. Cross-Tenant Aggregation & Heatmap | 2/2 | Complete    | 2026-03-31 |
+| 45. @thrunt/connector-sdk Package | 1/1 | Complete    | 2026-03-31 |
 | 46. Plugin Manifest & Discovery | 0/0 | Not Started | |
 | 47. Contract Test Suite & Plugin Lifecycle | 0/0 | Not Started | |
 | 48. Built-in Connector Migration | 0/0 | Not Started | |
