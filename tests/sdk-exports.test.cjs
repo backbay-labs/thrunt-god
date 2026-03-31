@@ -102,10 +102,9 @@ describe('SDK export surface — presence', () => {
     }
   });
 
-  test('total export count is 61 (43 pre-existing + 18 new Phase 33 exports)', () => {
-    // Note: the plan interface doc listed 32 exports but runtime.cjs had 43
-    // exports prior to Phase 33. The +18 brings the total to 61.
-    assert.strictEqual(Object.keys(runtime).length, 61);
+  test('total export count is 64 (43 pre-existing + 18 Phase 33 + 3 Phase 43 dispatch)', () => {
+    // 43 pre-Phase 33 + 18 SDK exports + 3 dispatch re-exports = 64
+    assert.strictEqual(Object.keys(runtime).length, 64);
   });
 });
 
