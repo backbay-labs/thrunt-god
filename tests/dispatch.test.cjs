@@ -4,14 +4,22 @@
  * Unit tests for multi-tenant fan-out execution: resolveTenantTargets,
  * cloneTenantSpec, and dispatchMultiTenant.
  *
- * TDD RED phase: tests written before implementation.
+ * Suites:
+ *   1. resolveTenantTargets — target resolution with tag/connector/id filters
+ *   2. cloneTenantSpec — spec cloning with parameter merge and tag injection
+ *   3. dispatchMultiTenant — concurrent dispatch, error isolation, token cache, timeout
+ *   4. Config keys — dispatch config key registration
+ *   5. Runtime re-exports — dispatch functions accessible via runtime.cjs
+ *   6. CLI subprocess — runtime dispatch subcommand routing (end-to-end)
  */
 
 'use strict';
 
-const { test, describe, beforeEach } = require('node:test');
+const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
+const fs = require('fs');
 const path = require('path');
+const { createTempProject, cleanup, runThruntTools } = require('./helpers.cjs');
 
 // ─── Time helpers ───────────────────────────────────────────────────────────
 
@@ -481,5 +489,109 @@ describe('runtime re-exports dispatch functions', () => {
   test('runtime.cjs exports dispatchMultiTenant', () => {
     const runtime = require('../thrunt-god/bin/lib/runtime.cjs');
     assert.strictEqual(typeof runtime.dispatchMultiTenant, 'function');
+  });
+});
+
+// ─── cmdRuntimeDispatch export ─────────────────────────────────────────────
+
+describe('cmdRuntimeDispatch', () => {
+  test('commands.cjs exports cmdRuntimeDispatch as a function', () => {
+    const commands = require('../thrunt-god/bin/lib/commands.cjs');
+    assert.strictEqual(typeof commands.cmdRuntimeDispatch, 'function',
+      'cmdRuntimeDispatch should be exported from commands.cjs');
+  });
+});
+
+// ─── CLI subprocess: runtime dispatch ──────────────────────────────────────
+
+describe('CLI routing: runtime dispatch subcommand', () => {
+  let tmpDir;
+
+  function writeConfig(dir, obj) {
+    const configPath = path.join(dir, '.planning', 'config.json');
+    fs.writeFileSync(configPath, JSON.stringify(obj, null, 2), 'utf-8');
+  }
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    writeConfig(tmpDir, MOCK_CONFIG);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('runtime dispatch without --tenants/--tags/--all errors', () => {
+    const result = runThruntTools(
+      ['runtime', 'dispatch', '--connector', 'sentinel', '--query', 'SecurityEvent | take 10', '--raw'],
+      tmpDir,
+    );
+    assert.strictEqual(result.success, false, 'Should fail without targeting flag');
+    assert.ok(
+      result.error.includes('--tenants') || result.error.includes('--tags') || result.error.includes('--all'),
+      'Error should mention required targeting flags',
+    );
+  });
+
+  test('runtime dispatch without --connector (and no --pack) errors', () => {
+    const result = runThruntTools(
+      ['runtime', 'dispatch', '--tenants', 'acme-corp', '--query', 'SecurityEvent | take 10', '--raw'],
+      tmpDir,
+    );
+    assert.strictEqual(result.success, false, 'Should fail without --connector');
+    assert.ok(
+      result.error.includes('--connector') || result.error.includes('connector'),
+      'Error should mention --connector requirement',
+    );
+  });
+
+  test('runtime dispatch without --query (and no --pack) errors', () => {
+    const result = runThruntTools(
+      ['runtime', 'dispatch', '--tenants', 'acme-corp', '--connector', 'sentinel', '--raw'],
+      tmpDir,
+    );
+    assert.strictEqual(result.success, false, 'Should fail without --query');
+    assert.ok(
+      result.error.includes('--query') || result.error.includes('query'),
+      'Error should mention --query requirement',
+    );
+  });
+
+  test('runtime dispatch --tenants with nonexistent tenant errors about no matches', () => {
+    const result = runThruntTools(
+      ['runtime', 'dispatch', '--tenants', 'nonexistent-tenant', '--connector', 'sentinel',
+        '--query', 'SecurityEvent | take 10', '--raw'],
+      tmpDir,
+    );
+    assert.strictEqual(result.success, false, 'Should fail when no tenants match');
+    assert.ok(
+      result.error.includes('No tenants') || result.error.includes('no tenants'),
+      'Error should indicate no tenant matches',
+    );
+  });
+
+  test('runtime dispatch --tags with no matching tags errors about no matches', () => {
+    const result = runThruntTools(
+      ['runtime', 'dispatch', '--tags', 'nonexistent-tag', '--connector', 'sentinel',
+        '--query', 'SecurityEvent | take 10', '--raw'],
+      tmpDir,
+    );
+    assert.strictEqual(result.success, false, 'Should fail when no tags match');
+    assert.ok(
+      result.error.includes('No tenants') || result.error.includes('no tenants'),
+      'Error should indicate no tenant matches',
+    );
+  });
+
+  test('runtime dispatch is listed in unknown subcommand error message', () => {
+    const result = runThruntTools(
+      ['runtime', 'nonexistent-subcommand', '--raw'],
+      tmpDir,
+    );
+    assert.strictEqual(result.success, false);
+    assert.ok(
+      result.error.includes('dispatch'),
+      'Error message should list dispatch as available subcommand',
+    );
   });
 });
