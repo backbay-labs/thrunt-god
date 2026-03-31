@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
 status: completed
-stopped_at: Completed 44-01-PLAN.md
-last_updated: "2026-03-31T01:02:06.458Z"
-last_activity: 2026-03-31 -- Completed Phase 44 Plan 01 (Cross-Tenant Aggregation)
+stopped_at: Completed 44-02-PLAN.md
+last_updated: "2026-03-31T01:09:33Z"
+last_activity: 2026-03-31 -- Completed Phase 44 Plan 02 (Cross-Tenant Heatmap)
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 75
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.1 Phase 44 — Cross-Tenant Aggregation & Heatmap (Plan 01 complete)
+**Current focus:** v2.1 Phase 44 — Cross-Tenant Aggregation & Heatmap (Complete)
 
 ## Current Milestone: v2.1 Advanced Hunt Features
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 44 (Cross-Tenant Aggregation & Heatmap) -- Plan 01 complete, Plan 02 remaining
-Status: Plan 01 complete -- aggregation module with 32 tests passing
-Last activity: 2026-03-31 -- Completed Phase 44 Plan 01 (Cross-Tenant Aggregation)
+Phase: 44 (Cross-Tenant Aggregation & Heatmap) -- Complete (2 of 2 plans done)
+Status: Phase 44 complete -- aggregation + heatmap modules with 78 tests passing
+Last activity: 2026-03-31 -- Completed Phase 44 Plan 02 (Cross-Tenant Heatmap)
 
-Progress: [████████░░] 75% (14 of 19 total phases in progress)
+Progress: [██████████] 100% (all plans complete)
 
 ## Completed This Session
 
@@ -52,6 +52,7 @@ Progress: [████████░░] 75% (14 of 19 total phases in progres
 | 41 | Replay Diffing & Receipt Lineage | 35 tests |
 | 42 | Tenant Registry & Auth | 29 tests |
 | 43 | Dispatch Coordinator | 34 tests |
+| 44 | Cross-Tenant Aggregation & Heatmap | 78 tests |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Progress: [████████░░] 75% (14 of 19 total phases in progres
 - [Phase 44]: Entity dedup uses Map with composite key kind:value.toLowerCase() for O(1) lookup
 - [Phase 44]: Temporal clustering uses sliding window with configurable cluster_window_minutes (default 15)
 - [Phase 44]: Aggregate receipts carry counts and cross-refs only, never raw event data for tenant isolation
+- [Phase 44]: Sparse heatmap cells: only cells with >0 events included, clear cells omitted
+- [Phase 44]: Technique inference from 3 sources: pack metadata, 12-keyword heuristic map, explicit tags
+- [Phase 44]: Heatmap severity 2-tier: >10=high, >0=medium, 0=clear (null severity)
 
 ### Research Specs Available
 
@@ -86,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T01:02:06.456Z
-Stopped at: Completed 44-01-PLAN.md
-Resume: Continue with Phase 44 Plan 02 (Heatmap)
+Last session: 2026-03-31T01:09:33Z
+Stopped at: Completed 44-02-PLAN.md
+Resume: v2.1 milestone complete. Phase 44 (Cross-Tenant Aggregation & Heatmap) fully shipped.

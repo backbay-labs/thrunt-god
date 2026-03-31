@@ -10,7 +10,7 @@
 - v1.5 TUI Operator Console (Phases 23-26) -- shipped 2026-03-30
 - v1.6 Live Connector Integrations (Phases 27-30) -- shipped 2026-03-30
 - **v2.0 Developer Experience & CI (Phases 31-37) -- shipped 2026-03-30**
-- **v2.1 Advanced Hunt Features (Phases 38-44) -- active**
+- **v2.1 Advanced Hunt Features (Phases 38-44) -- shipped 2026-03-31**
 - v2.2 Connector Ecosystem (Phases 45-49) -- planned
 
 ## v2.1 Advanced Hunt Features
@@ -32,7 +32,7 @@
 - [x] **Phase 41: Replay Diffing & Receipt Lineage** - Entity-level diffing, lineage chain, CLI commands (completed 2026-03-30)
 - [x] **Phase 42: Tenant Registry & Auth** - Tenant config, credential isolation, CRUD commands (completed 2026-03-30)
 - [x] **Phase 43: Dispatch Coordinator** - Promise.allSettled() fan-out with concurrency semaphore, per-tenant isolation (completed 2026-03-31)
-- [ ] **Phase 44: Cross-Tenant Aggregation & Heatmap** - Result merging, entity dedup, tenant x MITRE technique heatmap
+- [x] **Phase 44: Cross-Tenant Aggregation & Heatmap** - Result merging, entity dedup, tenant x MITRE technique heatmap (completed 2026-03-31)
 
 ## Phase Details
 
@@ -42,8 +42,8 @@
 **Requirements**: TENANT-02
 **Plans:** 2/2 plans complete
 Plans:
-- [ ] 43-01-PLAN.md — Core dispatch module (resolveTenantTargets, cloneTenantSpec, dispatchMultiTenant) with config keys and runtime re-exports
-- [ ] 43-02-PLAN.md — CLI dispatch command wiring and comprehensive unit tests
+- [x] 43-01-PLAN.md — Core dispatch module (resolveTenantTargets, cloneTenantSpec, dispatchMultiTenant) with config keys and runtime re-exports
+- [x] 43-02-PLAN.md — CLI dispatch command wiring and comprehensive unit tests
 **Success Criteria** (what must be TRUE):
   1. resolveTenantTargets() filters tenants by tag, connector type, or ID
   2. dispatchMultiTenant() executes via Promise.allSettled() with configurable concurrency semaphore (default 5)
@@ -55,10 +55,10 @@ Plans:
 **Goal**: Ship cross-tenant result merging with entity deduplication and tenant x MITRE technique heatmap generation
 **Depends on**: Phase 43 (dispatch coordinator produces MultiTenantResult)
 **Requirements**: TENANT-03
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 44-01-PLAN.md — Aggregation module (tagEventsWithTenant, deduplicateEntities, correlateFindings, aggregateResults), writeMultiTenantArtifacts in evidence.cjs, config key
-- [ ] 44-02-PLAN.md — Heatmap module (buildHeatmapFromResults, renderHeatmapTable, writeHeatmapArtifacts), CLI commands (runtime aggregate, runtime heatmap), runtime re-exports
+- [x] 44-01-PLAN.md — Aggregation module (tagEventsWithTenant, deduplicateEntities, correlateFindings, aggregateResults), writeMultiTenantArtifacts in evidence.cjs, config key
+- [x] 44-02-PLAN.md — Heatmap module (buildHeatmapFromResults, renderHeatmapTable, writeHeatmapArtifacts), CLI commands (runtime aggregate, runtime heatmap), runtime re-exports
 **Success Criteria** (what must be TRUE):
   1. Events tagged with tenant_id for provenance tracking
   2. Entity deduplication by (kind, value) across tenants with tenant attribution
@@ -138,7 +138,7 @@ Plans:
 | 41. Replay Diffing & Receipt Lineage | 2/2 | Complete | 2026-03-30 |
 | 42. Tenant Registry & Auth | 2/2 | Complete | 2026-03-30 |
 | 43. Dispatch Coordinator | 2/2 | Complete    | 2026-03-31 |
-| 44. Cross-Tenant Aggregation & Heatmap | 1/2 | In Progress|  |
+| 44. Cross-Tenant Aggregation & Heatmap | 2/2 | Complete | 2026-03-31 |
 | 45. @thrunt/connector-sdk Package | 0/0 | Not Started | |
 | 46. Plugin Manifest & Discovery | 0/0 | Not Started | |
 | 47. Contract Test Suite & Plugin Lifecycle | 0/0 | Not Started | |
