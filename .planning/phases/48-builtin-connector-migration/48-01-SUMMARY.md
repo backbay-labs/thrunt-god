@@ -108,6 +108,14 @@ None - no external service configuration required.
 - decodeMaybeJson ready to move with AWS adapter in Plan 02
 - createBuiltInConnectorRegistry stays in runtime.cjs until Plan 02 moves it into the barrel
 
+## Self-Check: PASSED
+
+- All 7 files verified present on disk
+- Commits 54e1919 and 2c68f79 verified in git log
+- 83 exports confirmed from runtime.cjs
+- 10 connectors confirmed in registry
+- 2379 tests pass (0 failures)
+
 ---
 *Phase: 48-builtin-connector-migration*
 *Completed: 2026-03-31*

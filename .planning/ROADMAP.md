@@ -115,7 +115,7 @@ Plans:
 **Goal**: Extract all 10 built-in connectors into individual plugin-format files without breaking the public API
 **Depends on**: Phase 47 (contract test suite validates extracted connectors)
 **Requirements**: ECO-04
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 48-01-PLAN.md — Extract 5 SIEM connectors (Splunk, Elastic, Sentinel, OpenSearch, Defender XDR) with parsers, create barrel file, update runtime.cjs
 - [ ] 48-02-PLAN.md — Extract 5 remaining connectors (Okta, M365, CrowdStrike, AWS, GCP), finalize barrel, reduce runtime.cjs to thin wrapper, validate all 10 pass contract tests
@@ -157,5 +157,5 @@ Plans:
 | 45. @thrunt/connector-sdk Package | 1/1 | Complete    | 2026-03-31 |
 | 46. Plugin Manifest & Discovery | 2/2 | Complete    | 2026-03-31 |
 | 47. Contract Test Suite & Plugin Lifecycle | 2/2 | Complete    | 2026-03-31 |
-| 48. Built-in Connector Migration | 1/2 | In Progress|  |
+| 48. Built-in Connector Migration | 2/2 | Complete   | 2026-03-31 |
 | 49. Reusable CI & Ecosystem Tooling | 0/0 | Not Started | |

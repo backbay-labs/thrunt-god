@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-current_plan: 48-02 (remaining 5 connector extraction)
-status: in_progress
-stopped_at: Completed 48-01-PLAN.md
-last_updated: "2026-03-31T03:20:56.492Z"
-last_activity: 2026-03-31 -- Completed Phase 48 Plan 01 (SIEM Connector Extraction)
+current_plan: 48-02 -- COMPLETE
+status: All 10 connectors extracted to individual files, runtime.cjs is thin wrapper
+stopped_at: Completed 48-02-PLAN.md
+last_updated: "2026-03-31T03:29:34.426Z"
+last_activity: 2026-03-31 -- Completed Phase 48 Plan 02 (Remaining Connector Extraction)
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.2 Phase 48 — Built-in Connector Migration (Plan 01 complete, Plan 02 remaining)
+**Current focus:** v2.2 Phase 48 — Built-in Connector Migration (COMPLETE -- all 10 connectors extracted)
 
 ## Current Milestone: v2.2 Connector Ecosystem
 
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 48 (Built-in Connector Migration) -- In Progress (1 of 2 plans done)
-Current Plan: 48-02 (remaining 5 connector extraction)
-Status: Plan 01 complete -- 5 SIEM connectors extracted to connectors/ with barrel index
-Last activity: 2026-03-31 -- Completed Phase 48 Plan 01 (SIEM Connector Extraction)
+Phase: 48 (Built-in Connector Migration) -- COMPLETE (2 of 2 plans done)
+Current Plan: 48-02 -- COMPLETE
+Status: All 10 connectors extracted to individual files, runtime.cjs is thin wrapper
+Last activity: 2026-03-31 -- Completed Phase 48 Plan 02 (Remaining Connector Extraction)
 
-Progress: [█████████░] 91% (10 of 11 plans complete)
+Progress: [██████████] 100% (11 of 11 plans complete)
 
 ## Completed This Session
 
@@ -61,6 +61,7 @@ Progress: [█████████░] 91% (10 of 11 plans complete)
 | 47 | Contract Test Suite (Plan 01) | 22 tests |
 | 47 | Plugin Lifecycle Wiring (Plan 02) | 15 tests |
 | 48 | SIEM Connector Extraction (Plan 01) | 0 tests (pure refactor) |
+| 48 | Remaining Connector Extraction (Plan 02) | 0 tests (pure refactor) |
 
 ## Accumulated Context
 
@@ -102,6 +103,10 @@ Progress: [█████████░] 91% (10 of 11 plans complete)
 - [Phase 48]: sleep() moved into splunk.cjs as local helper (only used by executeSplunkAsyncJob)
 - [Phase 48]: decodeMaybeJson kept in runtime.cjs for AWS adapter (Plan 02 will move it)
 - [Phase 48]: SDK destructure in runtime.cjs reduced from 26 to 13 functions after SIEM extraction
+- [Phase 48]: decodeMaybeJson moved into aws.cjs as local helper (only used by CloudTrailEvent parsing)
+- [Phase 48]: createBuiltInConnectorRegistry moved from runtime.cjs into connectors/index.cjs barrel
+- [Phase 48]: runtime.cjs reduced to 50-line pure re-export wrapper with zero adapter code
+- [Phase 48]: decodeMaybeJson moved into aws.cjs as local helper (only used by CloudTrailEvent parsing)
 
 ### Research Specs Available
 
@@ -118,6 +123,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T03:20:49.573Z
-Stopped at: Completed 48-01-PLAN.md
-Resume: Phase 48 Plan 01 complete. 5 SIEM connectors (splunk, elastic, sentinel, opensearch, defender-xdr) extracted to connectors/ directory with barrel index. runtime.cjs imports from connectors/index.cjs, 83 exports preserved, 10 connectors in registry, 2379 tests pass. Ready for Plan 02 to extract remaining 5 connectors (okta, m365, crowdstrike, aws, gcp).
+Last session: 2026-03-31T03:29:28.287Z
+Stopped at: Completed 48-02-PLAN.md
+Resume: Phase 48 complete. All 10 built-in connectors extracted to individual files under connectors/ (splunk, elastic, sentinel, opensearch, defender-xdr, okta, m365, crowdstrike, aws, gcp). runtime.cjs is 50-line thin wrapper. 83 exports preserved, 10 connectors in registry, 2379 tests pass. All v2.2 Connector Ecosystem phases complete (45-48). Ready for Phase 49 (Ecosystem Tooling) if planned.
