@@ -145,6 +145,59 @@ describe('built-in SIEM connectors', () => {
     }
   });
 
+  test('splunk maps json_rows field arrays before extracting entities', async () => {
+    process.env.SPLUNK_TOKEN = 'splunk-token';
+    const fixture = await startJsonServer(async () => {
+      return {
+        json: {
+          fields: [
+            { name: '_time' },
+            { name: 'host' },
+            { name: 'user' },
+            { name: 'src_ip' },
+          ],
+          rows: [
+            ['2026-03-24T12:00:00.000Z', 'ws-02', 'bob', '10.0.0.2'],
+          ],
+        },
+      };
+    });
+
+    try {
+      const result = await runtime.executeQuerySpec({
+        connector: { id: 'splunk', profile: 'prod' },
+        dataset: { kind: 'events' },
+        time_window: {
+          start: '2026-03-24T00:00:00.000Z',
+          end: '2026-03-25T00:00:00.000Z',
+        },
+        query: { language: 'spl', statement: 'index=sysmon | head 1' },
+      }, runtime.createBuiltInConnectorRegistry(), {
+        config: {
+          connector_profiles: {
+            splunk: {
+              prod: {
+                auth_type: 'bearer',
+                base_url: fixture.baseUrl,
+                secret_refs: {
+                  access_token: { type: 'env', value: 'SPLUNK_TOKEN' },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      assert.ok(result.envelope.entities.some(item => item.kind === 'host' && item.value === 'ws-02'));
+      assert.ok(result.envelope.entities.some(item => item.kind === 'user' && item.value === 'bob'));
+      assert.ok(result.envelope.entities.some(item => item.kind === 'ip' && item.value === '10.0.0.2'));
+      assert.strictEqual(result.envelope.events[0].raw.host, 'ws-02');
+    } finally {
+      delete process.env.SPLUNK_TOKEN;
+      await fixture.close();
+    }
+  });
+
   test('elastic executes ES|QL and normalizes dotted column names', async () => {
     process.env.ELASTIC_API_KEY = 'elastic-key';
     const fixture = await startJsonServer(async ({ req, body }) => {

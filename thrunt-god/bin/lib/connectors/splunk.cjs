@@ -58,6 +58,23 @@ function parseSplunkResultsPayload(payload) {
     if (Array.isArray(payload.results)) {
       return { rows: payload.results, messages: toArray(payload.messages) };
     }
+    if (Array.isArray(payload.fields) && Array.isArray(payload.rows)) {
+      const fieldNames = payload.fields.map(field => {
+        if (isPlainObject(field) && typeof field.name === 'string') return field.name;
+        return typeof field === 'string' ? field : null;
+      });
+      const rows = payload.rows.map(row => {
+        if (!Array.isArray(row)) return row;
+        const mapped = {};
+        for (let index = 0; index < fieldNames.length; index += 1) {
+          const fieldName = fieldNames[index];
+          if (!fieldName) continue;
+          mapped[fieldName] = row[index];
+        }
+        return mapped;
+      });
+      return { rows, messages: toArray(payload.messages) };
+    }
     if (Array.isArray(payload.rows)) {
       return { rows: payload.rows, messages: toArray(payload.messages) };
     }
