@@ -33,6 +33,7 @@ module.exports = {
   // Aggregation (Phase 44):
   tagEventsWithTenant: require('./aggregation.cjs').tagEventsWithTenant,
   deduplicateEntities: require('./aggregation.cjs').deduplicateEntities,
+  deduplicateEvents: require('./aggregation.cjs').deduplicateEvents,
   correlateFindings: require('./aggregation.cjs').correlateFindings,
   aggregateResults: require('./aggregation.cjs').aggregateResults,
 

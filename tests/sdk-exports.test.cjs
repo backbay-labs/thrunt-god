@@ -83,6 +83,7 @@ describe('SDK export surface — presence', () => {
     'performHttpRequest',
     'executeQuerySpec',
     'getDatasetDefaults',
+    'deduplicateEvents',
   ];
 
   test('all 18 new SDK functions are exported as typeof function', () => {
@@ -104,9 +105,9 @@ describe('SDK export surface — presence', () => {
     }
   });
 
-  test('total export count is 85 (43 pre-existing + 18 Phase 33 + 3 Phase 43 dispatch + 4 Phase 44 aggregation + 4 Phase 44 heatmap + 7 Phase 46 plugin-registry + 4 Phase 47 contract-tests + 1 Phase 01 dataset-defaults + 1 Phase 01 getDatasetDefaults)', () => {
-    // 43 pre-Phase 33 + 18 SDK exports + 3 Phase 43 dispatch + 4 Phase 44 aggregation + 4 Phase 44 heatmap + 7 Phase 46 plugin-registry + 4 Phase 47 contract-tests + 1 Phase 01 dataset-defaults + 1 Phase 01 getDatasetDefaults = 85
-    assert.strictEqual(Object.keys(runtime).length, 85);
+  test('total export count is 86 (43 pre-existing + 18 Phase 33 + 3 Phase 43 dispatch + 4 Phase 44 aggregation + 4 Phase 44 heatmap + 7 Phase 46 plugin-registry + 4 Phase 47 contract-tests + 1 Phase 01 dataset-defaults + 1 Phase 01 getDatasetDefaults + 1 Phase 02 deduplicateEvents)', () => {
+    // 43 pre-Phase 33 + 18 SDK exports + 3 Phase 43 dispatch + 4 Phase 44 aggregation + 4 Phase 44 heatmap + 7 Phase 46 plugin-registry + 4 Phase 47 contract-tests + 1 Phase 01 dataset-defaults + 1 Phase 01 getDatasetDefaults + 1 Phase 02 deduplicateEvents = 86
+    assert.strictEqual(Object.keys(runtime).length, 86);
   });
 });
 
