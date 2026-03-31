@@ -1217,4 +1217,11 @@ module.exports = {
   writeHeatmapArtifacts: require('./heatmap.cjs').writeHeatmapArtifacts,
   renderHeatmapTable: require('./heatmap.cjs').renderHeatmapTable,
   inferTechniques: require('./heatmap.cjs').inferTechniques,
+
+  // Contract tests (Phase 47) -- explicit re-exports because ...sdk spread
+  // evaluates before connector-sdk.cjs's deferred Object.assign runs
+  runContractTests: require('./contract-tests.cjs').runContractTests,
+  createTestQuerySpec: require('./contract-tests.cjs').createTestQuerySpec,
+  createTestProfile: require('./contract-tests.cjs').createTestProfile,
+  createTestSecrets: require('./contract-tests.cjs').createTestSecrets,
 };

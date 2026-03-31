@@ -232,25 +232,28 @@ describe('Full lifecycle simulation', () => {
 describe('cmdDoctorConnectors', () => {
   const { cmdDoctorConnectors } = require('../thrunt-god/bin/lib/commands.cjs');
 
+  // The output() function in core.cjs uses fs.writeSync(1, data) to write to
+  // stdout. We intercept it to capture the JSON report.
+  function captureOutput(fn) {
+    let captured = '';
+    const origWriteSync = fs.writeSync;
+    fs.writeSync = function (fd, data) {
+      if (fd === 1 && typeof data === 'string') {
+        captured += data;
+        return data.length;
+      }
+      return origWriteSync.apply(this, arguments);
+    };
+    return fn().finally(() => { fs.writeSync = origWriteSync; }).then(() => captured);
+  }
+
   test('returns report with built-in connectors when no plugins installed', async () => {
     const tmpDir = makeTempDir();
     try {
       // Write minimal thrunt.config.json
       fs.writeFileSync(path.join(tmpDir, 'thrunt.config.json'), JSON.stringify({ connector_profiles: {} }));
 
-      let captured;
-      // Capture output by intercepting stdout (cmdDoctorConnectors calls output())
-      const origWrite = process.stdout.write;
-      process.stdout.write = function (chunk) {
-        if (typeof chunk === 'string') captured = chunk;
-        return true;
-      };
-
-      try {
-        await cmdDoctorConnectors(tmpDir, [], true);
-      } finally {
-        process.stdout.write = origWrite;
-      }
+      const captured = await captureOutput(() => cmdDoctorConnectors(tmpDir, [], true));
 
       const report = JSON.parse(captured);
       assert.ok(typeof report.total === 'number', 'report must have total');
@@ -268,18 +271,7 @@ describe('cmdDoctorConnectors', () => {
     try {
       fs.writeFileSync(path.join(tmpDir, 'thrunt.config.json'), JSON.stringify({ connector_profiles: {} }));
 
-      let captured;
-      const origWrite = process.stdout.write;
-      process.stdout.write = function (chunk) {
-        if (typeof chunk === 'string') captured = chunk;
-        return true;
-      };
-
-      try {
-        await cmdDoctorConnectors(tmpDir, [], true);
-      } finally {
-        process.stdout.write = origWrite;
-      }
+      const captured = await captureOutput(() => cmdDoctorConnectors(tmpDir, [], true));
 
       const report = JSON.parse(captured);
       assert.ok(report.connectors.length > 0, 'should have at least one connector');
@@ -310,26 +302,18 @@ describe('cmdDoctorConnectors', () => {
         })
       );
 
-      let captured;
-      const origWrite = process.stdout.write;
       const origErr = console.error;
-      const errors = [];
-      console.error = (...args) => { errors.push(args.join(' ')); };
-      process.stdout.write = function (chunk) {
-        if (typeof chunk === 'string') captured = chunk;
-        return true;
-      };
+      console.error = () => {};
 
       try {
-        await cmdDoctorConnectors(tmpDir, [], true);
+        const captured = await captureOutput(() => cmdDoctorConnectors(tmpDir, [], true));
+
+        const report = JSON.parse(captured);
+        // Even if the broken plugin cannot be loaded, the report should still include built-ins
+        assert.ok(report.total >= 10, 'should still include built-in connectors');
       } finally {
-        process.stdout.write = origWrite;
         console.error = origErr;
       }
-
-      const report = JSON.parse(captured);
-      // Even if the broken plugin cannot be loaded, the report should still include built-ins
-      assert.ok(report.total >= 10, 'should still include built-in connectors');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }

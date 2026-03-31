@@ -2073,3 +2073,13 @@ module.exports = {
   assessConnectorReadiness,
   assessRuntimeReadiness,
 };
+
+// Contract test re-exports (Phase 47) -- deferred to break circular require
+// contract-tests.cjs requires connector-sdk.cjs, so we cannot require it at
+// module load scope. By the time this runs, module.exports is already cached
+// and all consumers holding the reference see the added properties.
+const _ct = require('./contract-tests.cjs');
+module.exports.runContractTests = _ct.runContractTests;
+module.exports.createTestQuerySpec = _ct.createTestQuerySpec;
+module.exports.createTestProfile = _ct.createTestProfile;
+module.exports.createTestSecrets = _ct.createTestSecrets;

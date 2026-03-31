@@ -429,6 +429,100 @@ async function cmdRuntimeDoctor(cwd, args, raw) {
   output(report, raw);
 }
 
+async function cmdDoctorConnectors(cwd, args, raw) {
+  const { discoverPlugins } = require('./plugin-registry.cjs');
+  const { validateConnectorAdapter } = require('./connector-sdk.cjs');
+  const config = loadConfig(cwd);
+
+  // Discover all plugins (built-in + installed)
+  const registry = discoverPlugins({ cwd, config, includeBuiltIn: true });
+  const allPlugins = registry.listPlugins();
+
+  const results = [];
+
+  for (const pluginInfo of allPlugins) {
+    const connectorId = pluginInfo.connector_id;
+    const adapter = registry.get(connectorId);
+    const checks = [];
+
+    // Check 1: Adapter registered
+    checks.push({
+      check: 'adapter_registered',
+      pass: adapter !== null && adapter !== undefined,
+      detail: adapter ? 'Adapter found in registry' : 'Adapter not found',
+    });
+
+    if (!adapter) {
+      results.push({ connector_id: connectorId, source: pluginInfo.source, checks, pass: false });
+      continue;
+    }
+
+    // Check 2: Adapter validation
+    const adapterValidation = validateConnectorAdapter(adapter);
+    checks.push({
+      check: 'adapter_valid',
+      pass: adapterValidation.valid,
+      detail: adapterValidation.valid ? 'Adapter structure valid' : adapterValidation.errors.join('; '),
+    });
+
+    // Check 3: Manifest cross-check (for non-built-in plugins)
+    if (pluginInfo.source !== 'built-in' && pluginInfo.manifest_path) {
+      const manifestResult = require('./plugin-registry.cjs').loadPluginManifest(
+        require('path').dirname(pluginInfo.manifest_path)
+      );
+      if (manifestResult.valid) {
+        const manifest = manifestResult.manifest;
+        const caps = adapter.capabilities || {};
+        const mismatches = [];
+        for (const at of (manifest.auth_types || [])) {
+          if (!caps.auth_types?.includes(at)) mismatches.push(`auth_type '${at}'`);
+        }
+        for (const dk of (manifest.dataset_kinds || [])) {
+          if (!caps.dataset_kinds?.includes(dk)) mismatches.push(`dataset_kind '${dk}'`);
+        }
+        checks.push({
+          check: 'manifest_cross_check',
+          pass: mismatches.length === 0,
+          detail: mismatches.length === 0 ? 'Capabilities match manifest' : `Mismatches: ${mismatches.join(', ')}`,
+        });
+      } else {
+        checks.push({
+          check: 'manifest_cross_check',
+          pass: false,
+          detail: `Manifest invalid: ${manifestResult.errors.join('; ')}`,
+        });
+      }
+    }
+
+    // Check 4: Capabilities completeness
+    const caps = adapter.capabilities || {};
+    const hasRequired = caps.id && caps.display_name && Array.isArray(caps.auth_types) && Array.isArray(caps.dataset_kinds);
+    checks.push({
+      check: 'capabilities_complete',
+      pass: !!hasRequired,
+      detail: hasRequired ? 'All required capability fields present' : 'Missing required capability fields',
+    });
+
+    const allPass = checks.every(c => c.pass);
+    results.push({
+      connector_id: connectorId,
+      source: pluginInfo.source,
+      version: pluginInfo.version,
+      checks,
+      pass: allPass,
+    });
+  }
+
+  const summary = {
+    total: results.length,
+    passing: results.filter(r => r.pass).length,
+    failing: results.filter(r => !r.pass).length,
+    connectors: results,
+  };
+
+  output(summary, raw);
+}
+
 async function cmdRuntimeSmoke(cwd, args, raw) {
   const runtime = require('./runtime.cjs');
   const config = loadConfig(cwd);
@@ -3010,6 +3104,7 @@ module.exports = {
   cmdPackPromote,
   cmdRuntimeListConnectors,
   cmdRuntimeDoctor,
+  cmdDoctorConnectors,
   cmdRuntimeSmoke,
   cmdRuntimeExecute,
   cmdRuntimeDispatch,

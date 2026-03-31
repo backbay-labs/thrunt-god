@@ -615,8 +615,10 @@ async function runCommand(command, args, cwd, raw) {
         } else {
           error('Unknown tenant subcommand. Available: list, status, add, disable, enable, doctor');
         }
+      } else if (subcommand === 'doctor-connectors') {
+        await commands.cmdDoctorConnectors(cwd, args.slice(2), raw);
       } else {
-        error('Unknown runtime subcommand. Available: list-connectors, doctor, smoke, execute, replay, dispatch, aggregate, heatmap, tenant');
+        error('Unknown runtime subcommand. Available: list-connectors, doctor, doctor-connectors, smoke, execute, replay, dispatch, aggregate, heatmap, tenant');
       }
       break;
     }
