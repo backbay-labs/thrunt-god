@@ -31,7 +31,7 @@
 - [x] **Phase 40: Source Retargeting & IOC Injection** - Pack-based retargeting, IOC validation and injection (completed 2026-03-30)
 - [x] **Phase 41: Replay Diffing & Receipt Lineage** - Entity-level diffing, lineage chain, CLI commands (completed 2026-03-30)
 - [x] **Phase 42: Tenant Registry & Auth** - Tenant config, credential isolation, CRUD commands (completed 2026-03-30)
-- [ ] **Phase 43: Dispatch Coordinator** - Promise.allSettled() fan-out with concurrency semaphore, per-tenant isolation
+- [x] **Phase 43: Dispatch Coordinator** - Promise.allSettled() fan-out with concurrency semaphore, per-tenant isolation (completed 2026-03-31)
 - [ ] **Phase 44: Cross-Tenant Aggregation & Heatmap** - Result merging, entity dedup, tenant x MITRE technique heatmap
 
 ## Phase Details
@@ -40,7 +40,7 @@
 **Goal**: Ship fan-out execution engine that dispatches hunts across N tenants with concurrency control and error isolation
 **Depends on**: Phase 42 (tenant registry and auth exist)
 **Requirements**: TENANT-02
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 43-01-PLAN.md — Core dispatch module (resolveTenantTargets, cloneTenantSpec, dispatchMultiTenant) with config keys and runtime re-exports
 - [ ] 43-02-PLAN.md — CLI dispatch command wiring and comprehensive unit tests
@@ -133,7 +133,7 @@ Plans:
 | 40. Source Retargeting & IOC Injection | 1/1 | Complete | 2026-03-30 |
 | 41. Replay Diffing & Receipt Lineage | 2/2 | Complete | 2026-03-30 |
 | 42. Tenant Registry & Auth | 2/2 | Complete | 2026-03-30 |
-| 43. Dispatch Coordinator | 1/2 | In Progress|  |
+| 43. Dispatch Coordinator | 2/2 | Complete   | 2026-03-31 |
 | 44. Cross-Tenant Aggregation & Heatmap | 0/0 | Not Started | |
 | 45. @thrunt/connector-sdk Package | 0/0 | Not Started | |
 | 46. Plugin Manifest & Discovery | 0/0 | Not Started | |
