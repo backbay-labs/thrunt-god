@@ -44,6 +44,14 @@ const DATASET_DEFAULTS = {
   other:     { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
 };
 
+function getDatasetDefaults(kind) {
+  const entry = DATASET_DEFAULTS[kind] || DATASET_DEFAULTS.events;
+  return {
+    pagination: { ...entry.pagination },
+    execution: { ...entry.execution },
+  };
+}
+
 const PAGINATION_MODES = ['auto', 'none', 'cursor', 'offset', 'page', 'token'];
 const CONSISTENCY_MODES = ['best_effort', 'strict'];
 const RESULT_STATUSES = ['ok', 'partial', 'error', 'empty'];
@@ -2044,7 +2052,8 @@ module.exports = {
   DEFAULT_MAX_RETRIES,
   DEFAULT_BACKOFF_MS,
 
-  // 46 functions
+  // 47 functions
+  getDatasetDefaults,
   createQuerySpec,
   validateQuerySpec,
   normalizeTimeWindow,
