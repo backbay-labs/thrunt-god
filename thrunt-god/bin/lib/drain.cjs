@@ -525,6 +525,153 @@ class DrainParser {
       this._walkLeaves(child, fn);
     }
   }
+
+  // -----------------------------------------------------------------------
+  // Match mode (read-only inference)
+  // -----------------------------------------------------------------------
+
+  /**
+   * Match a log message against learned templates without modifying parser state.
+   *
+   * Unlike addMessage, this does NOT increment totalMessages, update cluster
+   * sizes, merge templates, or modify the prefix tree.
+   *
+   * @param {string} content
+   * @returns {{ clusterId: string, template: string, clusterSize: number }|null}
+   */
+  match(content) {
+    const masked = this._applyMasks(content);
+    const tokens = this._tokenize(masked);
+    if (tokens.length === 0) return null;
+    const cluster = this._treeSearch(tokens);
+    if (!cluster) return null;
+    // DO NOT mutate cluster -- no size++, no template merge, no tree update
+    return {
+      clusterId: cluster.clusterId,
+      template: cluster.getTemplate(),
+      clusterSize: cluster.size,
+    };
+  }
+
+  // -----------------------------------------------------------------------
+  // Serialization
+  // -----------------------------------------------------------------------
+
+  /**
+   * Serialize parser state to a plain JSON-safe object.
+   *
+   * The prefix tree is NOT serialized -- it is rebuilt from clusters on restore
+   * via fromJSON. maskPatterns are NOT serialized (they contain regex objects
+   * which are not JSON-safe); the caller must pass them via options on fromJSON.
+   *
+   * @returns {object}
+   */
+  toJSON() {
+    const clusters = [];
+    for (const cluster of this.idToCluster.values()) {
+      clusters.push({
+        clusterId: cluster.clusterId,
+        templateTokens: [...cluster.templateTokens],
+        size: cluster.size,
+      });
+    }
+    return {
+      version: 1,
+      config: {
+        depth: this.depth,
+        simTh: this.simTh,
+        maxChildren: this.maxChildren,
+        maxClusters: this.maxClusters,
+        paramStr: this.paramStr,
+        parametrizeNumericTokens: this.parametrizeNumericTokens,
+        extraDelimiters: [...this.extraDelimiters],
+      },
+      totalMessages: this.totalMessages,
+      clusters,
+    };
+  }
+
+  /**
+   * Restore a DrainParser from a serialized state object.
+   *
+   * Rebuilds the prefix tree by re-inserting all clusters. Any options not
+   * present in the serialized state (e.g., maskPatterns) can be passed via
+   * the options override parameter.
+   *
+   * @param {object} state -- output of toJSON()
+   * @param {object} [options] -- overrides for non-serialized config (e.g., maskPatterns)
+   * @returns {DrainParser}
+   * @throws {Error} if state.version !== 1
+   */
+  static fromJSON(state, options = {}) {
+    if (!state || state.version !== 1) {
+      throw new Error('Invalid Drain state: expected version 1');
+    }
+    // Merge saved config with any overrides (e.g., maskPatterns which are not serialized)
+    const config = { ...state.config, ...options };
+    const parser = new DrainParser(config);
+    parser.totalMessages = state.totalMessages || 0;
+
+    // Rebuild tree from clusters
+    for (const entry of state.clusters) {
+      const cluster = new LogCluster(entry.templateTokens, entry.clusterId);
+      cluster.size = entry.size;
+      parser.idToCluster.set(cluster.clusterId, cluster);
+      parser._addSeqToPrefixTree(cluster, cluster.templateTokens);
+    }
+    return parser;
+  }
+
+  // -----------------------------------------------------------------------
+  // Introspection
+  // -----------------------------------------------------------------------
+
+  /**
+   * Get all learned clusters as a Map of cluster ID to cluster info.
+   * Returns copies -- never exposes internal mutable references.
+   *
+   * @returns {Map<string, { template: string, templateTokens: string[], size: number }>}
+   */
+  getClusters() {
+    const result = new Map();
+    for (const [id, cluster] of this.idToCluster) {
+      result.set(id, {
+        template: cluster.getTemplate(),
+        templateTokens: [...cluster.templateTokens],
+        size: cluster.size,
+      });
+    }
+    return result;
+  }
+
+  /**
+   * Get a single cluster by ID.
+   * Returns a copy -- never exposes internal mutable references.
+   *
+   * @param {string} id
+   * @returns {{ template: string, templateTokens: string[], size: number }|null}
+   */
+  getCluster(id) {
+    const cluster = this.idToCluster.get(id);
+    if (!cluster) return null;
+    return {
+      template: cluster.getTemplate(),
+      templateTokens: [...cluster.templateTokens],
+      size: cluster.size,
+    };
+  }
+
+  /**
+   * Get parser statistics.
+   *
+   * @returns {{ clusterCount: number, totalMessages: number }}
+   */
+  getStats() {
+    return {
+      clusterCount: this.idToCluster.size,
+      totalMessages: this.totalMessages,
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------
