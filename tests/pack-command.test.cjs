@@ -355,21 +355,24 @@ describe('pack promote', () => {
       },
       notes: ['Test pack for promotion.'],
     };
-    writeJson(path.join(tmpDir, '.planning', 'packs', 'custom', 'promote-test.json'), packData);
-
-    const result = runThruntTools(['pack', 'promote', 'custom.promote-test'], tmpDir);
-    assert.ok(result.success, `should succeed: ${result.error}`);
-    const data = JSON.parse(result.output);
-    assert.strictEqual(data.promoted, true);
-    assert.strictEqual(data.pack_id, 'custom.promote-test');
-    assert.ok(data.destination.includes('custom'), 'destination should be in custom folder');
-
-    // Verify the file was copied to built-in directory
     const builtInPath = path.join(packLib.getBuiltInPackRegistryDir(), 'custom', 'promote-test.json');
-    assert.ok(fs.existsSync(builtInPath), 'promoted pack should exist in built-in directory');
+    try {
+      writeJson(path.join(tmpDir, '.planning', 'packs', 'custom', 'promote-test.json'), packData);
 
-    // Clean up: remove promoted pack from built-in (don't pollute the repo)
-    fs.unlinkSync(builtInPath);
+      const result = runThruntTools(['pack', 'promote', 'custom.promote-test'], tmpDir);
+      assert.ok(result.success, `should succeed: ${result.error}`);
+      const data = JSON.parse(result.output);
+      assert.strictEqual(data.promoted, true);
+      assert.strictEqual(data.pack_id, 'custom.promote-test');
+      assert.ok(data.destination.includes('custom'), 'destination should be in custom folder');
+
+      // Verify the file was copied to built-in directory
+      assert.ok(fs.existsSync(builtInPath), 'promoted pack should exist in built-in directory');
+    } finally {
+      if (fs.existsSync(builtInPath)) {
+        fs.unlinkSync(builtInPath);
+      }
+    }
   });
 
   test('pack promote refuses already built-in pack', () => {

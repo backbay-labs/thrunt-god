@@ -92,13 +92,7 @@ async function seedSplunk(baseUrl, { user, password }) {
   return { indexed };
 }
 
-/**
- * Seed Elasticsearch with security events via bulk API.
- *
- * @param {string} baseUrl - Elasticsearch URL (e.g. http://127.0.0.1:19200)
- * @returns {Promise<{indexed: number}>}
- */
-async function seedElastic(baseUrl) {
+function buildSearchSeedBody() {
   const lines = [];
   for (const evt of SEED_EVENTS) {
     lines.push(JSON.stringify({ index: { _index: 'test-sysmon' } }));
@@ -111,34 +105,44 @@ async function seedElastic(baseUrl) {
       'process.command_line': evt.commandLine,
     }));
   }
-  // Bulk API requires trailing newline
-  const body = lines.join('\n') + '\n';
+  return lines.join('\n') + '\n';
+}
 
+async function seedSearchBackend(baseUrl, backendLabel) {
   const resp = await fetch(`${baseUrl}/_bulk`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-ndjson' },
-    body,
+    body: buildSearchSeedBody(),
   });
 
   if (!resp.ok) {
     const text = await resp.text();
-    throw new Error(`Elasticsearch bulk insert failed: HTTP ${resp.status} — ${text}`);
+    throw new Error(`${backendLabel} bulk insert failed: HTTP ${resp.status} — ${text}`);
   }
 
   const result = await resp.json();
   if (result.errors) {
     const firstError = result.items.find(i => i.index?.error);
-    throw new Error(`Elasticsearch bulk insert had errors: ${JSON.stringify(firstError?.index?.error)}`);
+    throw new Error(`${backendLabel} bulk insert had errors: ${JSON.stringify(firstError?.index?.error)}`);
   }
 
-  // Refresh to make documents searchable immediately
   const refreshResp = await fetch(`${baseUrl}/test-sysmon/_refresh`, { method: 'POST' });
   if (!refreshResp.ok) {
     const text = await refreshResp.text();
-    throw new Error(`Elasticsearch refresh failed: HTTP ${refreshResp.status} — ${text}`);
+    throw new Error(`${backendLabel} refresh failed: HTTP ${refreshResp.status} — ${text}`);
   }
 
   return { indexed: result.items.length };
+}
+
+/**
+ * Seed Elasticsearch with security events via bulk API.
+ *
+ * @param {string} baseUrl - Elasticsearch URL (e.g. http://127.0.0.1:19200)
+ * @returns {Promise<{indexed: number}>}
+ */
+async function seedElastic(baseUrl) {
+  return seedSearchBackend(baseUrl, 'Elasticsearch');
 }
 
 /**
@@ -149,45 +153,7 @@ async function seedElastic(baseUrl) {
  * @returns {Promise<{indexed: number}>}
  */
 async function seedOpenSearch(baseUrl) {
-  const lines = [];
-  for (const evt of SEED_EVENTS) {
-    lines.push(JSON.stringify({ index: { _index: 'test-sysmon' } }));
-    lines.push(JSON.stringify({
-      '@timestamp': evt.timestamp,
-      'host.name': evt.host,
-      'user.name': evt.user,
-      'source.ip': evt.ip,
-      'event.code': evt.eventCode,
-      'process.command_line': evt.commandLine,
-    }));
-  }
-  const body = lines.join('\n') + '\n';
-
-  const resp = await fetch(`${baseUrl}/_bulk`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-ndjson' },
-    body,
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(`OpenSearch bulk insert failed: HTTP ${resp.status} — ${text}`);
-  }
-
-  const result = await resp.json();
-  if (result.errors) {
-    const firstError = result.items.find(i => i.index?.error);
-    throw new Error(`OpenSearch bulk insert had errors: ${JSON.stringify(firstError?.index?.error)}`);
-  }
-
-  // Refresh to make documents searchable immediately
-  const refreshResp = await fetch(`${baseUrl}/test-sysmon/_refresh`, { method: 'POST' });
-  if (!refreshResp.ok) {
-    const text = await refreshResp.text();
-    throw new Error(`OpenSearch refresh failed: HTTP ${refreshResp.status} — ${text}`);
-  }
-
-  return { indexed: result.items.length };
+  return seedSearchBackend(baseUrl, 'OpenSearch');
 }
 
 module.exports = { seedSplunk, seedElastic, seedOpenSearch };
