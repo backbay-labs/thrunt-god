@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-status: completed
-stopped_at: Completed 46-02-PLAN.md (Phase 46 complete)
-last_updated: "2026-03-31T02:33:50.793Z"
-last_activity: 2026-03-31 -- Completed Phase 46 Plan 02 (Plugin Discovery Engine & PluginRegistry)
+status: in_progress
+stopped_at: Completed 47-01-PLAN.md
+last_updated: "2026-03-31T02:48:21.000Z"
+last_activity: 2026-03-31 -- Completed Phase 47 Plan 01 (Contract Test Suite)
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.2 Phase 46 — Plugin Manifest & Discovery (complete)
+**Current focus:** v2.2 Phase 47 — Contract Test Suite & Plugin Lifecycle (in progress)
 
 ## Current Milestone: v2.2 Connector Ecosystem
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 46 (Plugin Manifest & Discovery) -- Complete (2 of 2 plans done)
-Status: Phase 46 complete -- plugin-registry.cjs with full discovery engine, PluginRegistry, and runtime re-exports
-Last activity: 2026-03-31 -- Completed Phase 46 Plan 02 (Plugin Discovery Engine & PluginRegistry)
+Phase: 47 (Contract Test Suite & Plugin Lifecycle) -- In Progress (1 of 2 plans done)
+Status: Plan 47-01 complete -- contract-tests.cjs with runContractTests (~25 checks) and helper factories
+Last activity: 2026-03-31 -- Completed Phase 47 Plan 01 (Contract Test Suite)
 
-Progress: [██████████] 100% (7 of 7 plans complete)
+Progress: [████████░░] 80% (8 of 10 plans complete)
 
 ## Completed This Session
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100% (7 of 7 plans complete)
 | 45 | @thrunt/connector-sdk Package | 0 tests (pure refactor) |
 | 46 | Plugin Manifest & Discovery (Plan 01) | 22 tests |
 | 46 | Plugin Manifest & Discovery (Plan 02) | 18 tests |
+| 47 | Contract Test Suite (Plan 01) | 22 tests |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Progress: [██████████] 100% (7 of 7 plans complete)
 - [Phase 46]: Triple-precedence resolution: built-in (lowest) -> node_modules -> config-path -> config-override (highest)
 - [Phase 46]: Lockfile mtime used for _scanNodeModules cache invalidation
 - [Phase 46]: Lazy require of runtime.cjs inside discoverPlugins() to avoid circular dependency at module load time
+- [Phase 47]: Error-collecting pattern: all ~25 checks run to completion, failures aggregated into single thrown error with failedChecks array
+- [Phase 47]: Adapter validation gate: invalid adapters cause immediate throw before running individual contract checks
+- [Phase 47]: Timeout check uses Promise.race with manual timer rather than SDK withTimeout, avoiding coupling to adapter internals
 
 ### Research Specs Available
 
@@ -103,6 +107,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T02:33:50.789Z
-Stopped at: Completed 46-02-PLAN.md (Phase 46 complete)
-Resume: Phase 46 complete. plugin-registry.cjs has full discovery engine, PluginRegistry, and all 7 symbols re-exported via runtime.cjs. Ready for Phase 47 (Contract Testing).
+Last session: 2026-03-31T02:48:21.000Z
+Stopped at: Completed 47-01-PLAN.md
+Resume: Phase 47 Plan 01 complete. contract-tests.cjs with runContractTests (~25 checks) and helper factories (createTestQuerySpec, createTestProfile, createTestSecrets). Ready for Plan 47-02 (Plugin lifecycle wiring).
