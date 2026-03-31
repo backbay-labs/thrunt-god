@@ -7,11 +7,38 @@ const crypto = require('crypto');
 // ---------------------------------------------------------------------------
 
 /**
- * Placeholder for security-specific mask patterns.
- * Populated in Plan 02 (pre-masking engine). Exported now so the API surface
- * is stable from the start.
+ * Security-specific mask patterns applied before tokenization.
+ * Order matters: most-specific (longest) patterns first to prevent partial matches.
+ * Each regex MUST use the /g flag.
  */
-const DEFAULT_SECURITY_MASKS = Object.freeze([]);
+const DEFAULT_SECURITY_MASKS = Object.freeze([
+  // SHA-256 hex hash (64 chars) -- before shorter hashes
+  { regex: /\b[0-9a-fA-F]{64}\b/g, replacement: '<HASH>' },
+  // SHA-1 hex hash (40 chars)
+  { regex: /\b[0-9a-fA-F]{40}\b/g, replacement: '<HASH>' },
+  // MD5 hex hash (32 chars)
+  { regex: /\b[0-9a-fA-F]{32}\b/g, replacement: '<HASH>' },
+  // UUIDs (8-4-4-4-12)
+  { regex: /\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b/g, replacement: '<UUID>' },
+  // IPv6 addresses (8 groups of 4 hex digits)
+  { regex: /\b[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){7}\b/g, replacement: '<IP>' },
+  // MAC addresses (6 groups of 2 hex digits with colons)
+  { regex: /\b[0-9a-fA-F]{2}(?::[0-9a-fA-F]{2}){5}\b/g, replacement: '<MAC>' },
+  // ISO timestamps (2024-01-15T10:30:00Z variants)
+  { regex: /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?\b/g, replacement: '<TS>' },
+  // Syslog timestamps (Mar 31 10:15:32)
+  { regex: /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2}\s+\d{2}:\d{2}:\d{2}\b/g, replacement: '<TS>' },
+  // Email addresses
+  { regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g, replacement: '<EMAIL>' },
+  // IPv4 addresses
+  { regex: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, replacement: '<IP>' },
+  // Windows file paths (C:\Users\admin\...)
+  { regex: /[A-Z]:\\(?:[\w.-]+\\){1,}/g, replacement: '<WINPATH>' },
+  // Unix file paths (two or more segments: /usr/bin/ssh)
+  { regex: /(?:\/[\w.-]+){2,}/g, replacement: '<PATH>' },
+  // Unix epoch timestamps (10-13 digits starting with 1)
+  { regex: /\b1[0-9]{9,12}\b/g, replacement: '<EPOCH>' },
+]);
 
 // ---------------------------------------------------------------------------
 // Data Structures
@@ -144,6 +171,7 @@ class DrainParser {
    * @param {string} [options.paramStr='<*>']              Wildcard placeholder
    * @param {boolean} [options.parametrizeNumericTokens=true] Route numeric tokens to wildcard
    * @param {string[]} [options.extraDelimiters=[]]        Additional split characters
+   * @param {Array<{regex: RegExp, replacement: string}>} [options.maskPatterns=DEFAULT_SECURITY_MASKS] Pre-masking patterns
    */
   constructor(options = {}) {
     this.depth = Math.max(3, options.depth || 4);
@@ -153,6 +181,7 @@ class DrainParser {
     this.paramStr = options.paramStr || '<*>';
     this.parametrizeNumericTokens = options.parametrizeNumericTokens !== false;
     this.extraDelimiters = options.extraDelimiters || [];
+    this.maskPatterns = options.maskPatterns || DEFAULT_SECURITY_MASKS;
 
     /** @type {Node} */
     this.root = new Node();
@@ -162,6 +191,28 @@ class DrainParser {
     this.totalMessages = 0;
     /** @type {number} */
     this.maxNodeDepth = this.depth - 2;
+  }
+
+  // -----------------------------------------------------------------------
+  // Pre-masking
+  // -----------------------------------------------------------------------
+
+  /**
+   * Apply mask patterns to content before tokenization.
+   * Replaces security-variable content (IPs, UUIDs, hashes, etc.) with
+   * fixed placeholder tokens so they cluster together.
+   *
+   * @param {string} content
+   * @returns {string}
+   */
+  _applyMasks(content) {
+    const masks = this.maskPatterns;
+    if (masks.length === 0) return content;
+    let result = content;
+    for (let i = 0; i < masks.length; i++) {
+      result = result.replace(masks[i].regex, masks[i].replacement);
+    }
+    return result;
   }
 
   // -----------------------------------------------------------------------
@@ -380,8 +431,9 @@ class DrainParser {
   addMessage(content) {
     this.totalMessages++;
 
-    // Tokenize (no masking in this plan -- that is Plan 02)
-    const tokens = this._tokenize(content);
+    // Pre-mask variable content, then tokenize
+    const masked = this._applyMasks(content);
+    const tokens = this._tokenize(masked);
     if (tokens.length === 0) return null;
 
     // Search for matching cluster
