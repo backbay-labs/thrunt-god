@@ -3179,4 +3179,11 @@ module.exports = {
   toUnixSeconds,
   parseResponseBody,
   parseLinkHeader,
+
+  // --- Dispatch coordinator (Phase 43) ---
+  // Multi-tenant fan-out execution with concurrency control and isolation.
+  // dispatch.cjs uses lazy require for runtime.cjs, so no circular dep.
+  resolveTenantTargets: require('./dispatch.cjs').resolveTenantTargets,
+  cloneTenantSpec: require('./dispatch.cjs').cloneTenantSpec,
+  dispatchMultiTenant: require('./dispatch.cjs').dispatchMultiTenant,
 };

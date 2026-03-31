@@ -33,6 +33,8 @@ const VALID_CONFIG_KEYS = new Set([
   'publish_quality_threshold',
   'promotion_readiness_threshold',
   'promotion_hooks_enabled',
+  'dispatch.concurrency',
+  'dispatch.global_timeout_ms',
 ]);
 
 /**
@@ -46,6 +48,8 @@ function isValidConfigKey(keyPath) {
   if (/^agent_skills\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
   // Allow connector_profiles.<connector-id>.<profile-name> as full profile writes
   if (/^connector_profiles\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
+  // Allow dispatch.<key> for dispatch coordinator config
+  if (/^dispatch\.[a-zA-Z0-9_]+$/.test(keyPath)) return true;
   // Allow tenants.<tenant-id> for individual tenant config writes
   if (/^tenants\.[a-z0-9][a-z0-9-]*$/.test(keyPath)) return true;
   // Allow tenants.<tenant-id>.<field> for nested tenant field writes (e.g., tenants.acme.enabled)
@@ -672,6 +676,7 @@ function getCmdConfigSetModelProfileResultMessage(
 }
 
 module.exports = {
+  isValidConfigKey,
   cmdConfigEnsureSection,
   cmdConfigSet,
   cmdConfigGet,

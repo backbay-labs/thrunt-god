@@ -13,6 +13,21 @@ const { test, describe, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
 
+// ─── Time helpers ───────────────────────────────────────────────────────────
+
+const NOW = new Date();
+const ONE_HOUR_AGO = new Date(NOW.getTime() - 3600_000).toISOString();
+const NOW_ISO = NOW.toISOString();
+
+function baseSpecInput(overrides = {}) {
+  return {
+    connector: { id: 'sentinel' },
+    query: { language: 'kql', statement: 'SecurityEvent | take 10' },
+    time_window: { start: ONE_HOUR_AGO, end: NOW_ISO },
+    ...overrides,
+  };
+}
+
 // ─── Shared fixtures ────────────────────────────────────────────────────────
 
 const MOCK_CONFIG = {
@@ -146,10 +161,9 @@ describe('cloneTenantSpec', () => {
   });
 
   test('overrides connector fields from target', () => {
-    const base = createQuerySpec({
+    const base = createQuerySpec(baseSpecInput({
       connector: { id: 'sentinel', profile: 'default', tenant: null },
-      query: { language: 'kql', statement: 'SecurityEvent | take 10' },
-    });
+    }));
     const target = {
       tenant_id: 'acme-corp',
       connector_id: 'sentinel',
@@ -166,11 +180,9 @@ describe('cloneTenantSpec', () => {
   });
 
   test('merges parameters with tenant overriding base', () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
+    const base = createQuerySpec(baseSpecInput({
       parameters: { timerange: '24h', workspace_id: 'default' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    }));
     const target = {
       tenant_id: 'acme-corp',
       connector_id: 'sentinel',
@@ -184,11 +196,9 @@ describe('cloneTenantSpec', () => {
   });
 
   test('adds tenant tag to evidence tags', () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
+    const base = createQuerySpec(baseSpecInput({
       evidence: { tags: ['hunt:H-001'] },
-      query: { language: 'kql', statement: 'test' },
-    });
+    }));
     const target = {
       tenant_id: 'acme-corp',
       connector_id: 'sentinel',
@@ -202,10 +212,7 @@ describe('cloneTenantSpec', () => {
   });
 
   test('returns a new QuerySpec (not mutating base)', () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const target = {
       tenant_id: 'acme-corp',
       connector_id: 'sentinel',
@@ -233,9 +240,8 @@ describe('dispatchMultiTenant', () => {
     createConnectorRegistry = require('../thrunt-god/bin/lib/runtime.cjs').createConnectorRegistry;
   });
 
-  function makeMockRegistry(handler) {
-    const registry = createConnectorRegistry();
-    registry.register('sentinel', {
+  function makeSentinelAdapter(overrides = {}) {
+    return {
       name: 'sentinel',
       capabilities: {
         id: 'sentinel',
@@ -248,21 +254,24 @@ describe('dispatchMultiTenant', () => {
         features: [],
         limitations: [],
       },
-      prepareQuery: ({ spec }) => ({ url: 'https://example.com', method: 'POST', body: spec.query.statement }),
-      executeRequest: handler || (async () => ({ status: 200, body: { tables: [{ rows: [['event1']] }] } })),
-      normalizeResponse: ({ response }) => ({
+      prepareQuery: overrides.prepareQuery || (({ spec }) => ({ url: 'https://example.com', method: 'POST', body: spec.query.statement })),
+      executeRequest: overrides.executeRequest || (async () => ({ status: 200, body: { tables: [{ rows: [['event1']] }] } })),
+      normalizeResponse: overrides.normalizeResponse || (({ response }) => ({
         events: [{ raw: response.body, severity: 'info', timestamp: new Date().toISOString() }],
         has_more: false,
-      }),
-    });
-    return registry;
+      })),
+    };
+  }
+
+  function makeMockRegistry(handler) {
+    const adapter = handler
+      ? makeSentinelAdapter({ executeRequest: handler })
+      : makeSentinelAdapter();
+    return createConnectorRegistry([adapter]);
   }
 
   test('dispatches to multiple targets and returns MultiTenantResult shape', async () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'SecurityEvent | take 10' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const targets = [
       { tenant_id: 'acme-corp', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'Acme', tags: [] },
       { tenant_id: 'globex-inc', connector_id: 'sentinel', profile_name: 'globex-sentinel', parameters: {}, display_name: 'Globex', tags: [] },
@@ -281,26 +290,14 @@ describe('dispatchMultiTenant', () => {
 
   test('each tenant gets isolated token_cache (new Map)', async () => {
     const tokenCaches = [];
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const targets = [
       { tenant_id: 'tenant-a', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'A', tags: [] },
       { tenant_id: 'tenant-b', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'B', tags: [] },
     ];
 
     // Override executeRequest to capture token_cache from options
-    const registry = createConnectorRegistry();
-    registry.register('sentinel', {
-      name: 'sentinel',
-      capabilities: {
-        id: 'sentinel', name: 'Sentinel', vendor: 'Microsoft',
-        connector_type: 'siem', auth_types: ['bearer'],
-        query_languages: ['kql'], dataset_kinds: ['events'],
-        features: [], limitations: [],
-      },
-      prepareQuery: () => ({ url: 'https://example.com', method: 'POST' }),
+    const registry = createConnectorRegistry([makeSentinelAdapter({
       executeRequest: async ({ options }) => {
         if (options && options.token_cache) {
           tokenCaches.push(options.token_cache);
@@ -308,7 +305,7 @@ describe('dispatchMultiTenant', () => {
         return { status: 200, body: { tables: [] } };
       },
       normalizeResponse: () => ({ events: [], has_more: false }),
-    });
+    })]);
 
     await dispatchMultiTenant(base, targets, registry, MOCK_CONFIG);
 
@@ -319,25 +316,13 @@ describe('dispatchMultiTenant', () => {
 
   test('error in one tenant does not abort others', async () => {
     let callCount = 0;
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const targets = [
       { tenant_id: 'fail-tenant', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'Fail', tags: [] },
       { tenant_id: 'ok-tenant', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'OK', tags: [] },
     ];
 
-    const registry = createConnectorRegistry();
-    registry.register('sentinel', {
-      name: 'sentinel',
-      capabilities: {
-        id: 'sentinel', name: 'Sentinel', vendor: 'Microsoft',
-        connector_type: 'siem', auth_types: ['bearer'],
-        query_languages: ['kql'], dataset_kinds: ['events'],
-        features: [], limitations: [],
-      },
-      prepareQuery: () => ({ url: 'https://example.com', method: 'POST' }),
+    const registry = createConnectorRegistry([makeSentinelAdapter({
       executeRequest: async ({ spec }) => {
         callCount++;
         if (spec.connector.tenant === 'fail-tenant') {
@@ -346,7 +331,7 @@ describe('dispatchMultiTenant', () => {
         return { status: 200, body: { tables: [] } };
       },
       normalizeResponse: () => ({ events: [{ raw: {}, severity: 'info', timestamp: new Date().toISOString() }], has_more: false }),
-    });
+    })]);
 
     const result = await dispatchMultiTenant(base, targets, registry, MOCK_CONFIG, { concurrency: 1 });
 
@@ -365,10 +350,7 @@ describe('dispatchMultiTenant', () => {
   test('respects concurrency limit', async () => {
     let maxConcurrent = 0;
     let currentConcurrent = 0;
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const targets = Array.from({ length: 6 }, (_, i) => ({
       tenant_id: `tenant-${i}`,
       connector_id: 'sentinel',
@@ -378,16 +360,7 @@ describe('dispatchMultiTenant', () => {
       tags: [],
     }));
 
-    const registry = createConnectorRegistry();
-    registry.register('sentinel', {
-      name: 'sentinel',
-      capabilities: {
-        id: 'sentinel', name: 'Sentinel', vendor: 'Microsoft',
-        connector_type: 'siem', auth_types: ['bearer'],
-        query_languages: ['kql'], dataset_kinds: ['events'],
-        features: [], limitations: [],
-      },
-      prepareQuery: () => ({ url: 'https://example.com', method: 'POST' }),
+    const registry = createConnectorRegistry([makeSentinelAdapter({
       executeRequest: async () => {
         currentConcurrent++;
         maxConcurrent = Math.max(maxConcurrent, currentConcurrent);
@@ -396,7 +369,7 @@ describe('dispatchMultiTenant', () => {
         return { status: 200, body: {} };
       },
       normalizeResponse: () => ({ events: [], has_more: false }),
-    });
+    })]);
 
     await dispatchMultiTenant(base, targets, registry, MOCK_CONFIG, { concurrency: 2 });
 
@@ -404,10 +377,7 @@ describe('dispatchMultiTenant', () => {
   });
 
   test('summary has correct counts', async () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const targets = [
       { tenant_id: 'tenant-a', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'A', tags: [] },
       { tenant_id: 'tenant-b', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'B', tags: [] },
@@ -425,11 +395,9 @@ describe('dispatchMultiTenant', () => {
   });
 
   test('global timeout cancels remaining tenants', async () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
+    const base = createQuerySpec(baseSpecInput({
       execution: { timeout_ms: 60000 },
-    });
+    }));
     const targets = Array.from({ length: 4 }, (_, i) => ({
       tenant_id: `tenant-${i}`,
       connector_id: 'sentinel',
@@ -439,23 +407,14 @@ describe('dispatchMultiTenant', () => {
       tags: [],
     }));
 
-    const registry = createConnectorRegistry();
-    registry.register('sentinel', {
-      name: 'sentinel',
-      capabilities: {
-        id: 'sentinel', name: 'Sentinel', vendor: 'Microsoft',
-        connector_type: 'siem', auth_types: ['bearer'],
-        query_languages: ['kql'], dataset_kinds: ['events'],
-        features: [], limitations: [],
-      },
-      prepareQuery: () => ({ url: 'https://example.com', method: 'POST' }),
+    const registry = createConnectorRegistry([makeSentinelAdapter({
       executeRequest: async () => {
         // Each execution takes 500ms - global timeout of 200ms should cancel some
         await new Promise(r => setTimeout(r, 500));
         return { status: 200, body: {} };
       },
       normalizeResponse: () => ({ events: [], has_more: false }),
-    });
+    })]);
 
     const result = await dispatchMultiTenant(base, targets, registry, MOCK_CONFIG, {
       concurrency: 1,
@@ -468,10 +427,7 @@ describe('dispatchMultiTenant', () => {
   });
 
   test('dispatch_id format is MTD-timestamp-random', async () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const registry = makeMockRegistry();
     const result = await dispatchMultiTenant(base, [
       { tenant_id: 't1', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'T1', tags: [] },
@@ -481,10 +437,7 @@ describe('dispatchMultiTenant', () => {
   });
 
   test('tenant_result includes timing info', async () => {
-    const base = createQuerySpec({
-      connector: { id: 'sentinel' },
-      query: { language: 'kql', statement: 'test' },
-    });
+    const base = createQuerySpec(baseSpecInput());
     const registry = makeMockRegistry();
     const result = await dispatchMultiTenant(base, [
       { tenant_id: 'acme', connector_id: 'sentinel', profile_name: 'acme-sentinel', parameters: {}, display_name: 'Acme', tags: [] },
