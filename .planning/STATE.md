@@ -1,18 +1,18 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Advanced Hunt Features
-current_plan: 49-01 -- COMPLETE
-status: Reusable CI workflow and connector plugin starter template created
-stopped_at: Completed 49-01-PLAN.md
-last_updated: "2026-03-31T03:45:47.325Z"
-last_activity: 2026-03-31 -- Completed Phase 49 Plan 01 (Reusable CI Ecosystem Tooling)
+milestone: v2.2
+milestone_name: Connector Ecosystem
+current_plan: 49-02 -- COMPLETE
+status: Connector CLI commands and developer guide complete. Phase 49 done. v2.2 milestone complete.
+stopped_at: Completed 49-02-PLAN.md
+last_updated: "2026-03-31T03:56:01Z"
+last_activity: 2026-03-31 -- Completed Phase 49 Plan 02 (Reusable CI Ecosystem Tooling)
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # Project State
@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.2 Phase 49 — Reusable CI Ecosystem Tooling (Plan 01 complete, Plan 02 pending)
+**Current focus:** v2.2 Connector Ecosystem milestone complete (all 5 phases, 13 plans delivered)
 
 ## Current Milestone: v2.2 Connector Ecosystem
 
@@ -30,12 +30,12 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 49 (Reusable CI Ecosystem Tooling) -- IN PROGRESS (1 of 2 plans done)
-Current Plan: 49-01 -- COMPLETE
-Status: Reusable CI workflow and connector plugin starter template created
-Last activity: 2026-03-31 -- Completed Phase 49 Plan 01 (Reusable CI Ecosystem Tooling)
+Phase: 49 (Reusable CI Ecosystem Tooling) -- COMPLETE (2 of 2 plans done)
+Current Plan: 49-02 -- COMPLETE
+Status: Connector CLI commands and developer guide complete. Phase 49 done.
+Last activity: 2026-03-31 -- Completed Phase 49 Plan 02 (Reusable CI Ecosystem Tooling)
 
-Progress: [█████████░] 92% (12 of 13 plans complete)
+Progress: [██████████] 100% (13 of 13 plans complete)
 
 ## Completed This Session
 
@@ -63,6 +63,7 @@ Progress: [█████████░] 92% (12 of 13 plans complete)
 | 48 | SIEM Connector Extraction (Plan 01) | 0 tests (pure refactor) |
 | 48 | Remaining Connector Extraction (Plan 02) | 0 tests (pure refactor) |
 | 49 | Reusable CI Ecosystem Tooling (Plan 01) | 14 tests |
+| 49 | Connector CLI & Developer Guide (Plan 02) | 13 tests |
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Progress: [█████████░] 92% (12 of 13 plans complete)
 - [Phase 49]: Standalone plugin templates use require('thrunt-god/thrunt-god/bin/lib/connector-sdk.cjs') path for SDK imports
 - [Phase 49]: Plugin template exports createAdapter() (not create{Name}Adapter) matching plugin loading contract
 - [Phase 49]: Template uses peerDependencies for thrunt-god to avoid version conflicts in plugin consumers
+- [Phase 49]: connectors init outputs to thrunt-connector-{id} subdirectory with recursive template scanning
+- [Phase 49]: --scoped flag toggles between thrunt-connector-{id} and @thrunt/connector-{id} package naming
+- [Phase 49]: Package.json version read via require('../../../package.json') from commands.cjs (3 levels up to root)
 
 ### Research Specs Available
 
@@ -127,6 +131,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T03:44:13Z
-Stopped at: Completed 49-01-PLAN.md
-Resume: Phase 49 Plan 01 complete. Reusable CI workflow (.github/workflows/reusable-connector-test.yml) with workflow_call trigger, manifest validation, contract tests, c8 coverage. Connector plugin starter template (7 files) at thrunt-god/templates/connector-plugin/. 14 ecosystem tooling tests passing. Ready for Phase 49 Plan 02.
+Last session: 2026-03-31T03:56:01Z
+Stopped at: Completed 49-02-PLAN.md
+Resume: Phase 49 complete (both plans done). v2.2 Connector Ecosystem milestone fully delivered. 3 CLI commands (connectors list/search/init) in commands.cjs with routing in thrunt-tools.cjs. 793-line developer guide at docs/connector-plugin-guide.md. 27 ecosystem tests (14 structure + 13 CLI). All 2406 project tests passing.

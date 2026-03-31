@@ -11,7 +11,7 @@
 - v1.6 Live Connector Integrations (Phases 27-30) -- shipped 2026-03-30
 - **v2.0 Developer Experience & CI (Phases 31-37) -- shipped 2026-03-30**
 - **v2.1 Advanced Hunt Features (Phases 38-44) -- shipped 2026-03-31**
-- v2.2 Connector Ecosystem (Phases 45-49) -- planned
+- **v2.2 Connector Ecosystem (Phases 45-49) -- shipped 2026-03-31**
 
 ## v2.1 Advanced Hunt Features
 
@@ -130,10 +130,10 @@ Plans:
 **Goal**: Ship GitHub Actions reusable workflow for plugin repos, starter template, and documentation
 **Depends on**: Phase 48 (migration validates the plugin pattern end-to-end)
 **Requirements**: ECO-05
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 49-01-PLAN.md — Reusable connector CI workflow (workflow_call), standalone plugin starter template directory (7 template files), structure tests
-- [ ] 49-02-PLAN.md — CLI commands (connectors list/search/init), third-party connector development guide, CLI tests
+- [x] 49-01-PLAN.md — Reusable connector CI workflow (workflow_call), standalone plugin starter template directory (7 template files), structure tests
+- [x] 49-02-PLAN.md — CLI commands (connectors list/search/init), third-party connector development guide, CLI tests
 **Success Criteria** (what must be TRUE):
   1. Reusable GitHub Actions workflow for third-party connector repos
   2. Starter template repository with example connector
@@ -162,4 +162,4 @@ Plans:
 | 46. Plugin Manifest & Discovery | 2/2 | Complete    | 2026-03-31 |
 | 47. Contract Test Suite & Plugin Lifecycle | 2/2 | Complete    | 2026-03-31 |
 | 48. Built-in Connector Migration | 2/2 | Complete    | 2026-03-31 |
-| 49. Reusable CI & Ecosystem Tooling | 1/2 | In Progress|  |
+| 49. Reusable CI & Ecosystem Tooling | 2/2 | Complete    | 2026-03-31 |
