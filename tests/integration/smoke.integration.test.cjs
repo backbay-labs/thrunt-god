@@ -14,6 +14,45 @@ const {
 const { seedSplunk, seedElastic, seedOpenSearch } = require('./fixtures/seed-data.cjs');
 const SPLUNK_AUTH = 'Basic ' + Buffer.from(`${SPLUNK_USER}:${SPLUNK_PASSWORD}`).toString('base64');
 
+async function runSplunkSearch(statement) {
+  const createResp = await fetch(`${SPLUNK_URL}/services/search/jobs?output_mode=json`, {
+    method: 'POST',
+    headers: {
+      Authorization: SPLUNK_AUTH,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      search: statement.trim().startsWith('|') ? statement : `search ${statement}`,
+      output_mode: 'json',
+      earliest_time: '0',
+      latest_time: 'now',
+    }).toString(),
+  });
+  assert.strictEqual(createResp.status, 201, `Splunk async job creation returned ${createResp.status}`);
+  const createData = await createResp.json();
+  const sid = createData.sid;
+  assert.ok(sid, 'Splunk async job should return a sid');
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const pollResp = await fetch(`${SPLUNK_URL}/services/search/jobs/${encodeURIComponent(sid)}?output_mode=json`, {
+      headers: { Authorization: SPLUNK_AUTH },
+    });
+    assert.strictEqual(pollResp.status, 200, `Splunk async job poll returned ${pollResp.status}`);
+    const pollData = await pollResp.json();
+    const content = pollData?.entry?.[0]?.content || {};
+    if (content.isDone === '1' || content.isDone === 1 || content.isDone === true) {
+      break;
+    }
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+
+  const resultsResp = await fetch(`${SPLUNK_URL}/services/search/jobs/${encodeURIComponent(sid)}/results?output_mode=json&count=0`, {
+    headers: { Authorization: SPLUNK_AUTH },
+  });
+  assert.strictEqual(resultsResp.status, 200, `Splunk async job results returned ${resultsResp.status}`);
+  return resultsResp.text();
+}
+
 describe('docker infrastructure smoke test', async (t) => {
   if (skipIfNoDocker(t)) return;
 
@@ -46,13 +85,7 @@ describe('docker infrastructure smoke test', async (t) => {
   });
 
   test('splunk seed data is queryable via REST search', async () => {
-    const resp = await fetch(`${SPLUNK_URL}/services/search/v2/jobs/export`, {
-      method: 'POST',
-      headers: { Authorization: SPLUNK_AUTH, 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'search=search index%3Dtest_sysmon | head 10&output_mode=json&earliest_time=0&latest_time=now',
-    });
-    assert.strictEqual(resp.status, 200, `Splunk search returned ${resp.status}`);
-    const text = await resp.text();
+    const text = await runSplunkSearch('index=test_sysmon | head 10');
     assert.ok(
       text.includes('ws-01') || text.includes('alice'),
       'Splunk search should return seeded events with host/user fields'

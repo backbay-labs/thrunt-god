@@ -70,7 +70,6 @@ async function waitForHealthy(
  */
 async function createSplunkBearerToken(baseUrl, { user, password }) {
   const auth = 'Basic ' + Buffer.from(`${user}:${password}`).toString('base64');
-  const audience = `integ-${Date.now()}`;
   const resp = await fetch(`${baseUrl}/services/authorization/tokens?output_mode=json`, {
     method: 'POST',
     headers: {
@@ -80,7 +79,7 @@ async function createSplunkBearerToken(baseUrl, { user, password }) {
     },
     body: new URLSearchParams({
       name: user,
-      audience,
+      audience: 'search',
       type: 'ephemeral',
     }).toString(),
   });
