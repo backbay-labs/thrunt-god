@@ -652,11 +652,34 @@ function discoverPlugins(options = {}) {
     }
   }
 
+  // Path containment helper — validates a resolved path is within allowed roots
+  const resolvedCwd = path.resolve(cwd);
+  const nodeModulesRoot = path.join(resolvedCwd, 'node_modules');
+
+  function isWithinProjectRoot(resolvedPath) {
+    const normalised = path.resolve(resolvedPath);
+    return normalised.startsWith(resolvedCwd + path.sep) || normalised === resolvedCwd;
+  }
+
+  function isWithinProjectOrNodeModules(resolvedPath) {
+    const normalised = path.resolve(resolvedPath);
+    return (
+      normalised.startsWith(resolvedCwd + path.sep) ||
+      normalised === resolvedCwd ||
+      normalised.startsWith(nodeModulesRoot + path.sep) ||
+      normalised === nodeModulesRoot
+    );
+  }
+
   // 3. Explicit config plugins
   const configPlugins = config?.connectors?.plugins;
   if (Array.isArray(configPlugins)) {
     for (const pluginPath of configPlugins) {
       const resolvedPath = path.resolve(cwd, pluginPath);
+      if (!isWithinProjectRoot(resolvedPath)) {
+        console.warn(`[thrunt] Plugin path '${pluginPath}' resolves outside project root (path traversal blocked)`);
+        continue;
+      }
       const result = loadPlugin(resolvedPath);
       if (result.valid) {
         pluginEntries.push({
@@ -676,6 +699,10 @@ function discoverPlugins(options = {}) {
   if (configOverrides && typeof configOverrides === 'object') {
     for (const [builtInId, pluginPath] of Object.entries(configOverrides)) {
       const resolvedPath = path.resolve(cwd, pluginPath);
+      if (!isWithinProjectOrNodeModules(resolvedPath)) {
+        console.warn(`[thrunt] Override path '${pluginPath}' resolves outside project root and node_modules (path traversal blocked)`);
+        continue;
+      }
       const result = loadPlugin(resolvedPath);
       if (result.valid) {
         if (result.adapter.capabilities.id === builtInId) {

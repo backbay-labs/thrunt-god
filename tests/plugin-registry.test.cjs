@@ -533,6 +533,7 @@ describe('discoverPlugins', () => {
     try {
       const reg = discoverPlugins({
         includeBuiltIn: false,
+        cwd: path.dirname(pluginDir),
         config: { connectors: { plugins: [pluginDir] } },
       });
 
@@ -549,6 +550,7 @@ describe('discoverPlugins', () => {
     try {
       const reg = discoverPlugins({
         includeBuiltIn: true,
+        cwd: path.dirname(pluginDir),
         config: { connectors: { overrides: { splunk: pluginDir } } },
       });
 
@@ -571,6 +573,7 @@ describe('discoverPlugins', () => {
       try {
         const reg = discoverPlugins({
           includeBuiltIn: true,
+          cwd: path.dirname(pluginDir),
           config: { connectors: { overrides: { splunk: pluginDir } } },
         });
         // Splunk should NOT be overridden since connector_id doesn't match
@@ -589,6 +592,105 @@ describe('discoverPlugins', () => {
     const reg = discoverPlugins({ includeBuiltIn: false });
     assert.deepStrictEqual(reg.list(), []);
     assert.deepStrictEqual(reg.listPlugins(), []);
+  });
+
+  test('config.plugins path traversal outside project root is blocked', () => {
+    const pluginDir = createMockPluginDir('evil_connector');
+    const projectRoot = makeTempDir(); // separate dir as the project root
+    try {
+      const origWarn = console.warn;
+      const warnings = [];
+      console.warn = (...args) => warnings.push(args.join(' '));
+      try {
+        const reg = discoverPlugins({
+          includeBuiltIn: false,
+          cwd: projectRoot,
+          config: { connectors: { plugins: [pluginDir] } },
+        });
+        // Plugin should NOT be registered since it's outside project root
+        assert.strictEqual(reg.has('evil_connector'), false);
+        // Should have logged a path traversal warning
+        assert.ok(
+          warnings.some(w => /path traversal blocked/i.test(w)),
+          `Expected path traversal warning, got: ${warnings.join('; ')}`
+        );
+      } finally {
+        console.warn = origWarn;
+      }
+    } finally {
+      fs.rmSync(pluginDir, { recursive: true, force: true });
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('config.overrides path traversal outside project root is blocked', () => {
+    const pluginDir = createMockPluginDir('splunk');
+    const projectRoot = makeTempDir(); // separate dir as the project root
+    try {
+      const origWarn = console.warn;
+      const warnings = [];
+      console.warn = (...args) => warnings.push(args.join(' '));
+      try {
+        const reg = discoverPlugins({
+          includeBuiltIn: true,
+          cwd: projectRoot,
+          config: { connectors: { overrides: { splunk: pluginDir } } },
+        });
+        // Splunk should NOT be overridden since override path is outside project root
+        assert.strictEqual(reg.isOverridden('splunk'), false);
+        // Should have logged a path traversal warning
+        assert.ok(
+          warnings.some(w => /path traversal blocked/i.test(w)),
+          `Expected path traversal warning, got: ${warnings.join('; ')}`
+        );
+      } finally {
+        console.warn = origWarn;
+      }
+    } finally {
+      fs.rmSync(pluginDir, { recursive: true, force: true });
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('config.plugins relative path within project root is allowed', () => {
+    const projectRoot = makeTempDir();
+    const pluginDir = path.join(projectRoot, 'my-plugin');
+    fs.mkdirSync(pluginDir, { recursive: true });
+    // Create plugin files in subdirectory of project root
+    const manifest = validManifest({ connector_id: 'local_plugin', display_name: 'Local Plugin' });
+    fs.writeFileSync(path.join(pluginDir, 'thrunt-connector.json'), JSON.stringify(manifest));
+    const adapterCode = `
+'use strict';
+const sdk = require('${sdkPath}');
+module.exports = {
+  createAdapter() {
+    return {
+      capabilities: sdk.createConnectorCapabilities({
+        id: 'local_plugin',
+        display_name: 'Local Plugin',
+        auth_types: ['api_key'],
+        dataset_kinds: ['events'],
+        languages: ['spl'],
+        pagination_modes: ['cursor'],
+      }),
+      prepareQuery(spec) { return spec; },
+      executeRequest(req) { return { status: 200, body: {} }; },
+      normalizeResponse(resp) { return { events: [] }; },
+    };
+  },
+};
+`;
+    fs.writeFileSync(path.join(pluginDir, 'index.cjs'), adapterCode);
+    try {
+      const reg = discoverPlugins({
+        includeBuiltIn: false,
+        cwd: projectRoot,
+        config: { connectors: { plugins: ['my-plugin'] } },
+      });
+      assert.strictEqual(reg.has('local_plugin'), true);
+    } finally {
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
   });
 });
 
