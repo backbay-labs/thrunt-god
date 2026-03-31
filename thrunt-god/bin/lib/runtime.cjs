@@ -11,6 +11,9 @@
 // --- SDK re-export (all SDK primitives now live in connector-sdk.cjs) ---
 const sdk = require('./connector-sdk.cjs');
 
+// --- Plugin registry re-export (manifest validation, discovery, registry) ---
+const pluginRegistry = require('./plugin-registry.cjs');
+
 // Destructure SDK functions needed by adapter code below.
 // Adapters reference these via closure scope, so they must be in local scope.
 const {
@@ -1190,9 +1193,10 @@ function createBuiltInConnectorRegistry() {
   ]);
 }
 
-// --- module.exports: spread SDK + adapter-specific exports ---
+// --- module.exports: spread SDK + plugin-registry + adapter-specific exports ---
 module.exports = {
   ...sdk,
+  ...pluginRegistry,
 
   // Adapter-specific (not in SDK):
   createBuiltInConnectorRegistry,
