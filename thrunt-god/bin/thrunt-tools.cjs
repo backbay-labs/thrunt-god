@@ -39,6 +39,9 @@
  *     [--non-interactive] [--kind <type>] [--id <id>] [--attack <ids>]
  *     [--extends <ids>] [--connectors <ids>] [--output <path>] [--dry-run]
  *   init connector <id>                Scaffold a new connector adapter with tests and Docker boilerplate
+ *   connectors list                    List installed connectors (built-in + plugins)
+ *   connectors search <term>           Search npm registry for available connectors
+ *   connectors init <id>               Scaffold a standalone connector plugin project
  *   runtime list-connectors            List built-in runtime connector capabilities
  *   runtime doctor [<connector-id>]    Score connector readiness and preflight config
  *   runtime smoke [<connector-id>]     Run live connector smoke tests
@@ -619,6 +622,20 @@ async function runCommand(command, args, cwd, raw) {
         await commands.cmdDoctorConnectors(cwd, args.slice(2), raw);
       } else {
         error('Unknown runtime subcommand. Available: list-connectors, doctor, doctor-connectors, smoke, execute, replay, dispatch, aggregate, heatmap, tenant');
+      }
+      break;
+    }
+
+    case 'connectors': {
+      const subcommand = args[1];
+      if (subcommand === 'list') {
+        await commands.cmdConnectorsList(cwd, raw);
+      } else if (subcommand === 'search') {
+        await commands.cmdConnectorsSearch(cwd, args.slice(2), raw);
+      } else if (subcommand === 'init') {
+        await commands.cmdConnectorsInit(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown connectors subcommand. Available: list, search, init');
       }
       break;
     }

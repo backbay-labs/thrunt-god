@@ -3085,6 +3085,233 @@ async function cmdTenantDisable(cwd, tenantId, raw) { return getTenant().cmdTena
 async function cmdTenantEnable(cwd, tenantId, raw) { return getTenant().cmdTenantEnable(cwd, tenantId, raw); }
 async function cmdTenantDoctor(cwd, args, raw) { return getTenant().cmdTenantDoctor(cwd, args, raw); }
 
+// ─── Connector ecosystem CLI commands ──────────────────────────────────────────
+
+/**
+ * List all installed connectors (built-in + plugins) with provenance info.
+ * Usage: thrunt connectors list [--raw]
+ */
+async function cmdConnectorsList(cwd, raw) {
+  const { discoverPlugins } = require('./plugin-registry.cjs');
+  const config = loadConfig(cwd);
+
+  const registry = discoverPlugins({ cwd, config, includeBuiltIn: true });
+  const allPlugins = registry.listPlugins();
+
+  const list = allPlugins.map(info => {
+    const adapter = registry.get(info.connector_id);
+    return {
+      id: info.connector_id,
+      display_name: (adapter && adapter.capabilities && adapter.capabilities.display_name) || info.connector_id,
+      source: info.source,
+      version: info.version,
+      package_name: info.package_name,
+    };
+  });
+
+  // Sort: built-in first, then alphabetical by id
+  list.sort((a, b) => {
+    if (a.source === 'built-in' && b.source !== 'built-in') return -1;
+    if (a.source !== 'built-in' && b.source === 'built-in') return 1;
+    return a.id.localeCompare(b.id);
+  });
+
+  output({ connectors: list, count: list.length }, raw);
+}
+
+/**
+ * Search npm registry for available connectors.
+ * Usage: thrunt connectors search <term> [--raw]
+ */
+async function cmdConnectorsSearch(cwd, args, raw) {
+  const term = args[0];
+  if (!term) {
+    error('search term required. Usage: thrunt connectors search <term>');
+  }
+
+  try {
+    let jsonResult;
+    try {
+      const stdout = execSync(`npm search thrunt-connector ${term} --json --long 2>/dev/null`, {
+        encoding: 'utf8',
+        timeout: 15000,
+      });
+      jsonResult = JSON.parse(stdout);
+    } catch (_parseErr) {
+      // JSON parse failed — try non-JSON fallback
+      try {
+        const stdout = execSync(`npm search thrunt-connector ${term} 2>/dev/null`, {
+          encoding: 'utf8',
+          timeout: 15000,
+        });
+        // Non-JSON output — return as raw text
+        output({ term, results: [], count: 0, raw_output: stdout.trim() }, raw);
+        return;
+      } catch (_fallbackErr) {
+        output({ term, results: [], count: 0, error: 'npm search failed -- check network connection' }, raw);
+        return;
+      }
+    }
+
+    // Filter to only results whose name or keywords include 'thrunt-connector'
+    const filtered = (Array.isArray(jsonResult) ? jsonResult : [])
+      .filter(pkg => {
+        const name = pkg.name || '';
+        const keywords = Array.isArray(pkg.keywords) ? pkg.keywords : [];
+        return name.includes('thrunt-connector') || keywords.some(k => k.includes('thrunt-connector'));
+      })
+      .map(pkg => ({
+        name: pkg.name,
+        description: pkg.description || '',
+        version: pkg.version || '',
+        date: pkg.date || '',
+        keywords: pkg.keywords || [],
+      }));
+
+    output({ term, results: filtered, count: filtered.length }, raw);
+  } catch (_err) {
+    output({ term, results: [], count: 0, error: 'npm search failed -- check network connection' }, raw);
+  }
+}
+
+/**
+ * Scaffold a standalone connector plugin project from the starter template.
+ * Usage: thrunt connectors init <id> [flags]
+ */
+async function cmdConnectorsInit(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const pluginTemplatesDir = path.join(__dirname, '../../templates/connector-plugin');
+
+  // --- Argument parsing ---
+  let connectorId = args[0] && !args[0].startsWith('--') ? args[0] : null;
+  const cliOptions = parseConnectorArgs(args.slice(connectorId ? 1 : 0));
+
+  if (cliOptions.raw) raw = true;
+
+  // --- Input validation ---
+  if (!connectorId || !/^[a-z][a-z0-9_]*$/.test(connectorId)) {
+    error(`connector ID must match /^[a-z][a-z0-9_]*$/ (lowercase, underscores, starts with letter). Got: ${connectorId || '(empty)'}`);
+  }
+
+  // Collision check against built-in connectors
+  const builtInRegistry = runtime.createBuiltInConnectorRegistry();
+  if (builtInRegistry.has(connectorId)) {
+    const builtIns = builtInRegistry.list().map(c => c.id).join(', ');
+    error(`connector ID '${connectorId}' collides with a built-in connector. Built-in IDs: ${builtIns}`);
+  }
+
+  // Apply defaults
+  const authTypes = cliOptions.authTypes.length > 0 ? cliOptions.authTypes : ['api_key'];
+  const datasetKinds = cliOptions.datasetKinds.length > 0 ? cliOptions.datasetKinds : ['events'];
+  const languages = cliOptions.languages.length > 0 ? cliOptions.languages : ['api'];
+  const paginationModes = cliOptions.paginationModes.length > 0 ? cliOptions.paginationModes : ['none'];
+  const displayName = cliOptions.displayName || toTitleCase(connectorId);
+  const dryRun = cliOptions.dryRun || false;
+  const scoped = args.includes('--scoped');
+  const outputBaseDir = cliOptions.outputDir ? path.resolve(cwd, cliOptions.outputDir) : cwd;
+
+  // Determine package name
+  const packageName = scoped
+    ? `@thrunt/connector-${connectorId}`
+    : `thrunt-connector-${connectorId}`;
+
+  // SDK version from root package.json
+  const pkgJson = require('../../../package.json');
+  const versionParts = pkgJson.version.split('.');
+  const sdkVersion = `^${versionParts[0]}.${versionParts[1]}.0`;
+
+  // Compute template variables
+  const functionName = toPascalCase(connectorId);
+  const envPrefix = connectorId.toUpperCase();
+  const authTypesArray = JSON.stringify(authTypes).replace(/"/g, "'");
+  const datasetKindsArray = JSON.stringify(datasetKinds).replace(/"/g, "'");
+  const languagesArray = JSON.stringify(languages).replace(/"/g, "'");
+  const paginationModesArray = JSON.stringify(paginationModes).replace(/"/g, "'");
+  const docsUrl = cliOptions.docsUrl ? `'${cliOptions.docsUrl}'` : 'null';
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  const vars = {
+    CONNECTOR_ID: connectorId,
+    CONNECTOR_DISPLAY_NAME: displayName,
+    CONNECTOR_FUNCTION_NAME: functionName,
+    AUTH_TYPES_ARRAY: authTypesArray,
+    AUTH_TYPES_FIRST: authTypes[0],
+    DATASET_KINDS_ARRAY: datasetKindsArray,
+    DATASET_KINDS_FIRST: datasetKinds[0],
+    LANGUAGES_ARRAY: languagesArray,
+    LANGUAGES_FIRST: languages[0],
+    PAGINATION_MODES_ARRAY: paginationModesArray,
+    DOCS_URL: docsUrl,
+    ENV_PREFIX: envPrefix,
+    DATE: dateStr,
+    PACKAGE_NAME: packageName,
+    SDK_VERSION: sdkVersion,
+    AUTH_TYPES_ARRAY_JSON: JSON.stringify(authTypes),
+    DATASET_KINDS_ARRAY_JSON: JSON.stringify(datasetKinds),
+    LANGUAGES_ARRAY_JSON: JSON.stringify(languages),
+    PAGINATION_MODES_ARRAY_JSON: JSON.stringify(paginationModes),
+  };
+
+  // Output directory: <base>/thrunt-connector-<id>
+  const outputDir = path.join(outputBaseDir, `thrunt-connector-${connectorId}`);
+
+  // Build file manifest by scanning template directory
+  const manifest = [];
+
+  function scanTemplateDir(dir, relPrefix) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanTemplateDir(fullPath, path.join(relPrefix, entry.name));
+      } else if (entry.name.endsWith('.tmpl')) {
+        const outputName = entry.name.replace(/\.tmpl$/, '');
+        const relOutputPath = path.join(relPrefix, outputName);
+        manifest.push({
+          path: path.join(outputDir, relOutputPath),
+          templateFile: fullPath,
+          relPath: relOutputPath,
+        });
+      }
+    }
+  }
+  scanTemplateDir(pluginTemplatesDir, '');
+
+  // --- Dry-run mode ---
+  if (dryRun) {
+    output({
+      dry_run: true,
+      connector_id: connectorId,
+      package_name: packageName,
+      output_dir: outputDir,
+      files: manifest.map(item => ({
+        path: item.relPath,
+        template: path.basename(item.templateFile),
+      })),
+    }, raw);
+    return;
+  }
+
+  // --- File writing ---
+  const generatedPaths = [];
+
+  for (const item of manifest) {
+    const tmplContent = fs.readFileSync(item.templateFile, 'utf8');
+    const rendered = renderTemplate(tmplContent, vars);
+    const dir = path.dirname(item.path);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(item.path, rendered);
+    generatedPaths.push(item.relPath);
+  }
+
+  output({
+    connector_id: connectorId,
+    package_name: packageName,
+    output_dir: outputDir,
+    files: generatedPaths,
+  }, raw);
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -3130,4 +3357,7 @@ module.exports = {
   cmdTenantDisable,
   cmdTenantEnable,
   cmdTenantDoctor,
+  cmdConnectorsList,
+  cmdConnectorsSearch,
+  cmdConnectorsInit,
 };
