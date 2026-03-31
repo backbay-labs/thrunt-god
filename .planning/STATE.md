@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: Connector Ecosystem
+milestone: v2.1
+milestone_name: Advanced Hunt Features
 status: in_progress
-stopped_at: Completed 45-01-PLAN.md
-last_updated: "2026-03-31T01:34:44Z"
-last_activity: 2026-03-31 -- Completed Phase 45 Plan 01 (Connector SDK Package Extraction)
+stopped_at: Completed 46-01-PLAN.md
+last_updated: "2026-03-31T01:49:22.000Z"
+last_activity: 2026-03-31 -- Completed Phase 46 Plan 01 (Plugin Manifest Validation & Loading)
 progress:
-  total_phases: 5
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 1
-  percent: 20
+  total_phases: 7
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 6
+  percent: 40
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-30)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v2.2 Phase 45 — @thrunt/connector-sdk Package (Complete)
+**Current focus:** v2.2 Phase 46 — Plugin Manifest & Discovery (Plan 01 complete)
 
 ## Current Milestone: v2.2 Connector Ecosystem
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-03-30)
 
 ## Current Position
 
-Phase: 45 (@thrunt/connector-sdk Package) -- Complete (1 of 1 plans done)
-Status: Phase 45 complete -- connector-sdk.cjs extracted with 60 SDK symbols, runtime.cjs slimmed to 1216 lines
-Last activity: 2026-03-31 -- Completed Phase 45 Plan 01 (Connector SDK Package Extraction)
+Phase: 46 (Plugin Manifest & Discovery) -- In Progress (1 of 2 plans done)
+Status: Plan 01 complete -- plugin-registry.cjs with validatePluginManifest, loadPluginManifest, loadPlugin
+Last activity: 2026-03-31 -- Completed Phase 46 Plan 01 (Plugin Manifest Validation & Loading)
 
-Progress: [██--------] 20% (1 of 5 phases started)
+Progress: [████------] 40% (2 of 5 phases started)
 
 ## Completed This Session
 
@@ -54,6 +54,7 @@ Progress: [██--------] 20% (1 of 5 phases started)
 | 43 | Dispatch Coordinator | 34 tests |
 | 44 | Cross-Tenant Aggregation & Heatmap | 78 tests |
 | 45 | @thrunt/connector-sdk Package | 0 tests (pure refactor) |
+| 46 | Plugin Manifest & Discovery (Plan 01) | 22 tests |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Progress: [██--------] 20% (1 of 5 phases started)
 - [Phase 45]: connector-sdk.cjs has 60 SDK exports (15 constants + 45 functions), runtime.cjs re-exports via ...sdk spread
 - [Phase 45]: Lazy require pattern for _getDefaultRegistry() avoids circular dependency between sdk and runtime at load time
 - [Phase 45]: sleep and decodeMaybeJson duplicated in runtime.cjs (internal SDK helpers needed by adapter code)
+- [Phase 46]: Minimal semver range parser handles ^/~/>=/>= <A patterns without adding semver dependency
+- [Phase 46]: Built-in connector ID collision produces warning not error, with allowOverride escape hatch
+- [Phase 46]: Cross-check validates adapter capabilities are superset of manifest declarations
 
 ### Research Specs Available
 
@@ -94,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-31T01:34:44Z
-Stopped at: Completed 45-01-PLAN.md
-Resume: Phase 45 complete. connector-sdk.cjs extracted. Ready for Phase 46 (Plugin Manifest & Discovery).
+Last session: 2026-03-31T01:49:22Z
+Stopped at: Completed 46-01-PLAN.md
+Resume: Phase 46 Plan 01 complete. plugin-registry.cjs with manifest validation and loading. Ready for Plan 02 (Plugin Discovery).

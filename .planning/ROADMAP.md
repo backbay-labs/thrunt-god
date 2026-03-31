@@ -73,7 +73,7 @@ Plans:
 **Goal**: Extract SDK types, validators, test helpers, and auth utilities from runtime.cjs into a zero-dependency standalone npm package
 **Depends on**: Phase 33 (SDK exports already identified and exported)
 **Requirements**: ECO-01
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [x] 45-01-PLAN.md — Extract 60 SDK symbols into connector-sdk.cjs, refactor runtime.cjs to re-export via spread, verify full test suite
 **Success Criteria** (what must be TRUE):
@@ -87,6 +87,10 @@ Plans:
 **Goal**: Define thrunt-connector.json manifest format and implement runtime plugin discovery with triple-precedence resolution
 **Depends on**: Phase 45 (@thrunt/connector-sdk package exists)
 **Requirements**: ECO-02
+**Plans:** 1/2 plans executed
+Plans:
+- [ ] 46-01-PLAN.md — Plugin manifest schema validation (validatePluginManifest, loadPluginManifest, loadPlugin) with 8 validation rules and cross-check logic
+- [ ] 46-02-PLAN.md — Discovery engine (discoverPlugins, createPluginRegistry, _scanNodeModules), PluginRegistry with provenance tracking, runtime.cjs re-exports
 **Success Criteria** (what must be TRUE):
   1. thrunt-connector.json schema defined with name, version, auth_types, query_surfaces, capabilities
   2. validatePluginManifest() enforces 8 validation rules
@@ -143,7 +147,7 @@ Plans:
 | 43. Dispatch Coordinator | 2/2 | Complete    | 2026-03-31 |
 | 44. Cross-Tenant Aggregation & Heatmap | 2/2 | Complete    | 2026-03-31 |
 | 45. @thrunt/connector-sdk Package | 1/1 | Complete    | 2026-03-31 |
-| 46. Plugin Manifest & Discovery | 0/0 | Not Started | |
+| 46. Plugin Manifest & Discovery | 1/2 | In Progress|  |
 | 47. Contract Test Suite & Plugin Lifecycle | 0/0 | Not Started | |
 | 48. Built-in Connector Migration | 0/0 | Not Started | |
 | 49. Reusable CI & Ecosystem Tooling | 0/0 | Not Started | |
