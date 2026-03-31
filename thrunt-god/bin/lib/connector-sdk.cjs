@@ -33,6 +33,17 @@ const DATASET_KINDS = [
   'other',
 ];
 
+const DATASET_DEFAULTS = {
+  identity:  { pagination: { limit: 200, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  endpoint:  { pagination: { limit: 1000, max_pages: 5 }, execution: { timeout_ms: 60_000 } },
+  alerts:    { pagination: { limit: 100, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  cloud:     { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 45_000 } },
+  email:     { pagination: { limit: 200, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  entities:  { pagination: { limit: 100, max_pages: 5 },  execution: { timeout_ms: 20_000 } },
+  events:    { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  other:     { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+};
+
 const PAGINATION_MODES = ['auto', 'none', 'cursor', 'offset', 'page', 'token'];
 const CONSISTENCY_MODES = ['best_effort', 'strict'];
 const RESULT_STATUSES = ['ok', 'partial', 'error', 'empty'];
@@ -168,7 +179,13 @@ function normalizeEvidence(input = {}) {
 }
 
 function createQuerySpec(input = {}, now = new Date()) {
-  const normalizedExecution = normalizeExecution(input.execution);
+  const datasetKind = input.dataset?.kind || 'events';
+  const dsDefaults = DATASET_DEFAULTS[datasetKind] || DATASET_DEFAULTS.events;
+
+  const paginationInput = { ...dsDefaults.pagination, ...(input.pagination || {}) };
+  const executionInput = { ...dsDefaults.execution, ...(input.execution || {}) };
+
+  const normalizedExecution = normalizeExecution(executionInput);
   if ((!input.execution || input.execution.profile === undefined) && input.connector?.profile) {
     normalizedExecution.profile = input.connector.profile;
   }
@@ -188,7 +205,7 @@ function createQuerySpec(input = {}, now = new Date()) {
     },
     time_window: normalizeTimeWindow(input.time_window, now),
     parameters: isPlainObject(input.parameters) ? cloneObject(input.parameters) : {},
-    pagination: normalizePagination(input.pagination),
+    pagination: normalizePagination(paginationInput),
     execution: normalizedExecution,
     query: normalizeQuery(input.query),
     evidence: normalizeEvidence(input.evidence),
@@ -2013,6 +2030,7 @@ module.exports = {
   QUERY_SPEC_VERSION,
   RESULT_ENVELOPE_VERSION,
   DATASET_KINDS,
+  DATASET_DEFAULTS,
   PAGINATION_MODES,
   CONSISTENCY_MODES,
   RESULT_STATUSES,
