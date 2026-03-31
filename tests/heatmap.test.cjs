@@ -17,7 +17,7 @@ const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
-const { createTempProject, cleanup } = require('./helpers.cjs');
+const { createTempProject, cleanup, runThruntTools } = require('./helpers.cjs');
 
 // ─── Time helpers ───────────────────────────────────────────────────────────
 
@@ -553,5 +553,97 @@ describe('writeHeatmapArtifacts', () => {
     const result = heatmap.writeHeatmapArtifacts(tmpDir, heatmapData);
     assert.ok(result.json_path.endsWith('HM-20260330143022-TESTTEST.json'));
     assert.ok(result.md_path.endsWith('HM-20260330143022-TESTTEST.md'));
+  });
+});
+
+// ─── 5. runtime.cjs re-exports ─────────────────────────────────────────────
+
+describe('runtime.cjs re-exports', () => {
+  const runtime = require('../thrunt-god/bin/lib/runtime.cjs');
+
+  test('aggregateResults is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.aggregateResults, 'function');
+  });
+
+  test('deduplicateEntities is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.deduplicateEntities, 'function');
+  });
+
+  test('tagEventsWithTenant is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.tagEventsWithTenant, 'function');
+  });
+
+  test('correlateFindings is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.correlateFindings, 'function');
+  });
+
+  test('buildHeatmapFromResults is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.buildHeatmapFromResults, 'function');
+  });
+
+  test('renderHeatmapTable is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.renderHeatmapTable, 'function');
+  });
+
+  test('writeHeatmapArtifacts is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.writeHeatmapArtifacts, 'function');
+  });
+
+  test('inferTechniques is re-exported as function', () => {
+    assert.strictEqual(typeof runtime.inferTechniques, 'function');
+  });
+});
+
+// ─── 6. commands.cjs exports ───────────────────────────────────────────────
+
+describe('commands.cjs exports', () => {
+  const commands = require('../thrunt-god/bin/lib/commands.cjs');
+
+  test('cmdRuntimeAggregate is exported as function', () => {
+    assert.strictEqual(typeof commands.cmdRuntimeAggregate, 'function');
+  });
+
+  test('cmdRuntimeHeatmap is exported as function', () => {
+    assert.strictEqual(typeof commands.cmdRuntimeHeatmap, 'function');
+  });
+});
+
+// ─── 7. CLI routing ────────────────────────────────────────────────────────
+
+describe('CLI routing', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('runtime aggregate subcommand is recognized (fails due to missing args, not unknown command)', () => {
+    const result = runThruntTools(['runtime', 'aggregate'], tmpDir);
+    // Should fail because no --tenants/--tags/--all, not because of unknown subcommand
+    assert.strictEqual(result.success, false);
+    assert.ok(
+      !result.error.includes('Unknown runtime subcommand'),
+      'Should not be "Unknown subcommand" error'
+    );
+  });
+
+  test('runtime heatmap subcommand is recognized (fails due to missing args, not unknown command)', () => {
+    const result = runThruntTools(['runtime', 'heatmap'], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(
+      !result.error.includes('Unknown runtime subcommand'),
+      'Should not be "Unknown subcommand" error'
+    );
+  });
+
+  test('unknown runtime subcommand shows aggregate and heatmap in available list', () => {
+    const result = runThruntTools(['runtime', 'nonexistent'], tmpDir);
+    assert.strictEqual(result.success, false);
+    assert.ok(result.error.includes('aggregate'), 'Error should mention aggregate');
+    assert.ok(result.error.includes('heatmap'), 'Error should mention heatmap');
   });
 });

@@ -689,6 +689,181 @@ async function cmdRuntimeDispatch(cwd, args, raw) {
   output(result, raw);
 }
 
+async function cmdRuntimeAggregate(cwd, args, raw) {
+  const dispatch = require('./dispatch.cjs');
+  const runtime = require('./runtime.cjs');
+  const aggregation = require('./aggregation.cjs');
+  const evidence = require('./evidence.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  // Parse dispatch-specific flags
+  const tenantIds = options.tenants ? String(options.tenants).split(',').map(s => s.trim()) : null;
+  const rawTags = options.tags;
+  const tags = rawTags && typeof rawTags === 'string'
+    ? rawTags.split(',').map(s => s.trim())
+    : Array.isArray(rawTags) && rawTags.length > 0 ? rawTags : null;
+  const all = options.all === true;
+  const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : undefined;
+
+  if (!tenantIds && !tags && !all) {
+    error('runtime aggregate requires --tenants <ids>, --tags <tags>, or --all');
+  }
+
+  const resolveOpts = { exclude_disabled: true };
+  if (tenantIds) resolveOpts.tenant_ids = tenantIds;
+  if (tags) resolveOpts.tags = tags;
+  if (options.connector) resolveOpts.connector_id = options.connector;
+
+  const targets = dispatch.resolveTenantTargets(config, resolveOpts);
+  if (targets.length === 0) {
+    error('No tenants matched the specified filters');
+  }
+
+  let baseSpec;
+  if (options.pack) {
+    const packLib = require('./pack.cjs');
+    const executionPlan = packLib.buildPackExecutionTargets(cwd, options.pack, options.parameters || {}, {
+      profile: 'default',
+      start: options.start || null,
+      end: options.end || null,
+    });
+    if (executionPlan.targets.length === 0) {
+      error('Pack produced no execution targets');
+    }
+    baseSpec = executionPlan.targets[0].query_spec;
+  } else {
+    if (!options.connector) error('runtime aggregate requires --connector <id> (or --pack)');
+    if (!options.query) error('runtime aggregate requires --query "<statement>" (or --pack)');
+    const parameters = getTypedRuntimeParameters(options);
+    baseSpec = runtime.createQuerySpec({
+      connector: { id: options.connector, profile: options.profile || 'default' },
+      query: { language: options.language || 'native', statement: options.query },
+      parameters,
+      time_window: options.start || options.end
+        ? { start: options.start, end: options.end }
+        : { lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : 60 },
+      execution: {
+        timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+        max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      },
+    });
+  }
+
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const result = await dispatch.dispatchMultiTenant(baseSpec, targets, registry, config, {
+    concurrency,
+    cwd,
+  });
+
+  const aggregated = aggregation.aggregateResults(result);
+  const correlations = aggregation.correlateFindings(result.tenant_results, {
+    cluster_window_minutes: config?.dispatch?.cluster_window_minutes,
+  });
+
+  let artifacts = null;
+  try {
+    artifacts = evidence.writeMultiTenantArtifacts(cwd, result, {
+      tenant_isolation_mode: config?.tenant_isolation_mode,
+    });
+  } catch (_) {
+    // evidence writing is best-effort
+  }
+
+  output({ ...result, aggregated, correlations, artifacts }, raw);
+}
+
+async function cmdRuntimeHeatmap(cwd, args, raw) {
+  const dispatch = require('./dispatch.cjs');
+  const runtime = require('./runtime.cjs');
+  const aggregation = require('./aggregation.cjs');
+  const evidence = require('./evidence.cjs');
+  const heatmapLib = require('./heatmap.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  // Parse dispatch-specific flags
+  const tenantIds = options.tenants ? String(options.tenants).split(',').map(s => s.trim()) : null;
+  const rawTags = options.tags;
+  const tags = rawTags && typeof rawTags === 'string'
+    ? rawTags.split(',').map(s => s.trim())
+    : Array.isArray(rawTags) && rawTags.length > 0 ? rawTags : null;
+  const all = options.all === true;
+  const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : undefined;
+
+  if (!tenantIds && !tags && !all) {
+    error('runtime heatmap requires --tenants <ids>, --tags <tags>, or --all');
+  }
+
+  const resolveOpts = { exclude_disabled: true };
+  if (tenantIds) resolveOpts.tenant_ids = tenantIds;
+  if (tags) resolveOpts.tags = tags;
+  if (options.connector) resolveOpts.connector_id = options.connector;
+
+  const targets = dispatch.resolveTenantTargets(config, resolveOpts);
+  if (targets.length === 0) {
+    error('No tenants matched the specified filters');
+  }
+
+  let baseSpec;
+  let packMeta = null;
+  if (options.pack) {
+    const packLib = require('./pack.cjs');
+    const executionPlan = packLib.buildPackExecutionTargets(cwd, options.pack, options.parameters || {}, {
+      profile: 'default',
+      start: options.start || null,
+      end: options.end || null,
+    });
+    if (executionPlan.targets.length === 0) {
+      error('Pack produced no execution targets');
+    }
+    baseSpec = executionPlan.targets[0].query_spec;
+    // Extract pack metadata for technique inference
+    try {
+      packMeta = packLib.loadPackManifest(cwd, options.pack);
+    } catch (_) {
+      packMeta = null;
+    }
+  } else {
+    if (!options.connector) error('runtime heatmap requires --connector <id> (or --pack)');
+    if (!options.query) error('runtime heatmap requires --query "<statement>" (or --pack)');
+    const parameters = getTypedRuntimeParameters(options);
+    baseSpec = runtime.createQuerySpec({
+      connector: { id: options.connector, profile: options.profile || 'default' },
+      query: { language: options.language || 'native', statement: options.query },
+      parameters,
+      time_window: options.start || options.end
+        ? { start: options.start, end: options.end }
+        : { lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : 60 },
+      execution: {
+        timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+        max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      },
+    });
+  }
+
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const result = await dispatch.dispatchMultiTenant(baseSpec, targets, registry, config, {
+    concurrency,
+    cwd,
+  });
+
+  const aggregated = aggregation.aggregateResults(result);
+  const correlations = aggregation.correlateFindings(result.tenant_results, {
+    cluster_window_minutes: config?.dispatch?.cluster_window_minutes,
+  });
+
+  // Infer techniques and build heatmap
+  const techniques = heatmapLib.inferTechniques({
+    pack_attack: packMeta?.attack,
+    tenant_results: result.tenant_results,
+  });
+  const heatmapData = heatmapLib.buildHeatmapFromResults(result, techniques);
+  const heatmapArtifacts = heatmapLib.writeHeatmapArtifacts(cwd, heatmapData);
+
+  output({ ...result, aggregated, correlations, heatmap: heatmapData, heatmap_artifacts: heatmapArtifacts }, raw);
+}
+
 async function cmdPackList(cwd, raw) {
   const pack = require('./pack.cjs');
   const registry = pack.loadPackRegistry(cwd);
@@ -2838,6 +3013,8 @@ module.exports = {
   cmdRuntimeSmoke,
   cmdRuntimeExecute,
   cmdRuntimeDispatch,
+  cmdRuntimeAggregate,
+  cmdRuntimeHeatmap,
   cmdRuntimeReplay,
   cmdReplayList,
   cmdReplayDiff,

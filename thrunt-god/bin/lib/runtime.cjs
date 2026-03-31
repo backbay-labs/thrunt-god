@@ -3186,4 +3186,16 @@ module.exports = {
   resolveTenantTargets: require('./dispatch.cjs').resolveTenantTargets,
   cloneTenantSpec: require('./dispatch.cjs').cloneTenantSpec,
   dispatchMultiTenant: require('./dispatch.cjs').dispatchMultiTenant,
+
+  // --- Aggregation (Phase 44) ---
+  tagEventsWithTenant: require('./aggregation.cjs').tagEventsWithTenant,
+  deduplicateEntities: require('./aggregation.cjs').deduplicateEntities,
+  correlateFindings: require('./aggregation.cjs').correlateFindings,
+  aggregateResults: require('./aggregation.cjs').aggregateResults,
+
+  // --- Heatmap (Phase 44) ---
+  buildHeatmapFromResults: require('./heatmap.cjs').buildHeatmapFromResults,
+  writeHeatmapArtifacts: require('./heatmap.cjs').writeHeatmapArtifacts,
+  renderHeatmapTable: require('./heatmap.cjs').renderHeatmapTable,
+  inferTechniques: require('./heatmap.cjs').inferTechniques,
 };
