@@ -1,25 +1,64 @@
-/**
- * Verifier and Gates tests
- *
- * Tests for the Verifier namespace and individual gate implementations.
- */
-
-import { describe, expect, test, mock, beforeEach } from "bun:test"
-import { parseDiagnostics as parsePytestDiagnostics } from "../src/verifier/gates/pytest"
-import { parseDiagnostics as parseMypyDiagnostics } from "../src/verifier/gates/mypy"
-import { parseDiagnostics as parseRuffDiagnostics } from "../src/verifier/gates/ruff"
+import { afterEach, describe, expect, test } from "bun:test"
+import * as fs from "node:fs/promises"
+import * as os from "node:os"
+import * as path from "node:path"
 import type { GateResult, WorkcellInfo } from "../src/types"
-
-// Mock auditEvidence for gate tests
-const mockAuditEvidence = mock(async () => [] as any[])
-mock.module("../src/thrunt-bridge/evidence", () => ({
-  auditEvidence: mockAuditEvidence,
-}))
-
-// Import after mocking
 const { Verifier } = await import("../src/verifier")
 const { EvidenceIntegrityGate } = await import("../src/verifier/gates/evidence-integrity")
 const { ReceiptCompletenessGate } = await import("../src/verifier/gates/receipt-completeness")
+
+const THRUNT_TOOLS_ENV = "THRUNT_TOOLS_PATH"
+
+type ThruntScriptResponse = {
+  stdout?: unknown
+  stderr?: string
+  exitCode?: number
+}
+
+let tempDirs: string[] = []
+
+afterEach(async () => {
+  delete process.env[THRUNT_TOOLS_ENV]
+  for (const dir of tempDirs) {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {})
+  }
+  tempDirs = []
+})
+
+async function installThruntTools(
+  responses: Record<string, ThruntScriptResponse>,
+): Promise<void> {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-verifier-"))
+  tempDirs.push(tempDir)
+
+  const scriptPath = path.join(tempDir, "thrunt-tools.cjs")
+  const script = `#!/usr/bin/env node
+const fs = require('fs');
+const responses = ${JSON.stringify(responses)};
+const args = process.argv.slice(2);
+const key = args.join(' ');
+const response = responses[key];
+
+if (!response) {
+  fs.writeSync(2, 'Unknown command: ' + key);
+  process.exit(1);
+}
+
+if (response.stderr) {
+  fs.writeSync(2, response.stderr);
+}
+
+if (response.stdout !== undefined) {
+  fs.writeSync(1, JSON.stringify(response.stdout));
+}
+
+process.exit(response.exitCode ?? 0);
+`
+
+  await fs.writeFile(scriptPath, script, { mode: 0o755 })
+  await fs.chmod(scriptPath, 0o755)
+  process.env[THRUNT_TOOLS_ENV] = scriptPath
+}
 
 // Helper to create minimal workcell info
 function makeWorkcell(overrides: Partial<WorkcellInfo> = {}): WorkcellInfo {
@@ -36,161 +75,14 @@ function makeWorkcell(overrides: Partial<WorkcellInfo> = {}): WorkcellInfo {
   }
 }
 
-describe("Gate Diagnostic Parsers", () => {
-  describe("pytest parseDiagnostics", () => {
-    test("parses FAILED lines", () => {
-      const output = `FAILED tests/test_foo.py::test_bar - AssertionError
-FAILED tests/test_baz.py::test_qux - ValueError: invalid`
+describe("Built-in THRUNT gates", () => {
+  test("exposes only the evidence-focused built-in gates", () => {
+    const gates = Verifier.getAvailableGates()
 
-      const diagnostics = parsePytestDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(2)
-      expect(diagnostics[0].file).toBe("tests/test_foo.py")
-      expect(diagnostics[0].severity).toBe("error")
-      expect(diagnostics[0].message).toBe("AssertionError")
-      expect(diagnostics[0].source).toBe("pytest")
-
-      expect(diagnostics[1].file).toBe("tests/test_baz.py")
-      expect(diagnostics[1].message).toBe("ValueError: invalid")
-    })
-
-    test("parses ERROR lines", () => {
-      const output = `ERROR tests/test_foo.py::test_bar - ModuleNotFoundError
-ERROR tests/conftest.py - SyntaxError`
-
-      const diagnostics = parsePytestDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(2)
-      expect(diagnostics[0].file).toBe("tests/test_foo.py")
-      expect(diagnostics[0].severity).toBe("error")
-      expect(diagnostics[0].message).toBe("ModuleNotFoundError")
-
-      expect(diagnostics[1].file).toBe("tests/conftest.py")
-      expect(diagnostics[1].message).toBe("SyntaxError")
-    })
-
-    test("parses file:line: error format", () => {
-      const output = `tests/test_foo.py:25: AssertionError: expected True`
-
-      const diagnostics = parsePytestDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(1)
-      expect(diagnostics[0].file).toBe("tests/test_foo.py")
-      expect(diagnostics[0].line).toBe(25)
-      expect(diagnostics[0].severity).toBe("error")
-    })
-
-    test("returns empty array for clean output", () => {
-      const output = `
-============================= test session starts ==============================
-collected 5 items
-tests/test_foo.py .....
-============================== 5 passed in 0.05s ===============================`
-
-      const diagnostics = parsePytestDiagnostics(output)
-      expect(diagnostics).toHaveLength(0)
-    })
-  })
-
-  describe("mypy parseDiagnostics", () => {
-    test("parses error with column", () => {
-      const output = `src/foo.py:10:5: error: Incompatible types in assignment [assignment]
-src/bar.py:20:10: error: Missing return statement [return]`
-
-      const diagnostics = parseMypyDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(2)
-      expect(diagnostics[0].file).toBe("src/foo.py")
-      expect(diagnostics[0].line).toBe(10)
-      expect(diagnostics[0].column).toBe(5)
-      expect(diagnostics[0].severity).toBe("error")
-      expect(diagnostics[0].message).toBe("Incompatible types in assignment")
-      expect(diagnostics[0].code).toBe("assignment")
-      expect(diagnostics[0].source).toBe("mypy")
-    })
-
-    test("parses warnings and notes", () => {
-      const output = `src/foo.py:5:1: warning: Unused variable [var-annotated]
-src/foo.py:10:1: note: See https://docs.python.org`
-
-      const diagnostics = parseMypyDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(2)
-      expect(diagnostics[0].severity).toBe("warning")
-      expect(diagnostics[1].severity).toBe("info")
-    })
-
-    test("parses simple format without column", () => {
-      const output = `src/foo.py:10: error: Something wrong [error-code]`
-
-      const diagnostics = parseMypyDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(1)
-      expect(diagnostics[0].file).toBe("src/foo.py")
-      expect(diagnostics[0].line).toBe(10)
-      expect(diagnostics[0].column).toBeUndefined()
-    })
-
-    test("returns empty array for success output", () => {
-      const output = `Success: no issues found in 10 source files`
-
-      const diagnostics = parseMypyDiagnostics(output)
-      expect(diagnostics).toHaveLength(0)
-    })
-  })
-
-  describe("ruff parseDiagnostics", () => {
-    test("parses JSON format", () => {
-      const output = JSON.stringify([
-        {
-          code: "E501",
-          message: "Line too long",
-          filename: "src/foo.py",
-          location: { row: 10, column: 80 },
-          end_location: { row: 10, column: 150 },
-        },
-        {
-          code: "F401",
-          message: "Unused import",
-          filename: "src/bar.py",
-          location: { row: 1, column: 1 },
-          fix: { applicability: "safe", message: "Remove import", edits: [] },
-        },
-      ])
-
-      const diagnostics = parseRuffDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(2)
-      expect(diagnostics[0].file).toBe("src/foo.py")
-      expect(diagnostics[0].line).toBe(10)
-      expect(diagnostics[0].column).toBe(80)
-      expect(diagnostics[0].severity).toBe("error") // no fix
-      expect(diagnostics[0].message).toBe("Line too long")
-      expect(diagnostics[0].code).toBe("E501")
-      expect(diagnostics[0].source).toBe("ruff")
-
-      expect(diagnostics[1].severity).toBe("warning") // has fix
-    })
-
-    test("falls back to text format on invalid JSON", () => {
-      const output = `src/foo.py:10:80: E501 Line too long
-src/bar.py:1:1: F401 Unused import`
-
-      const diagnostics = parseRuffDiagnostics(output)
-
-      expect(diagnostics).toHaveLength(2)
-      expect(diagnostics[0].file).toBe("src/foo.py")
-      expect(diagnostics[0].line).toBe(10)
-      expect(diagnostics[0].column).toBe(80)
-      expect(diagnostics[0].code).toBe("E501")
-      expect(diagnostics[0].message).toBe("Line too long")
-    })
-
-    test("returns empty array for empty JSON array", () => {
-      const output = "[]"
-      const diagnostics = parseRuffDiagnostics(output)
-      expect(diagnostics).toHaveLength(0)
-    })
+    expect(gates.map((gate) => gate.info.id)).toEqual([
+      "evidence-integrity",
+      "receipt-completeness",
+    ])
   })
 })
 
@@ -589,10 +481,6 @@ describe("Verifier namespace", () => {
 // =============================================================================
 
 describe("EvidenceIntegrityGate", () => {
-  beforeEach(() => {
-    mockAuditEvidence.mockClear()
-  })
-
   test("info has id 'evidence-integrity' and critical false", () => {
     expect(EvidenceIntegrityGate.info.id).toBe("evidence-integrity")
     expect(EvidenceIntegrityGate.info.critical).toBe(false)
@@ -605,23 +493,27 @@ describe("EvidenceIntegrityGate", () => {
   })
 
   test("run returns passed=true when all manifests have valid integrity", async () => {
-    mockAuditEvidence.mockResolvedValueOnce([
-      {
-        phase: "01",
-        phase_dir: "/tmp",
-        file: "manifest.json",
-        file_path: "/tmp/manifest.json",
-        type: "manifest",
-        status: "ok",
-        items: [],
-        integrity: {
-          valid: true,
-          manifest_hash_valid: true,
-          artifacts_valid: true,
-          artifact_errors: [],
-        },
+    await installThruntTools({
+      "audit-evidence --raw": {
+        stdout: [
+          {
+            phase: "01",
+            phase_dir: "/tmp",
+            file: "manifest.json",
+            file_path: "/tmp/manifest.json",
+            type: "manifest",
+            status: "ok",
+            items: [],
+            integrity: {
+              valid: true,
+              manifest_hash_valid: true,
+              artifacts_valid: true,
+              artifact_errors: [],
+            },
+          },
+        ],
       },
-    ])
+    })
 
     const workcell = makeWorkcell()
     const result = await EvidenceIntegrityGate.run(
@@ -635,23 +527,27 @@ describe("EvidenceIntegrityGate", () => {
   })
 
   test("run returns passed=false with diagnostics when integrity.valid is false", async () => {
-    mockAuditEvidence.mockResolvedValueOnce([
-      {
-        phase: "01",
-        phase_dir: "/tmp",
-        file: "manifest.json",
-        file_path: "/tmp/manifest.json",
-        type: "manifest",
-        status: "invalid",
-        items: [],
-        integrity: {
-          valid: false,
-          manifest_hash_valid: false,
-          artifacts_valid: false,
-          artifact_errors: ["hash mismatch: evidence-01.json"],
-        },
+    await installThruntTools({
+      "audit-evidence --raw": {
+        stdout: [
+          {
+            phase: "01",
+            phase_dir: "/tmp",
+            file: "manifest.json",
+            file_path: "/tmp/manifest.json",
+            type: "manifest",
+            status: "invalid",
+            items: [],
+            integrity: {
+              valid: false,
+              manifest_hash_valid: false,
+              artifacts_valid: false,
+              artifact_errors: ["hash mismatch: evidence-01.json"],
+            },
+          },
+        ],
       },
-    ])
+    })
 
     const workcell = makeWorkcell()
     const result = await EvidenceIntegrityGate.run(
@@ -665,8 +561,10 @@ describe("EvidenceIntegrityGate", () => {
     expect(result.diagnostics![0].severity).toBe("warning")
   })
 
-  test("run returns passed=true (fail-open) when auditEvidence throws", async () => {
-    mockAuditEvidence.mockRejectedValueOnce(new Error("subprocess crash"))
+  test("run returns passed=true when audit evidence subprocess fails", async () => {
+    await installThruntTools({
+      "audit-evidence --raw": { stderr: "subprocess crash", exitCode: 1 },
+    })
 
     const workcell = makeWorkcell()
     const result = await EvidenceIntegrityGate.run(
@@ -675,40 +573,40 @@ describe("EvidenceIntegrityGate", () => {
     )
 
     expect(result.passed).toBe(true)
-    expect(result.output).toContain("Error")
+    expect(result.output).toContain("Checked 0 manifests")
   })
 })
 
 describe("ReceiptCompletenessGate", () => {
-  beforeEach(() => {
-    mockAuditEvidence.mockClear()
-  })
-
   test("info has id 'receipt-completeness' and critical false", () => {
     expect(ReceiptCompletenessGate.info.id).toBe("receipt-completeness")
     expect(ReceiptCompletenessGate.info.critical).toBe(false)
   })
 
   test("run returns passed=true when all manifest items have receipt linkage", async () => {
-    mockAuditEvidence.mockResolvedValueOnce([
-      {
-        phase: "01",
-        phase_dir: "/tmp",
-        file: "manifest.json",
-        file_path: "/tmp/manifest.json",
-        type: "manifest",
-        status: "ok",
-        items: [
-          { id: "item-1", text: "evidence item", status: "linked" },
+    await installThruntTools({
+      "audit-evidence --raw": {
+        stdout: [
+          {
+            phase: "01",
+            phase_dir: "/tmp",
+            file: "manifest.json",
+            file_path: "/tmp/manifest.json",
+            type: "manifest",
+            status: "ok",
+            items: [
+              { id: "item-1", text: "evidence item", status: "linked" },
+            ],
+            integrity: {
+              valid: true,
+              manifest_hash_valid: true,
+              artifacts_valid: true,
+              artifact_errors: [],
+            },
+          },
         ],
-        integrity: {
-          valid: true,
-          manifest_hash_valid: true,
-          artifacts_valid: true,
-          artifact_errors: [],
-        },
       },
-    ])
+    })
 
     const workcell = makeWorkcell()
     const result = await ReceiptCompletenessGate.run(
@@ -722,26 +620,30 @@ describe("ReceiptCompletenessGate", () => {
   })
 
   test("run returns passed=false with diagnostics when items lack receipt linkage", async () => {
-    mockAuditEvidence.mockResolvedValueOnce([
-      {
-        phase: "01",
-        phase_dir: "/tmp",
-        file: "manifest.json",
-        file_path: "/tmp/manifest.json",
-        type: "manifest",
-        status: "gaps",
-        items: [
-          { id: "item-1", text: "evidence item", status: "missing" },
-          { id: "item-2", text: "another item", status: "gap" },
+    await installThruntTools({
+      "audit-evidence --raw": {
+        stdout: [
+          {
+            phase: "01",
+            phase_dir: "/tmp",
+            file: "manifest.json",
+            file_path: "/tmp/manifest.json",
+            type: "manifest",
+            status: "gaps",
+            items: [
+              { id: "item-1", text: "evidence item", status: "missing" },
+              { id: "item-2", text: "another item", status: "gap" },
+            ],
+            integrity: {
+              valid: true,
+              manifest_hash_valid: true,
+              artifacts_valid: false,
+              artifact_errors: [],
+            },
+          },
         ],
-        integrity: {
-          valid: true,
-          manifest_hash_valid: true,
-          artifacts_valid: false,
-          artifact_errors: [],
-        },
       },
-    ])
+    })
 
     const workcell = makeWorkcell()
     const result = await ReceiptCompletenessGate.run(
@@ -754,8 +656,10 @@ describe("ReceiptCompletenessGate", () => {
     expect(result.diagnostics!.length).toBeGreaterThan(0)
   })
 
-  test("run returns passed=true (fail-open) when auditEvidence throws", async () => {
-    mockAuditEvidence.mockRejectedValueOnce(new Error("subprocess crash"))
+  test("run returns passed=true when audit evidence subprocess fails", async () => {
+    await installThruntTools({
+      "audit-evidence --raw": { stderr: "subprocess crash", exitCode: 1 },
+    })
 
     const workcell = makeWorkcell()
     const result = await ReceiptCompletenessGate.run(
@@ -764,6 +668,6 @@ describe("ReceiptCompletenessGate", () => {
     )
 
     expect(result.passed).toBe(true)
-    expect(result.output).toContain("Error")
+    expect(result.output).toContain("Checked 0 manifests")
   })
 })

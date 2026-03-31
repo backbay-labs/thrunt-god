@@ -181,14 +181,6 @@ The task runs in an isolated workcell with quality gates.`,
       // Release workcell
       await Workcell.release(workcell.id, { reset: true })
 
-      // Clean up tmpdir workcells
-      if (workcell.directory.includes(".thrunt-god/tmp/")) {
-        const { rm } = await import("fs/promises")
-        await rm(workcell.directory, { recursive: true, force: true }).catch(
-          () => {}
-        )
-      }
-
       // Complete telemetry
       Telemetry.updateStatus(
         rollout.id,

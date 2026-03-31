@@ -322,6 +322,10 @@ function createPluginRegistry(options = {}) {
   const pluginInfoMap = new Map();
   const overriddenSet = new Set();
 
+  function canOverrideBuiltIn(id, source) {
+    return BUILT_IN_CONNECTOR_IDS.includes(id) && source === 'config-override';
+  }
+
   for (const adapter of builtInAdapters) {
     if (!adapter || !adapter.capabilities) continue;
     const id = adapter.capabilities.id;
@@ -344,6 +348,9 @@ function createPluginRegistry(options = {}) {
     const id = adapter.capabilities.id;
 
     if (pluginInfoMap.has(id) && pluginInfoMap.get(id).source === 'built-in') {
+      if (!canOverrideBuiltIn(id, source)) {
+        continue;
+      }
       overriddenSet.add(id);
     }
 
@@ -378,6 +385,9 @@ function createPluginRegistry(options = {}) {
       if (!adapter || !adapter.capabilities) return;
       const id = adapter.capabilities.id;
       if (pluginInfoMap.has(id) && pluginInfoMap.get(id).source === 'built-in') {
+        if (!canOverrideBuiltIn(id, pluginInfo ? pluginInfo.source : null)) {
+          return;
+        }
         overriddenSet.add(id);
       }
       adapterMap.set(id, adapter);
@@ -403,8 +413,30 @@ function createPluginRegistry(options = {}) {
 /** @type {Map<string, {mtime: number, results: Array}>} */
 const _scanCache = new Map();
 
-function _scanNodeModules(cwd) {
+function isLooseTopLevelDiscoveryEnabled(config = {}) {
+  if (process.env.THRUNT_ENABLE_TOPLEVEL_CONNECTOR_DISCOVERY === '1') {
+    return true;
+  }
+
+  if (config && typeof config === 'object') {
+    if (config.allow_top_level_connector_discovery === true) {
+      return true;
+    }
+    if (config.plugins && typeof config.plugins === 'object' && config.plugins.allow_top_level_connector_discovery === true) {
+      return true;
+    }
+    if (config.connectors && typeof config.connectors === 'object' && config.connectors.allow_top_level_connector_discovery === true) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function _scanNodeModules(cwd, options = {}) {
+  const allowTopLevelConnectorDiscovery = Boolean(options.allowTopLevelConnectorDiscovery);
   const nmDir = path.join(cwd, 'node_modules');
+  const cacheKey = `${cwd}:${allowTopLevelConnectorDiscovery ? 'top-level' : 'namespaced-only'}`;
 
   let lockMtime = 0;
   const lockPath = path.join(cwd, 'package-lock.json');
@@ -413,7 +445,7 @@ function _scanNodeModules(cwd) {
   } catch {
   }
 
-  const cached = _scanCache.get(cwd);
+  const cached = _scanCache.get(cacheKey);
   if (cached && cached.mtime === lockMtime) {
     return cached.results;
   }
@@ -421,7 +453,7 @@ function _scanNodeModules(cwd) {
   // Scan node_modules
   if (!fs.existsSync(nmDir)) {
     const results = [];
-    _scanCache.set(cwd, { mtime: lockMtime, results });
+    _scanCache.set(cacheKey, { mtime: lockMtime, results });
     return results;
   }
 
@@ -430,7 +462,7 @@ function _scanNodeModules(cwd) {
   try {
     entries = fs.readdirSync(nmDir);
   } catch {
-    _scanCache.set(cwd, { mtime: lockMtime, results });
+    _scanCache.set(cacheKey, { mtime: lockMtime, results });
     return results;
   }
 
@@ -468,7 +500,11 @@ function _scanNodeModules(cwd) {
       continue;
     }
 
-    // Check any other top-level package with thrunt-connector.json
+    if (!allowTopLevelConnectorDiscovery) {
+      continue;
+    }
+
+    // Check any other top-level package with thrunt-connector.json only when explicitly enabled.
     try {
       const stat = fs.statSync(entryPath);
       if (stat.isDirectory()) {
@@ -482,7 +518,7 @@ function _scanNodeModules(cwd) {
     }
   }
 
-  _scanCache.set(cwd, { mtime: lockMtime, results });
+  _scanCache.set(cacheKey, { mtime: lockMtime, results });
   return results;
 }
 
@@ -506,7 +542,9 @@ function discoverPlugins(options = {}) {
   }
 
   // 2. node_modules scan
-  const discovered = _scanNodeModules(cwd);
+  const discovered = _scanNodeModules(cwd, {
+    allowTopLevelConnectorDiscovery: isLooseTopLevelDiscoveryEnabled(config),
+  });
   for (const { packageRoot } of discovered) {
     const result = loadPlugin(packageRoot);
     if (result.valid) {

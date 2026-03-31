@@ -32,12 +32,10 @@ describe("Health", () => {
       expect(Array.isArray(summary.mcp)).toBe(true)
     })
 
-    test("security category includes hushd and hush-cli", async () => {
+    test("security category is empty when no security integrations are registered", async () => {
       const summary = await Health.checkAll({ timeout: 1000 })
 
-      const ids = summary.security.map((h) => h.id)
-      expect(ids).toContain("hushd")
-      expect(ids).toContain("hush-cli")
+      expect(summary.security).toEqual([])
     })
 
     test("ai category includes claude, codex, opencode", async () => {
@@ -133,9 +131,10 @@ describe("Health", () => {
       await Health.checkAll({ timeout: 1000 })
       const summary = Health.getSummary()
 
-      expect(summary.security.length).toBeGreaterThan(0)
+      expect(summary.security).toEqual([])
       expect(summary.ai.length).toBeGreaterThan(0)
       expect(summary.infra.length).toBeGreaterThan(0)
+      expect(summary.mcp).toHaveLength(1)
     })
   })
 
@@ -183,27 +182,23 @@ describe("Health", () => {
   describe("clearCache", () => {
     test("clears all cached results", async () => {
       await Health.checkAll({ timeout: 1000 })
-      expect(Health.getSummary()["security"].length).toBeGreaterThan(0)
+      expect(Health.getSummary()["ai"].length).toBeGreaterThan(0)
+      expect(Health.getSummary()["infra"].length).toBeGreaterThan(0)
 
       Health.clearCache()
 
       expect(Health.getSummary()["security"]).toEqual([])
+      expect(Health.getSummary()["ai"]).toEqual([])
+      expect(Health.getSummary()["infra"]).toEqual([])
       expect(Health.isCacheStale()).toBe(true)
     })
   })
 
   describe("getIntegrationIds", () => {
-    test("returns all integration IDs", () => {
+    test("returns the current registered integration IDs", () => {
       const ids = Health.getIntegrationIds()
 
-      expect(ids).toContain("hushd")
-      expect(ids).toContain("hush-cli")
-      expect(ids).toContain("claude")
-      expect(ids).toContain("codex")
-      expect(ids).toContain("opencode")
-      expect(ids).toContain("git")
-      expect(ids).toContain("python")
-      expect(ids).toContain("bun")
+      expect(ids).toEqual(["claude", "codex", "opencode", "git", "python", "bun"])
     })
   })
 

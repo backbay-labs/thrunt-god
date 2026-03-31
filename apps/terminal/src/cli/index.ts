@@ -8,6 +8,7 @@ import { Health, type HealthStatus } from "../health"
 import { Config } from "../config"
 import { executeTool } from "../tools"
 import type { ToolContext } from "../tools"
+import { appendAgentBridgeEvent } from "../tui/agent-bridge"
 
 interface CLIOptions {
   help?: boolean
@@ -82,6 +83,7 @@ ${TUI.info("Commands:")}
   dispatch <prompt>       Submit task for execution by an AI agent
   gate [gates...]         Run quality gates on current directory
   status                  Show active rollouts and kernel status
+  ui-post <kind> <title>  Post an agent update into the TUI watch surface
   init                    Initialize thrunt-god in current directory
   doctor                  Inspect local environment and services
   version                 Show version information
@@ -104,6 +106,7 @@ ${TUI.info("Examples:")}
   thrunt-god dispatch "Fix the bug in auth.ts"
   thrunt-god dispatch -t claude "Add unit tests for utils.ts"
   thrunt-god gate evidence-integrity receipt-completeness
+  thrunt-god ui-post status "Running Elastic hunt" "Collecting suspicious shell launches"
   thrunt-god doctor
 `
 }
@@ -408,6 +411,41 @@ async function cmdDoctor(options: CLIOptions): Promise<void> {
   }
 }
 
+async function cmdUiPost(args: string[], options: CLIOptions): Promise<void> {
+  const [kind, title, ...bodyParts] = args
+  if (!kind || !title) {
+    console.error(TUI.error("Missing arguments. Usage: thrunt-god ui-post <kind> <title> [body]"))
+    process.exit(1)
+  }
+
+  const allowedKinds = new Set(["status", "note", "search", "copy", "warning", "error"])
+  if (!allowedKinds.has(kind)) {
+    console.error(TUI.error(`Unsupported ui event kind: ${kind}`))
+    process.exit(1)
+  }
+
+  const cwd = options.cwd ?? process.cwd()
+  const body = bodyParts.join(" ").trim()
+  const event = await appendAgentBridgeEvent(cwd, {
+    kind: kind as "status" | "note" | "search" | "copy" | "warning" | "error",
+    title,
+    body: body.length > 0 ? body : undefined,
+    actor: options.toolchain ?? process.env.THRUNT_AGENT_NAME ?? "agent",
+  })
+
+  if (options.json) {
+    console.log(JSON.stringify(event, null, 2))
+    return
+  }
+
+  console.log(TUI.success(`Posted ${event.kind} event to the TUI bridge`))
+  console.log(TUI.formatTable([
+    ["Kind", event.kind],
+    ["Title", event.title],
+    ["Actor", event.actor ?? "agent"],
+  ]))
+}
+
 async function cmdVersion(): Promise<void> {
   console.log(`thrunt-god ${VERSION}`)
 }
@@ -453,6 +491,9 @@ async function main(): Promise<void> {
         break
       case "status":
         await cmdStatus(options)
+        break
+      case "ui-post":
+        await cmdUiPost(args, options)
         break
       case "init":
         await cmdInit(options)

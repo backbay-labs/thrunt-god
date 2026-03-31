@@ -1,29 +1,72 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test"
-import type { ThruntCommandResult } from "../types"
-
-// Mock the executor module before importing domain modules
-const mockRunThruntCommand = mock((): Promise<ThruntCommandResult<unknown>> =>
-  Promise.resolve({ ok: false, exitCode: 1 }),
-)
-
-mock.module("../executor", () => ({
-  runThruntCommand: mockRunThruntCommand,
-}))
-
-// Import domain modules after mocking
-import { auditEvidence } from "../evidence"
-import { listDetections, detectionStatus } from "../detection"
-import { listPacks, showPack } from "../pack"
+import { afterEach, describe, expect, test } from "bun:test"
+import * as fs from "node:fs/promises"
+import * as os from "node:os"
+import * as path from "node:path"
 import { listConnectors, runtimeDoctor } from "../connector"
+import { listDetections, detectionStatus } from "../detection"
+import { auditEvidence } from "../evidence"
 import { analyzeHuntmap, getPhaseDetail } from "../huntmap"
+import { listPacks, showPack } from "../pack"
 
-beforeEach(() => {
-  mockRunThruntCommand.mockClear()
+type MockCommandResponse = {
+  stdout?: unknown
+  stderr?: string
+  exitCode?: number
+}
+
+let tempDirs: string[] = []
+
+afterEach(async () => {
+  for (const dir of tempDirs) {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {})
+  }
+  tempDirs = []
 })
 
-// =============================================================================
-// EVIDENCE
-// =============================================================================
+async function installMockThruntTools(
+  responses: Record<string, MockCommandResponse>,
+): Promise<string> {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-domain-"))
+  tempDirs.push(tempDir)
+
+  const projectRoot = path.join(tempDir, "project")
+  const toolsDir = path.join(projectRoot, "thrunt-god", "bin")
+  const scriptPath = path.join(toolsDir, "thrunt-tools.cjs")
+  const script = `#!/usr/bin/env node
+const fs = require('fs');
+const responses = ${JSON.stringify(responses)};
+const args = process.argv.slice(2);
+const key = args.join(' ');
+
+const response = responses[key];
+if (!response) {
+  fs.writeSync(2, 'Unknown command: ' + key);
+  process.exit(1);
+}
+
+if (response.stderr) {
+  fs.writeSync(2, response.stderr);
+}
+
+if (response.stdout !== undefined) {
+  fs.writeSync(1, JSON.stringify(response.stdout));
+}
+
+process.exit(response.exitCode ?? 0);
+`
+
+  await fs.mkdir(toolsDir, { recursive: true })
+  await fs.writeFile(scriptPath, script, { mode: 0o755 })
+  await fs.chmod(scriptPath, 0o755)
+  return projectRoot
+}
+
+async function installSingleResponse(
+  args: string[],
+  response: MockCommandResponse,
+): Promise<string> {
+  return installMockThruntTools({ [args.join(" ")]: response })
+}
 
 describe("auditEvidence", () => {
   test("calls runThruntCommand with ['audit-evidence', '--raw'] and returns EvidenceAuditResult[]", async () => {
@@ -39,10 +82,13 @@ describe("auditEvidence", () => {
       },
     ]
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["audit-evidence", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await auditEvidence()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["audit-evidence", "--raw"], undefined)
+    const result = await auditEvidence({ cwd: projectRoot })
+
     expect(result).toHaveLength(1)
     expect(result[0].phase).toBe("23")
     expect(result[0].type).toBe("evidence_review")
@@ -50,16 +96,15 @@ describe("auditEvidence", () => {
   })
 
   test("returns empty array when subprocess fails (ok: false)", async () => {
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: false, error: "not found", exitCode: 1 })
+    const projectRoot = await installSingleResponse(
+      ["audit-evidence", "--raw"],
+      { stderr: "not found", exitCode: 1 },
+    )
 
-    const result = await auditEvidence()
+    const result = await auditEvidence({ cwd: projectRoot })
     expect(result).toEqual([])
   })
 })
-
-// =============================================================================
-// DETECTION
-// =============================================================================
 
 describe("listDetections", () => {
   test("calls runThruntCommand with ['detection', 'list', '--raw'] and returns DetectionCandidate[]", async () => {
@@ -92,10 +137,13 @@ describe("listDetections", () => {
       },
     ]
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["detection", "list", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await listDetections()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["detection", "list", "--raw"], undefined)
+    const result = await listDetections({ cwd: projectRoot })
+
     expect(result).toHaveLength(1)
     expect(result[0].candidate_id).toBe("DET-20260329123456-ABCD1234")
     expect(result[0].technique_ids).toEqual(["T1059", "T1059.001"])
@@ -124,13 +172,15 @@ describe("listDetections", () => {
         metadata: { author: "a", created_at: "x", last_updated: "x", status: "draft", notes: "" },
         content_hash: "sha256:valid",
       },
-      // Invalid: missing required fields
       { candidate_id: "DET-INVALID", bad_field: true },
     ]
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["detection", "list", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await listDetections()
+    const result = await listDetections({ cwd: projectRoot })
     expect(result).toHaveLength(1)
     expect(result[0].candidate_id).toBe("DET-VALID")
   })
@@ -144,19 +194,18 @@ describe("detectionStatus", () => {
       by_confidence: { high: 2, medium: 2, low: 1 },
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["detection", "status", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await detectionStatus()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["detection", "status", "--raw"], undefined)
+    const result = await detectionStatus({ cwd: projectRoot })
+
     expect(result).not.toBeNull()
     expect(result!.total).toBe(5)
     expect(result!.by_status).toEqual({ draft: 2, candidate: 2, approved: 1 })
   })
 })
-
-// =============================================================================
-// PACK
-// =============================================================================
 
 describe("listPacks", () => {
   test("calls runThruntCommand with ['pack', 'list', '--raw'] and returns PackListEntry[]", async () => {
@@ -176,10 +225,13 @@ describe("listPacks", () => {
       paths: ["/packs"],
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["pack", "list", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await listPacks()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["pack", "list", "--raw"], undefined)
+    const result = await listPacks({ cwd: projectRoot })
+
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe("lateral-movement-smb")
     expect(result[0].required_connectors).toEqual(["crowdstrike"])
@@ -206,26 +258,28 @@ describe("showPack", () => {
       },
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["pack", "show", "lateral-movement-smb", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await showPack("lateral-movement-smb")
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["pack", "show", "lateral-movement-smb", "--raw"], undefined)
+    const result = await showPack("lateral-movement-smb", { cwd: projectRoot })
+
     expect(result).not.toBeNull()
     expect(result!.found).toBe(true)
     expect(result!.pack!.parameters).toHaveLength(1)
   })
 
   test("returns null when subprocess fails", async () => {
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: false, error: "not found", exitCode: 1 })
+    const projectRoot = await installSingleResponse(
+      ["pack", "show", "nonexistent", "--raw"],
+      { stderr: "not found", exitCode: 1 },
+    )
 
-    const result = await showPack("nonexistent")
+    const result = await showPack("nonexistent", { cwd: projectRoot })
     expect(result).toBeNull()
   })
 })
-
-// =============================================================================
-// CONNECTOR
-// =============================================================================
 
 describe("listConnectors", () => {
   test("calls runThruntCommand with ['runtime', 'list-connectors', '--raw'] and returns ConnectorEntry[]", async () => {
@@ -242,10 +296,13 @@ describe("listConnectors", () => {
       ],
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["runtime", "list-connectors", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await listConnectors()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["runtime", "list-connectors", "--raw"], undefined)
+    const result = await listConnectors({ cwd: projectRoot })
+
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe("crowdstrike")
     expect(result[0].auth_types).toEqual(["api_key"])
@@ -268,19 +325,18 @@ describe("runtimeDoctor", () => {
       ],
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["runtime", "doctor", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await runtimeDoctor()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["runtime", "doctor", "--raw"], undefined)
+    const result = await runtimeDoctor({ cwd: projectRoot })
+
     expect(result).not.toBeNull()
     expect(result!.summary.healthy).toBe(2)
     expect(result!.connectors[0].health).toBe("healthy")
   })
 })
-
-// =============================================================================
-// HUNTMAP
-// =============================================================================
 
 describe("analyzeHuntmap", () => {
   test("calls runThruntCommand with ['huntmap', 'analyze', '--raw'] and returns HuntmapAnalysis", async () => {
@@ -310,10 +366,13 @@ describe("analyzeHuntmap", () => {
       missing_phase_details: null,
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["huntmap", "analyze", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await analyzeHuntmap()
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["huntmap", "analyze", "--raw"], undefined)
+    const result = await analyzeHuntmap({ cwd: projectRoot })
+
     expect(result).not.toBeNull()
     expect(result!.phase_count).toBe(4)
     expect(result!.phases[0].number).toBe("23")
@@ -332,10 +391,13 @@ describe("getPhaseDetail", () => {
       section: "## Phase 23: Bridge Foundation\n...",
     }
 
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: true, data: mockData, exitCode: 0 })
+    const projectRoot = await installSingleResponse(
+      ["huntmap", "get-phase", "23", "--raw"],
+      { stdout: mockData },
+    )
 
-    const result = await getPhaseDetail("23")
-    expect(mockRunThruntCommand).toHaveBeenCalledWith(["huntmap", "get-phase", "23", "--raw"], undefined)
+    const result = await getPhaseDetail("23", { cwd: projectRoot })
+
     expect(result).not.toBeNull()
     expect(result!.found).toBe(true)
     expect(result!.phase_name).toBe("bridge-foundation")
@@ -343,9 +405,12 @@ describe("getPhaseDetail", () => {
   })
 
   test("returns null when subprocess fails", async () => {
-    mockRunThruntCommand.mockResolvedValueOnce({ ok: false, error: "not found", exitCode: 1 })
+    const projectRoot = await installSingleResponse(
+      ["huntmap", "get-phase", "99", "--raw"],
+      { stderr: "not found", exitCode: 1 },
+    )
 
-    const result = await getPhaseDetail("99")
+    const result = await getPhaseDetail("99", { cwd: projectRoot })
     expect(result).toBeNull()
   })
 })

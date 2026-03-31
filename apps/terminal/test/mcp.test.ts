@@ -194,9 +194,7 @@ describe("MCP Protocol", () => {
     expect(Array.isArray(response.result.tools)).toBe(true)
 
     const toolNames = response.result.tools.map((t: { name: string }) => t.name)
-    expect(toolNames).toContain("dispatch")
-    expect(toolNames).toContain("speculate")
-    expect(toolNames).toContain("gate")
+    expect(toolNames).toEqual(["dispatch", "gate"])
   })
 
   test("responds to ping request", async () => {

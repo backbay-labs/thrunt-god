@@ -27,6 +27,8 @@ import type { LogState } from "./components/streaming-log"
 import type { GridSelection } from "./components/grid"
 import type { ReportHistoryEntry } from "./report-export"
 import type { ExternalRunState, ExternalTerminalAdapterOption } from "./external/types"
+import type { SearchResult as HomeSearchResult } from "./search"
+import type { AgentBridgeEvent } from "./agent-bridge"
 
 // =============================================================================
 // SCREEN SYSTEM
@@ -65,7 +67,7 @@ export interface Screen {
 export interface AppController {
   /** Navigate to a different screen */
   setScreen(mode: InputMode): void
-  /** Launch the current dispatch sheet selection */
+  /** Launch the current dispatch sheet selection. Legacy transition plumbing outside the supported TUI surface graph. */
   launchDispatchSheet(): void
   /** Close the dispatch confirmation sheet */
   closeDispatchSheet(): void
@@ -97,7 +99,7 @@ export interface AppController {
   submitPrompt(action: "dispatch" | "speculate"): void
   /** Run quality gates */
   runGates(): void
-  /** Show the managed runs surface */
+  /** Show the managed runs surface. Legacy transition plumbing outside the supported TUI surface graph. */
   showRuns(): void
   /** Show help (exits TUI) */
   showHelp(): void
@@ -105,6 +107,14 @@ export interface AppController {
   quit(): void
   /** Get CWD */
   getCwd(): string
+  /** Copy text to the system clipboard when available */
+  copyText?(text: string, label?: string): Promise<boolean>
+  /** Refresh the home search results */
+  refreshHomeSearch?(force?: boolean): void
+  /** Open the currently selected home search result */
+  openSelectedHomeSearchResult?(): void
+  /** Copy the currently selected home search result */
+  copySelectedHomeSearchResult?(): void
   /** Send raw input to the embedded interactive PTY */
   interactiveSendInput?(input: string): void
   /** Send the staged task into the embedded interactive PTY */
@@ -139,18 +149,13 @@ export interface Command {
 // INPUT MODES
 // =============================================================================
 
-export type InputMode =
+export type SupportedInputMode =
   | "main"
   | "commands"
-  | "dispatch-sheet"
-  | "runs"
-  | "interactive-run"
   | "integrations"
   | "security"
   | "audit"
   | "policy"
-  | "run-detail"
-  | "result"
   | "setup"
   // Hunt screens
   | "hunt-watch"
@@ -170,8 +175,33 @@ export type InputMode =
   | "hunt-packs"
   | "hunt-connectors"
 
+export type LegacyInputMode =
+  | "dispatch-sheet"
+  | "runs"
+  | "interactive-run"
+  | "run-detail"
+  | "result"
+
+export type InputMode = SupportedInputMode | LegacyInputMode
+
+export const LEGACY_INPUT_MODES = [
+  "dispatch-sheet",
+  "runs",
+  "interactive-run",
+  "run-detail",
+  "result",
+] as const satisfies readonly LegacyInputMode[]
+
+export function isLegacyInputMode(mode: InputMode): mode is LegacyInputMode {
+  return LEGACY_INPUT_MODES.includes(mode as LegacyInputMode)
+}
+
+export function toSupportedInputMode(mode: InputMode): SupportedInputMode {
+  return isLegacyInputMode(mode) ? "main" : mode
+}
+
 export type ScreenStage = "supported" | "experimental"
-export type HomeFocus = "prompt" | "actions" | "nav"
+export type HomeFocus = "prompt" | "results" | "actions" | "nav"
 
 // =============================================================================
 // DISPATCH RESULT
@@ -509,6 +539,22 @@ export interface HuntState {
   playbook: HuntPlaybookState
 }
 
+export interface HomeSearchState {
+  results: HomeSearchResult[]
+  selectedIndex: number
+  loading: boolean
+  hydrated: boolean
+  error: string | null
+  lastCopiedId: string | null
+  copiedAt: string | null
+}
+
+export interface AgentActivityState {
+  events: AgentBridgeEvent[]
+  updatedAt: string | null
+  error: string | null
+}
+
 // =============================================================================
 // APP STATE
 // =============================================================================
@@ -563,6 +609,8 @@ export interface AppState {
 
   // Hunt
   hunt: HuntState
+  homeSearch: HomeSearchState
+  agentActivity: AgentActivityState
 
   // THRUNT bridge state
   thruntContext: ThruntHuntContext | null
@@ -694,6 +742,26 @@ export function createInitialHuntState(): HuntState {
       error: null,
       report: null,
     },
+  }
+}
+
+export function createInitialHomeSearchState(): HomeSearchState {
+  return {
+    results: [],
+    selectedIndex: 0,
+    loading: false,
+    hydrated: false,
+    error: null,
+    lastCopiedId: null,
+    copiedAt: null,
+  }
+}
+
+export function createInitialAgentActivityState(): AgentActivityState {
+  return {
+    events: [],
+    updatedAt: null,
+    error: null,
   }
 }
 

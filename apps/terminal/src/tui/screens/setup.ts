@@ -28,7 +28,6 @@ export function getSetupSandboxOptions(gitAvailable: boolean): SetupSandboxOptio
   return [
     { idx: 0, name: "inplace", desc: "run in current directory", disabled: false },
     { idx: 1, name: "worktree", desc: "git worktree isolation", disabled: !gitAvailable },
-    { idx: 2, name: "tmpdir", desc: "copy to temp directory", disabled: false },
   ]
 }
 
@@ -93,7 +92,7 @@ async function confirmSetup(ctx: ScreenContext): Promise<void> {
   const detection = state.setupDetection
   if (!detection) return
 
-  const modeNames: SandboxMode[] = ["inplace", "worktree", "tmpdir"]
+  const modeNames: SandboxMode[] = ["inplace", "worktree"]
   const config = {
     schema_version: "1.0.0" as const,
     sandbox: modeNames[state.setupSandboxIndex],

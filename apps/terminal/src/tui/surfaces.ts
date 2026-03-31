@@ -1,4 +1,5 @@
-import type { InputMode, ScreenStage } from "./types"
+import { toSupportedInputMode } from "./types"
+import type { InputMode, ScreenStage, SupportedInputMode } from "./types"
 
 export interface SurfaceMeta {
   label: string
@@ -6,18 +7,13 @@ export interface SurfaceMeta {
   group: "core" | "hunt" | "setup"
 }
 
-const SURFACE_META: Record<InputMode, SurfaceMeta> = {
+const SUPPORTED_SURFACE_META: Record<SupportedInputMode, SurfaceMeta> = {
   main: { label: "main", stage: "supported", group: "core" },
   commands: { label: "commands", stage: "supported", group: "core" },
-  "dispatch-sheet": { label: "dispatch-sheet", stage: "supported", group: "core" },
-  runs: { label: "runs", stage: "supported", group: "core" },
-  "interactive-run": { label: "interactive-run", stage: "experimental", group: "core" },
   integrations: { label: "integrations", stage: "supported", group: "core" },
   security: { label: "security", stage: "supported", group: "core" },
   audit: { label: "audit", stage: "supported", group: "core" },
   policy: { label: "policy", stage: "supported", group: "core" },
-  "run-detail": { label: "run-detail", stage: "supported", group: "core" },
-  result: { label: "result", stage: "supported", group: "core" },
   setup: { label: "setup", stage: "supported", group: "setup" },
   "hunt-watch": { label: "watch", stage: "supported", group: "hunt" },
   "hunt-scan": { label: "scan", stage: "supported", group: "hunt" },
@@ -37,5 +33,5 @@ const SURFACE_META: Record<InputMode, SurfaceMeta> = {
 }
 
 export function getSurfaceMeta(mode: InputMode): SurfaceMeta {
-  return SURFACE_META[mode]
+  return SUPPORTED_SURFACE_META[toSupportedInputMode(mode)]
 }

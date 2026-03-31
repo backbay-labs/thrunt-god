@@ -224,7 +224,7 @@ describe("Router namespace", () => {
       expect(decision.taskId).toBeDefined()
       expect(decision.toolchain).toBe("claude") // default
       expect(decision.strategy).toBe("single")
-      expect(decision.gates).toEqual(["pytest", "mypy", "ruff"])
+      expect(decision.gates).toEqual(["evidence-integrity", "receipt-completeness"])
       expect(decision.retries).toBe(2)
       expect(decision.priority).toBe(50)
     })
@@ -262,7 +262,7 @@ describe("Router namespace", () => {
 
       expect(decision.toolchain).toBe("opencode")
       expect(decision.strategy).toBe("single")
-      expect(decision.gates).toContain("ruff")
+      expect(decision.gates).toEqual(["evidence-integrity"])
       expect(decision.retries).toBe(1)
     })
   })
@@ -270,12 +270,12 @@ describe("Router namespace", () => {
   describe("reroute", () => {
     test("returns null when no reroute possible", async () => {
       const task = makeTask()
-      // Use a custom config with only critical gates to ensure gate reduction is exhausted
+      // Use a custom config with only the current critical gate so reduction is already exhausted.
       const config = {
         rules: [],
         defaults: {
           toolchain: "claude" as const,
-          gates: ["pytest"], // Only critical gate, can't reduce further
+          gates: ["evidence-integrity"],
           retries: 1,
         },
       }
@@ -322,7 +322,7 @@ describe("Router namespace", () => {
 
       const decision = await Router.reroute(task, previousResult)
       expect(decision).not.toBeNull()
-      expect(decision?.gates).toEqual(["pytest"]) // only critical gates
+      expect(decision?.gates).toEqual(["evidence-integrity"]) // only critical gate
     })
   })
 
@@ -330,7 +330,7 @@ describe("Router namespace", () => {
     test("returns default configuration", () => {
       const config = Router.getDefaultConfig()
       expect(config.defaults.toolchain).toBe("claude")
-      expect(config.defaults.gates).toEqual(["pytest", "mypy", "ruff"])
+      expect(config.defaults.gates).toEqual(["evidence-integrity", "receipt-completeness"])
       expect(config.defaults.retries).toBe(2)
     })
   })

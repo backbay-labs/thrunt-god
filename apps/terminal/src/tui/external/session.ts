@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import { mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { Config } from "../../config"
 import { Workcell } from "../../workcell"
@@ -150,9 +150,6 @@ export async function createExternalRunSession(
     livenessTimeoutMs: EXTERNAL_LIVENESS_TIMEOUT_MS,
     cleanup: async () => {
       await Workcell.release(workcell.id, { reset: true })
-      if (workcell.directory.includes(".thrunt-god/tmp/")) {
-        await rm(workcell.directory, { recursive: true, force: true }).catch(() => {})
-      }
     },
   }
 }

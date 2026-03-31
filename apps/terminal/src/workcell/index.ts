@@ -6,8 +6,6 @@
  */
 
 import { z } from "zod"
-import { join } from "path"
-import { mkdir } from "fs/promises"
 import type { WorkcellInfo, Toolchain, SandboxMode } from "../types"
 import * as pool from "./pool"
 import * as lifecycle from "./lifecycle"
@@ -102,7 +100,7 @@ export namespace Workcell {
   }
 
   /**
-   * Acquire a workcell from the pool (or create new)
+   * Acquire a workcell from the pool (or use the current directory)
    */
   export async function acquire(
     projectId: string,
@@ -127,25 +125,6 @@ export namespace Workcell {
       }
     }
 
-    // Tmpdir mode: create a temp directory under .thrunt-god/tmp/
-    if (sandboxMode === "tmpdir") {
-      const id = crypto.randomUUID()
-      const shortId = id.slice(0, 8)
-      const tmpDir = join(cwd, ".thrunt-god", "tmp", `wc-${shortId}`)
-      await mkdir(tmpDir, { recursive: true })
-      return {
-        id,
-        name: `wc-${shortId}`,
-        directory: tmpDir,
-        branch: "HEAD",
-        status: "in_use",
-        toolchain,
-        projectId,
-        createdAt: Date.now(),
-        useCount: 1,
-      }
-    }
-
     // Worktree mode: existing behavior
     const gitRoot = await getGitRoot(projectId, cwd)
     const config = pool.getPoolConfig(projectId)
@@ -159,8 +138,8 @@ export namespace Workcell {
   }
 
   /**
-   * Release workcell back to pool (or destroy)
-   * No-op for inplace/tmpdir workcells that aren't pooled.
+   * Release workcell back to pool.
+   * No-op for inplace workcells that aren't pooled.
    */
   export async function release(
     workcellId: string,
@@ -168,7 +147,7 @@ export namespace Workcell {
   ): Promise<void> {
     const workcell = pool.getWorkcell(workcellId)
     if (!workcell) {
-      // Not pooled (inplace/tmpdir) — no-op
+      // Not pooled (inplace) — no-op
       return
     }
 

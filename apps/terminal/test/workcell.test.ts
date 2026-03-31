@@ -4,9 +4,14 @@
  * Tests for git worktree operations, pool management, and lifecycle.
  */
 
-import { describe, test, expect, beforeEach } from "bun:test"
+import { $ } from "bun"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
+import { mkdtemp, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import * as pool from "../src/workcell/pool"
 import * as git from "../src/workcell/git"
+import * as lifecycle from "../src/workcell/lifecycle"
 import type { WorkcellInfo } from "../src/types"
 
 describe("Git utilities", () => {
@@ -20,6 +25,14 @@ describe("Git utilities", () => {
   test("generateWorktreeBranch generates correct format", () => {
     const branch = git.generateWorktreeBranch("wc", "abc12345")
     expect(branch).toBe("thrunt-god/wc/abc12345")
+  })
+
+  test("generateArchivedWorktreeBranch uses workcell id as archive stem", () => {
+    const branch = git.generateArchivedWorktreeBranch(
+      "thrunt-god/wc/abc12345",
+      "snap-1"
+    )
+    expect(branch).toBe("thrunt-god/archive/abc12345/snap-1")
   })
 })
 
@@ -334,5 +347,114 @@ describe("Pool state management", () => {
     // Should find any when no toolchain specified
     const foundAny = pool.findWarmWorkcell(projectId)
     expect(foundAny).toBeDefined()
+  })
+})
+
+describe("Workcell lifecycle", () => {
+  const projectId = "workcell-lifecycle-test"
+  const config = {
+    minSize: 0,
+    maxSize: 10,
+    ttl: 3600000,
+    preWarm: false,
+    cleanupInterval: 300000,
+  }
+
+  const tempDirs: string[] = []
+
+  beforeEach(() => {
+    pool.clearAllPools()
+  })
+
+  afterEach(async () => {
+    pool.clearAllPools()
+    await Promise.all(
+      tempDirs.splice(0, tempDirs.length).map((dir) =>
+        rm(dir, { recursive: true, force: true })
+      )
+    )
+  })
+
+  async function createGitFixture(): Promise<{ gitRoot: string; baselineCommit: string }> {
+    const gitRoot = await mkdtemp(join(tmpdir(), "thrunt-god-workcell-"))
+    tempDirs.push(gitRoot)
+
+    await $`git -C ${gitRoot} init -q -b main`
+    await $`git -C ${gitRoot} config user.email test@example.com`
+    await $`git -C ${gitRoot} config user.name "Workcell Test"`
+    await writeFile(join(gitRoot, "README.md"), "baseline\n", "utf-8")
+    await $`git -C ${gitRoot} add README.md`
+    await $`git -C ${gitRoot} commit -q -m "Initial commit"`
+
+    return {
+      gitRoot,
+      baselineCommit: await git.getCurrentCommit(gitRoot),
+    }
+  }
+
+  async function listBranches(gitRoot: string): Promise<string[]> {
+    const format = "%(refname:short)"
+    const result =
+      await $`git -C ${gitRoot} for-each-ref --format=${format} refs/heads`
+        .quiet()
+        .nothrow()
+    if (result.exitCode !== 0) {
+      throw new Error(result.stderr.toString())
+    }
+    return result
+      .text()
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+  }
+
+  test("createWorkcell uses a durable branch and archives commits before reset", async () => {
+    const { gitRoot, baselineCommit } = await createGitFixture()
+    pool.initPool(projectId, gitRoot, config)
+
+    const workcell = await lifecycle.createWorkcell(projectId, gitRoot)
+
+    expect(workcell.branch).toMatch(/^thrunt-god\/wc\//)
+    expect(await git.getCurrentBranch(workcell.directory)).toBe(workcell.branch)
+    expect(await git.getCurrentCommit(workcell.directory)).toBe(baselineCommit)
+    expect(await git.readWorktreeBaseRef(workcell.directory)).toBe(baselineCommit)
+    expect(await git.getWorktreeResetRef(workcell.directory)).toBe(
+      baselineCommit
+    )
+
+    await writeFile(join(workcell.directory, "note.txt"), "preserve me\n", "utf-8")
+    const committed = await git.commit(workcell.directory, "Workcell commit")
+    expect(committed).not.toBe(baselineCommit)
+
+    await lifecycle.releaseWorkcell(workcell.id, gitRoot, {
+      keep: true,
+      reset: true,
+    })
+
+    expect(await git.getCurrentBranch(workcell.directory)).toBe(workcell.branch)
+    expect(await git.getCurrentCommit(workcell.directory)).toBe(baselineCommit)
+    expect(await git.hasChanges(workcell.directory)).toBe(false)
+
+    const archivedBranchPrefix = `thrunt-god/archive/${workcell.id}/`
+    const archivedBranch = (await listBranches(gitRoot)).find((branch) =>
+      branch.startsWith(archivedBranchPrefix)
+    )
+
+    expect(archivedBranch).toBeDefined()
+    expect(await git.getCommitForRef(gitRoot, archivedBranch!)).toBe(committed)
+  })
+
+  test("destroyWorkcell removes the worktree but leaves its branch behind", async () => {
+    const { gitRoot, baselineCommit } = await createGitFixture()
+    pool.initPool(projectId, gitRoot, config)
+
+    const workcell = await lifecycle.createWorkcell(projectId, gitRoot)
+    await writeFile(join(workcell.directory, "note.txt"), "keep branch\n", "utf-8")
+    const committed = await git.commit(workcell.directory, "Persist branch")
+
+    await lifecycle.destroyWorkcell(workcell.id, gitRoot)
+
+    expect(await git.getCommitForRef(gitRoot, workcell.branch)).toBe(committed)
+    expect(await git.getCommitForRef(gitRoot, "main")).toBe(baselineCommit)
   })
 })

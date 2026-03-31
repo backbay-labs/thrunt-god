@@ -4,13 +4,15 @@
  * Tests for the thrunt-god command-line interface.
  */
 
-import { describe, expect, test, beforeEach, afterEach } from "bun:test"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 import * as fs from "node:fs/promises"
 import * as path from "node:path"
 import * as os from "node:os"
+import { VERSION } from "../src"
 import { parseCliArgs } from "../src/cli"
 
-// Create temp directory for tests
+const CLI_ENTRY = path.resolve(import.meta.dir, "../src/cli/index.ts")
+
 let tempDir: string
 
 beforeEach(async () => {
@@ -21,8 +23,15 @@ afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true })
 })
 
+function runCli(args: string[], cwd = process.cwd()) {
+  return Bun.spawn(["bun", "run", CLI_ENTRY, ...args], {
+    cwd,
+    stdout: "pipe",
+    stderr: "pipe",
+  })
+}
+
 describe("CLI Argument Parsing", () => {
-  // Save original argv
   const originalArgv = process.argv
 
   afterEach(() => {
@@ -49,12 +58,25 @@ describe("CLI Argument Parsing", () => {
     expect(args).toEqual(["Fix", "the", "bug"])
   })
 
-  test("parses dispatch with toolchain option", () => {
-    process.argv = ["bun", "thrunt-god", "dispatch", "-t", "claude", "Fix bug"]
+  test("parses dispatch options", () => {
+    process.argv = [
+      "bun",
+      "thrunt-god",
+      "dispatch",
+      "-t",
+      "claude",
+      "-g",
+      "receipt-completeness",
+      "--timeout",
+      "60000",
+      "Fix bug",
+    ]
     const { command, options, args } = parseCliArgs()
     expect(command).toBe("dispatch")
     expect(options.toolchain).toBe("claude")
-    expect(args).toContain("Fix bug")
+    expect(options.gates).toEqual(["receipt-completeness"])
+    expect(options.timeout).toBe(60000)
+    expect(args).toEqual(["Fix bug"])
   })
 
   test("parses gate command with gates", () => {
@@ -64,19 +86,11 @@ describe("CLI Argument Parsing", () => {
     expect(args).toEqual(["pytest", "mypy", "ruff"])
   })
 
-  test("parses speculate with strategy", () => {
-    process.argv = ["bun", "thrunt-god", "speculate", "-s", "best_score", "Refactor"]
-    const { command, options, args } = parseCliArgs()
-    expect(command).toBe("speculate")
-    expect(options.strategy).toBe("best_score")
-    expect(args).toContain("Refactor")
-  })
-
-  test("parses beads subcommand", () => {
-    process.argv = ["bun", "thrunt-god", "beads", "list"]
+  test("parses ui-post command", () => {
+    process.argv = ["bun", "thrunt-god", "ui-post", "status", "Running hunt", "Collecting events"]
     const { command, args } = parseCliArgs()
-    expect(command).toBe("beads")
-    expect(args).toEqual(["list"])
+    expect(command).toBe("ui-post")
+    expect(args).toEqual(["status", "Running hunt", "Collecting events"])
   })
 
   test("parses json flag", () => {
@@ -104,12 +118,6 @@ describe("CLI Argument Parsing", () => {
     expect(options.project).toBe("my-project")
   })
 
-  test("parses timeout option", () => {
-    process.argv = ["bun", "thrunt-god", "dispatch", "--timeout", "60000", "task"]
-    const { options } = parseCliArgs()
-    expect(options.timeout).toBe(60000)
-  })
-
   test("defaults to empty command (TUI) when no args", () => {
     process.argv = ["bun", "thrunt-god"]
     const { command } = parseCliArgs()
@@ -118,100 +126,70 @@ describe("CLI Argument Parsing", () => {
 })
 
 describe("CLI Integration", () => {
-  test("help command runs without error", async () => {
-    const proc = Bun.spawn(["bun", "run", "./src/cli/index.ts", "help"], {
-      cwd: process.cwd(),
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-
+  test("help command runs without error and lists current commands", async () => {
+    const proc = runCli(["help"])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
     expect(stdout).toContain("thrunt-god")
     expect(stdout).toContain("dispatch")
-    expect(stdout).toContain("speculate")
+    expect(stdout).toContain("gate")
+    expect(stdout).toContain("status")
+    expect(stdout).toContain("ui-post")
+    expect(stdout).toContain("init")
+    expect(stdout).toContain("doctor")
+    expect(stdout).toContain("version")
+    expect(stdout).toContain("help")
+    expect(stdout).not.toContain("speculate")
+    expect(stdout).not.toContain("beads")
   })
 
   test("version command outputs version", async () => {
-    const proc = Bun.spawn(["bun", "run", "./src/cli/index.ts", "version"], {
-      cwd: process.cwd(),
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-
+    const proc = runCli(["version"])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
-    expect(stdout).toContain("0.1.0")
+    expect(stdout).toContain(`thrunt-god ${VERSION}`)
   })
 
   test("--version flag outputs version", async () => {
-    const proc = Bun.spawn(["bun", "run", "./src/cli/index.ts", "--version"], {
-      cwd: process.cwd(),
-      stdout: "pipe",
-      stderr: "pipe",
-    })
-
+    const proc = runCli(["--version"])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
-    expect(stdout).toContain("0.1.0")
+    expect(stdout).toContain(`thrunt-god ${VERSION}`)
   })
 
   test("status command shows kernel status", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "status", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["status", "--cwd", tempDir])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
     expect(stdout).toContain("thrunt-god Status")
     expect(stdout).toContain("Version")
-    expect(stdout).toContain("0.1.0")
+    expect(stdout).toContain(VERSION)
+    expect(stdout).toContain("Active Rollouts")
   })
 
   test("init command initializes thrunt-god", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "init", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["init", "--cwd", tempDir])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
-    expect(stdout).toContain("initialized")
+    expect(stdout).toContain("thrunt-god initialized")
+    expect(stdout).toContain(".thrunt-god/runs/")
 
-    // Verify directories created
-    const beadsExists = await Bun.file(`${tempDir}/.beads/issues.jsonl`).exists()
-    expect(beadsExists).toBe(true)
+    const configExists = await Bun.file(path.join(tempDir, ".thrunt-god/config.json")).exists()
+    expect(configExists).toBe(true)
   })
 
   test("doctor command reports local environment", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "doctor", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["doctor", "--cwd", tempDir])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
@@ -221,77 +199,34 @@ describe("CLI Integration", () => {
     expect(stdout).toContain("Detected adapters")
   })
 
-  test("beads list shows empty initially", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "beads", "list", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+  test("ui-post writes an event for the TUI bridge", async () => {
+    const proc = runCli([
+      "ui-post",
+      "status",
+      "Running Elastic hunt",
+      "Collecting suspicious shell launches",
+      "--cwd",
+      tempDir,
+      "-t",
+      "claude",
+    ])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
-    expect(stdout).toContain("No issues found")
-  })
+    expect(stdout).toContain("Posted status event to the TUI bridge")
+    expect(stdout).toContain("Running Elastic hunt")
+    expect(stdout).toContain("claude")
 
-  test("beads ready shows empty initially", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "beads", "ready", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
-    const stdout = await new Response(proc.stdout).text()
-    const exitCode = await proc.exited
-
-    expect(exitCode).toBe(0)
-    expect(stdout).toContain("No issues ready")
-  })
-
-  test("beads create creates issue", async () => {
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        "./src/cli/index.ts",
-        "beads",
-        "create",
-        "Test issue",
-        "--cwd",
-        tempDir,
-      ],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
-    const stdout = await new Response(proc.stdout).text()
-    const exitCode = await proc.exited
-
-    expect(exitCode).toBe(0)
-    expect(stdout).toContain("Created issue")
-    expect(stdout).toContain("Test issue")
+    const eventsPath = path.join(tempDir, ".thrunt-god/ui/events.jsonl")
+    const raw = await fs.readFile(eventsPath, "utf8")
+    expect(raw).toContain("\"kind\":\"status\"")
+    expect(raw).toContain("Running Elastic hunt")
+    expect(raw).toContain("claude")
   })
 
   test("unknown command shows error", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "unknown-command"],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["unknown-command"])
     const stderr = await new Response(proc.stderr).text()
     const exitCode = await proc.exited
 
@@ -300,15 +235,7 @@ describe("CLI Integration", () => {
   })
 
   test("dispatch without prompt shows error", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "dispatch", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["dispatch", "--cwd", tempDir])
     const stderr = await new Response(proc.stderr).text()
     const exitCode = await proc.exited
 
@@ -316,53 +243,26 @@ describe("CLI Integration", () => {
     expect(stderr).toContain("Missing prompt")
   })
 
-  test("speculate without prompt shows error", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "speculate", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+  test("ui-post without required arguments shows error", async () => {
+    const proc = runCli(["ui-post", "--cwd", tempDir])
     const stderr = await new Response(proc.stderr).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(1)
-    expect(stderr).toContain("Missing prompt")
+    expect(stderr).toContain("Missing arguments")
   })
 
-  test("beads help shows subcommands", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "beads", "--help"],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
-    const stdout = await new Response(proc.stdout).text()
+  test("ui-post rejects unsupported event kinds", async () => {
+    const proc = runCli(["ui-post", "invalid-kind", "Bad event", "--cwd", tempDir])
+    const stderr = await new Response(proc.stderr).text()
     const exitCode = await proc.exited
 
-    expect(exitCode).toBe(0)
-    expect(stdout).toContain("list")
-    expect(stdout).toContain("get")
-    expect(stdout).toContain("ready")
-    expect(stdout).toContain("create")
+    expect(exitCode).toBe(1)
+    expect(stderr).toContain("Unsupported ui event kind")
   })
 
   test("json output works for status", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "status", "--json", "--cwd", tempDir],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["status", "--json", "--cwd", tempDir])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
@@ -373,20 +273,11 @@ describe("CLI Integration", () => {
   })
 
   test("no-color flag disables colors", async () => {
-    const proc = Bun.spawn(
-      ["bun", "run", "./src/cli/index.ts", "help", "--no-color"],
-      {
-        cwd: process.cwd(),
-        stdout: "pipe",
-        stderr: "pipe",
-      }
-    )
-
+    const proc = runCli(["help", "--no-color"])
     const stdout = await new Response(proc.stdout).text()
     const exitCode = await proc.exited
 
     expect(exitCode).toBe(0)
-    // Should not contain ANSI escape codes
     expect(stdout).not.toContain("\x1b[")
   })
 })

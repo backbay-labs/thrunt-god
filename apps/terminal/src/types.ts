@@ -139,7 +139,7 @@ export const WorkcellStatus = z.enum([
   "destroyed",
 ])
 
-export const SandboxMode = z.enum(["inplace", "worktree", "tmpdir"])
+export const SandboxMode = z.enum(["inplace", "worktree"])
 
 export const WorkcellInfo = z.object({
   id: WorkcellId,

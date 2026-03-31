@@ -6,7 +6,7 @@ import { commandExists } from "../system"
 
 export const ProjectConfig = z.object({
   schema_version: z.literal("1.0.0"),
-  sandbox: z.enum(["inplace", "worktree", "tmpdir"]).default("inplace"),
+  sandbox: z.enum(["inplace", "worktree"]).default("inplace"),
   toolchain: z.enum(["codex", "claude", "opencode", "crush"]).optional(),
   adapters: z
     .record(
@@ -68,6 +68,19 @@ async function detectGitAvailability(cwd: string): Promise<boolean> {
   }
 }
 
+function normalizeLegacyConfig(data: unknown): unknown {
+  if (!data || typeof data !== "object") {
+    return data
+  }
+
+  const candidate = { ...(data as Record<string, unknown>) }
+  if (candidate.sandbox === "tmpdir") {
+    candidate.sandbox = candidate.git_available ? "worktree" : "inplace"
+  }
+
+  return candidate
+}
+
 export namespace Config {
   export async function exists(cwd: string): Promise<boolean> {
     try {
@@ -81,7 +94,7 @@ export namespace Config {
   export async function load(cwd: string): Promise<ProjectConfig | null> {
     try {
       const raw = await readFile(configPath(cwd), "utf-8")
-      const data = JSON.parse(raw)
+      const data = normalizeLegacyConfig(JSON.parse(raw))
       return ProjectConfig.parse(data)
     } catch {
       return null
