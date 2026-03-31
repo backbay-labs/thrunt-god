@@ -40,7 +40,7 @@
 **Goal**: Ship fan-out execution engine that dispatches hunts across N tenants with concurrency control and error isolation
 **Depends on**: Phase 42 (tenant registry and auth exist)
 **Requirements**: TENANT-02
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 43-01-PLAN.md — Core dispatch module (resolveTenantTargets, cloneTenantSpec, dispatchMultiTenant) with config keys and runtime re-exports
 - [ ] 43-02-PLAN.md — CLI dispatch command wiring and comprehensive unit tests
@@ -133,7 +133,7 @@ Plans:
 | 40. Source Retargeting & IOC Injection | 1/1 | Complete | 2026-03-30 |
 | 41. Replay Diffing & Receipt Lineage | 2/2 | Complete | 2026-03-30 |
 | 42. Tenant Registry & Auth | 2/2 | Complete | 2026-03-30 |
-| 43. Dispatch Coordinator | 0/2 | Planned | |
+| 43. Dispatch Coordinator | 1/2 | In Progress|  |
 | 44. Cross-Tenant Aggregation & Heatmap | 0/0 | Not Started | |
 | 45. @thrunt/connector-sdk Package | 0/0 | Not Started | |
 | 46. Plugin Manifest & Discovery | 0/0 | Not Started | |
