@@ -28,9 +28,14 @@ const VALID_CONFIG_KEYS = new Set([
   'planning.commit_docs', 'planning.search_gitignored',
   'hooks.context_warnings', 'hooks.workflow_guard',
   'connector_profiles',
+  'tenants',
+  'tenant_isolation_mode',
   'publish_quality_threshold',
   'promotion_readiness_threshold',
   'promotion_hooks_enabled',
+  'dispatch.concurrency',
+  'dispatch.global_timeout_ms',
+  'dispatch.cluster_window_minutes',
 ]);
 
 /**
@@ -44,7 +49,21 @@ function isValidConfigKey(keyPath) {
   if (/^agent_skills\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
   // Allow connector_profiles.<connector-id>.<profile-name> as full profile writes
   if (/^connector_profiles\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(keyPath)) return true;
+  // Allow dispatch.<key> for dispatch coordinator config
+  if (/^dispatch\.[a-zA-Z0-9_]+$/.test(keyPath)) return true;
+  // Allow tenants.<tenant-id> for individual tenant config writes
+  if (/^tenants\.[a-z0-9][a-z0-9-]*$/.test(keyPath)) return true;
+  // Allow tenants.<tenant-id>.<field> for nested tenant field writes (e.g., tenants.acme.enabled)
+  if (/^tenants\.[a-z0-9][a-z0-9-]+\.[a-z0-9_]+$/.test(keyPath)) return true;
   return false;
+}
+
+function normalizeConnectorProfileKeyPath(keyPath) {
+  const match = /^connector_profiles\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)$/.exec(keyPath);
+  if (!match) return keyPath;
+  const [, connectorId, profileName] = match;
+  const normalizedId = connectorId === 'elasticsearch' ? 'elastic' : connectorId;
+  return `connector_profiles.${normalizedId}.${profileName}`;
 }
 
 const CONFIG_KEY_SUGGESTIONS = {
@@ -157,6 +176,10 @@ function normalizeAndValidateConfigValue(keyPath, value) {
   if (/^connector_profiles\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(keyPath)) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       error(`Invalid value for ${keyPath}: expected object auth profile, received ${JSON.stringify(value)}`);
+    }
+    if (!value.base_url && typeof value.endpoint === 'string' && value.endpoint.trim()) {
+      value = { ...value, base_url: value.endpoint };
+      delete value.endpoint;
     }
     const [, connectorId, profileName] = keyPath.split('.');
     const validation = validateAuthProfile({
@@ -394,7 +417,7 @@ function buildNewProgramConfig(userChoices) {
 }
 
 /**
- * Command: create a fully-materialized .planning/config.json for a new program.
+ * Command: create a fully-materialized planning config for a new program.
  *
  * Accepts user-chosen settings as a JSON string (the keys the user explicitly
  * configured during /hunt:new-program). All remaining keys are filled from
@@ -422,20 +445,20 @@ function cmdConfigNewProgram(cwd, choicesJson, raw) {
     }
   }
 
-  // Ensure .planning directory exists
+  // Ensure planning directory exists
   try {
     if (!fs.existsSync(planningBase)) {
       fs.mkdirSync(planningBase, { recursive: true });
     }
   } catch (err) {
-    error('Failed to create .planning directory: ' + err.message);
+    error(`Failed to create planning directory (${planningBase}): ` + err.message);
   }
 
   const config = buildNewProgramConfig(userChoices);
 
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    output({ created: true, path: '.planning/config.json' }, raw, 'created');
+    output({ created: true, path: path.relative(cwd, configPath).split(path.sep).join('/') }, raw, 'created');
   } catch (err) {
     error('Failed to write config.json: ' + err.message);
   }
@@ -451,13 +474,13 @@ function ensureConfigFile(cwd) {
   const planningBase = planningRoot(cwd);
   const configPath = path.join(planningBase, 'config.json');
 
-  // Ensure .planning directory exists
+  // Ensure planning directory exists
   try {
     if (!fs.existsSync(planningBase)) {
       fs.mkdirSync(planningBase, { recursive: true });
     }
   } catch (err) {
-    error('Failed to create .planning directory: ' + err.message);
+    error(`Failed to create planning directory (${planningBase}): ` + err.message);
   }
 
   // Check if config already exists
@@ -469,7 +492,7 @@ function ensureConfigFile(cwd) {
 
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    return { created: true, path: '.planning/config.json' };
+    return { created: true, path: path.relative(cwd, configPath).split(path.sep).join('/') };
   } catch (err) {
     error('Failed to create config.json: ' + err.message);
   }
@@ -543,6 +566,8 @@ function cmdConfigSet(cwd, keyPath, value, raw) {
   if (!keyPath) {
     error('Usage: config-set <key.path> <value>');
   }
+
+  keyPath = normalizeConnectorProfileKeyPath(keyPath);
 
   validateKnownConfigKeyPath(keyPath);
 
@@ -666,9 +691,11 @@ function getCmdConfigSetModelProfileResultMessage(
 }
 
 module.exports = {
+  isValidConfigKey,
   cmdConfigEnsureSection,
   cmdConfigSet,
   cmdConfigGet,
   cmdConfigSetModelProfile,
   cmdConfigNewProgram,
+  setConfigValue,
 };

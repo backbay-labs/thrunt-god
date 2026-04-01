@@ -61,22 +61,14 @@ describe('generate-claude-md', () => {
   });
 });
 
-describe('new-program workflow includes CLAUDE.md generation', () => {
+describe('new-program workflow stays hunt-native', () => {
   const workflowPath = path.join(__dirname, '..', 'thrunt-god', 'workflows', 'hunt-bootstrap.md');
-  const commandsPath = path.join(__dirname, '..', 'docs', 'COMMANDS.md');
 
-  test('new-program workflow generates CLAUDE.md before final commit', () => {
+  test('new-program workflow does not depend on CLAUDE.md generation', () => {
     const content = fs.readFileSync(workflowPath, 'utf-8');
-    assert.ok(content.includes('generate-claude-md'));
-    assert.ok(content.includes('--files .planning/HUNTMAP.md .planning/STATE.md .planning/HYPOTHESES.md CLAUDE.md'));
-  });
-
-  test('new-program artifacts mention CLAUDE.md', () => {
-    const workflowContent = fs.readFileSync(workflowPath, 'utf-8');
-    const commandsContent = fs.readFileSync(commandsPath, 'utf-8');
-
-    assert.ok(workflowContent.includes('| Project guide  | `CLAUDE.md`'));
-    assert.ok(workflowContent.includes('- `CLAUDE.md`'));
-    assert.ok(commandsContent.includes('`CLAUDE.md`'));
+    assert.ok(content.includes('Do not generate or update `CLAUDE.md` during hunt bootstrap.'));
+    assert.ok(content.includes('.planning/environment/ENVIRONMENT.md'));
+    assert.ok(content.includes('.planning/STATE.md'));
+    assert.ok(!content.includes('generate-claude-md'));
   });
 });

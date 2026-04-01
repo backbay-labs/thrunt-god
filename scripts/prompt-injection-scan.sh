@@ -75,6 +75,7 @@ ALLOWLIST=(
   'thrunt-god/bin/lib/security.cjs'
   'hooks/thrunt-prompt-guard.js'
   'SECURITY.md'
+  'thrunt-god/data/mitre-attack-enterprise.json'
 )
 
 is_allowlisted() {

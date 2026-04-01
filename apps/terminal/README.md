@@ -1,70 +1,65 @@
 # THRUNT GOD TUI
 
-**Local-first security operations cockpit for AI agent workflows**
+**Search-first hunt cockpit for live investigation and agent handoff**
 
-THRUNT GOD TUI is a beta operator cockpit for local security review of AI agent activity. It combines local runtime health, hushd security state, supported hunt workflows, and evidence handoff into one terminal interface, with optional task dispatch still available through the same CLI.
+THRUNT GOD TUI is the terminal package for the THRUNT hunt workflow. The current product direction is lightweight and watch-oriented:
 
-## Features
+- search reports, packs, connectors, phases, findings, and copyable prompt starters
+- watch live hunt activity and exported report history
+- let an external agent post status, log, and copy events into the watch surface
+- keep heavy agent execution in a normal terminal or tmux pane instead of inside the TUI
 
-- **Operator Dashboard** - Local health, hushd status, stream freshness, active investigation state
-- **Security Surfaces** - Integrations, security overview, audit log, and policy viewer
-- **Supported Hunt Loop** - watch, scan, timeline, query, report, and report history
-- **Evidence Handoff** - Export markdown + JSON bundles with receipt/audit trace metadata
-- **Workcell Isolation** - Git worktree sandboxes for safe concurrent execution
-- **Optional Agent Actions** - dispatch, speculate, gates, beads, and rollout status
+The CLI still exposes `dispatch` and `gate` commands, and CLI dispatch can still use worktree-backed isolation. The interactive TUI is intentionally moving away from owning dispatch/runtime lifecycle directly.
+
+## Current Surfaces
+
+- **Home**: search bar, quick navigation, copyable prompts, recent agent activity
+- **Watch**: live hunt stream with agent activity summary
+- **Query**: hunt query surface
+- **Report / History**: evidence handoff and exported report bundles
+- **Packs / Connectors / Phases / Evidence / Detections**: read-first investigation support
+- **Integrations / Security / Audit / Policy**: local environment and review surfaces
 
 ## Interactive TUI
 
-Run the TUI through the main CLI with `thrunt-god tui`, or use the package-local binary as `thrunt-god-tui`:
+Launch through the main CLI with `thrunt-god tui`, or use the package-local binary as `thrunt-god-tui`.
 
-```
- ██████╗██╗      █████╗ ██╗    ██╗██████╗
-██╔════╝██║     ██╔══██╗██║    ██║██╔══██╗
-██║     ██║     ███████║██║ █╗ ██║██║  ██║
-██║     ██║     ██╔══██║██║███╗██║██║  ██║
-╚██████╗███████╗██║  ██║╚███╔███╔╝██████╔╝
- ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═════╝
-                  ███████╗████████╗██████╗ ██╗██╗  ██╗███████╗
-                  ██╔════╝╚══██╔══╝██╔══██╗██║██║ ██╔╝██╔════╝
-                  ███████╗   ██║   ██████╔╝██║█████╔╝ █████╗
-                  ╚════██║   ██║   ██╔══██╗██║██╔═██╗ ██╔══╝
-                  ███████║   ██║   ██║  ██║██║██║  ██╗███████╗
-                  ╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚══════╝
-```
-
-**Keyboard Shortcuts:**
+### Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `Enter` | Dispatch the current prompt |
-| `Tab` | Cycle home focus between prompt and actions |
-| `Esc` | Toggle prompt and nav focus |
-| `Ctrl+N` | Cycle agents |
+| `Type` | Search prompts, reports, findings, packs, connectors, and phases |
+| `Enter` | Open or copy the selected search result |
+| `y` / `c` | Copy the selected search result |
+| `Tab` | Switch between search and quick actions |
+| `Esc` | Clear search or return focus to the search bar |
+| `Ctrl+N` | Cycle target agent label |
 | `Ctrl+P` | Open command palette |
 | `Ctrl+S` | Security overview |
-| `S/A/P/I` | Security / audit / policy / integrations in nav focus |
-| `W/X/T/Q/E/H` | Watch / scan / timeline / query / report / history in nav focus |
+| `W` / `Q` / `H` / `P` / `E` / `T` / `K` / `C` | Watch / Query / History / Phases / Evidence / Detections / Packs / Connectors |
 | `g` | Run quality gates |
-| `b` | View work graph (beads) |
-| `r` | View active rollouts |
+| `i` | Integrations |
 | `?` | Help |
 | `q` | Quit |
-| `↑/↓` or `j/k` | Navigate / scroll |
-| `↑↓←→` | Move across home actions after `Tab` |
+| `↑/↓` | Move through search results |
 
-## Security Integration
+### Agent Bridge
 
-THRUNT GOD TUI connects to a running [hushd](../../crates/services/hushd/) daemon for ambient security enforcement:
+External agents can post structured updates into `.thrunt-god/ui/events.jsonl`. The current bridge supports:
 
-- **Status bar indicator** — `◆sec` turns green when hushd is connected, dim when unavailable
-- **Live event ticker** — Latest security decisions stream on the main screen via SSE
-- **Security overview** (`Ctrl+S`) — Real-time event table and audit statistics
-- **Audit log** (`a`) — Paginated table of all policy decisions with filtering
-- **Policy viewer** (`p`) — Active policy name, version, hash, and guard list
-- **Pre-dispatch check** — Optionally validates prompts against hushd policy before sending to agents (fail-open)
-- **THRUNT GOD quality gate** — Posts agent diffs to hushd for patch integrity and secret leak scanning
+- `status`
+- `note`
+- `search`
+- `copy`
+- `warning`
+- `error`
 
-All security features degrade gracefully when hushd is not running.
+Use the CLI helper:
+
+```bash
+thrunt-god tui ui-post status "Running Elastic hunt" "Collecting suspicious shell launches"
+thrunt-god tui ui-post copy "prompt" "Summarize the current watch anomalies and rank them by confidence."
+```
 
 ## Installation
 
@@ -73,7 +68,7 @@ cd apps/terminal
 bun install
 ```
 
-The beta TUI runtime currently requires `bun` on the machine running `thrunt-god tui`.
+The package currently requires `bun` on the machine running `thrunt-god tui`.
 
 ### Wrapper And Doctor Notes
 
@@ -83,7 +78,6 @@ The beta TUI runtime currently requires `bun` on the machine running `thrunt-god
   2. installed bundle beside the CLI binary at `../share/thrunt-god/tui/cli.js`
   3. repo source fallback at `apps/terminal/src/cli/index.ts`
 - If `bun` on `PATH` is a crashing shim layer, `doctor` will still show the selected runtime, but launch can fail before the TUI starts. In that case, put the real Bun binary earlier on `PATH` than the shim.
-- A concrete failure we hit during dogfooding was a `~/.proto/shims/bun` wrapper panic on macOS. Pointing `PATH` at the real Bun binary fixed the issue without changing any TUI code.
 
 ## Codex Agent Pack
 
@@ -95,23 +89,14 @@ release hardening, and multi-agent debugging.
 - Project config: [.codex/config.toml](../../.codex/config.toml)
 - Terminal working agreement: [AGENTS.md](./AGENTS.md)
 
-## Dispatch UX Planning Docs
+## Archived Planning Docs
 
-These docs describe planned dispatch work, not current shipped behavior.
+These docs capture older dispatch-heavy TUI planning and are still useful as background, but they do not describe the current shipped interaction model:
 
-Recommended reading order:
-
-1. Product spec: [docs/dispatch-ux-spec.md](./docs/dispatch-ux-spec.md)
-2. Implementation plan: [docs/dispatch-ux-plan.md](./docs/dispatch-ux-plan.md)
-3. Phase 1 engineering breakdown: [docs/dispatch-phase1-engineering.md](./docs/dispatch-phase1-engineering.md)
-4. Later-phase overview: [docs/dispatch-phases2-5-overview.md](./docs/dispatch-phases2-5-overview.md)
-5. Phase 2 engineering breakdown: [docs/dispatch-phase2-engineering.md](./docs/dispatch-phase2-engineering.md)
-6. Phase 3 engineering breakdown: [docs/dispatch-phase3-engineering.md](./docs/dispatch-phase3-engineering.md)
-7. Phase 4 engineering breakdown: [docs/dispatch-phase4-engineering.md](./docs/dispatch-phase4-engineering.md)
-8. Phase 5 engineering breakdown: [docs/dispatch-phase5-engineering.md](./docs/dispatch-phase5-engineering.md)
-9. Embedded PTY follow-on spec: [docs/embedded-pty-surface-spec.md](./docs/embedded-pty-surface-spec.md)
-10. Embedded PTY follow-on plan: [docs/embedded-pty-surface-plan.md](./docs/embedded-pty-surface-plan.md)
-11. Embedded PTY Phase 6 engineering breakdown: [docs/embedded-pty-phase6-engineering.md](./docs/embedded-pty-phase6-engineering.md)
+- [docs/dispatch-ux-spec.md](./docs/dispatch-ux-spec.md)
+- [docs/dispatch-ux-plan.md](./docs/dispatch-ux-plan.md)
+- [docs/embedded-pty-surface-spec.md](./docs/embedded-pty-surface-spec.md)
+- [docs/embedded-pty-surface-plan.md](./docs/embedded-pty-surface-plan.md)
 
 ## CLI Usage
 
@@ -132,34 +117,35 @@ thrunt-god-tui <command>
 ### Commands
 
 ```bash
-thrunt-god tui                     # Launch interactive TUI
-thrunt-god tui dispatch <prompt>   # Submit task for AI execution
-thrunt-god tui speculate <prompt>  # Run with multiple agents
-thrunt-god tui gate [gates...]     # Run quality gates
-thrunt-god tui beads list          # List issues
-thrunt-god tui beads ready         # Get ready issues
-thrunt-god tui beads create <title> # Create issue
-thrunt-god tui status              # Show kernel status
-thrunt-god tui init                # Initialize in current directory
-thrunt-god tui doctor              # Inspect local environment and services
-thrunt-god tui help                # Show CLI help
+thrunt-god tui                   # Launch the interactive TUI
+thrunt-god tui dispatch <prompt> # Submit task for AI execution from the CLI
+thrunt-god tui gate [gates...]   # Run quality gates
+thrunt-god tui status            # Show kernel status
+thrunt-god tui ui-post ...       # Post an agent event into the watch surface
+thrunt-god tui init              # Initialize in current directory
+thrunt-god tui doctor            # Inspect local environment and services
+thrunt-god tui help              # Show CLI help
 ```
 
 ### Supported vs Experimental
 
 Supported beta screens:
-- main dashboard
+- main search surface
 - integrations
 - security
 - audit
 - policy
-- result
 - hunt watch
 - hunt scan
 - hunt timeline
 - hunt query
 - hunt report
 - hunt report history
+- hunt phases
+- hunt evidence
+- hunt detections
+- hunt packs
+- hunt connectors
 
 Experimental screens:
 - hunt rule builder
@@ -171,7 +157,6 @@ Experimental screens:
 
 ```bash
 -t, --toolchain <name>   # Force toolchain (codex, claude, opencode, crush)
--s, --strategy <name>    # Vote strategy (first_pass, best_score, consensus)
 -g, --gate <name>        # Gates to run (can repeat)
 --timeout <ms>           # Execution timeout
 -j, --json               # JSON output
@@ -183,30 +168,26 @@ Experimental screens:
 ### Examples
 
 ```bash
-# Simple dispatch
-thrunt-god dispatch "Fix the null pointer in auth.ts"
-
-# Operator bootstrap
-thrunt-god tui init
-thrunt-god tui doctor --json
+# Launch the TUI
 thrunt-god tui
 
-# Force Claude toolchain
-thrunt-god dispatch -t claude "Add unit tests for utils.ts"
+# Initialize and inspect a repo before opening the TUI
+thrunt-god tui init
+thrunt-god tui doctor --json
 
-# Speculate with best score voting
-thrunt-god speculate -s best_score "Refactor the database module"
+# Dispatch from the CLI while keeping the TUI read-first
+thrunt-god tui dispatch -t claude "Add unit tests for utils.ts"
 
-# Run specific gates (including security)
-thrunt-god gate pytest mypy thrunt-god
+# Post agent progress into the watch pane
+thrunt-god tui ui-post status "Running Elastic hunt" "Collecting suspicious shell launches"
 
-# List open issues as JSON
-thrunt-god beads list -j
+# Run current gate set
+thrunt-god tui gate evidence-integrity receipt-completeness
 ```
 
 ## Programmatic Usage
 
-The package API remains unstable during beta. The supported public interface is `thrunt-god tui` through the main Rust CLI.
+The package API remains unstable during beta. The supported public interface is the CLI.
 
 ```typescript
 import {
@@ -216,17 +197,13 @@ import {
   Dispatcher,
   Workcell,
   Verifier,
-  Speculate,
-  Beads,
   Telemetry,
-  Hushd,
   tools,
   executeTool,
 } from "@thrunt-god/tui"
 
-// Initialize (also starts hushd client)
+// Initialize runtime support
 await init({
-  beadsPath: ".beads",
   telemetryDir: ".thrunt-god/runs",
 })
 
@@ -242,10 +219,6 @@ const result = await executeTool("dispatch", {
   toolchain: "claude",
 })
 
-// Check hushd connectivity
-const client = Hushd.getClient()
-const connected = await client.probe()
-
 // Cleanup
 await shutdown()
 ```
@@ -255,35 +228,26 @@ await shutdown()
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  CLI / Tools                                                │
-│  dispatch, speculate, gate commands                         │
+│  tui, dispatch, gate, status, ui-post                       │
 └────────────────────────────┬────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────┐
-│  Router                                                     │
-│  Rule-based routing with priority, labels, patterns         │
+│  Search / Watch TUI                                          │
+│  Read-first investigation and agent handoff                  │
 └────────────────────────────┬────────────────────────────────┘
                              │
-         ┌───────────────────┤
-         │ (optional)        │
-┌────────▼────────┐  ┌──────▼──────────────────────────────┐
-│  hushd Policy   │  │  Dispatcher                         │
-│  Pre-check      │  │  Adapters: codex | claude |         │
-│  (fail-open)    │  │  opencode | crush                   │
-└─────────────────┘  └──────┬──────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────┐
-│  Workcell Pool                                              │
-│  Git worktree isolation with lifecycle management           │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────┐
-│  Verifier                                                   │
-│  Gates: pytest, mypy, ruff, thrunt-god                     │
-└────────────────────────────┬────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────┐
-│  hushd (optional)                                           │
-│  Patch integrity + secret leak scanning via HTTP API        │
+      ┌──────────────────────┼──────────────────────┐
+      │                      │                      │
+┌─────▼──────────┐  ┌────────▼─────────┐  ┌────────▼─────────┐
+│ Hunt Surfaces  │  │ UI Event Bridge  │  │ CLI Dispatch     │
+│ watch/query/   │  │ .thrunt-god/ui   │  │ optional runtime  │
+│ report/history │  │ JSONL handoff    │  │ execution         │
+└─────┬──────────┘  └────────┬─────────┘  └────────┬─────────┘
+      │                      │                     │
+┌─────▼──────────────────────▼─────────────────────▼─────────┐
+│ Local runtime + workcell / verifier plumbing                │
+│ used by CLI execution and supporting integrations           │
+└─────────────────────────────────────────────────────────────┘
 └─────────────────────────────────────────────────────────────┘
 ```
 

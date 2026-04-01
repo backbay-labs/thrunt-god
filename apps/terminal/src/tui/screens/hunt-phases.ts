@@ -23,7 +23,7 @@ async function loadPhases(ctx: ScreenContext) {
   ps.error = null
   ctx.app.render()
   try {
-    ps.analysis = await analyzeHuntmap()
+    ps.analysis = await analyzeHuntmap({ cwd: ctx.app.getCwd() })
     ps.loading = false
     // Auto-load detail for first phase
     if (ps.analysis && ps.analysis.phases.length > 0) {
@@ -41,7 +41,7 @@ async function loadPhaseDetail(ctx: ScreenContext, phaseNum: string) {
   ps.detailLoading = true
   ctx.app.render()
   try {
-    ps.phaseDetail = await getPhaseDetail(phaseNum)
+    ps.phaseDetail = await getPhaseDetail(phaseNum, { cwd: ctx.app.getCwd() })
     ps.detailLoading = false
   } catch (_err) {
     ps.phaseDetail = null

@@ -6,13 +6,16 @@
 
 import { $ } from "bun"
 import { join, dirname } from "path"
-import { mkdir, rm, stat } from "fs/promises"
+import { mkdir, readFile, rm, stat, writeFile } from "fs/promises"
 
 export interface WorktreeInfo {
   path: string
   branch: string
   commit: string
 }
+
+const WORKCELL_METADATA_DIR = ".thrunt-god"
+const WORKCELL_BASE_REF_FILE = "base-ref"
 
 /**
  * Get the git root directory for the current working directory
@@ -43,6 +46,17 @@ export async function getCurrentCommit(cwd: string): Promise<string> {
   const result = await $`git -C ${cwd} rev-parse HEAD`.quiet().nothrow()
   if (result.exitCode !== 0) {
     throw new Error(`Failed to get current commit: ${result.stderr.toString()}`)
+  }
+  return result.text().trim()
+}
+
+/**
+ * Resolve a git ref to a commit hash
+ */
+export async function getCommitForRef(cwd: string, ref: string): Promise<string> {
+  const result = await $`git -C ${cwd} rev-parse ${ref}^{commit}`.quiet().nothrow()
+  if (result.exitCode !== 0) {
+    throw new Error(`Failed to resolve ref "${ref}": ${result.stderr.toString()}`)
   }
   return result.text().trim()
 }
@@ -169,11 +183,43 @@ export async function removeWorktree(
  * Reset a worktree to a clean state
  */
 export async function resetWorktree(worktreePath: string): Promise<void> {
-  // Hard reset to HEAD
-  await $`git -C ${worktreePath} reset --hard HEAD`.quiet().nothrow()
+  const resetRef = await getWorktreeResetRef(worktreePath)
+  const currentCommit = await getCurrentCommit(worktreePath)
+  const resetCommit = await getCommitForRef(worktreePath, resetRef)
+
+  if (currentCommit !== resetCommit) {
+    const currentBranch = await getCurrentBranch(worktreePath)
+    if (currentBranch !== "HEAD") {
+      const archiveBranch = generateArchivedWorktreeBranch(
+        currentBranch,
+        `${Date.now().toString(36)}-${currentCommit.slice(0, 12)}`
+      )
+      await createBranchRef(worktreePath, archiveBranch, currentCommit)
+    }
+  }
+
+  const resetResult =
+    await $`git -C ${worktreePath} reset --hard ${resetRef}`.quiet().nothrow()
+  if (resetResult.exitCode !== 0) {
+    throw new Error(
+      `Failed to reset worktree to ${resetRef}: ${resetResult.stderr.toString()}`
+    )
+  }
 
   // Clean untracked files
-  await $`git -C ${worktreePath} clean -fd`.quiet().nothrow()
+  const cleanResult =
+    await $`git -C ${worktreePath} clean -fd -e ${WORKCELL_METADATA_DIR}/`
+      .quiet()
+      .nothrow()
+  if (cleanResult.exitCode !== 0) {
+    throw new Error(
+      `Failed to clean worktree: ${cleanResult.stderr.toString()}`
+    )
+  }
+
+  // `git clean -fd` removes the bookkeeping directory too; recreate the base ref
+  // so later resets continue to target the original creation snapshot.
+  await writeWorktreeBaseRef(worktreePath, resetRef)
 }
 
 /**
@@ -189,7 +235,11 @@ export async function isWorktree(path: string): Promise<boolean> {
  */
 export async function getWorktreeDiff(worktreePath: string): Promise<string> {
   // Include both staged and unstaged changes
-  const result = await $`git -C ${worktreePath} diff HEAD`.quiet().nothrow()
+  const excludeMetadata = ":(exclude).thrunt-god"
+  const result =
+    await $`git -C ${worktreePath} diff HEAD -- . ${excludeMetadata}`
+      .quiet()
+      .nothrow()
   return result.text()
 }
 
@@ -197,7 +247,11 @@ export async function getWorktreeDiff(worktreePath: string): Promise<string> {
  * Check if worktree has uncommitted changes
  */
 export async function hasChanges(worktreePath: string): Promise<boolean> {
-  const result = await $`git -C ${worktreePath} status --porcelain`.quiet().nothrow()
+  const excludeMetadata = ":(exclude).thrunt-god"
+  const result =
+    await $`git -C ${worktreePath} status --porcelain -- . ${excludeMetadata}`
+      .quiet()
+      .nothrow()
   return result.text().trim().length > 0
 }
 
@@ -205,7 +259,10 @@ export async function hasChanges(worktreePath: string): Promise<boolean> {
  * Stage all changes in worktree
  */
 export async function stageAll(worktreePath: string): Promise<void> {
-  await $`git -C ${worktreePath} add -A`.quiet().nothrow()
+  const excludeMetadata = ":(exclude).thrunt-god"
+  await $`git -C ${worktreePath} add -A -- . ${excludeMetadata}`
+    .quiet()
+    .nothrow()
 }
 
 /**
@@ -229,7 +286,11 @@ export async function commit(
  * Get list of changed files in worktree
  */
 export async function getChangedFiles(worktreePath: string): Promise<string[]> {
-  const result = await $`git -C ${worktreePath} diff --name-only HEAD`.quiet().nothrow()
+  const excludeMetadata = ":(exclude).thrunt-god"
+  const result =
+    await $`git -C ${worktreePath} diff --name-only HEAD -- . ${excludeMetadata}`
+      .quiet()
+      .nothrow()
   const files = result.text().trim()
   if (!files) return []
   return files.split("\n").filter(Boolean)
@@ -240,6 +301,69 @@ export async function getChangedFiles(worktreePath: string): Promise<string[]> {
  */
 export function generateWorktreeBranch(prefix: string, id: string): string {
   return `thrunt-god/${prefix}/${id}`
+}
+
+/**
+ * Generate an archive branch name for a reused workcell.
+ */
+export function generateArchivedWorktreeBranch(
+  worktreeBranch: string,
+  suffix: string
+): string {
+  const branchId = worktreeBranch.split("/").filter(Boolean).at(-1) || "workcell"
+  return generateWorktreeBranch("archive", `${branchId}/${suffix}`)
+}
+
+function getWorktreeBaseRefPath(worktreePath: string): string {
+  return join(worktreePath, WORKCELL_METADATA_DIR, WORKCELL_BASE_REF_FILE)
+}
+
+/**
+ * Persist the workcell's clean reset target.
+ */
+export async function writeWorktreeBaseRef(
+  worktreePath: string,
+  ref: string
+): Promise<void> {
+  await mkdir(join(worktreePath, WORKCELL_METADATA_DIR), { recursive: true })
+  await writeFile(getWorktreeBaseRefPath(worktreePath), `${ref}\n`, "utf-8")
+}
+
+/**
+ * Read the workcell's clean reset target.
+ */
+export async function readWorktreeBaseRef(
+  worktreePath: string
+): Promise<string | null> {
+  try {
+    const ref = await readFile(getWorktreeBaseRefPath(worktreePath), "utf-8")
+    return ref.trim() || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Resolve the ref that a pooled workcell should reset back to.
+ */
+export async function getWorktreeResetRef(worktreePath: string): Promise<string> {
+  return (await readWorktreeBaseRef(worktreePath)) || "HEAD"
+}
+
+/**
+ * Create or update a branch ref at the given commit.
+ */
+export async function createBranchRef(
+  cwd: string,
+  branch: string,
+  ref: string
+): Promise<void> {
+  const result = await $`git -C ${cwd} branch -f ${branch} ${ref}`.quiet().nothrow()
+  if (result.exitCode !== 0) {
+    throw new Error(
+      `Failed to create branch "${branch}" at ${ref}: ${result.stderr.toString()}`
+    )
+  }
 }
 
 /**

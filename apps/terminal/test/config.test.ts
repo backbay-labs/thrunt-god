@@ -82,7 +82,7 @@ describe("Config.save and Config.load", () => {
   test("saves valid JSON to disk", async () => {
     const config: ProjectConfig = {
       schema_version: "1.0.0",
-      sandbox: "tmpdir",
+      sandbox: "worktree",
       adapters: {},
       git_available: false,
       project_id: "default",
@@ -94,7 +94,7 @@ describe("Config.save and Config.load", () => {
     )
     const parsed = JSON.parse(raw)
     expect(parsed.schema_version).toBe("1.0.0")
-    expect(parsed.sandbox).toBe("tmpdir")
+    expect(parsed.sandbox).toBe("worktree")
   })
 
   test("creates .thrunt-god directory if missing", async () => {
@@ -146,7 +146,7 @@ describe("Config.detect", () => {
     expect(typeof result.git_available).toBe("boolean")
     expect(result.adapters).toBeDefined()
     expect(typeof result.recommended_sandbox).toBe("string")
-    expect(["inplace", "worktree", "tmpdir"]).toContain(
+    expect(["inplace", "worktree"]).toContain(
       result.recommended_sandbox
     )
   })
@@ -160,7 +160,7 @@ describe("Config.detect", () => {
   })
 
   test("recommends inplace when git is not available", async () => {
-    // tmpdir is guaranteed to not be a git repo
+    // A temporary test directory is guaranteed to not be a git repo
     const result = await Config.detect(testDir)
     if (!result.git_available) {
       expect(result.recommended_sandbox).toBe("inplace")

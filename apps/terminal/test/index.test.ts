@@ -29,10 +29,12 @@ import {
   Dispatcher,
   Workcell,
   Verifier,
-  Speculate,
   PatchLifecycle,
-  Beads,
   Telemetry,
+  TUI,
+  Health,
+  MCP,
+  Config,
   // Tools
   tools,
   getTool,
@@ -71,15 +73,17 @@ describe("Main exports", () => {
     expect(Dispatcher).toBeDefined()
     expect(Workcell).toBeDefined()
     expect(Verifier).toBeDefined()
-    expect(Speculate).toBeDefined()
     expect(PatchLifecycle).toBeDefined()
-    expect(Beads).toBeDefined()
     expect(Telemetry).toBeDefined()
+    expect(TUI).toBeDefined()
+    expect(Health).toBeDefined()
+    expect(MCP).toBeDefined()
+    expect(Config).toBeDefined()
   })
 
   test("Tools are exported", () => {
     expect(tools).toBeDefined()
-    expect(tools).toHaveLength(3)
+    expect(tools).toHaveLength(2)
     expect(getTool).toBeFunction()
     expect(registerTools).toBeFunction()
   })

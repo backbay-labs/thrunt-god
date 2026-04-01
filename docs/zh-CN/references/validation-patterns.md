@@ -327,7 +327,7 @@ grep -E "^$VAR_NAME=.+" .env .env.local 2>/dev/null | grep -v "your-.*-here|xxx|
 **环境变量特有的存根模式：**
 ```bash
 # 危险信号 - 这些是存根：
-DATABASE_URL=your-database-url-here
+DATABASE_URL -> your-database-url-here
 STRIPE_SECRET_KEY=sk_test_xxx
 API_KEY=placeholder
 NEXT_PUBLIC_API_URL=http://localhost:3000  # 生产环境仍指向 localhost

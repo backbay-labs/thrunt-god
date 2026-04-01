@@ -1,23 +1,12 @@
-/**
- * Config - Project configuration management
- *
- * Handles loading, saving, and detecting project configuration.
- * Stores config as JSON in .thrunt-god/config.json.
- */
-
 import { z } from "zod"
 import { dirname, join } from "path"
 import { mkdir, readFile, writeFile, stat } from "fs/promises"
 import type { Toolchain, SandboxMode } from "../types"
 import { commandExists } from "../system"
 
-// =============================================================================
-// SCHEMA
-// =============================================================================
-
 export const ProjectConfig = z.object({
   schema_version: z.literal("1.0.0"),
-  sandbox: z.enum(["inplace", "worktree", "tmpdir"]).default("inplace"),
+  sandbox: z.enum(["inplace", "worktree"]).default("inplace"),
   toolchain: z.enum(["codex", "claude", "opencode", "crush"]).optional(),
   adapters: z
     .record(
@@ -34,10 +23,6 @@ export const ProjectConfig = z.object({
 
 export type ProjectConfig = z.infer<typeof ProjectConfig>
 
-// =============================================================================
-// DETECTION
-// =============================================================================
-
 export interface DetectionResult {
   adapters: Record<string, { available: boolean; version?: string }>
   git_available: boolean
@@ -45,12 +30,9 @@ export interface DetectionResult {
   recommended_toolchain?: Toolchain
 }
 
-// =============================================================================
-// CONFIG NAMESPACE
-// =============================================================================
-
 const CONFIG_DIR = ".thrunt-god"
 const CONFIG_FILE = "config.json"
+const TOOLCHAIN_PRIORITY: Toolchain[] = ["claude", "codex", "opencode", "crush"]
 
 function configPath(cwd: string): string {
   return join(cwd, CONFIG_DIR, CONFIG_FILE)
@@ -86,10 +68,20 @@ async function detectGitAvailability(cwd: string): Promise<boolean> {
   }
 }
 
+function normalizeLegacyConfig(data: unknown): unknown {
+  if (!data || typeof data !== "object") {
+    return data
+  }
+
+  const candidate = { ...(data as Record<string, unknown>) }
+  if (candidate.sandbox === "tmpdir") {
+    candidate.sandbox = candidate.git_available ? "worktree" : "inplace"
+  }
+
+  return candidate
+}
+
 export namespace Config {
-  /**
-   * Check if config file exists
-   */
   export async function exists(cwd: string): Promise<boolean> {
     try {
       await stat(configPath(cwd))
@@ -99,23 +91,16 @@ export namespace Config {
     }
   }
 
-  /**
-   * Load project config from .thrunt-god/config.json
-   * Returns null if file doesn't exist
-   */
   export async function load(cwd: string): Promise<ProjectConfig | null> {
     try {
       const raw = await readFile(configPath(cwd), "utf-8")
-      const data = JSON.parse(raw)
+      const data = normalizeLegacyConfig(JSON.parse(raw))
       return ProjectConfig.parse(data)
     } catch {
       return null
     }
   }
 
-  /**
-   * Save project config to .thrunt-god/config.json
-   */
   export async function save(
     cwd: string,
     config: ProjectConfig
@@ -126,9 +111,6 @@ export namespace Config {
     await writeFile(configPath(cwd), JSON.stringify(validated, null, 2) + "\n")
   }
 
-  /**
-   * Inspect local project state using filesystem checks only.
-   */
   export async function inspectProject(
     cwd: string
   ): Promise<Pick<DetectionResult, "git_available" | "recommended_sandbox">> {
@@ -140,9 +122,6 @@ export namespace Config {
     }
   }
 
-  /**
-   * Detect available toolchains, git status, and recommend configuration
-   */
   export async function detect(cwd: string): Promise<DetectionResult> {
     const { getAllAdapters } = await import("../dispatcher/adapters")
     const allAdapters = getAllAdapters()
@@ -158,7 +137,6 @@ export namespace Config {
       })
     )
 
-    // Build adapters map
     const adapters: Record<string, { available: boolean; version?: string }> =
       {}
 
@@ -173,9 +151,9 @@ export namespace Config {
       }
     }
 
-    // Recommend first available toolchain (prefer claude > codex > opencode > crush)
-    const priority: Toolchain[] = ["claude", "codex", "opencode", "crush"]
-    const recommended_toolchain = priority.find((t) => adapters[t]?.available)
+    const recommended_toolchain = TOOLCHAIN_PRIORITY.find(
+      (toolchain) => adapters[toolchain]?.available
+    )
 
     return {
       adapters,

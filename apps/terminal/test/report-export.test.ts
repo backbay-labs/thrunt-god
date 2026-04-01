@@ -4,11 +4,13 @@ import * as os from "node:os"
 import * as path from "node:path"
 import type { HuntReport } from "../src/hunt/types"
 import {
-  buildReportExportAuditEvent,
   deriveTraceMetadata,
   exportReportBundle,
+  loadExportedReport,
   readReportHistory,
   renderReportMarkdown,
+  syncExportedReportMarkdown,
+  updateReportHistoryTraceability,
 } from "../src/tui/report-export"
 
 let tempDir: string
@@ -107,14 +109,31 @@ describe("report export trace metadata", () => {
     expect(markdown).toContain("Session IDs: sess-456")
   })
 
-  test("builds a report export audit event with shared trace identifiers", async () => {
+  test("loads an exported report bundle back from history", async () => {
     const result = await exportReportBundle(sampleReport(), tempDir)
-    const event = buildReportExportAuditEvent(sampleReport(), result.historyEntry)
+    const loaded = await loadExportedReport(tempDir, result.historyEntry)
 
-    expect(event.id).toBe(result.historyEntry.traceability.exportAuditEventId)
-    expect(event.event_type).toBe("report_export")
-    expect(event.action_type).toBe("report_export")
-    expect(event.decision).toBe("allowed")
-    expect((event.metadata as Record<string, unknown>).receipt_ids).toEqual(["rcpt-123"])
+    expect(loaded.id).toBe(sampleReport().id)
+    expect(loaded.title).toBe(sampleReport().title)
+    expect(loaded.evidence[0].event.details.receipt_id).toBe("rcpt-123")
+  })
+
+  test("updates traceability history and rewrites markdown from the updated entry", async () => {
+    const result = await exportReportBundle(sampleReport(), tempDir)
+    const updatedEntry = await updateReportHistoryTraceability(tempDir, result.historyEntry, {
+      ...result.historyEntry.traceability,
+      auditStatus: "recorded",
+      auditRecordedAt: new Date("2026-03-05T12:05:00Z").toISOString(),
+    })
+
+    await syncExportedReportMarkdown(tempDir, sampleReport(), updatedEntry)
+
+    const history = await readReportHistory(tempDir)
+    const markdown = await fs.readFile(path.join(tempDir, updatedEntry.markdownPath), "utf8")
+
+    expect(history[0].traceability.auditStatus).toBe("recorded")
+    expect(history[0].traceability.auditRecordedAt).toBe("2026-03-05T12:05:00.000Z")
+    expect(markdown).toContain("Export Audit Status: recorded")
+    expect(markdown).toContain("Export Audit Recorded At: 2026-03-05T12:05:00.000Z")
   })
 })

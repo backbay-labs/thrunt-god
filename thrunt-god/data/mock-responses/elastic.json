@@ -1,0 +1,11 @@
+{
+  "connector": "elastic",
+  "mock_response": {
+    "status": "ok",
+    "counts": { "total": 3, "returned": 3 },
+    "results": [
+      { "user.name": "alice@example.com", "host.name": "ws-01", "event.action": "login", "source.ip": "10.0.1.5", "@timestamp": "2024-01-15T10:00:00Z" },
+      { "user.name": "bob@example.com", "host.name": "srv-02", "event.action": "logout", "source.ip": "10.0.2.10", "@timestamp": "2024-01-15T10:05:00Z" }
+    ]
+  }
+}

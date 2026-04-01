@@ -249,6 +249,8 @@ function cmdInitPlan(cwd, phase, raw) {
 function cmdInitNewProgram(cwd, raw) {
   const config = loadConfig(cwd);
   const projectDoc = getMissionDocInfo(cwd);
+  const codebaseDir = path.join(planningRoot(cwd), 'codebase');
+  const hasCodebaseMap = fs.existsSync(codebaseDir);
 
   // Detect Brave Search API key availability
   const homedir = require('os').homedir();
@@ -268,13 +270,14 @@ function cmdInitNewProgram(cwd, raw) {
   let hasPackageFile = false;
   try {
     const codeExtensions = new Set([
-      '.ts', '.js', '.py', '.go', '.rs', '.swift', '.java',
+      '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.swift', '.java',
       '.kt', '.kts',           // Kotlin (Android, server-side)
       '.c', '.cpp', '.h',      // C/C++
       '.cs',                   // C#
       '.rb',                   // Ruby
       '.php',                  // PHP
       '.dart',                 // Dart (Flutter)
+      '.vue', '.svelte',       // Frontend single-file components
       '.m', '.mm',             // Objective-C / Objective-C++
       '.scala',                // Scala
       '.groovy',               // Groovy (Gradle build scripts)
@@ -284,9 +287,14 @@ function cmdInitNewProgram(cwd, raw) {
       '.ex', '.exs',           // Elixir
       '.clj',                  // Clojure
     ]);
-    const skipDirs = new Set(['node_modules', '.git', PLANNING_DIR_NAME, '.claude', '__pycache__', 'target', 'dist', 'build']);
+    const skipDirs = new Set([
+      'node_modules', '.git', PLANNING_DIR_NAME, '.claude', '.codex', '.opencode',
+      '.gemini', '.agent', '.cursor', '.windsurf', '__pycache__', 'target', 'dist', 'build',
+    ]);
     function findCodeFiles(dir, depth) {
-      if (depth > 3) return false;
+      // Allow common JVM/mobile layouts like app/src/main/java/com/example/... without
+      // walking arbitrarily deep trees.
+      if (depth > 8) return false;
       let entries;
       try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return false; }
       for (const entry of entries) {
@@ -328,14 +336,14 @@ function cmdInitNewProgram(cwd, raw) {
 
     // Existing state
     mission_exists: projectDoc.exists,
-    has_codebase_map: pathExistsInternal(cwd, '.planning/codebase'),
+    has_codebase_map: hasCodebaseMap,
     planning_exists: pathExistsInternal(cwd, PLANNING_DIR_NAME),
 
     // Brownfield detection
     has_existing_code: hasCode,
     has_package_file: hasPackageFile,
     is_brownfield: hasCode || hasPackageFile,
-    needs_codebase_map: (hasCode || hasPackageFile) && !pathExistsInternal(cwd, '.planning/codebase'),
+    needs_codebase_map: (hasCode || hasPackageFile) && !hasCodebaseMap,
 
     // Git state
     has_git: pathExistsInternal(cwd, '.git'),
@@ -451,8 +459,8 @@ function cmdInitQuick(cwd, description, raw) {
     timestamp: now.toISOString(),
 
     // Paths
-    quick_dir: '.planning/quick',
-    task_dir: slug ? `.planning/quick/${quickId}-${slug}` : null,
+    quick_dir: relToCwd(cwd, path.join(planningRoot(cwd), 'quick')),
+    task_dir: slug ? relToCwd(cwd, path.join(planningRoot(cwd), 'quick', `${quickId}-${slug}`)) : null,
 
     // File existence
     huntmap_exists: roadmapDoc.exists,
@@ -786,9 +794,9 @@ function cmdInitMilestoneOp(cwd, raw) {
 
 function cmdInitMapEnvironment(cwd, raw) {
   const config = loadConfig(cwd);
+  const codebaseDir = path.join(planningRoot(cwd), 'codebase');
 
   // Check for existing codebase maps
-  const codebaseDir = path.join(planningRoot(cwd), 'codebase');
   let existingMaps = [];
   try {
     existingMaps = fs.readdirSync(codebaseDir).filter(f => f.endsWith('.md'));
@@ -804,7 +812,7 @@ function cmdInitMapEnvironment(cwd, raw) {
     parallelization: config.parallelization,
 
     // Paths
-    codebase_dir: '.planning/codebase',
+    codebase_dir: relToCwd(cwd, codebaseDir),
 
     // Existing maps
     existing_maps: existingMaps,
@@ -812,7 +820,7 @@ function cmdInitMapEnvironment(cwd, raw) {
 
     // File existence
     planning_exists: pathExistsInternal(cwd, PLANNING_DIR_NAME),
-    codebase_dir_exists: pathExistsInternal(cwd, '.planning/codebase'),
+    codebase_dir_exists: fs.existsSync(codebaseDir),
   };
 
   output(withProjectRoot(cwd, result), raw);

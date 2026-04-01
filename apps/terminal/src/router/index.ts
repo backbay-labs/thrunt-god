@@ -1,14 +1,6 @@
-/**
- * Router - Task routing engine
- *
- * Determines how tasks are executed based on configurable rules.
- * Routes tasks to appropriate toolchains with strategies (single/speculate).
- */
-
 import type { TaskInput, RoutingDecision, ExecutionResult, Toolchain } from "../types"
 import * as rules from "./rules"
 
-// Re-export rules for external use
 export { rules }
 export { DEFAULT_RULES } from "./rules"
 
@@ -46,9 +38,11 @@ export interface RoutingRule {
   }
 }
 
-/**
- * Default router configuration
- */
+const DEFAULT_PRIORITY = 50
+const SPECULATION_TIMEOUT_MS = 300000
+const TOOLCHAIN_FALLBACK: Toolchain[] = ["codex", "claude", "opencode", "crush"]
+const CRITICAL_GATES = new Set(["evidence-integrity"])
+
 export const DEFAULT_CONFIG: RouterConfig = {
   rules: rules.DEFAULT_RULES,
   defaults: {
@@ -58,52 +52,32 @@ export const DEFAULT_CONFIG: RouterConfig = {
   },
 }
 
-/**
- * Router namespace - Task routing operations
- */
 export namespace Router {
-  /**
-   * Route a task to determine execution strategy
-   */
   export async function route(
     task: TaskInput,
     config: RouterConfig = DEFAULT_CONFIG
   ): Promise<RoutingDecision> {
-    // Use config rules (which default to DEFAULT_RULES, may be overridden)
-    const allRules = config.rules
+    const action = rules.evaluateRules(task, config.rules)
 
-    // Evaluate rules to get merged action
-    const action = rules.evaluateRules(task, allRules)
-
-    // Determine toolchain (use hint, rule result, or default)
     let toolchain: Toolchain = config.defaults.toolchain
     if (action.toolchain && rules.isValidToolchain(action.toolchain)) {
       toolchain = action.toolchain
     }
 
-    // Determine strategy
     const strategy = action.strategy || "single"
-
-    // Determine gates (prefer task-provided, then rule result, then default)
     const gates = task.gates || action.gates || config.defaults.gates
-
-    // Determine retries
     const retries = action.retries ?? config.defaults.retries
-
-    // Generate task ID if not provided
     const taskId = task.id || crypto.randomUUID()
 
-    // Build routing decision
     const decision: RoutingDecision = {
       taskId,
       toolchain,
       strategy,
       gates,
       retries,
-      priority: 50, // Default priority
+      priority: DEFAULT_PRIORITY,
     }
 
-    // Add speculation config if strategy is speculate
     if (strategy === "speculate" && action.speculation) {
       decision.speculation = {
         count: action.speculation.count,
@@ -111,53 +85,38 @@ export namespace Router {
           rules.isValidToolchain
         ) as Toolchain[],
         voteStrategy: action.speculation.voteStrategy,
-        timeout: 300000, // 5 minute default
+        timeout: SPECULATION_TIMEOUT_MS,
       }
     }
 
     return decision
   }
 
-  /**
-   * Re-route after failure with adjusted parameters
-   *
-   * Uses escalation strategy:
-   * 1. Try different toolchain
-   * 2. Reduce gate strictness
-   * 3. Eventually return null (give up)
-   */
   export async function reroute(
     task: TaskInput,
     previousResult: ExecutionResult,
     config: RouterConfig = DEFAULT_CONFIG
   ): Promise<RoutingDecision | null> {
-    // Get the original routing decision
     const originalDecision = await route(task, config)
 
-    // Determine what went wrong
     const wasToolchainError =
       previousResult.error?.includes("not available") ||
       previousResult.error?.includes("timeout")
     const wasGateFailure = !previousResult.success && !wasToolchainError
 
-    // Toolchain fallback order
-    const toolchainFallback: Toolchain[] = ["codex", "claude", "opencode", "crush"]
-    const currentIndex = toolchainFallback.indexOf(previousResult.toolchain)
+    const currentIndex = TOOLCHAIN_FALLBACK.indexOf(previousResult.toolchain)
 
-    if (wasToolchainError && currentIndex < toolchainFallback.length - 1) {
-      // Try next toolchain in fallback order
+    if (wasToolchainError && currentIndex < TOOLCHAIN_FALLBACK.length - 1) {
       return {
         ...originalDecision,
-        toolchain: toolchainFallback[currentIndex + 1],
-        retries: 1, // Reduce retries on fallback
+        toolchain: TOOLCHAIN_FALLBACK[currentIndex + 1],
+        retries: 1,
       }
     }
 
     if (wasGateFailure) {
-      // If gates failed, try with reduced gates
-      // Remove non-critical gates on first reroute
       const criticalGates = originalDecision.gates.filter(
-        (g) => g === "evidence-integrity" // Evidence integrity is the critical gate
+        (gate) => CRITICAL_GATES.has(gate)
       )
 
       if (criticalGates.length > 0 && criticalGates.length < originalDecision.gates.length) {
@@ -169,13 +128,9 @@ export namespace Router {
       }
     }
 
-    // Give up - no more rerouting options
     return null
   }
 
-  /**
-   * Evaluate rules against task, return merged action
-   */
   export function evaluateRules(
     task: TaskInput,
     rulesList: RoutingRule[]
@@ -183,16 +138,10 @@ export namespace Router {
     return rules.evaluateRules(task, rulesList)
   }
 
-  /**
-   * Check if a rule matches a task
-   */
   export function matchesRule(task: TaskInput, rule: RoutingRule): boolean {
     return rules.matchesRule(task, rule)
   }
 
-  /**
-   * Get default configuration
-   */
   export function getDefaultConfig(): RouterConfig {
     return {
       rules: [...DEFAULT_CONFIG.rules.map((r) => ({ ...r, match: { ...r.match }, action: { ...r.action } }))],

@@ -1,10 +1,3 @@
-/**
- * Dispatcher - Workcell execution orchestrator
- *
- * Executes tasks in isolated workcells using native CLI adapters.
- * Handles single execution and retry logic.
- */
-
 import type {
   TaskInput,
   ExecutionResult,
@@ -51,83 +44,90 @@ export interface Adapter {
   parseTelemetry(output: string): Partial<AdapterResult["telemetry"]>
 }
 
-/**
- * Default execution timeout (5 minutes)
- */
-const DEFAULT_TIMEOUT = 300000
+const DEFAULT_TIMEOUT_MS = 300000
+const RETRY_BACKOFF_MS = 1000
+const TRANSIENT_ERROR_PATTERNS = [
+  /timeout/i,
+  /rate.?limit/i,
+  /too.?many.?requests/i,
+  /429/,
+  /503/,
+  /502/,
+  /network/i,
+  /connection/i,
+  /ECONNRESET/,
+  /ETIMEDOUT/,
+  /temporarily/i,
+]
 
-/**
- * Sleep utility for retry backoff
- */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-/**
- * Dispatcher namespace - Task execution operations
- */
+function createFailureResult(
+  taskId: string,
+  workcell: WorkcellInfo,
+  toolchain: Toolchain,
+  startedAt: number,
+  error: string
+): ExecutionResult {
+  return {
+    taskId,
+    workcellId: workcell.id,
+    toolchain,
+    success: false,
+    output: "",
+    error,
+    telemetry: {
+      startedAt,
+      completedAt: Date.now(),
+    },
+  }
+}
+
 export namespace Dispatcher {
-  /**
-   * Execute task in workcell using specified toolchain
-   */
   export async function execute(
     request: ExecutionRequest
   ): Promise<ExecutionResult> {
-    const { task, workcell, toolchain, timeout = DEFAULT_TIMEOUT } = request
+    const { task, workcell, toolchain, timeout = DEFAULT_TIMEOUT_MS } = request
     const taskId = task.id || crypto.randomUUID()
     const startTime = Date.now()
 
-    // Get adapter for toolchain
     const adapter = adaptersModule.getAdapter(toolchain)
     if (!adapter) {
-      return {
+      return createFailureResult(
         taskId,
-        workcellId: workcell.id,
+        workcell,
         toolchain,
-        success: false,
-        output: "",
-        error: `No adapter found for toolchain: ${toolchain}`,
-        telemetry: {
-          startedAt: startTime,
-          completedAt: Date.now(),
-        },
-      }
+        startTime,
+        `No adapter found for toolchain: ${toolchain}`
+      )
     }
 
-    // Check if adapter is available
     const available = await adapter.isAvailable()
     if (!available) {
-      return {
+      return createFailureResult(
         taskId,
-        workcellId: workcell.id,
+        workcell,
         toolchain,
-        success: false,
-        output: "",
-        error: `Adapter ${toolchain} is not available (missing auth or CLI)`,
-        telemetry: {
-          startedAt: startTime,
-          completedAt: Date.now(),
-        },
-      }
+        startTime,
+        `Adapter ${toolchain} is not available (missing auth or CLI)`
+      )
     }
 
-    // Create abort controller with timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeout)
 
     try {
-      // Execute via adapter
       const result = await adapter.execute(workcell, task, controller.signal)
 
       clearTimeout(timeoutId)
 
-      // Get patch (diff) if execution succeeded (skip for inplace workcells)
       let patch: string | undefined
       if (result.success && workcell.name !== "inplace") {
         try {
           patch = await git.getWorktreeDiff(workcell.directory)
         } catch {
-          // Ignore diff errors
         }
       }
 
@@ -157,30 +157,20 @@ export namespace Dispatcher {
             : error.message
           : String(error)
 
-      return {
+      return createFailureResult(
         taskId,
-        workcellId: workcell.id,
+        workcell,
         toolchain,
-        success: false,
-        output: "",
-        error: errorMessage,
-        telemetry: {
-          startedAt: startTime,
-          completedAt: Date.now(),
-        },
-      }
+        startTime,
+        errorMessage
+      )
     }
   }
 
-  /**
-   * Execute with automatic retry on transient failures
-   */
   export async function executeWithRetry(
     request: ExecutionRequest,
     maxRetries: number = 3
   ): Promise<ExecutionResult> {
-    const backoffMs = 1000 // Starting backoff
-
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const result = await execute(request)
 
@@ -188,63 +178,34 @@ export namespace Dispatcher {
         return result
       }
 
-      // Check if error is transient (network issues, rate limits)
       const isTransient = isTransientError(result.error)
       if (!isTransient || attempt === maxRetries - 1) {
         return result
       }
 
-      // Exponential backoff before retry
-      await sleep(backoffMs * Math.pow(2, attempt))
+      await sleep(RETRY_BACKOFF_MS * 2 ** attempt)
     }
 
-    // Should not reach here, but satisfy TypeScript
     return execute(request)
   }
 
-  /**
-   * Get available adapters (those that pass isAvailable check)
-   */
   export async function getAvailableAdapters(): Promise<Adapter[]> {
     return adaptersModule.getAvailableAdapters()
   }
 
-  /**
-   * Get adapter by toolchain ID
-   */
   export function getAdapter(toolchain: Toolchain): Adapter | undefined {
     return adaptersModule.getAdapter(toolchain)
   }
 
-  /**
-   * Get all registered adapters
-   */
   export function getAllAdapters(): Adapter[] {
     return adaptersModule.getAllAdapters()
   }
 }
 
-/**
- * Check if an error is transient (worth retrying)
- */
 function isTransientError(error?: string): boolean {
   if (!error) return false
 
-  const transientPatterns = [
-    /timeout/i,
-    /rate.?limit/i,
-    /too.?many.?requests/i,
-    /429/,
-    /503/,
-    /502/,
-    /network/i,
-    /connection/i,
-    /ECONNRESET/,
-    /ETIMEDOUT/,
-    /temporarily/i,
-  ]
-
-  return transientPatterns.some((pattern) => pattern.test(error))
+  return TRANSIENT_ERROR_PATTERNS.some((pattern) => pattern.test(error))
 }
 
 export default Dispatcher

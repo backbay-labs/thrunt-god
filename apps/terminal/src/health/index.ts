@@ -1,16 +1,3 @@
-/**
- * Health - Integration healthcheck system for THRUNT GOD
- *
- * Provides lightweight, parallel healthchecks for:
- * - AI Toolchains: Claude, Codex, OpenCode
- * - Infrastructure: Git, Python, Bun
- * - MCP Server: THRUNT GOD's own MCP server status
- */
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
 export interface HealthStatus {
   id: string
   name: string
@@ -35,10 +22,6 @@ export interface HealthSummary {
   checkedAt: number
 }
 
-// =============================================================================
-// INTEGRATION DEFINITIONS
-// =============================================================================
-
 interface IntegrationDef {
   id: string
   name: string
@@ -51,7 +34,6 @@ interface IntegrationDef {
 
 function getIntegrations(): IntegrationDef[] {
   return [
-    // AI Toolchains
     {
       id: "claude",
       name: "Claude",
@@ -76,8 +58,6 @@ function getIntegrations(): IntegrationDef[] {
       args: ["--version"],
       versionParser: (out) => out.match(/(\d+\.\d+(?:\.\d+)?)/)?.[1],
     },
-
-    // Infrastructure
     {
       id: "git",
       name: "Git",
@@ -105,24 +85,24 @@ function getIntegrations(): IntegrationDef[] {
   ]
 }
 
-// =============================================================================
-// CACHE
-// =============================================================================
-
-const CACHE_TTL = 60_000 // 60 seconds
+const CACHE_TTL = 60_000
+const DEFAULT_TIMEOUT_MS = 3000
 let healthCache: Map<string, HealthStatus> = new Map()
 let lastFullCheck = 0
 
-// MCP server state (set externally)
 let mcpServerStatus: { running: boolean; port?: number } = { running: false }
 
-// =============================================================================
-// HEALTHCHECK FUNCTIONS
-// =============================================================================
+function createMcpStatus(checkedAt: number = Date.now()): HealthStatus {
+  return {
+    id: "thrunt-god-mcp",
+    name: "THRUNT GOD MCP",
+    category: "mcp",
+    available: mcpServerStatus.running,
+    version: mcpServerStatus.port ? `:${mcpServerStatus.port}` : undefined,
+    checkedAt,
+  }
+}
 
-/**
- * Check a single integration using HTTP probe or Bun's subprocess
- */
 async function checkIntegration(
   def: IntegrationDef,
   timeout: number
@@ -136,7 +116,6 @@ async function checkIntegration(
     checkedAt: Date.now(),
   }
 
-  // HTTP probe check
   if (def.httpProbe) {
     try {
       const controller = new AbortController()
@@ -161,13 +140,11 @@ async function checkIntegration(
   }
 
   try {
-    // Use Bun.spawn with proper timeout handling
     const proc = Bun.spawn([def.command!, ...(def.args ?? [])], {
       stdout: "pipe",
       stderr: "pipe",
     })
 
-    // Race between process completion and timeout
     const timeoutPromise = new Promise<"timeout">((resolve) => {
       setTimeout(() => resolve("timeout"), timeout)
     })
@@ -207,7 +184,6 @@ async function checkIntegration(
     result.available = false
 
     if (err instanceof Error) {
-      // Check for command not found
       if (err.message.includes("spawn") || err.message.includes("ENOENT") || err.message.includes("not found")) {
         result.error = "not found"
       } else {
@@ -221,29 +197,20 @@ async function checkIntegration(
   return result
 }
 
-/**
- * Health namespace - Integration healthchecks
- */
 export namespace Health {
-  /**
-   * Check all integrations in parallel
-   */
   export async function checkAll(
     options: HealthCheckOptions = {}
   ): Promise<HealthSummary> {
-    const { force = false, timeout = 3000 } = options
+    const { force = false, timeout = DEFAULT_TIMEOUT_MS } = options
     const now = Date.now()
 
-    // Return cached if fresh and not forced
     if (!force && now - lastFullCheck < CACHE_TTL && healthCache.size > 0) {
       return getSummary()
     }
 
-    // Check all integrations in parallel
     const checks = getIntegrations().map((def) => checkIntegration(def, timeout))
     const results = await Promise.all(checks)
 
-    // Update cache
     for (const result of results) {
       healthCache.set(result.id, result)
     }
@@ -252,36 +219,27 @@ export namespace Health {
     return getSummary()
   }
 
-  /**
-   * Check a single integration
-   */
   export async function check(
     id: string,
     options: HealthCheckOptions = {}
   ): Promise<HealthStatus | undefined> {
-    const { force = false, timeout = 3000 } = options
+    const { force = false, timeout = DEFAULT_TIMEOUT_MS } = options
 
-    // Return cached if fresh and not forced
     const cached = healthCache.get(id)
     if (!force && cached && Date.now() - cached.checkedAt < CACHE_TTL) {
       return cached
     }
 
-    // Find integration definition
     const def = getIntegrations().find((i) => i.id === id)
     if (!def) {
       return undefined
     }
 
-    // Check and cache
     const result = await checkIntegration(def, timeout)
     healthCache.set(id, result)
     return result
   }
 
-  /**
-   * Get cached health summary (no new checks)
-   */
   export function getSummary(): HealthSummary {
     const summary: HealthSummary = {
       security: [],
@@ -291,7 +249,6 @@ export namespace Health {
       checkedAt: lastFullCheck,
     }
 
-    // Group by category
     for (const status of healthCache.values()) {
       if (status.category === "security") {
         summary.security.push(status)
@@ -302,17 +259,8 @@ export namespace Health {
       }
     }
 
-    // Add MCP server status
-    summary.mcp.push({
-      id: "thrunt-god-mcp",
-      name: "THRUNT GOD MCP",
-      category: "mcp",
-      available: mcpServerStatus.running,
-      version: mcpServerStatus.port ? `:${mcpServerStatus.port}` : undefined,
-      checkedAt: Date.now(),
-    })
+    summary.mcp.push(createMcpStatus())
 
-    // Sort each category by id for consistent order
     summary.security.sort((a, b) => a.id.localeCompare(b.id))
     summary.ai.sort((a, b) => a.id.localeCompare(b.id))
     summary.infra.sort((a, b) => a.id.localeCompare(b.id))
@@ -320,55 +268,30 @@ export namespace Health {
     return summary
   }
 
-  /**
-   * Get status for a single integration from cache
-   */
   export function getStatus(id: string): HealthStatus | undefined {
     if (id === "thrunt-god-mcp") {
-      return {
-        id: "thrunt-god-mcp",
-        name: "THRUNT GOD MCP",
-        category: "mcp",
-        available: mcpServerStatus.running,
-        version: mcpServerStatus.port ? `:${mcpServerStatus.port}` : undefined,
-        checkedAt: Date.now(),
-      }
+      return createMcpStatus()
     }
     return healthCache.get(id)
   }
 
-  /**
-   * Set MCP server status (called by MCP module)
-   */
   export function setMcpStatus(running: boolean, port?: number): void {
     mcpServerStatus = { running, port }
   }
 
-  /**
-   * Get MCP server status
-   */
   export function getMcpStatus(): { running: boolean; port?: number } {
     return { ...mcpServerStatus }
   }
 
-  /**
-   * Clear the health cache
-   */
   export function clearCache(): void {
     healthCache.clear()
     lastFullCheck = 0
   }
 
-  /**
-   * Get list of all integration IDs
-   */
   export function getIntegrationIds(): string[] {
     return getIntegrations().map((i) => i.id)
   }
 
-  /**
-   * Check if cache is stale
-   */
   export function isCacheStale(): boolean {
     return Date.now() - lastFullCheck > CACHE_TTL
   }

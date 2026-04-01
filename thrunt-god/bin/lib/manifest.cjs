@@ -174,6 +174,7 @@ function createEvidenceManifest(input) {
     hypothesis_ids: input.hypothesis_ids !== undefined ? input.hypothesis_ids : null,
     tags: input.tags !== undefined ? input.tags : null,
     raw_metadata: input.raw_metadata !== undefined ? input.raw_metadata : null,
+    lineage: input.lineage || null,
   };
 }
 

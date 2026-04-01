@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const PLANNING_DIR_NAME = process.env.THRUNT_PLANNING_DIR || '.planning';
 
 // Prompt injection patterns (subset of security.cjs patterns, inlined for hook independence)
 const INJECTION_PATTERNS = [
@@ -48,8 +49,8 @@ process.stdin.on('end', () => {
 
     const filePath = data.tool_input?.file_path || '';
 
-    // Only scan files going into .planning/ (agent context files)
-    if (!filePath.includes('.planning/') && !filePath.includes('.planning\\')) {
+    // Only scan files going into the configured planning directory (agent context files)
+    if (!filePath.includes(`${PLANNING_DIR_NAME}/`) && !filePath.includes(`${PLANNING_DIR_NAME}\\`)) {
       process.exit(0);
     }
 

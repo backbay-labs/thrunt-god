@@ -3,8 +3,6 @@ import * as fs from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
 
-const THRUNT_TOOLS_ENV = "THRUNT_TOOLS_PATH"
-
 async function writeExecutableScript(
   dir: string,
   name: string,
@@ -19,23 +17,32 @@ async function writeExecutableScript(
 let tempDirs: string[] = []
 
 afterEach(async () => {
-  delete process.env[THRUNT_TOOLS_ENV]
   for (const dir of tempDirs) {
     await fs.rm(dir, { recursive: true, force: true }).catch(() => {})
   }
   tempDirs = []
 })
 
+async function createMockProject(
+  prefix: string,
+  scriptContents: string,
+): Promise<string> {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), prefix))
+  tempDirs.push(tempDir)
+
+  const projectRoot = path.join(tempDir, "project")
+  const toolsDir = path.join(projectRoot, "thrunt-god", "bin")
+  await fs.mkdir(toolsDir, { recursive: true })
+  await writeExecutableScript(toolsDir, "thrunt-tools.cjs", scriptContents)
+
+  return projectRoot
+}
+
 describe("loadThruntState", () => {
   test("returns ThruntHuntContext with phase/plan/status from state-snapshot", async () => {
     const { loadThruntState } = await import("../state-adapter")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-state-"))
-    tempDirs.push(tempDir)
-
-    // Create a wrapper script that routes based on args
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-state-",
       `#!/usr/bin/env node
 const fs = require('fs');
 const args = process.argv.slice(2);
@@ -70,8 +77,7 @@ if (args[0] === 'state-snapshot') {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const ctx = await loadThruntState()
+    const ctx = await loadThruntState({ cwd: projectRoot })
 
     expect(ctx.phase.number).toBe("23")
     expect(ctx.phase.name).toBe("bridge-foundation")
@@ -87,12 +93,8 @@ if (args[0] === 'state-snapshot') {
 
   test("includes roadmap phases from progress json output", async () => {
     const { loadThruntState } = await import("../state-adapter")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-state-"))
-    tempDirs.push(tempDir)
-
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-state-",
       `#!/usr/bin/env node
 const fs = require('fs');
 const args = process.argv.slice(2);
@@ -118,8 +120,7 @@ if (args[0] === 'state-snapshot') {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const ctx = await loadThruntState()
+    const ctx = await loadThruntState({ cwd: projectRoot })
 
     expect(ctx.roadmap).not.toBeNull()
     expect(ctx.roadmap!.milestoneVersion).toBe("v1.5")
@@ -135,12 +136,8 @@ if (args[0] === 'state-snapshot') {
 
   test("sets error field when state-snapshot subprocess fails", async () => {
     const { loadThruntState } = await import("../state-adapter")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-state-"))
-    tempDirs.push(tempDir)
-
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-state-",
       `#!/usr/bin/env node
 const fs = require('fs');
 const args = process.argv.slice(2);
@@ -153,8 +150,7 @@ if (args[0] === 'state-snapshot') {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const ctx = await loadThruntState()
+    const ctx = await loadThruntState({ cwd: projectRoot })
 
     expect(ctx.error).toBeTruthy()
     expect(ctx.phase.number).toBeNull()
@@ -165,12 +161,8 @@ if (args[0] === 'state-snapshot') {
 
   test("returns sensible defaults when state-snapshot returns nulls", async () => {
     const { loadThruntState } = await import("../state-adapter")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-state-"))
-    tempDirs.push(tempDir)
-
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-state-",
       `#!/usr/bin/env node
 const fs = require('fs');
 const args = process.argv.slice(2);
@@ -200,8 +192,7 @@ if (args[0] === 'state-snapshot') {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const ctx = await loadThruntState()
+    const ctx = await loadThruntState({ cwd: projectRoot })
 
     expect(ctx.phase.number).toBeNull()
     expect(ctx.phase.name).toBeNull()
@@ -220,12 +211,8 @@ if (args[0] === 'state-snapshot') {
 
   test("populates lastRefreshedAt as a Date", async () => {
     const { loadThruntState } = await import("../state-adapter")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-state-"))
-    tempDirs.push(tempDir)
-
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-state-",
       `#!/usr/bin/env node
 const fs = require('fs');
 const args = process.argv.slice(2);
@@ -241,9 +228,8 @@ if (args[0] === 'state-snapshot') {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
     const before = new Date()
-    const ctx = await loadThruntState()
+    const ctx = await loadThruntState({ cwd: projectRoot })
     const after = new Date()
 
     expect(ctx.lastRefreshedAt).toBeInstanceOf(Date)

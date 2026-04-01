@@ -5,7 +5,7 @@ Template for `.planning/SUCCESS_CRITERIA.md`.
 <template>
 
 ```markdown
-# Success Criteria: [Program or Case Name]
+# Success Criteria: TBD
 
 ## Hunt Quality Gates
 
@@ -18,35 +18,31 @@ Template for `.planning/SUCCESS_CRITERIA.md`.
 
 ### Confirmed Malicious Activity
 
-- [Observable condition]
-- [Observable condition]
+- TBD
 
 ### Benign / False Positive
 
-- [Observable condition]
-- [Observable condition]
+- TBD
 
 ### Inconclusive But Actionable
 
-- [What is known]
-- [What remains unknown]
-- [What follow-up is recommended]
+- TBD
 
 ## Publish Gates
 
-- [What must exist before the case is published]
-- [What must exist before a detection is promoted]
-- [What must exist before an escalation is sent]
+- TBD
 
 ## Non-Goals
 
-- [What this hunt is explicitly not trying to answer]
+- TBD
 ```
 
 </template>
 
 <guidelines>
 
+- Bootstrap should always replace the document title with the confirmed program or case name before writing the file.
+- Unknown gates should remain `TBD`; do not simulate exit conditions.
 - Define what a useful answer looks like even when the result is negative.
 - Publish gates should reflect evidence quality, not perfection.
 - Non-goals prevent the hunt from drifting into a general forensic engagement.

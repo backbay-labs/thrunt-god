@@ -3,8 +3,6 @@ import * as fs from "node:fs/promises"
 import * as os from "node:os"
 import * as path from "node:path"
 
-const THRUNT_TOOLS_ENV = "THRUNT_TOOLS_PATH"
-
 async function writeExecutableScript(
   dir: string,
   name: string,
@@ -16,17 +14,33 @@ async function writeExecutableScript(
   return scriptPath
 }
 
-afterEach(() => {
-  delete process.env[THRUNT_TOOLS_ENV]
+let tempDirs: string[] = []
+
+afterEach(async () => {
+  for (const dir of tempDirs) {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {})
+  }
+  tempDirs = []
 })
+
+async function createMockProject(
+  scriptContents: string,
+): Promise<string> {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-stream-"))
+  tempDirs.push(tempDir)
+
+  const projectRoot = path.join(tempDir, "project")
+  const toolsDir = path.join(projectRoot, "thrunt-god", "bin")
+  await fs.mkdir(toolsDir, { recursive: true })
+  await writeExecutableScript(toolsDir, "thrunt-tools.cjs", scriptContents)
+
+  return projectRoot
+}
 
 describe("spawnThruntStream", () => {
   test("calls onLine for each NDJSON line parsed from subprocess stdout", async () => {
     const { spawnThruntStream } = await import("../stream")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-stream-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
       `#!/usr/bin/env node
 const fs = require('fs');
 fs.writeSync(1, JSON.stringify({ event: "start", id: 1 }) + "\\n");
@@ -34,8 +48,6 @@ fs.writeSync(1, JSON.stringify({ event: "progress", id: 2 }) + "\\n");
 fs.writeSync(1, JSON.stringify({ event: "done", id: 3 }) + "\\n");
 `,
     )
-
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
 
     const lines: unknown[] = []
     const errors: string[] = []
@@ -51,6 +63,7 @@ fs.writeSync(1, JSON.stringify({ event: "done", id: 3 }) + "\\n");
           errors.push(error)
           resolve()
         },
+        { cwd: projectRoot },
       )
       // Safety timeout
       setTimeout(() => resolve(), 5000)
@@ -61,17 +74,11 @@ fs.writeSync(1, JSON.stringify({ event: "done", id: 3 }) + "\\n");
     expect(lines[1]).toEqual({ event: "progress", id: 2 })
     expect(lines[2]).toEqual({ event: "done", id: 3 })
     expect(errors).toHaveLength(0)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   }, 10000)
 
   test("handles buffered partial lines (data arrives in chunks)", async () => {
     const { spawnThruntStream } = await import("../stream")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-stream-"))
-    // Script writes a JSON line split across two writes with a delay
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
       `#!/usr/bin/env node
 // Write partial line, then complete it after a delay
 process.stdout.write('{"partial":');
@@ -81,8 +88,6 @@ setTimeout(() => {
 }, 100);
 `,
     )
-
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
 
     const lines: unknown[] = []
 
@@ -94,30 +99,24 @@ setTimeout(() => {
           resolve()
         },
         () => resolve(),
+        { cwd: projectRoot },
       )
       setTimeout(() => resolve(), 5000)
     })
 
     expect(lines).toHaveLength(1)
     expect(lines[0]).toEqual({ partial: "complete" })
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   }, 10000)
 
   test("calls onError when subprocess exits non-zero", async () => {
     const { spawnThruntStream } = await import("../stream")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-stream-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
       `#!/usr/bin/env node
 const fs = require('fs');
 fs.writeSync(2, 'Stream failed: connection error\\n');
 process.exit(1);
 `,
     )
-
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
 
     const errors: string[] = []
 
@@ -129,23 +128,18 @@ process.exit(1);
           errors.push(error)
           resolve()
         },
+        { cwd: projectRoot },
       )
       setTimeout(() => resolve(), 5000)
     })
 
     expect(errors.length).toBeGreaterThan(0)
     expect(errors[0]).toContain("connection error")
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   }, 10000)
 
   test("kill() terminates the subprocess", async () => {
     const { spawnThruntStream } = await import("../stream")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-stream-"))
-    // Script that runs indefinitely, writing lines every 100ms
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
       `#!/usr/bin/env node
 const fs = require('fs');
 let i = 0;
@@ -156,8 +150,6 @@ const interval = setInterval(() => {
 setTimeout(() => { clearInterval(interval); }, 30000);
 `,
     )
-
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
 
     const lines: unknown[] = []
     let handle: { kill(): void }
@@ -175,6 +167,7 @@ setTimeout(() => { clearInterval(interval); }, 30000);
           }
         },
         () => resolve(),
+        { cwd: projectRoot },
       )
       setTimeout(() => resolve(), 5000)
     })
@@ -182,16 +175,11 @@ setTimeout(() => { clearInterval(interval); }, 30000);
     // Should have received at least 1 line before kill, but not all 300
     expect(lines.length).toBeGreaterThanOrEqual(1)
     expect(lines.length).toBeLessThan(20)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   }, 10000)
 
   test("skips non-JSON lines without crashing", async () => {
     const { spawnThruntStream } = await import("../stream")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-stream-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
       `#!/usr/bin/env node
 const fs = require('fs');
 fs.writeSync(1, 'this is not json\\n');
@@ -199,8 +187,6 @@ fs.writeSync(1, 'also not json\\n');
 fs.writeSync(1, JSON.stringify({ valid: true }) + "\\n");
 `,
     )
-
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
 
     const lines: unknown[] = []
     const errors: string[] = []
@@ -215,6 +201,7 @@ fs.writeSync(1, JSON.stringify({ valid: true }) + "\\n");
         (error) => {
           errors.push(error)
         },
+        { cwd: projectRoot },
       )
       setTimeout(() => resolve(), 5000)
     })
@@ -222,7 +209,5 @@ fs.writeSync(1, JSON.stringify({ valid: true }) + "\\n");
     // Only the valid JSON line should be received
     expect(lines).toHaveLength(1)
     expect(lines[0]).toEqual({ valid: true })
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   }, 10000)
 })

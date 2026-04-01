@@ -210,3 +210,5 @@ By default, `.planning/` is committed to git so hunt artifacts travel with the r
 3. If previously tracked: `git rm -r --cached .planning/`
 
 Workstreams (`/thrunt:new-workspace`) create isolated artifact trees under `.planning/workstreams/{name}/` for parallel hunts in the same project.
+
+Bootstrap fills confirmed fields immediately. `TBD` only marks live environment or operator-supplied facts that are still unknown.

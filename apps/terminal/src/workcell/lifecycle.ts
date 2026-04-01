@@ -42,15 +42,20 @@ export async function createWorkcell(
   const name = generateWorkcellName(index)
   const workcellPath = join(workcellsDir, name)
 
-  // Get base branch
-  const baseBranch = options.branch || (await git.getCurrentBranch(gitRoot))
+  // Anchor the workcell to a durable branch, but keep a clean reset target at
+  // the exact creation commit so pooled workcells return to their original snapshot.
+  const baseRef = options.branch || (await git.getCurrentBranch(gitRoot))
+  const baseCommit = options.branch
+    ? await git.getCommitForRef(gitRoot, options.branch)
+    : await git.getCurrentCommit(gitRoot)
+  const workcellBranch = git.generateWorktreeBranch("wc", workcellId)
 
   // Create workcell info (status: creating)
   const workcell: WorkcellInfo = {
     id: workcellId,
     name,
     directory: workcellPath,
-    branch: baseBranch,
+    branch: workcellBranch,
     status: "creating",
     toolchain: options.toolchain,
     projectId,
@@ -62,16 +67,16 @@ export async function createWorkcell(
   pool.addToPool(workcell)
 
   try {
-    // Create worktree with detached HEAD at current commit
-    const commit = await git.getCurrentCommit(gitRoot)
     await git.createWorktree(gitRoot, workcellPath, {
-      commit,
-      detach: true,
+      branch: baseRef,
+      newBranch: workcellBranch,
+      commit: baseCommit,
     })
 
     // Create .thrunt-god directory in workcell
     const metaDir = join(workcellPath, ".thrunt-god")
     await mkdir(metaDir, { recursive: true })
+    await git.writeWorktreeBaseRef(workcellPath, baseCommit)
 
     // Write metadata
     await writeMetadata(workcellPath, workcell)

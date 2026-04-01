@@ -17,9 +17,30 @@ async function writeExecutableScript(
   return scriptPath
 }
 
-afterEach(() => {
+let tempDirs: string[] = []
+
+afterEach(async () => {
   delete process.env[THRUNT_TOOLS_ENV]
+  for (const dir of tempDirs) {
+    await fs.rm(dir, { recursive: true, force: true }).catch(() => {})
+  }
+  tempDirs = []
 })
+
+async function createMockProject(
+  prefix: string,
+  scriptContents: string,
+): Promise<string> {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), prefix))
+  tempDirs.push(tempDir)
+
+  const projectRoot = path.join(tempDir, "project")
+  const toolsDir = path.join(projectRoot, "thrunt-god", "bin")
+  await fs.mkdir(toolsDir, { recursive: true })
+  await writeExecutableScript(toolsDir, "thrunt-tools.cjs", scriptContents)
+
+  return projectRoot
+}
 
 describe("resolveThruntToolsPath", () => {
   test("returns env override when THRUNT_TOOLS_PATH is set", async () => {
@@ -59,31 +80,26 @@ describe("resolveThruntToolsPath", () => {
 describe("runThruntCommand", () => {
   test("spawns node and returns { ok: true, data, exitCode: 0 } for valid JSON stdout", async () => {
     const { runThruntCommand } = await import("../executor")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-exec-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-exec-",
       `#!/usr/bin/env node
 const fs = require('fs');
 fs.writeSync(1, JSON.stringify({ phase: 23, status: "ready" }));
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const result = await runThruntCommand<{ phase: number; status: string }>(["state-snapshot"])
+    const result = await runThruntCommand<{ phase: number; status: string }>(["state-snapshot"], {
+      cwd: projectRoot,
+    })
     expect(result.ok).toBe(true)
     expect(result.data).toEqual({ phase: 23, status: "ready" })
     expect(result.exitCode).toBe(0)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   })
 
   test("returns { ok: false, error, exitCode } when subprocess exits non-zero", async () => {
     const { runThruntCommand } = await import("../executor")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-exec-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-exec-",
       `#!/usr/bin/env node
 const fs = require('fs');
 fs.writeSync(2, 'Error: unknown command\\n');
@@ -91,44 +107,43 @@ process.exit(1);
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const result = await runThruntCommand(["bad-command"])
+    const result = await runThruntCommand(["bad-command"], {
+      cwd: projectRoot,
+    })
     expect(result.ok).toBe(false)
     expect(result.error).toContain("unknown command")
     expect(result.exitCode).toBe(1)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   })
 
   test("returns { ok: true, data: undefined } for empty stdout", async () => {
     const { runThruntCommand } = await import("../executor")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-exec-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-exec-",
       `#!/usr/bin/env node
 // Produces no output
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const result = await runThruntCommand(["no-output"])
+    const result = await runThruntCommand(["no-output"], {
+      cwd: projectRoot,
+    })
     expect(result.ok).toBe(true)
     expect(result.data).toBeUndefined()
     expect(result.exitCode).toBe(0)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   })
 
   test("detects @file: prefix, reads temp file content as JSON, deletes the temp file", async () => {
     const { runThruntCommand } = await import("../executor")
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-exec-"))
+    tempDirs.push(tempDir)
+    const projectRoot = path.join(tempDir, "project")
     const tmpFilePath = path.join(tempDir, "thrunt-large-output.json")
     const largeData = { items: Array.from({ length: 100 }, (_, i) => ({ id: i, name: `item-${i}` })) }
 
     // Script writes JSON to temp file and prints @file: prefix to stdout
-    const scriptPath = await writeExecutableScript(
-      tempDir,
+    await fs.mkdir(path.join(projectRoot, "thrunt-god", "bin"), { recursive: true })
+    await writeExecutableScript(
+      path.join(projectRoot, "thrunt-god", "bin"),
       "thrunt-tools.cjs",
       `#!/usr/bin/env node
 const fs = require('fs');
@@ -138,45 +153,39 @@ fs.writeSync(1, '@file:' + tmpPath);
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const result = await runThruntCommand<typeof largeData>(["large-output"])
+    const result = await runThruntCommand<typeof largeData>(["large-output"], {
+      cwd: projectRoot,
+    })
     expect(result.ok).toBe(true)
     expect(result.data).toEqual(largeData)
     expect(result.exitCode).toBe(0)
 
     // Temp file should be deleted
     expect(fsSync.existsSync(tmpFilePath)).toBe(false)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   })
 
   test("returns { ok: false, error: 'JSON parse failed: ...' } for non-JSON stdout", async () => {
     const { runThruntCommand } = await import("../executor")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-exec-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-exec-",
       `#!/usr/bin/env node
 const fs = require('fs');
 fs.writeSync(1, 'This is not JSON at all');
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const result = await runThruntCommand(["bad-json"])
+    const result = await runThruntCommand(["bad-json"], {
+      cwd: projectRoot,
+    })
     expect(result.ok).toBe(false)
     expect(result.error).toContain("JSON parse failed")
     expect(result.exitCode).toBe(0)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   })
 
   test("kills subprocess after timeout and returns error", async () => {
     const { runThruntCommand } = await import("../executor")
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-exec-"))
-    const scriptPath = await writeExecutableScript(
-      tempDir,
-      "thrunt-tools.cjs",
+    const projectRoot = await createMockProject(
+      "thrunt-exec-",
       `#!/usr/bin/env node
 // Sleep for 10 seconds (longer than timeout)
 setTimeout(() => {
@@ -186,11 +195,11 @@ setTimeout(() => {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-    const result = await runThruntCommand(["slow-cmd"], { timeout: 200 })
+    const result = await runThruntCommand(["slow-cmd"], {
+      cwd: projectRoot,
+      timeout: 200,
+    })
     expect(result.ok).toBe(false)
     expect(result.exitCode).not.toBe(0)
-
-    await fs.rm(tempDir, { recursive: true, force: true })
   }, 10000)
 })

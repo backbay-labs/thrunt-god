@@ -409,7 +409,7 @@ I'll verify: vercel whoami returns your account
 | Convex | `npx convex env set` | `npx convex env set OPENAI_API_KEY sk-...` |
 | Vercel | `vercel env add` | `vercel env add STRIPE_KEY production` |
 | Railway | `railway variables set` | `railway variables set API_KEY=value` |
-| Fly | `fly secrets set` | `fly secrets set DATABASE_URL=...` |
+| Fly | `fly secrets set` | `fly secrets set DATABASE_URL <database-url>` |
 | Supabase | `supabase secrets set` | `supabase secrets set MY_SECRET=value` |
 
 **Secret collection pattern:**

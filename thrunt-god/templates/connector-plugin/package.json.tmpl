@@ -1,0 +1,16 @@
+{
+  "name": "{{PACKAGE_NAME}}",
+  "version": "0.1.0",
+  "description": "THRUNT GOD connector for {{CONNECTOR_DISPLAY_NAME}}",
+  "main": "src/index.cjs",
+  "keywords": ["thrunt-god", "thrunt-connector", "{{CONNECTOR_ID}}"],
+  "engines": { "node": ">=20.0.0" },
+  "peerDependencies": { "thrunt-god": "{{SDK_VERSION}}" },
+  "devDependencies": { "thrunt-god": "{{SDK_VERSION}}", "c8": "^11.0.0" },
+  "scripts": {
+    "test": "node --test tests/",
+    "test:coverage": "c8 --reporter text --reporter lcov node --test tests/",
+    "validate": "node -e \"const p=require('./node_modules/thrunt-god/thrunt-god/bin/lib/plugin-registry.cjs');const r=p.loadPluginManifest('.');console.log(JSON.stringify(r,null,2));if(!r.valid)process.exit(1)\""
+  },
+  "license": "MIT"
+}

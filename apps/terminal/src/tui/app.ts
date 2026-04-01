@@ -12,6 +12,9 @@ import { Health } from "../health"
 import { MCP } from "../mcp"
 import { Config } from "../config"
 import { ThruntPlanningWatcher } from "../thrunt-bridge"
+import { listConnectors } from "../thrunt-bridge/connector"
+import { analyzeHuntmap } from "../thrunt-bridge/huntmap"
+import { listPacks } from "../thrunt-bridge/pack"
 import { executeQueryStream } from "../thrunt-bridge/runtime"
 import { Verifier } from "../verifier"
 import { THEME, ESC, AGENTS } from "./theme"
@@ -19,12 +22,16 @@ import { renderStatusBar } from "./components/status-bar"
 import { renderGateOverlay } from "./components/gate-overlay"
 import { createLogState, appendLine } from "./components/streaming-log"
 import { getInvestigationCounts, isInvestigationStale } from "./investigation"
+import { readAgentBridgeEvents } from "./agent-bridge"
+import { readReportHistory } from "./report-export"
+import { buildSearchCatalog, rankSearchResults } from "./search"
 import { getSurfaceMeta } from "./surfaces"
 import type {
   Screen,
   ScreenContext,
   AppState,
   InputMode,
+  SupportedInputMode,
   Command,
   AppController,
   DispatchResultInfo,
@@ -33,8 +40,10 @@ import type {
 } from "./types"
 import {
   createInitialDispatchSheetState,
+  createInitialAgentActivityState,
   createInitialExternalExecutionSheetState,
   createInitialHuntState,
+  createInitialHomeSearchState,
   createInitialInteractiveSessionState,
   createInitialRunListState,
   createInitialThruntPhasesState,
@@ -43,6 +52,7 @@ import {
   createInitialThruntPacksState,
   createInitialThruntConnectorsState,
   createInitialThruntExecutionState,
+  toSupportedInputMode,
   type RuntimeInfo,
 } from "./types"
 import {
@@ -84,10 +94,6 @@ import { integrationsScreen } from "./screens/integrations"
 import { securityScreen } from "./screens/security"
 import { auditScreen } from "./screens/audit"
 import { policyScreen } from "./screens/policy"
-import { runsScreen } from "./screens/runs"
-import { runDetailScreen } from "./screens/run-detail"
-import { interactiveRunScreen } from "./screens/interactive-run"
-import { resultScreen } from "./screens/result"
 
 // Hunt screen imports
 import { huntWatchScreen } from "./screens/hunt-watch"
@@ -153,6 +159,15 @@ function createInitialExternalState() {
   }
 }
 
+function resolveClipboardCommand(command: string, args: string[] = []): string[] | null {
+  try {
+    const resolved = Bun.which(command)
+    return resolved ? [resolved, ...args] : null
+  } catch {
+    return null
+  }
+}
+
 // =============================================================================
 // TUI APP
 // =============================================================================
@@ -190,6 +205,10 @@ export class TUIApp implements AppController {
   private width: number = 80
   private height: number = 24
   private cwd: string
+  private homeDataRefreshInFlight = false
+  private lastHomeDataRefreshAt = 0
+  private agentActivityRefreshInFlight = false
+  private lastAgentActivityRefreshAt = 0
   private canceledRunIds = new Set<string>()
   private attachedSession: { exited: Promise<number>; terminate: () => void } | null = null
   private interactiveRuntime: InteractivePtyRuntime | null = null
@@ -211,7 +230,7 @@ export class TUIApp implements AppController {
   }
 
   private commands: Command[]
-  private screens: Map<string, Screen>
+  private screens: Map<SupportedInputMode, Screen>
 
   constructor(cwd: string = process.cwd()) {
     this.cwd = cwd
@@ -249,6 +268,8 @@ export class TUIApp implements AppController {
       setupStep: "detecting",
       setupSandboxIndex: 0,
       hunt: createInitialHuntState(),
+      homeSearch: createInitialHomeSearchState(),
+      agentActivity: createInitialAgentActivityState(),
       thruntContext: null,
       thruntPhases: createInitialThruntPhasesState(),
       thruntEvidence: createInitialThruntEvidenceState(),
@@ -261,18 +282,18 @@ export class TUIApp implements AppController {
 
     // Build commands list (including hunt commands)
     this.commands = [
-      { key: "d", label: "dispatch", description: "send task to agent", stage: "supported", action: () => this.submitPrompt("dispatch") },
       { key: "g", label: "gates", description: "run quality gates", stage: "supported", action: () => this.runGates() },
       { key: "W", label: "watch", description: "live hunt stream", stage: "supported", action: () => this.setScreen("hunt-watch") },
       { key: "T", label: "timeline", description: "timeline replay", stage: "supported", action: () => this.setScreen("hunt-timeline") },
       { key: "Q", label: "query", description: "hunt query REPL", stage: "supported", action: () => this.setScreen("hunt-query") },
       { key: "E", label: "evidence", description: "evidence report", stage: "supported", action: () => this.setScreen("hunt-report") },
       { key: "H", label: "history", description: "exported report index", stage: "supported", action: () => this.setScreen("hunt-report-history") },
+      { key: "C", label: "connectors", description: "connector status", stage: "supported", action: () => this.setScreen("hunt-connectors") },
+      { key: "K", label: "packs", description: "hunt packs", stage: "supported", action: () => this.setScreen("hunt-packs") },
       { key: "R", label: "rules", description: "correlation rule builder", stage: "experimental", action: () => this.setScreen("hunt-rule-builder") },
       { key: "D", label: "diff", description: "scan change detection", stage: "experimental", action: () => this.setScreen("hunt-diff") },
       { key: "M", label: "mitre", description: "MITRE ATT&CK heatmap", stage: "experimental", action: () => this.setScreen("hunt-mitre") },
       { key: "P", label: "playbook", description: "playbook runner", stage: "experimental", action: () => this.setScreen("hunt-playbook") },
-      { key: "r", label: "runs", description: "managed backlog", stage: "supported", action: () => this.showRuns() },
       { key: "i", label: "integrations", description: "system status", stage: "supported", action: () => this.setScreen("integrations") },
       { key: "?", label: "help", description: "keyboard shortcuts", stage: "supported", action: () => this.showHelp() },
       { key: "q", label: "quit", description: "exit thrunt-god", stage: "supported", action: () => this.quit() },
@@ -280,19 +301,14 @@ export class TUIApp implements AppController {
 
     // Build screen registry
     const mainScreen = createMainScreen(this.commands)
-    this.screens = new Map<string, Screen>([
+    this.screens = new Map<SupportedInputMode, Screen>([
       ["main", mainScreen],
       ["commands", mainScreen], // commands overlay shares the main screen
-      ["dispatch-sheet", mainScreen], // dispatch overlay shares the main screen
       ["setup", setupScreen],
       ["integrations", integrationsScreen],
       ["security", securityScreen],
       ["audit", auditScreen],
       ["policy", policyScreen],
-      ["runs", runsScreen],
-      ["run-detail", runDetailScreen],
-      ["interactive-run", interactiveRunScreen],
-      ["result", resultScreen],
       ["hunt-watch", huntWatchScreen],
       ["hunt-scan", huntScanScreen],
       ["hunt-timeline", huntTimelineScreen],
@@ -355,6 +371,8 @@ export class TUIApp implements AppController {
     this.startMcpServer()
     this.runHealthcheck()
     this.refreshTimer = setInterval(() => this.refresh(), 2000)
+    void this.refreshHomeData(true)
+    void this.refreshAgentActivity(true)
 
     // Start .planning/ watcher for THRUNT bridge
     this.thruntWatcher = new ThruntPlanningWatcher(
@@ -363,6 +381,7 @@ export class TUIApp implements AppController {
         this.state.thruntContext = ctx
         this.render()
       },
+      { cwd: this.cwd },
     )
     this.thruntWatcher.start()
   }
@@ -373,6 +392,81 @@ export class TUIApp implements AppController {
       this.render()
     } catch {
       // MCP server failed to start - not critical
+    }
+  }
+
+  private async refreshHomeData(force = false): Promise<void> {
+    const now = Date.now()
+    if (this.homeDataRefreshInFlight) {
+      return
+    }
+    if (!force && now - this.lastHomeDataRefreshAt < 15_000) {
+      return
+    }
+
+    this.homeDataRefreshInFlight = true
+    this.state.homeSearch = {
+      ...this.state.homeSearch,
+      loading: true,
+      error: null,
+    }
+    try {
+      const [reportHistoryEntries, connectors, packs, phases] = await Promise.all([
+        readReportHistory(this.cwd).catch(() => this.state.hunt.reportHistory.entries),
+        listConnectors({ cwd: this.cwd }).catch(() => this.state.thruntConnectors.connectors),
+        listPacks({ cwd: this.cwd }).catch(() => this.state.thruntPacks.packs),
+        analyzeHuntmap({ cwd: this.cwd }).catch(() => this.state.thruntPhases.analysis),
+      ])
+
+      this.state.hunt.reportHistory.entries = reportHistoryEntries
+      this.state.thruntConnectors.connectors = connectors
+      this.state.thruntPacks.packs = packs
+      this.state.thruntPhases.analysis = phases
+      this.recomputeHomeSearchResults()
+      this.lastHomeDataRefreshAt = Date.now()
+      this.state.homeSearch = {
+        ...this.state.homeSearch,
+        hydrated: true,
+        loading: false,
+        error: null,
+      }
+    } catch (error) {
+      this.state.homeSearch = {
+        ...this.state.homeSearch,
+        loading: false,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    } finally {
+      this.homeDataRefreshInFlight = false
+    }
+  }
+
+  private async refreshAgentActivity(force = false): Promise<void> {
+    const now = Date.now()
+    if (this.agentActivityRefreshInFlight) {
+      return
+    }
+    if (!force && now - this.lastAgentActivityRefreshAt < 2_000) {
+      return
+    }
+
+    this.agentActivityRefreshInFlight = true
+    try {
+      const events = await readAgentBridgeEvents(this.cwd, 12)
+      this.state.agentActivity = {
+        events,
+        updatedAt: events[0]?.timestamp ?? this.state.agentActivity.updatedAt,
+        error: null,
+      }
+      this.recomputeHomeSearchResults()
+      this.lastAgentActivityRefreshAt = Date.now()
+    } catch (error) {
+      this.state.agentActivity = {
+        ...this.state.agentActivity,
+        error: error instanceof Error ? error.message : String(error),
+      }
+    } finally {
+      this.agentActivityRefreshInFlight = false
     }
   }
 
@@ -532,7 +626,7 @@ export class TUIApp implements AppController {
       return
     }
 
-    const screen = this.screens.get(this.state.inputMode)
+    const screen = this.screens.get(this.getRenderableInputMode(this.state.inputMode))
     if (screen) {
       const ctx = this.createContext()
       screen.handleInput(key, ctx)
@@ -547,7 +641,7 @@ export class TUIApp implements AppController {
     let output = ESC.moveTo(1, 1)
 
     const ctx = this.createContext()
-    const screen = this.screens.get(this.state.inputMode)
+    const screen = this.screens.get(this.getRenderableInputMode(this.state.inputMode))
     let screenContent = screen ? screen.render(ctx) : ""
 
     // Gate overlay (centered, replaces screen rows)
@@ -648,12 +742,43 @@ export class TUIApp implements AppController {
     }
   }
 
+  private getRenderableInputMode(mode: InputMode): SupportedInputMode {
+    return toSupportedInputMode(mode)
+  }
+
+  private recomputeHomeSearchResults(): void {
+    const catalog = buildSearchCatalog({
+      historyEntries: this.state.hunt.reportHistory.entries,
+      investigation: this.state.hunt.investigation,
+      phases: this.state.thruntPhases.analysis,
+      packs: this.state.thruntPacks.packs,
+      connectors: this.state.thruntConnectors.connectors,
+    })
+    const query = this.state.inputMode === "main" ? this.state.promptBuffer : ""
+    const ranked = rankSearchResults(query, catalog, 8)
+    this.state.homeSearch.results = ranked.map(({ score: _score, ...result }) => result)
+    const maxIndex = Math.max(0, this.state.homeSearch.results.length - 1)
+    const clampedIndex = Math.min(Math.max(this.state.homeActionIndex, 0), maxIndex)
+    this.state.homeActionIndex = clampedIndex
+    this.state.homeSearch.selectedIndex = clampedIndex
+  }
+
+  refreshHomeSearch(force = false): void {
+    if (force) {
+      void this.refreshHomeData(true)
+      void this.refreshAgentActivity(true)
+      return
+    }
+
+    this.recomputeHomeSearchResults()
+  }
+
   // ===========================================================================
   // APP CONTROLLER INTERFACE
   // ===========================================================================
 
   setScreen(mode: InputMode): void {
-    const oldScreen = this.screens.get(this.state.inputMode)
+    const oldScreen = this.screens.get(this.getRenderableInputMode(this.state.inputMode))
     const ctx = this.createContext()
 
     if (oldScreen?.onExit) {
@@ -664,11 +789,12 @@ export class TUIApp implements AppController {
     if (mode === "main") {
       this.state.homeFocus = "prompt"
       this.state.homePromptTraceStartFrame = this.state.animationFrame
+      this.recomputeHomeSearchResults()
     } else if (mode === "interactive-run") {
       this.syncInteractiveViewport()
     }
 
-    const newScreen = this.screens.get(mode)
+    const newScreen = this.screens.get(this.getRenderableInputMode(mode))
     if (newScreen?.onEnter) {
       newScreen.onEnter(ctx)
     }
@@ -1099,6 +1225,45 @@ export class TUIApp implements AppController {
     return this.cwd
   }
 
+  async copyText(text: string, label = "selection"): Promise<boolean> {
+    const candidates = [
+      () => resolveClipboardCommand("pbcopy"),
+      () => resolveClipboardCommand("wl-copy"),
+      () => resolveClipboardCommand("xclip", ["-selection", "clipboard"]),
+    ]
+
+    for (const candidate of candidates) {
+      const command = candidate()
+      if (!command) {
+        continue
+      }
+      try {
+        const proc = Bun.spawn(command, {
+          stdin: "pipe",
+          stdout: "ignore",
+          stderr: "ignore",
+        })
+        if (!proc.stdin) {
+          continue
+        }
+        proc.stdin.write(text)
+        proc.stdin.end()
+        const exitCode = await proc.exited
+        if (exitCode === 0) {
+          this.state.statusMessage = `${THEME.success}Copied${THEME.reset} ${THEME.white}${label}${THEME.reset}`
+          this.render()
+          return true
+        }
+      } catch {
+        // Try the next clipboard backend.
+      }
+    }
+
+    this.state.statusMessage = `${THEME.warning}Clipboard unavailable${THEME.reset} ${THEME.dim}for ${label}${THEME.reset}`
+    this.render()
+    return false
+  }
+
   interactiveSendInput(input: string): void {
     if (!this.interactiveRuntime || this.state.interactiveSession.focus !== "pty") {
       return
@@ -1228,6 +1393,10 @@ export class TUIApp implements AppController {
       this.state.activeRuns = Math.max(active.length, this.getManagedActiveRunCount())
 
       this.state.lastRefresh = new Date()
+      await Promise.all([
+        this.refreshHomeData(),
+        this.refreshAgentActivity(),
+      ])
 
       if (this.state.inputMode === "main" && !this.state.isRunning) {
         this.render()
@@ -2316,22 +2485,16 @@ export class TUIApp implements AppController {
     console.log("")
     console.log(`  ${THEME.secondary}↑/↓${THEME.reset}  ${THEME.muted}or${THEME.reset}  ${THEME.secondary}j/k${THEME.reset}     Navigate`)
     console.log(`  ${THEME.secondary}Enter${THEME.reset}  ${THEME.muted}or${THEME.reset}  ${THEME.secondary}Space${THEME.reset}   Select`)
-    console.log(`  ${THEME.secondary}Enter${THEME.reset}               Open dispatch sheet from the home prompt`)
-    console.log(`  ${THEME.secondary}Tab${THEME.reset}                 Switch between prompt and actions`)
-    console.log(`  ${THEME.secondary}Esc${THEME.reset}                 Toggle prompt and nav focus`)
+    console.log(`  ${THEME.secondary}Type${THEME.reset}                Search hunts, reports, packs, connectors, and findings`)
+    console.log(`  ${THEME.secondary}Enter${THEME.reset}               Open the selected search result`)
+    console.log(`  ${THEME.secondary}Tab${THEME.reset}                 Switch between search and results`)
+    console.log(`  ${THEME.secondary}c / y${THEME.reset}               Copy the selected search result`)
+    console.log(`  ${THEME.secondary}Esc${THEME.reset}                 Clear search or return focus to the search bar`)
     console.log(`  ${THEME.secondary}g${THEME.reset}                   Gates`)
-    console.log(`  ${THEME.secondary}r${THEME.reset}                   Runs`)
     console.log(`  ${THEME.secondary}i${THEME.reset}                   Integrations`)
     console.log(`  ${THEME.secondary}Ctrl+N${THEME.reset}              Cycle agents`)
     console.log(`  ${THEME.secondary}Ctrl+S${THEME.reset}              Security overview`)
     console.log(`  ${THEME.secondary}Ctrl+P${THEME.reset}              Command palette`)
-    console.log("")
-    console.log(THEME.white + THEME.bold + "  Dispatch Sheet" + THEME.reset)
-    console.log("")
-    console.log(`  ${THEME.secondary}↑/↓${THEME.reset}                 Focus action / mode / agent`)
-    console.log(`  ${THEME.secondary}←/→${THEME.reset}                 Change selected field`)
-    console.log(`  ${THEME.secondary}d / s${THEME.reset}               Set action to dispatch or speculate`)
-    console.log(`  ${THEME.secondary}Enter${THEME.reset}               Launch managed run`)
     console.log("")
     console.log(THEME.white + THEME.bold + "  Hunt Commands" + THEME.reset)
     console.log("")
@@ -2342,6 +2505,8 @@ export class TUIApp implements AppController {
     console.log(`  ${THEME.secondary}D${THEME.reset}                   Diff (scan changes) ${THEME.warning}[exp]${THEME.reset}`)
     console.log(`  ${THEME.secondary}E${THEME.reset}                   Evidence report ${THEME.success}[beta]${THEME.reset}`)
     console.log(`  ${THEME.secondary}H${THEME.reset}                   Export history ${THEME.success}[beta]${THEME.reset}`)
+    console.log(`  ${THEME.secondary}C${THEME.reset}                   Connectors ${THEME.success}[beta]${THEME.reset}`)
+    console.log(`  ${THEME.secondary}K${THEME.reset}                   Packs ${THEME.success}[beta]${THEME.reset}`)
     console.log(`  ${THEME.secondary}M${THEME.reset}                   MITRE ATT&CK map ${THEME.warning}[exp]${THEME.reset}`)
     console.log(`  ${THEME.secondary}P${THEME.reset}                   Playbook runner ${THEME.warning}[exp]${THEME.reset}`)
     console.log("")
@@ -2353,7 +2518,7 @@ export class TUIApp implements AppController {
 
   async quit(): Promise<void> {
     // Call onExit on current screen
-    const screen = this.screens.get(this.state.inputMode)
+    const screen = this.screens.get(this.getRenderableInputMode(this.state.inputMode))
     if (screen?.onExit) {
       screen.onExit(this.createContext())
     }

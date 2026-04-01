@@ -1,0 +1,98 @@
+name: Reusable Connector Test
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      thrunt-version:
+        description: 'THRUNT GOD version to test against'
+        required: false
+        default: 'latest'
+        type: string
+      node-version:
+        description: 'Node.js version'
+        required: false
+        default: '22'
+        type: string
+      connector-directory:
+        description: 'Root of the connector plugin project'
+        required: false
+        default: '.'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      THRUNT_VERSION: ${{ inputs.thrunt-version }}
+      CONNECTOR_DIR: ${{ inputs.connector-directory }}
+
+    steps:
+      - name: Checkout connector repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'npm'
+
+      - name: Install THRUNT GOD
+        shell: bash
+        run: |
+          npm install -g "thrunt-god@${THRUNT_VERSION}"
+          THRUNT_TOOLS_PATH="$(npm root -g)/thrunt-god/thrunt-god/bin/thrunt-tools.cjs"
+          if [ ! -f "$THRUNT_TOOLS_PATH" ]; then
+            echo "Missing thrunt-tools entrypoint at $THRUNT_TOOLS_PATH"
+            exit 1
+          fi
+          echo "THRUNT_TOOLS_PATH=$THRUNT_TOOLS_PATH" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        shell: bash
+        run: cd "$CONNECTOR_DIR" && npm ci
+
+      - name: Validate manifest
+        shell: bash
+        run: |
+          cd "$CONNECTOR_DIR"
+          node "$THRUNT_TOOLS_PATH" runtime doctor-connectors --raw
+
+      - name: Run unit tests
+        shell: bash
+        run: cd "$CONNECTOR_DIR" && npm test
+
+      - name: Run contract tests
+        shell: bash
+        run: cd "$CONNECTOR_DIR" && node --test tests/contract.test.cjs
+
+      - name: Coverage report
+        shell: bash
+        run: |
+          cd "$CONNECTOR_DIR"
+          TEST_FILES=()
+          while IFS= read -r -d '' test_file; do
+            TEST_FILES+=("$test_file")
+          done < <(find tests -type f \( -name '*.test.cjs' -o -name '*.test.js' -o -name '*.test.mjs' \) -print0)
+
+          if [ "${#TEST_FILES[@]}" -eq 0 ]; then
+            echo "No Node test files found under tests/"
+            exit 1
+          fi
+
+          npx c8 --reporter text --reporter lcov node --test "${TEST_FILES[@]}"
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
+        with:
+          name: connector-coverage
+          path: ${{ inputs.connector-directory }}/coverage/lcov.info
+          retention-days: 30

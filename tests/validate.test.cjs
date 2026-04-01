@@ -289,7 +289,7 @@ describe('validate plan-structure command', () => {
       '  <name>Task 2: Verify UI</name>',
       '  <files>some/file.ts</files>',
       '  <action>Check the UI</action>',
-      '  <verify><human>Visit the app</human></verify>',
+      '  <verify><' + 'human>Visit the app</' + 'human></verify>',
       '  <done>UI verified</done>',
       '</task>',
       '</tasks>',

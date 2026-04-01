@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { createTempProject, cleanup, runThruntTools } = require('./helpers.cjs');
+const packLib = require('../thrunt-god/bin/lib/pack.cjs');
 
 function normalizePathSeparators(value) {
   return String(value).replace(/\\/g, '/');
@@ -228,5 +229,158 @@ describe('pack command surface', () => {
     assert.strictEqual(output.pack.id, 'custom.okta-session-abuse');
     assert.strictEqual(output.pack.examples.parameters.tenant, 'example-tenant');
     assert.ok(fs.existsSync(path.join(tmpDir, output.path)));
+  });
+});
+
+describe('pack test enhanced flags', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject('thrunt-pack-flags-');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('pack test --verbose includes rendered queries', () => {
+    const result = runThruntTools(['pack', 'test', 'technique.t1078-valid-accounts', '--verbose'], tmpDir);
+    assert.ok(result.success, `should succeed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.ok(data.packs[0].verbose, 'should include verbose output');
+    assert.ok(data.packs[0].verbose.length > 0, 'should have at least one verbose entry');
+    assert.ok(data.packs[0].verbose[0].rendered_query, 'verbose entry should have rendered_query');
+  });
+
+  test('pack test --coverage includes 4 coverage sections', () => {
+    const result = runThruntTools(['pack', 'test', 'technique.t1078-valid-accounts', '--coverage'], tmpDir);
+    assert.ok(result.success, `should succeed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.ok(data.packs[0].coverage, 'should include coverage output');
+    assert.ok(Array.isArray(data.packs[0].coverage.telemetry), 'should have telemetry section');
+    assert.ok(Array.isArray(data.packs[0].coverage.connectors), 'should have connectors section');
+    assert.ok(Array.isArray(data.packs[0].coverage.entities), 'should have entities section');
+    assert.ok(Array.isArray(data.packs[0].coverage.parameters), 'should have parameters section');
+  });
+
+  test('pack test --validate-only skips bootstrap and render', () => {
+    const result = runThruntTools(['pack', 'test', 'technique.t1078-valid-accounts', '--validate-only'], tmpDir);
+    assert.ok(result.success, `should succeed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.ok(data.packs[0].validate_only, 'should have validate_only flag');
+    assert.strictEqual(data.packs[0].bootstrap_ok, undefined, 'should not have bootstrap_ok');
+  });
+
+  test('pack test --mock-data validates against mock fixtures', () => {
+    const result = runThruntTools(['pack', 'test', 'technique.t1078-valid-accounts', '--mock-data'], tmpDir);
+    assert.ok(result.success, `should succeed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.ok(data.packs[0].mock_data, 'should include mock_data output');
+    assert.ok(data.packs[0].mock_data.length > 0, 'should have at least one mock data entry');
+  });
+});
+
+describe('pack promote', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject('thrunt-pack-promote-');
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('pack promote requires pack-id', () => {
+    const result = runThruntTools(['pack', 'promote'], tmpDir);
+    assert.ok(!result.success, 'should fail without pack-id');
+  });
+
+  test('pack promote refuses non-stable pack', () => {
+    // Create a local experimental pack that passes composition validation
+    writeJson(path.join(tmpDir, '.planning', 'packs', 'unstable-pack.json'), {
+      version: '1.0', id: 'custom.unstable',
+      kind: 'custom', title: 'Unstable', description: 'Experimental pack',
+      stability: 'experimental', metadata: {},
+      hypothesis_ids: ['HYP-01'],
+      hypothesis_templates: ['An adversary is exploiting unstable functionality.'],
+      required_connectors: ['splunk'],
+      supported_datasets: ['events'],
+      parameters: [{ name: 'tenant', type: 'string', required: true, description: 'Tenant' }],
+      telemetry_requirements: [{ surface: 'test', description: 'Test', connectors: ['splunk'], datasets: ['events'] }],
+      blind_spots: ['None.'],
+      execution_targets: [{ name: 'Test', description: 'Test', connector: 'splunk', dataset: 'events', language: 'spl', query_template: 'index=test {{tenant}}' }],
+      scope_defaults: { entities: ['user'], time_window: { lookback_minutes: 60 } },
+      execution_defaults: { consistency: 'best_effort', receipt_policy: 'material' },
+      examples: { parameters: { tenant: 'test' } },
+      publish: { finding_type: 'test', expected_outcomes: ['test'], receipt_tags: ['pack:custom.unstable'] },
+    });
+
+    const result = runThruntTools(['pack', 'promote', 'custom.unstable'], tmpDir);
+    assert.ok(result.success || result.output, 'should produce output');
+    const data = JSON.parse(result.output);
+    assert.strictEqual(data.promoted, false);
+    assert.ok(data.errors.some(e => e.includes('stable')), 'should mention stability requirement');
+  });
+
+  test('pack promote succeeds for stable local pack', () => {
+    // Create a stable local pack that passes validation
+    const packData = {
+      version: '1.0', id: 'custom.promote-test',
+      kind: 'custom', title: 'Promotable Pack',
+      description: 'A stable pack ready for promotion.',
+      stability: 'stable', metadata: { domains: ['test'] },
+      attack: [],
+      hypothesis_ids: ['HYP-01'],
+      hypothesis_templates: ['An adversary is testing promotion.'],
+      required_connectors: ['splunk'],
+      supported_datasets: ['events'],
+      parameters: [
+        { name: 'tenant', type: 'string', required: true, description: 'Tenant', pattern: '^[A-Za-z0-9._-]+$' },
+      ],
+      telemetry_requirements: [
+        { surface: 'test_surface', description: 'Test', connectors: ['splunk'], datasets: ['events'] },
+      ],
+      blind_spots: ['None for testing.'],
+      execution_targets: [
+        { name: 'Splunk test', description: 'Test target', connector: 'splunk', dataset: 'events', language: 'spl', query_template: 'index=test tenant={{tenant}}' },
+      ],
+      scope_defaults: { entities: ['user'], time_window: { lookback_minutes: 60 } },
+      execution_defaults: { consistency: 'best_effort', receipt_policy: 'material' },
+      examples: { parameters: { tenant: 'test-tenant' } },
+      publish: {
+        finding_type: 'test_finding',
+        expected_outcomes: ['test_outcome'],
+        receipt_tags: ['pack:custom.promote-test'],
+      },
+      notes: ['Test pack for promotion.'],
+    };
+    const builtInPath = path.join(packLib.getBuiltInPackRegistryDir(), 'custom', 'promote-test.json');
+    try {
+      writeJson(path.join(tmpDir, '.planning', 'packs', 'custom', 'promote-test.json'), packData);
+
+      const result = runThruntTools(['pack', 'promote', 'custom.promote-test'], tmpDir);
+      assert.ok(result.success, `should succeed: ${result.error}`);
+      const data = JSON.parse(result.output);
+      assert.strictEqual(data.promoted, true);
+      assert.strictEqual(data.pack_id, 'custom.promote-test');
+      assert.ok(data.destination.includes('custom'), 'destination should be in custom folder');
+
+      // Verify the file was copied to built-in directory
+      assert.ok(fs.existsSync(builtInPath), 'promoted pack should exist in built-in directory');
+    } finally {
+      if (fs.existsSync(builtInPath)) {
+        fs.unlinkSync(builtInPath);
+      }
+    }
+  });
+
+  test('pack promote refuses already built-in pack', () => {
+    // technique.t1078-valid-accounts is already built-in
+    const result = runThruntTools(['pack', 'promote', 'technique.t1078-valid-accounts'], tmpDir);
+    assert.ok(result.success || result.output, 'should produce output');
+    const data = JSON.parse(result.output);
+    assert.strictEqual(data.promoted, false);
+    assert.ok(data.errors.some(e => e.includes('already')), 'should say pack is already built-in');
   });
 });

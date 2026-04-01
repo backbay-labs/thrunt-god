@@ -7,6 +7,10 @@ const path = require('path');
 const { execSync, execFileSync, spawnSync } = require('child_process');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
+const CONNECTOR_ID_ALIASES = {
+  elasticsearch: 'elastic',
+};
+
 // ─── Path helpers ────────────────────────────────────────────────────────────
 
 /** Name of the planning directory. Override with THRUNT_PLANNING_DIR env var. */
@@ -221,6 +225,8 @@ function loadConfig(cwd) {
     context_window: 200000, // default 200k; set to 1000000 for Opus/Sonnet 4.6 1M models
     phase_naming: 'sequential', // 'sequential' (default, auto-increment) or 'custom' (arbitrary string IDs)
     connector_profiles: {},
+    tenants: {},
+    tenant_isolation_mode: 'flat',
     publish_quality_threshold: 0.7,
     promotion_readiness_threshold: 0.6,
     promotion_hooks_enabled: false,
@@ -230,6 +236,30 @@ function loadConfig(cwd) {
     const raw = fs.readFileSync(configPath, 'utf-8');
     const parsed = JSON.parse(raw);
     let configDirty = false;
+
+    if (parsed.connector_profiles && typeof parsed.connector_profiles === 'object') {
+      for (const [aliasId, canonicalId] of Object.entries(CONNECTOR_ID_ALIASES)) {
+        if (parsed.connector_profiles[aliasId]) {
+          parsed.connector_profiles[canonicalId] = {
+            ...(parsed.connector_profiles[canonicalId] || {}),
+            ...parsed.connector_profiles[aliasId],
+          };
+          delete parsed.connector_profiles[aliasId];
+          configDirty = true;
+        }
+      }
+      for (const profiles of Object.values(parsed.connector_profiles)) {
+        if (!profiles || typeof profiles !== 'object') continue;
+        for (const profile of Object.values(profiles)) {
+          if (!profile || typeof profile !== 'object') continue;
+          if (!profile.base_url && typeof profile.endpoint === 'string' && profile.endpoint.trim()) {
+            profile.base_url = profile.endpoint;
+            delete profile.endpoint;
+            configDirty = true;
+          }
+        }
+      }
+    }
 
     // Migrate deprecated "depth" key to "granularity" with value mapping
     if ('depth' in parsed && !('granularity' in parsed)) {
@@ -322,6 +352,8 @@ function loadConfig(cwd) {
       context_window: get('context_window') ?? defaults.context_window,
       phase_naming: get('phase_naming') ?? defaults.phase_naming,
       connector_profiles: parsed.connector_profiles || {},
+      tenants: parsed.tenants || {},
+      tenant_isolation_mode: parsed.tenant_isolation_mode || 'flat',
       model_overrides: parsed.model_overrides || null,
       agent_skills: parsed.agent_skills || {},
       publish_quality_threshold: get('publish_quality_threshold') ?? defaults.publish_quality_threshold,

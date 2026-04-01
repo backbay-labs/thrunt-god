@@ -1,12 +1,19 @@
 import { describe, expect, test } from "bun:test"
 import type { AppState } from "../src/tui/types"
 import {
-  createInitialAuditLogState,
+  createInitialAgentActivityState,
   createInitialDispatchSheetState,
   createInitialExternalExecutionSheetState,
   createInitialHuntState,
+  createInitialHomeSearchState,
   createInitialInteractiveSessionState,
   createInitialRunListState,
+  createInitialThruntConnectorsState,
+  createInitialThruntDetectionsState,
+  createInitialThruntEvidenceState,
+  createInitialThruntExecutionState,
+  createInitialThruntPacksState,
+  createInitialThruntPhasesState,
 } from "../src/tui/types"
 import { buildInvestigationReport, getInvestigationCounts, updateInvestigation } from "../src/tui/investigation"
 import { getSurfaceMeta } from "../src/tui/surfaces"
@@ -24,25 +31,11 @@ function createState(): AppState {
     statusMessage: "",
     isRunning: false,
     activeRuns: 0,
-    openBeads: 0,
     lastRefresh: new Date(),
     health: null,
     healthChecking: false,
     animationFrame: 0,
     runtimeInfo: null,
-    desktopAgent: null,
-    hushdStatus: "disconnected",
-    hushdConnected: false,
-    hushdLastEventAt: null,
-    hushdLastError: null,
-    hushdReconnectAttempts: 0,
-    hushdDroppedEvents: 0,
-    recentEvents: [],
-    recentAuditPreview: [],
-    auditLog: createInitialAuditLogState(),
-    auditStats: null,
-    activePolicy: null,
-    securityError: null,
     dispatchSheet: createInitialDispatchSheetState(),
     externalSheet: createInitialExternalExecutionSheetState(),
     runs: createInitialRunListState(),
@@ -57,13 +50,16 @@ function createState(): AppState {
     setupStep: "detecting",
     setupSandboxIndex: 0,
     hunt: createInitialHuntState(),
+    homeSearch: createInitialHomeSearchState(),
+    agentActivity: createInitialAgentActivityState(),
     thruntContext: null,
-    thruntDashboard: { loading: false, error: null },
-    thruntPhases: { analysis: null, selectedPhaseIndex: 0, phaseDetail: null, detailLoading: false, list: { offset: 0, selected: 0 }, loading: false, error: null },
-    thruntEvidence: { results: [], tree: { offset: 0, selected: 0, expandedKeys: new Set() }, loading: false, error: null },
-    thruntDetections: { candidates: [], list: { offset: 0, selected: 0 }, loading: false, error: null },
-    thruntPacks: { packs: [], selectedPackDetail: null, tree: { offset: 0, selected: 0, expandedKeys: new Set() }, detailLoading: false, loading: false, error: null },
-    thruntConnectors: { connectors: [], doctor: null, list: { offset: 0, selected: 0 }, loading: false, error: null },
+    thruntPhases: createInitialThruntPhasesState(),
+    thruntEvidence: createInitialThruntEvidenceState(),
+    thruntDetections: createInitialThruntDetectionsState(),
+    thruntPacks: createInitialThruntPacksState(),
+    thruntConnectors: createInitialThruntConnectorsState(),
+    thruntGateResults: null,
+    thruntExecution: createInitialThruntExecutionState(),
   }
 }
 
@@ -130,5 +126,10 @@ describe("surface metadata", () => {
   test("marks experimental hunt screens explicitly", () => {
     expect(getSurfaceMeta("hunt-diff").stage).toBe("experimental")
     expect(getSurfaceMeta("hunt-report").stage).toBe("supported")
+  })
+
+  test("normalizes legacy dispatch surfaces back to the supported graph", () => {
+    expect(getSurfaceMeta("dispatch-sheet").label).toBe("main")
+    expect(getSurfaceMeta("run-detail").label).toBe("main")
   })
 })

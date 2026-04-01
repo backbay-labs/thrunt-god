@@ -55,6 +55,7 @@ Default case flow:
 ## Working Rules
 
 - Every material claim must cite evidence or remain marked as a hypothesis.
+- Bootstrap should fill known fields immediately. `TBD` is only for facts the operator has not confirmed yet.
 - Query logs belong in `QUERIES/`.
 - Evidence receipts belong in `RECEIPTS/`.
 - Confidence is not implied; it must be stated.

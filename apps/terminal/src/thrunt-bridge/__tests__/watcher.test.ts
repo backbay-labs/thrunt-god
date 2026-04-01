@@ -4,8 +4,6 @@ import * as fsSync from "node:fs"
 import * as os from "node:os"
 import * as path from "node:path"
 
-const THRUNT_TOOLS_ENV = "THRUNT_TOOLS_PATH"
-
 async function writeExecutableScript(
   dir: string,
   name: string,
@@ -30,7 +28,6 @@ afterEach(async () => {
     w.stop()
   }
   watchers = []
-  delete process.env[THRUNT_TOOLS_ENV]
   // Give fs.watch a moment to release handles before cleanup
   await waitFor(100)
   for (const dir of tempDirs) {
@@ -45,19 +42,23 @@ afterEach(async () => {
  */
 async function createMockEnvironment(): Promise<{
   planningDir: string
-  scriptPath: string
+  projectRoot: string
   tempDir: string
 }> {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-watcher-"))
   tempDirs.push(tempDir)
 
-  const planningDir = path.join(tempDir, ".planning")
+  const projectRoot = path.join(tempDir, "project")
+  const planningDir = path.join(projectRoot, ".planning")
   await fs.mkdir(path.join(planningDir, "phases"), { recursive: true })
   await fs.writeFile(path.join(planningDir, "STATE.md"), "# State\n")
   await fs.writeFile(path.join(planningDir, "ROADMAP.md"), "# Roadmap\n")
 
-  const scriptPath = await writeExecutableScript(
-    tempDir,
+  await fs.mkdir(path.join(projectRoot, "thrunt-god", "bin"), {
+    recursive: true,
+  })
+  await writeExecutableScript(
+    path.join(projectRoot, "thrunt-god", "bin"),
     "thrunt-tools.cjs",
     `#!/usr/bin/env node
 const fs = require('fs');
@@ -77,14 +78,13 @@ if (args[0] === 'state-snapshot') {
 `,
   )
 
-  process.env[THRUNT_TOOLS_ENV] = scriptPath
-  return { planningDir, scriptPath, tempDir }
+  return { planningDir, projectRoot, tempDir }
 }
 
 describe("ThruntPlanningWatcher", () => {
   test("start() calls onUpdate with initial ThruntHuntContext", async () => {
     const { ThruntPlanningWatcher } = await import("../watcher")
-    const { planningDir } = await createMockEnvironment()
+    const { planningDir, projectRoot } = await createMockEnvironment()
 
     let updateCount = 0
     let lastCtx: unknown = null
@@ -95,6 +95,7 @@ describe("ThruntPlanningWatcher", () => {
         updateCount++
         lastCtx = ctx
       },
+      { cwd: projectRoot },
     )
     watchers.push(watcher)
     watcher.start()
@@ -117,14 +118,18 @@ describe("ThruntPlanningWatcher", () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "thrunt-watcher-"))
     tempDirs.push(tempDir)
 
-    const planningDir = path.join(tempDir, ".planning")
+    const projectRoot = path.join(tempDir, "project")
+    const planningDir = path.join(projectRoot, ".planning")
     await fs.mkdir(path.join(planningDir, "phases"), { recursive: true })
     await fs.writeFile(path.join(planningDir, "STATE.md"), "# State\n")
 
     // Create a mock script that returns different data based on a signal file
     const signalPath = path.join(tempDir, "signal.txt")
-    const scriptPath = await writeExecutableScript(
-      tempDir,
+    await fs.mkdir(path.join(projectRoot, "thrunt-god", "bin"), {
+      recursive: true,
+    })
+    await writeExecutableScript(
+      path.join(projectRoot, "thrunt-god", "bin"),
       "thrunt-tools.cjs",
       `#!/usr/bin/env node
 const fs = require('fs');
@@ -145,8 +150,6 @@ if (args[0] === 'state-snapshot') {
 `,
     )
 
-    process.env[THRUNT_TOOLS_ENV] = scriptPath
-
     let updateCount = 0
 
     const watcher = new ThruntPlanningWatcher(
@@ -154,6 +157,7 @@ if (args[0] === 'state-snapshot') {
       () => {
         updateCount++
       },
+      { cwd: projectRoot },
     )
     watchers.push(watcher)
     watcher.start()
@@ -183,7 +187,7 @@ if (args[0] === 'state-snapshot') {
 
   test("stop() cleans up watcher and timers (no callbacks after stop)", async () => {
     const { ThruntPlanningWatcher } = await import("../watcher")
-    const { planningDir } = await createMockEnvironment()
+    const { planningDir, projectRoot } = await createMockEnvironment()
 
     let updateCount = 0
 
@@ -192,6 +196,7 @@ if (args[0] === 'state-snapshot') {
       () => {
         updateCount++
       },
+      { cwd: projectRoot },
     )
     watchers.push(watcher)
     watcher.start()
@@ -221,7 +226,7 @@ if (args[0] === 'state-snapshot') {
 
   test("forceRefresh() triggers immediate onUpdate, bypassing debounce", async () => {
     const { ThruntPlanningWatcher } = await import("../watcher")
-    const { planningDir } = await createMockEnvironment()
+    const { planningDir, projectRoot } = await createMockEnvironment()
 
     let updateCount = 0
 
@@ -230,6 +235,7 @@ if (args[0] === 'state-snapshot') {
       () => {
         updateCount++
       },
+      { cwd: projectRoot },
     )
     watchers.push(watcher)
     watcher.start()
@@ -257,7 +263,7 @@ if (args[0] === 'state-snapshot') {
 
   test("debounces rapid changes (multiple writes within 200ms produce limited callbacks)", async () => {
     const { ThruntPlanningWatcher } = await import("../watcher")
-    const { planningDir } = await createMockEnvironment()
+    const { planningDir, projectRoot } = await createMockEnvironment()
 
     let updateCount = 0
 
@@ -267,7 +273,7 @@ if (args[0] === 'state-snapshot') {
       () => {
         updateCount++
       },
-      undefined, // opts
+      { cwd: projectRoot },
       200,       // debounceMs
       30000,     // pollMs — long poll to avoid poll-triggered updates
     )

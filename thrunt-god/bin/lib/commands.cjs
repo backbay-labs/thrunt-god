@@ -3,10 +3,13 @@
  */
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, PLANNING_DIR_NAME } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
+
+// Lazy-require tenant module to avoid circular deps at load time
+function getTenant() { return require('./tenant.cjs'); }
 
 function isPlainObject(value) {
   return !!value && typeof value === 'object' && !Array.isArray(value);
@@ -238,6 +241,7 @@ function parseRuntimeArgs(args = []) {
     parameters: {},
     hypothesis_ids: [],
     tags: [],
+    iocs: [],
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -266,8 +270,8 @@ function parseRuntimeArgs(args = []) {
       continue;
     }
 
-    if ((key === 'hypothesis' || key === 'tag') && args[i + 1] && !args[i + 1].startsWith('--')) {
-      const target = key === 'hypothesis' ? options.hypothesis_ids : options.tags;
+    if ((key === 'hypothesis' || key === 'tag' || key === 'ioc') && args[i + 1] && !args[i + 1].startsWith('--')) {
+      const target = key === 'hypothesis' ? options.hypothesis_ids : key === 'tag' ? options.tags : options.iocs;
       target.push(args[i + 1]);
       i += 1;
       continue;
@@ -423,6 +427,100 @@ async function cmdRuntimeDoctor(cwd, args, raw) {
   });
 
   output(report, raw);
+}
+
+async function cmdDoctorConnectors(cwd, args, raw) {
+  const { discoverPlugins } = require('./plugin-registry.cjs');
+  const { validateConnectorAdapter } = require('./connector-sdk.cjs');
+  const config = loadConfig(cwd);
+
+  // Discover all plugins (built-in + installed)
+  const registry = discoverPlugins({ cwd, config, includeBuiltIn: true });
+  const allPlugins = registry.listPlugins();
+
+  const results = [];
+
+  for (const pluginInfo of allPlugins) {
+    const connectorId = pluginInfo.connector_id;
+    const adapter = registry.get(connectorId);
+    const checks = [];
+
+    // Check 1: Adapter registered
+    checks.push({
+      check: 'adapter_registered',
+      pass: adapter !== null && adapter !== undefined,
+      detail: adapter ? 'Adapter found in registry' : 'Adapter not found',
+    });
+
+    if (!adapter) {
+      results.push({ connector_id: connectorId, source: pluginInfo.source, checks, pass: false });
+      continue;
+    }
+
+    // Check 2: Adapter validation
+    const adapterValidation = validateConnectorAdapter(adapter);
+    checks.push({
+      check: 'adapter_valid',
+      pass: adapterValidation.valid,
+      detail: adapterValidation.valid ? 'Adapter structure valid' : adapterValidation.errors.join('; '),
+    });
+
+    // Check 3: Manifest cross-check (for non-built-in plugins)
+    if (pluginInfo.source !== 'built-in' && pluginInfo.manifest_path) {
+      const manifestResult = require('./plugin-registry.cjs').loadPluginManifest(
+        require('path').dirname(pluginInfo.manifest_path)
+      );
+      if (manifestResult.valid) {
+        const manifest = manifestResult.manifest;
+        const caps = adapter.capabilities || {};
+        const mismatches = [];
+        for (const at of (manifest.auth_types || [])) {
+          if (!caps.auth_types?.includes(at)) mismatches.push(`auth_type '${at}'`);
+        }
+        for (const dk of (manifest.dataset_kinds || [])) {
+          if (!caps.dataset_kinds?.includes(dk)) mismatches.push(`dataset_kind '${dk}'`);
+        }
+        checks.push({
+          check: 'manifest_cross_check',
+          pass: mismatches.length === 0,
+          detail: mismatches.length === 0 ? 'Capabilities match manifest' : `Mismatches: ${mismatches.join(', ')}`,
+        });
+      } else {
+        checks.push({
+          check: 'manifest_cross_check',
+          pass: false,
+          detail: `Manifest invalid: ${manifestResult.errors.join('; ')}`,
+        });
+      }
+    }
+
+    // Check 4: Capabilities completeness
+    const caps = adapter.capabilities || {};
+    const hasRequired = caps.id && caps.display_name && Array.isArray(caps.auth_types) && Array.isArray(caps.dataset_kinds);
+    checks.push({
+      check: 'capabilities_complete',
+      pass: !!hasRequired,
+      detail: hasRequired ? 'All required capability fields present' : 'Missing required capability fields',
+    });
+
+    const allPass = checks.every(c => c.pass);
+    results.push({
+      connector_id: connectorId,
+      source: pluginInfo.source,
+      version: pluginInfo.version,
+      checks,
+      pass: allPass,
+    });
+  }
+
+  const summary = {
+    total: results.length,
+    passing: results.filter(r => r.pass).length,
+    failing: results.filter(r => !r.pass).length,
+    connectors: results,
+  };
+
+  output(summary, raw);
 }
 
 async function cmdRuntimeSmoke(cwd, args, raw) {
@@ -608,6 +706,258 @@ async function cmdRuntimeExecute(cwd, args, raw) {
   }, raw);
 }
 
+async function cmdRuntimeDispatch(cwd, args, raw) {
+  const dispatch = require('./dispatch.cjs');
+  const runtime = require('./runtime.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  // Parse dispatch-specific flags
+  const tenantIds = options.tenants ? String(options.tenants).split(',').map(s => s.trim()) : null;
+  const rawTags = options.tags;
+  const tags = rawTags && typeof rawTags === 'string'
+    ? rawTags.split(',').map(s => s.trim())
+    : Array.isArray(rawTags) && rawTags.length > 0 ? rawTags : null;
+  const all = options.all === true;
+  const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : undefined;
+
+  // Require at least one targeting flag
+  if (!tenantIds && !tags && !all) {
+    error('runtime dispatch requires --tenants <ids>, --tags <tags>, or --all');
+  }
+
+  // Resolve targets
+  const resolveOpts = { exclude_disabled: true };
+  if (tenantIds) resolveOpts.tenant_ids = tenantIds;
+  if (tags) resolveOpts.tags = tags;
+  if (options.connector) resolveOpts.connector_id = options.connector;
+
+  const targets = dispatch.resolveTenantTargets(config, resolveOpts);
+  if (targets.length === 0) {
+    error('No tenants matched the specified filters');
+  }
+
+  // Build base spec
+  let baseSpec;
+  if (options.pack) {
+    const packLib = require('./pack.cjs');
+    const executionPlan = packLib.buildPackExecutionTargets(cwd, options.pack, options.parameters || {}, {
+      profile: 'default',
+      start: options.start || null,
+      end: options.end || null,
+    });
+    if (executionPlan.targets.length === 0) {
+      error('Pack produced no execution targets');
+    }
+    baseSpec = executionPlan.targets[0].query_spec;
+  } else {
+    if (!options.connector) error('runtime dispatch requires --connector <id> (or --pack)');
+    if (!options.query) error('runtime dispatch requires --query "<statement>" (or --pack)');
+    const parameters = getTypedRuntimeParameters(options);
+    baseSpec = runtime.createQuerySpec({
+      connector: {
+        id: options.connector,
+        profile: options.profile || 'default',
+      },
+      query: {
+        language: options.language || 'native',
+        statement: options.query,
+      },
+      parameters,
+      time_window: options.start || options.end
+        ? { start: options.start, end: options.end }
+        : { lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : 60 },
+      execution: {
+        timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+        max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      },
+    });
+  }
+
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const result = await dispatch.dispatchMultiTenant(baseSpec, targets, registry, config, {
+    concurrency,
+    cwd,
+  });
+
+  output(result, raw);
+}
+
+async function cmdRuntimeAggregate(cwd, args, raw) {
+  const dispatch = require('./dispatch.cjs');
+  const runtime = require('./runtime.cjs');
+  const aggregation = require('./aggregation.cjs');
+  const evidence = require('./evidence.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  // Parse dispatch-specific flags
+  const tenantIds = options.tenants ? String(options.tenants).split(',').map(s => s.trim()) : null;
+  const rawTags = options.tags;
+  const tags = rawTags && typeof rawTags === 'string'
+    ? rawTags.split(',').map(s => s.trim())
+    : Array.isArray(rawTags) && rawTags.length > 0 ? rawTags : null;
+  const all = options.all === true;
+  const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : undefined;
+
+  if (!tenantIds && !tags && !all) {
+    error('runtime aggregate requires --tenants <ids>, --tags <tags>, or --all');
+  }
+
+  const resolveOpts = { exclude_disabled: true };
+  if (tenantIds) resolveOpts.tenant_ids = tenantIds;
+  if (tags) resolveOpts.tags = tags;
+  if (options.connector) resolveOpts.connector_id = options.connector;
+
+  const targets = dispatch.resolveTenantTargets(config, resolveOpts);
+  if (targets.length === 0) {
+    error('No tenants matched the specified filters');
+  }
+
+  let baseSpec;
+  if (options.pack) {
+    const packLib = require('./pack.cjs');
+    const executionPlan = packLib.buildPackExecutionTargets(cwd, options.pack, options.parameters || {}, {
+      profile: 'default',
+      start: options.start || null,
+      end: options.end || null,
+    });
+    if (executionPlan.targets.length === 0) {
+      error('Pack produced no execution targets');
+    }
+    baseSpec = executionPlan.targets[0].query_spec;
+  } else {
+    if (!options.connector) error('runtime aggregate requires --connector <id> (or --pack)');
+    if (!options.query) error('runtime aggregate requires --query "<statement>" (or --pack)');
+    const parameters = getTypedRuntimeParameters(options);
+    baseSpec = runtime.createQuerySpec({
+      connector: { id: options.connector, profile: options.profile || 'default' },
+      query: { language: options.language || 'native', statement: options.query },
+      parameters,
+      time_window: options.start || options.end
+        ? { start: options.start, end: options.end }
+        : { lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : 60 },
+      execution: {
+        timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+        max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      },
+    });
+  }
+
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const result = await dispatch.dispatchMultiTenant(baseSpec, targets, registry, config, {
+    concurrency,
+    cwd,
+  });
+
+  const aggregated = aggregation.aggregateResults(result);
+  const correlations = aggregation.correlateFindings(result.tenant_results, {
+    cluster_window_minutes: config?.dispatch?.cluster_window_minutes,
+  });
+
+  let artifacts = null;
+  try {
+    artifacts = evidence.writeMultiTenantArtifacts(cwd, result, {
+      tenant_isolation_mode: config?.tenant_isolation_mode,
+    });
+  } catch (_) {
+    // evidence writing is best-effort
+  }
+
+  output({ ...result, aggregated, correlations, artifacts }, raw);
+}
+
+async function cmdRuntimeHeatmap(cwd, args, raw) {
+  const dispatch = require('./dispatch.cjs');
+  const runtime = require('./runtime.cjs');
+  const aggregation = require('./aggregation.cjs');
+  const evidence = require('./evidence.cjs');
+  const heatmapLib = require('./heatmap.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  // Parse dispatch-specific flags
+  const tenantIds = options.tenants ? String(options.tenants).split(',').map(s => s.trim()) : null;
+  const rawTags = options.tags;
+  const tags = rawTags && typeof rawTags === 'string'
+    ? rawTags.split(',').map(s => s.trim())
+    : Array.isArray(rawTags) && rawTags.length > 0 ? rawTags : null;
+  const all = options.all === true;
+  const concurrency = options.concurrency ? parseInt(options.concurrency, 10) : undefined;
+
+  if (!tenantIds && !tags && !all) {
+    error('runtime heatmap requires --tenants <ids>, --tags <tags>, or --all');
+  }
+
+  const resolveOpts = { exclude_disabled: true };
+  if (tenantIds) resolveOpts.tenant_ids = tenantIds;
+  if (tags) resolveOpts.tags = tags;
+  if (options.connector) resolveOpts.connector_id = options.connector;
+
+  const targets = dispatch.resolveTenantTargets(config, resolveOpts);
+  if (targets.length === 0) {
+    error('No tenants matched the specified filters');
+  }
+
+  let baseSpec;
+  let packMeta = null;
+  if (options.pack) {
+    const packLib = require('./pack.cjs');
+    const executionPlan = packLib.buildPackExecutionTargets(cwd, options.pack, options.parameters || {}, {
+      profile: 'default',
+      start: options.start || null,
+      end: options.end || null,
+    });
+    if (executionPlan.targets.length === 0) {
+      error('Pack produced no execution targets');
+    }
+    baseSpec = executionPlan.targets[0].query_spec;
+    // Extract pack metadata for technique inference
+    try {
+      packMeta = packLib.loadPackManifest(cwd, options.pack);
+    } catch (_) {
+      packMeta = null;
+    }
+  } else {
+    if (!options.connector) error('runtime heatmap requires --connector <id> (or --pack)');
+    if (!options.query) error('runtime heatmap requires --query "<statement>" (or --pack)');
+    const parameters = getTypedRuntimeParameters(options);
+    baseSpec = runtime.createQuerySpec({
+      connector: { id: options.connector, profile: options.profile || 'default' },
+      query: { language: options.language || 'native', statement: options.query },
+      parameters,
+      time_window: options.start || options.end
+        ? { start: options.start, end: options.end }
+        : { lookback_minutes: options.lookback_minutes ? parseInt(options.lookback_minutes, 10) : 60 },
+      execution: {
+        timeout_ms: options.timeout_ms ? parseInt(options.timeout_ms, 10) : undefined,
+        max_retries: options.max_retries ? parseInt(options.max_retries, 10) : undefined,
+      },
+    });
+  }
+
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const result = await dispatch.dispatchMultiTenant(baseSpec, targets, registry, config, {
+    concurrency,
+    cwd,
+  });
+
+  const aggregated = aggregation.aggregateResults(result);
+  const correlations = aggregation.correlateFindings(result.tenant_results, {
+    cluster_window_minutes: config?.dispatch?.cluster_window_minutes,
+  });
+
+  // Infer techniques and build heatmap
+  const techniques = heatmapLib.inferTechniques({
+    pack_attack: packMeta?.attack,
+    tenant_results: result.tenant_results,
+  });
+  const heatmapData = heatmapLib.buildHeatmapFromResults(result, techniques);
+  const heatmapArtifacts = heatmapLib.writeHeatmapArtifacts(cwd, heatmapData);
+
+  output({ ...result, aggregated, correlations, heatmap: heatmapData, heatmap_artifacts: heatmapArtifacts }, raw);
+}
+
 async function cmdPackList(cwd, raw) {
   const pack = require('./pack.cjs');
   const registry = pack.loadPackRegistry(cwd);
@@ -759,23 +1109,7 @@ async function cmdPackRenderTargets(cwd, args, raw) {
   }
 }
 
-function getPackFolderForKind(kind) {
-  switch (kind) {
-    case 'technique':
-      return 'techniques';
-    case 'domain':
-      return 'domains';
-    case 'family':
-      return 'families';
-    case 'campaign':
-      return 'campaigns';
-    case 'example':
-      return 'examples';
-    case 'custom':
-    default:
-      return 'custom';
-  }
-}
+// getPackFolderForKind consolidated in pack.cjs — use packLib.getPackFolderForKind(kind)
 
 function formatPackTitle(packId) {
   return packId
@@ -843,6 +1177,12 @@ async function cmdPackTest(cwd, args, raw) {
   const packLib = require('./pack.cjs');
   const packId = args[0] && !args[0].startsWith('--') ? args[0] : null;
 
+  // Parse flags
+  const verbose = args.includes('--verbose');
+  const mockData = args.includes('--mock-data');
+  const coverage = args.includes('--coverage');
+  const validateOnly = args.includes('--validate-only');
+
   let registry;
   try {
     registry = packLib.loadPackRegistry(cwd);
@@ -863,9 +1203,35 @@ async function cmdPackTest(cwd, args, raw) {
   const results = [];
   for (const pack of selectedPacks) {
     const errors = [];
+    const warnings = [];
     const exampleParameters = pack.examples?.parameters || {};
     let bootstrap_ok = false;
     let render_ok = pack.execution_targets.length === 0;
+    let verbose_output = null;
+    let mock_data_output = null;
+    let coverage_output = null;
+
+    // Schema validation (always runs)
+    const schemaValidation = packLib.validatePackDefinition(pack);
+    if (!schemaValidation.valid) {
+      errors.push(...schemaValidation.errors.map(e => `schema: ${e}`));
+    }
+    if (schemaValidation.warnings) {
+      warnings.push(...schemaValidation.warnings);
+    }
+
+    // If validate-only, skip bootstrap and render
+    if (validateOnly) {
+      results.push({
+        id: pack.id,
+        source: pack.source,
+        valid: errors.length === 0,
+        validate_only: true,
+        errors,
+        warnings,
+      });
+      continue;
+    }
 
     if (!isPlainObject(exampleParameters) || Object.keys(exampleParameters).length === 0) {
       errors.push('Missing examples.parameters');
@@ -879,14 +1245,130 @@ async function cmdPackTest(cwd, args, raw) {
 
       if (pack.execution_targets.length > 0) {
         try {
-          packLib.buildPackExecutionTargets(cwd, pack.id, exampleParameters, {
+          const renderResult = packLib.buildPackExecutionTargets(cwd, pack.id, exampleParameters, {
             profile: 'default',
           });
           render_ok = true;
+
+          // Verbose: show rendered queries
+          if (verbose) {
+            verbose_output = renderResult.targets.map(t => ({
+              name: t.name,
+              connector: t.connector,
+              language: t.language,
+              rendered_query: t.query_spec.query.statement,
+            }));
+          }
+
+          // Mock data: validate against mock response fixtures
+          if (mockData) {
+            mock_data_output = [];
+            for (const target of renderResult.targets) {
+              const mockResponse = packLib.loadMockResponse(target.connector);
+              const entry = {
+                target: target.name,
+                connector: target.connector,
+                has_mock: !!mockResponse,
+                checks: {},
+              };
+
+              if (mockResponse) {
+                // Check 1: rendered query has no unresolved placeholders
+                const unresolvedMatch = target.query_spec.query.statement.match(/\{\{[^}]+\}\}/g);
+                entry.checks.no_unresolved_placeholders = !unresolvedMatch;
+                if (unresolvedMatch) {
+                  errors.push(`mock-data(${target.name}): unresolved placeholders: ${unresolvedMatch.join(', ')}`);
+                }
+
+                // Check 2: declared entity types appear in mock response field names
+                const entityTypes = (pack.scope_defaults?.entities || []);
+                const fieldNames = mockResponse.mock_response.results.length > 0
+                  ? Object.keys(mockResponse.mock_response.results[0]).map(k => k.toLowerCase())
+                  : [];
+                const entityFieldMatches = entityTypes.map(entity => ({
+                  entity,
+                  found: fieldNames.some(f => f.includes(entity.replace('-', '_').replace('-', ''))),
+                }));
+                entry.checks.entity_field_alignment = entityFieldMatches;
+              }
+
+              mock_data_output.push(entry);
+            }
+          }
         } catch (err) {
           errors.push(`render-targets: ${err.message}`);
         }
       }
+
+      // Mock data: check bootstrap phase_seed and receipt_tags (independent of render)
+      if (mockData && bootstrap_ok) {
+        try {
+          const bootstrapResult = packLib.buildPackBootstrap(cwd, pack.id, exampleParameters);
+          const phaseSeed = bootstrapResult.bootstrap?.phase_seed;
+          if (!phaseSeed) {
+            errors.push('mock-data: bootstrap phase_seed is missing');
+          }
+
+          const receiptTags = pack.publish?.receipt_tags || [];
+          const hasPackTag = receiptTags.some(t => t.includes(pack.id));
+          if (!hasPackTag) {
+            warnings.push(`mock-data: publish.receipt_tags does not contain pack ID "${pack.id}"`);
+          }
+        } catch (err) {
+          // Already caught above
+        }
+      }
+    }
+
+    // Coverage report
+    if (coverage) {
+      const templateUsage = packLib.getPackTemplateUsage(pack);
+
+      // Telemetry coverage
+      const telemetryCoverage = (pack.telemetry_requirements || []).map(req => {
+        const coveredByTargets = (pack.execution_targets || []).some(t =>
+          req.connectors.includes(t.connector)
+        );
+        return { surface: req.surface, connectors: req.connectors, covered: coveredByTargets };
+      });
+
+      // Connector coverage
+      const connectorTargetCounts = {};
+      for (const target of pack.execution_targets || []) {
+        connectorTargetCounts[target.connector] = (connectorTargetCounts[target.connector] || 0) + 1;
+      }
+      const connectorCoverage = (pack.required_connectors || []).map(c => ({
+        connector: c,
+        targets: connectorTargetCounts[c] || 0,
+        covered: (connectorTargetCounts[c] || 0) > 0,
+      }));
+
+      // Entity coverage
+      const allTargetQueries = (pack.execution_targets || []).map(t => t.query_template || '').join(' ').toLowerCase();
+      const entityCoverage = (pack.scope_defaults?.entities || []).map(entity => ({
+        entity,
+        covered: allTargetQueries.includes(entity.replace('-', '_')) || allTargetQueries.includes(entity),
+      }));
+
+      // Template parameter coverage
+      const parameterTargetCounts = {};
+      for (const targetUsage of templateUsage.execution_targets) {
+        for (const param of targetUsage.parameters) {
+          parameterTargetCounts[param] = (parameterTargetCounts[param] || 0) + 1;
+        }
+      }
+      const parameterCoverage = (pack.parameters || []).map(p => ({
+        parameter: p.name,
+        used_in_targets: parameterTargetCounts[p.name] || 0,
+        covered: (parameterTargetCounts[p.name] || 0) > 0,
+      }));
+
+      coverage_output = {
+        telemetry: telemetryCoverage,
+        connectors: connectorCoverage,
+        entities: entityCoverage,
+        parameters: parameterCoverage,
+      };
     }
 
     results.push({
@@ -896,6 +1378,10 @@ async function cmdPackTest(cwd, args, raw) {
       bootstrap_ok,
       render_ok,
       errors,
+      warnings,
+      ...(verbose_output ? { verbose: verbose_output } : {}),
+      ...(mock_data_output ? { mock_data: mock_data_output } : {}),
+      ...(coverage_output ? { coverage: coverage_output } : {}),
     });
   }
 
@@ -927,7 +1413,7 @@ async function cmdPackInit(cwd, args, raw) {
   const title = options.title || formatPackTitle(packId);
   const slugSource = packId.includes('.') ? packId.split('.').slice(1).join('-') : packId;
   const slug = generateSlugInternal(slugSource) || 'new-pack';
-  const packDir = path.join(packLib.getProjectPackRegistryDir(cwd), getPackFolderForKind(kind));
+  const packDir = path.join(packLib.getProjectPackRegistryDir(cwd), packLib.getPackFolderForKind(kind));
   const outputPath = path.join(packDir, `${slug}.json`);
 
   if (fs.existsSync(outputPath)) {
@@ -1002,6 +1488,58 @@ async function cmdPackInit(cwd, args, raw) {
     path: toPosixPath(path.relative(cwd, outputPath)),
     pack: scaffold,
   }, raw);
+}
+
+/**
+ * Create a new pack via the interactive 8-step flow or non-interactive flags.
+ * thrunt pack create [options]
+ */
+async function cmdPackCreate(cwd, args, raw) {
+  const packAuthor = require('./pack-author.cjs');
+
+  // Parse flags
+  const flags = {
+    dryRun: false,
+    nonInteractive: false,
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i];
+    if (!token.startsWith('--')) continue;
+    const key = token.slice(2);
+
+    if (key === 'dry-run') { flags.dryRun = true; continue; }
+    if (key === 'non-interactive') { flags.nonInteractive = true; continue; }
+
+    const nextVal = args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : null;
+
+    if (key === 'kind' && nextVal) { flags.kind = nextVal; i++; continue; }
+    if (key === 'id' && nextVal) { flags.id = nextVal; i++; continue; }
+    if (key === 'title' && nextVal) { flags.title = nextVal; i++; continue; }
+    if (key === 'description' && nextVal) { flags.description = nextVal; i++; continue; }
+    if (key === 'attack' && nextVal) { flags.attack = nextVal; i++; continue; }
+    if (key === 'extends' && nextVal) { flags.extends = nextVal; i++; continue; }
+    if (key === 'connectors' && nextVal) { flags.connectors = nextVal; i++; continue; }
+    if (key === 'datasets' && nextVal) { flags.datasets = nextVal; i++; continue; }
+    if (key === 'hypothesis' && nextVal) { flags.hypothesis = nextVal; i++; continue; }
+    if (key === 'output' && nextVal) { flags.output = nextVal; i++; continue; }
+    if (key === 'stability' && nextVal) { flags.stability = nextVal; i++; continue; }
+  }
+
+  try {
+    let result;
+    if (flags.nonInteractive) {
+      result = packAuthor.buildPackFromFlags(cwd, flags);
+    } else {
+      result = await packAuthor.runPackAuthor(cwd, {
+        dryRun: flags.dryRun,
+        output: flags.output,
+      });
+    }
+    output(result, raw);
+  } catch (err) {
+    error(err.message || String(err));
+  }
 }
 
 function cmdCommit(cwd, message, files, raw, amend, noVerify) {
@@ -1726,6 +2264,1108 @@ function cmdStats(cwd, format, raw) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Connector Scaffolding
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape a string for safe interpolation into JavaScript source code.
+ * Prevents injection via single quotes, double quotes, and backslashes.
+ */
+function escapeJsString(str) {
+  return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+/**
+ * Render a template string by replacing {{#IF_KEY}}...{{/IF_KEY}} block
+ * conditionals and {{KEY}} simple substitutions.
+ */
+function renderTemplate(template, vars) {
+  let result = template;
+  // Block conditionals: {{#IF_KEY}}content{{/IF_KEY}}
+  result = result.replace(/\{\{#IF_(\w+)\}\}([\s\S]*?)\{\{\/IF_\1\}\}/g, (_, key, content) => {
+    return vars[key] ? content : '';
+  });
+  // Simple substitution: {{KEY}}
+  result = result.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    return vars[key] !== undefined ? String(vars[key]) : `{{${key}}}`;
+  });
+  return result;
+}
+
+/**
+ * Convert snake_case or lower_case to PascalCase.
+ * e.g. crowdstrike_falcon -> CrowdStrikeFalcon
+ */
+function toPascalCase(str) {
+  return str
+    .split('_')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+}
+
+/**
+ * Parse CLI flags for init connector command.
+ * Handles repeatable flags and comma-separated values.
+ */
+function parseConnectorArgs(args = []) {
+  const options = {
+    authTypes: [],
+    datasetKinds: [],
+    languages: [],
+    paginationModes: [],
+    docsUrl: null,
+    dockerImage: null,
+    dockerPort: null,
+    noDocker: false,
+    noSmoke: false,
+    outputDir: null,
+    dryRun: false,
+    raw: false,
+    displayName: null,
+  };
+
+  const repeatableFlags = new Set(['auth', 'datasets', 'languages', 'pagination']);
+
+  for (let i = 0; i < args.length; i++) {
+    const token = args[i];
+    if (!token.startsWith('--')) continue;
+    const key = token.slice(2);
+
+    if (key === 'no-docker') { options.noDocker = true; continue; }
+    if (key === 'no-smoke') { options.noSmoke = true; continue; }
+    if (key === 'dry-run') { options.dryRun = true; continue; }
+    if (key === 'raw') { options.raw = true; continue; }
+
+    const nextVal = args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : null;
+
+    if (key === 'display-name' && nextVal) { options.displayName = nextVal; i++; continue; }
+    if (key === 'docs-url' && nextVal) { options.docsUrl = nextVal; i++; continue; }
+    if (key === 'docker-image' && nextVal) { options.dockerImage = nextVal; i++; continue; }
+    if (key === 'docker-port' && nextVal) { options.dockerPort = nextVal; i++; continue; }
+    if (key === 'output-dir' && nextVal) { options.outputDir = nextVal; i++; continue; }
+
+    if (key === 'auth' && nextVal) {
+      options.authTypes.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+    if (key === 'datasets' && nextVal) {
+      options.datasetKinds.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+    if (key === 'languages' && nextVal) {
+      options.languages.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+    if (key === 'pagination' && nextVal) {
+      options.paginationModes.push(...nextVal.split(',').map(v => v.trim()).filter(Boolean));
+      i++;
+      continue;
+    }
+  }
+
+  return options;
+}
+
+/**
+ * Derive a title-cased display name from snake_case connector id.
+ * e.g. crowdstrike_edr -> Crowdstrike Edr
+ */
+function toTitleCase(str) {
+  return str
+    .split('_')
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+/**
+ * Scaffold a new connector adapter with tests and Docker boilerplate.
+ * thrunt-tools init connector <id> [flags]
+ */
+async function cmdInitConnector(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const connectorTemplatesDir = path.join(__dirname, '../../templates/connector');
+
+  // --- 4a: Argument parsing + interactive mode ---
+
+  let connectorId = args[0] && !args[0].startsWith('--') ? args[0] : null;
+  const cliOptions = parseConnectorArgs(args.slice(connectorId ? 1 : 0));
+
+  // Merge raw flag from CLI
+  if (cliOptions.raw) raw = true;
+
+  if (!connectorId) {
+    // Interactive mode
+    const { createInterface } = require('node:readline/promises');
+    const rl = createInterface({ input: process.stdin, output: process.stderr });
+
+    try {
+      connectorId = (await rl.question('  Connector ID (lowercase, underscores): ')).trim();
+      const displayNameInput = await rl.question(`  Display name [${toTitleCase(connectorId || 'my_connector')}]: `);
+      cliOptions.displayName = displayNameInput.trim() || null;
+
+      const authInput = await rl.question('  Auth types (comma-separated) [api_key]: ');
+      if (authInput.trim()) cliOptions.authTypes = authInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const datasetsInput = await rl.question('  Dataset kinds (comma-separated) [events]: ');
+      if (datasetsInput.trim()) cliOptions.datasetKinds = datasetsInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const langsInput = await rl.question('  Query language(s) (comma-separated) [api]: ');
+      if (langsInput.trim()) cliOptions.languages = langsInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const paginationInput = await rl.question('  Pagination mode(s) (comma-separated) [none]: ');
+      if (paginationInput.trim()) cliOptions.paginationModes = paginationInput.split(',').map(v => v.trim()).filter(Boolean);
+
+      const docsInput = await rl.question('  API docs URL (optional): ');
+      if (docsInput.trim()) cliOptions.docsUrl = docsInput.trim();
+
+      const dockerInput = (await rl.question('  Include Docker integration tests? [y/N]: ')).trim().toLowerCase();
+      if (dockerInput === 'y' || dockerInput === 'yes') {
+        cliOptions.dockerImage = (await rl.question('    Docker image (e.g. vendor/product:tag): ')).trim();
+        cliOptions.dockerPort = (await rl.question('    Container port: ')).trim();
+      }
+
+      const smokeInput = (await rl.question('  Include smoke spec? [Y/n]: ')).trim().toLowerCase();
+      cliOptions.noSmoke = smokeInput === 'n' || smokeInput === 'no';
+    } finally {
+      rl.close();
+    }
+  }
+
+  // --- 4b: Input validation ---
+
+  if (!connectorId || !/^[a-z][a-z0-9_]*$/.test(connectorId)) {
+    error(`connector ID must match /^[a-z][a-z0-9_]*$/ (lowercase, underscores, starts with letter). Got: ${connectorId || '(empty)'}`);
+  }
+
+  // Collision check against built-in connectors
+  const builtInRegistry = runtime.createBuiltInConnectorRegistry();
+  if (builtInRegistry.has(connectorId)) {
+    const builtIns = builtInRegistry.list().map(c => c.id).join(', ');
+    error(`connector ID '${connectorId}' collides with a built-in connector. Built-in IDs: ${builtIns}`);
+  }
+
+  // Apply defaults
+  const authTypes = cliOptions.authTypes.length > 0 ? cliOptions.authTypes : ['api_key'];
+  const datasetKinds = cliOptions.datasetKinds.length > 0 ? cliOptions.datasetKinds : ['events'];
+  const languages = cliOptions.languages.length > 0 ? cliOptions.languages : ['api'];
+  const paginationModes = cliOptions.paginationModes.length > 0 ? cliOptions.paginationModes : ['none'];
+  const displayName = cliOptions.displayName || toTitleCase(connectorId);
+  const docsUrl = cliOptions.docsUrl || null;
+  const dockerImage = cliOptions.dockerImage || null;
+  const dockerPort = cliOptions.dockerPort || null;
+  const noDocker = cliOptions.noDocker || false;
+  const noSmoke = cliOptions.noSmoke || false;
+  const dryRun = cliOptions.dryRun || false;
+  const force = args.includes('--force');
+  const outputDir = cliOptions.outputDir ? path.resolve(cwd, cliOptions.outputDir) : cwd;
+
+  // Path containment: output directory must be within project root
+  if (!outputDir.startsWith(cwd + path.sep) && outputDir !== cwd) {
+    error(`output directory must be within project root. Got: ${outputDir}`);
+  }
+
+  // Validate enum values
+  const invalidAuth = authTypes.filter(a => !runtime.AUTH_TYPES.includes(a));
+  if (invalidAuth.length > 0) {
+    error(`Invalid auth type(s): ${invalidAuth.join(', ')}. Valid values: ${runtime.AUTH_TYPES.join(', ')}`);
+  }
+
+  const invalidDatasets = datasetKinds.filter(d => !runtime.DATASET_KINDS.includes(d));
+  if (invalidDatasets.length > 0) {
+    error(`Invalid dataset kind(s): ${invalidDatasets.join(', ')}. Valid values: ${runtime.DATASET_KINDS.join(', ')}`);
+  }
+
+  const invalidPagination = paginationModes.filter(p => !runtime.PAGINATION_MODES.includes(p));
+  if (invalidPagination.length > 0) {
+    error(`Invalid pagination mode(s): ${invalidPagination.join(', ')}. Valid values: ${runtime.PAGINATION_MODES.join(', ')}`);
+  }
+
+  // Docker flag validation
+  if (dockerImage && !dockerPort) {
+    error('--docker-image requires --docker-port');
+  }
+  if (dockerPort && !dockerImage) {
+    error('--docker-port requires --docker-image');
+  }
+  if (noDocker && dockerImage) {
+    error('--no-docker and --docker-image are conflicting flags');
+  }
+
+  const hasDocker = Boolean(dockerImage && dockerPort && !noDocker);
+  const hasSmoke = !noSmoke;
+
+  // --- 4c: Template variable computation ---
+
+  const functionName = toPascalCase(connectorId);
+  const envPrefix = connectorId.toUpperCase();
+  const authTypesArray = JSON.stringify(authTypes).replace(/"/g, "'");
+  const datasetKindsArray = JSON.stringify(datasetKinds).replace(/"/g, "'");
+  const languagesArray = JSON.stringify(languages).replace(/"/g, "'");
+  const paginationModesArray = JSON.stringify(paginationModes).replace(/"/g, "'");
+  const docsUrlVal = docsUrl ? `'${escapeJsString(docsUrl)}'` : 'null';
+  const safeDisplayName = escapeJsString(displayName);
+  const dateStr = new Date().toISOString().split('T')[0];
+  const datasetKindsFirst = datasetKinds[0];
+  const languagesFirst = languages[0];
+  const smokeQuery = '* | head 1';
+
+  // Auto-assign Docker host port by scanning existing docker-compose.yml
+  let dockerHostPort = 19300;
+  if (hasDocker) {
+    const composeFile = path.join(outputDir, 'tests/integration/docker-compose.yml');
+    if (fs.existsSync(composeFile)) {
+      const composeContent = fs.readFileSync(composeFile, 'utf8');
+      const portMatches = [...composeContent.matchAll(/- "(\d+):/g)];
+      const existingPorts = portMatches
+        .map(m => parseInt(m[1], 10))
+        .filter(p => p >= 19000 && p < 20000);
+      if (existingPorts.length > 0) {
+        dockerHostPort = Math.max(...existingPorts) + 1;
+      }
+    }
+  }
+
+  const vars = {
+    CONNECTOR_ID: connectorId,
+    CONNECTOR_DISPLAY_NAME: safeDisplayName,
+    CONNECTOR_FUNCTION_NAME: functionName,
+    AUTH_TYPES_ARRAY: authTypesArray,
+    AUTH_TYPES_FIRST: authTypes[0],
+    DATASET_KINDS_ARRAY: datasetKindsArray,
+    DATASET_KINDS_FIRST: datasetKindsFirst,
+    LANGUAGES_ARRAY: languagesArray,
+    LANGUAGES_FIRST: languagesFirst,
+    PAGINATION_MODES_ARRAY: paginationModesArray,
+    DOCS_URL: docsUrlVal,
+    ENV_PREFIX: envPrefix,
+    DATE: dateStr,
+    HAS_DOCKER: hasDocker,
+    DOCKER_IMAGE: dockerImage || '',
+    DOCKER_PORT: dockerPort || '',
+    DOCKER_HOST_PORT: String(dockerHostPort),
+    HAS_SMOKE: hasSmoke,
+    SMOKE_QUERY: smokeQuery,
+  };
+
+  // --- 4d: File generation manifest ---
+
+  const manifest = [];
+
+  // Always generated
+  manifest.push({
+    path: path.join(outputDir, 'thrunt-god/bin/lib/connectors', `${connectorId}.cjs`),
+    templateFile: 'adapter.cjs.tmpl',
+    mode: 'create',
+    label: `thrunt-god/bin/lib/connectors/${connectorId}.cjs`,
+  });
+  manifest.push({
+    path: path.join(outputDir, 'tests', `connectors-${connectorId}.test.cjs`),
+    templateFile: 'unit-test.cjs.tmpl',
+    mode: 'create',
+    label: `tests/connectors-${connectorId}.test.cjs`,
+  });
+  manifest.push({
+    path: path.join(outputDir, 'docs/connectors', `${connectorId}.md`),
+    templateFile: 'README.md.tmpl',
+    mode: 'create',
+    label: `docs/connectors/${connectorId}.md`,
+  });
+
+  // Docker-related (conditional)
+  if (hasDocker) {
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration', `${connectorId}.integration.test.cjs`),
+      templateFile: 'integration-test.cjs.tmpl',
+      mode: 'create',
+      label: `tests/integration/${connectorId}.integration.test.cjs`,
+    });
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration/docker-compose.yml'),
+      templateFile: 'docker-compose.yml.tmpl',
+      mode: 'append',
+      label: 'tests/integration/docker-compose.yml (append)',
+    });
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration/fixtures/seed-data.cjs'),
+      templateFile: 'seed-data.cjs.tmpl',
+      mode: 'append-before-exports',
+      label: 'tests/integration/fixtures/seed-data.cjs (append)',
+    });
+    manifest.push({
+      path: path.join(outputDir, 'tests/integration/helpers.cjs'),
+      templateFile: 'helpers-entry.cjs.tmpl',
+      mode: 'append-to-helpers',
+      label: 'tests/integration/helpers.cjs (append)',
+    });
+  }
+
+  // --- 4e: Dry-run mode ---
+
+  if (dryRun) {
+    output({
+      dry_run: true,
+      connector_id: connectorId,
+      files: manifest.map(item => ({
+        path: toPosixPath(path.relative(outputDir, item.path)),
+        template: item.templateFile,
+        mode: item.mode,
+      })),
+    }, raw);
+    return;
+  }
+
+  // --- 4f: Overwrite protection ---
+
+  if (!force) {
+    const conflicting = manifest
+      .filter(item => item.mode === 'create' && fs.existsSync(item.path))
+      .map(item => toPosixPath(path.relative(outputDir, item.path)));
+    if (conflicting.length > 0) {
+      error(`CONNECTOR_FILE_EXISTS: the following files already exist: ${conflicting.join(', ')}. Use --force to overwrite.`);
+    }
+  }
+
+  // --- 4g: File writing ---
+
+  const generatedPaths = [];
+
+  for (const item of manifest) {
+    const tmplPath = path.join(connectorTemplatesDir, item.templateFile);
+    const tmplContent = fs.readFileSync(tmplPath, 'utf8');
+    const rendered = renderTemplate(tmplContent, vars);
+    const dir = path.dirname(item.path);
+
+    if (item.mode === 'create') {
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(item.path, rendered);
+      generatedPaths.push(item.path);
+    } else if (item.mode === 'append') {
+      // Append to docker-compose.yml
+      if (!fs.existsSync(item.path)) {
+        error(`Cannot append to ${item.path}: file does not exist`);
+      }
+      const existing = fs.readFileSync(item.path, 'utf8');
+      fs.writeFileSync(item.path, existing + '\n' + rendered);
+      generatedPaths.push(item.path);
+    } else if (item.mode === 'append-before-exports') {
+      // Insert seed function before module.exports in seed-data.cjs
+      if (!fs.existsSync(item.path)) {
+        error(`Cannot append to ${item.path}: file does not exist`);
+      }
+      let existing = fs.readFileSync(item.path, 'utf8');
+      const exportIdx = existing.lastIndexOf('module.exports');
+      if (exportIdx === -1) {
+        // No module.exports found, just append at end
+        existing = existing + '\n' + rendered + '\n';
+      } else {
+        existing = existing.slice(0, exportIdx) + rendered + '\n' + existing.slice(exportIdx);
+      }
+      // Also add the function name to the exports object
+      const seedFnName = `seed${functionName}`;
+      existing = existing.replace(
+        /module\.exports\s*=\s*\{/,
+        `module.exports = {\n  ${seedFnName},`
+      );
+      fs.writeFileSync(item.path, existing);
+      generatedPaths.push(item.path);
+    } else if (item.mode === 'append-to-helpers') {
+      // Add URL constant and export entry to helpers.cjs
+      if (!fs.existsSync(item.path)) {
+        error(`Cannot append to ${item.path}: file does not exist`);
+      }
+      let existing = fs.readFileSync(item.path, 'utf8');
+      const exportIdx = existing.lastIndexOf('module.exports');
+      const constName = `${envPrefix}_URL`;
+      if (exportIdx === -1) {
+        existing = existing + '\n' + rendered + '\n';
+      } else {
+        existing = existing.slice(0, exportIdx) + rendered + existing.slice(exportIdx);
+      }
+      // Add constant to module.exports block
+      existing = existing.replace(
+        /module\.exports\s*=\s*\{/,
+        `module.exports = {\n  ${constName},`
+      );
+      fs.writeFileSync(item.path, existing);
+      generatedPaths.push(item.path);
+    }
+  }
+
+  // --- 4g: Post-scaffold contract validation ---
+
+  let validationResult = null;
+  try {
+    const adapterPath = path.join(outputDir, 'thrunt-god/bin/lib/connectors', `${connectorId}.cjs`);
+    // Clear require cache in case a previous scaffold run cached something
+    delete require.cache[require.resolve(adapterPath)];
+    const adapterModule = require(adapterPath);
+    const factoryFn = adapterModule[`create${functionName}Adapter`];
+    if (typeof factoryFn !== 'function') {
+      validationResult = { valid: false, errors: [`create${functionName}Adapter is not a function`], warnings: [] };
+    } else {
+      const adapter = factoryFn();
+      validationResult = runtime.validateConnectorAdapter(adapter);
+    }
+  } catch (err) {
+    validationResult = { valid: false, errors: [`Failed to load generated adapter: ${err.message}`], warnings: [] };
+  }
+
+  // --- 4h: Output ---
+
+  output({
+    created: true,
+    connector_id: connectorId,
+    files_generated: generatedPaths.map(p => toPosixPath(path.relative(outputDir, p))),
+    contract_validation: validationResult,
+    next_steps: [
+      `Fill in prepareQuery() with your API endpoint and request body format`,
+      `Fill in normalizeResponse() with your response parser and entity mappings`,
+      `Add the adapter to createBuiltInConnectorRegistry() in thrunt-god/bin/lib/runtime.cjs:`,
+      `  const { create${functionName}Adapter } = require('./connectors/${connectorId}.cjs');`,
+      `Run: node --test tests/connectors-${connectorId}.test.cjs`,
+    ],
+  }, raw);
+}
+
+async function cmdPackPromote(cwd, args, raw) {
+  const packLib = require('./pack.cjs');
+  const packId = args[0];
+
+  if (!packId) {
+    error('pack promote requires <pack-id>');
+  }
+
+  // Load registry to find the pack
+  let registry;
+  try {
+    registry = packLib.loadPackRegistry(cwd);
+  } catch (err) {
+    output({ promoted: false, errors: [err.message] }, raw, 'false');
+    return;
+  }
+
+  const pack = registry.packs.find(p => p.id === packId);
+  if (!pack) {
+    output({ promoted: false, errors: [`Pack "${packId}" not found in registry`] }, raw, 'false');
+    return;
+  }
+
+  // Must be local source
+  if (pack.source !== 'local') {
+    output({ promoted: false, errors: [`Pack "${packId}" is already ${pack.source} (only local packs can be promoted)`] }, raw, 'false');
+    return;
+  }
+
+  // Must be stable
+  if (pack.stability !== 'stable') {
+    output({ promoted: false, errors: [`Pack "${packId}" has stability "${pack.stability}" (only "stable" packs can be promoted)`] }, raw, 'false');
+    return;
+  }
+
+  // Full validation
+  const validation = packLib.validatePackDefinition(pack);
+  if (!validation.valid) {
+    output({ promoted: false, errors: validation.errors.map(e => `validation: ${e}`) }, raw, 'false');
+    return;
+  }
+
+  // Template usage check
+  const usage = packLib.getPackTemplateUsage(pack);
+  if (usage.undeclared.length > 0) {
+    output({ promoted: false, errors: [`Undeclared template parameters: ${usage.undeclared.join(', ')}`] }, raw, 'false');
+    return;
+  }
+
+  // Build target directory
+  const folder = packLib.getPackFolderForKind(pack.kind);
+  const slug = packId.includes('.') ? packId.split('.').slice(1).join('-') : packId;
+  const destDir = path.join(packLib.getBuiltInPackRegistryDir(), folder);
+  const destPath = path.join(destDir, `${slug}.json`);
+
+  // Read source pack JSON (from the local file), update source field
+  const sourcePath = path.join(cwd, pack.path);
+  const sourceContent = JSON.parse(fs.readFileSync(sourcePath, 'utf-8'));
+
+  // Write to built-in directory (copy, not move)
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.writeFileSync(destPath, JSON.stringify(sourceContent, null, 2) + '\n');
+
+  const relDest = path.relative(cwd, destPath);
+  output({
+    promoted: true,
+    pack_id: packId,
+    source: pack.path,
+    destination: toPosixPath(relDest),
+    kind: pack.kind,
+    folder,
+  }, raw, toPosixPath(relDest));
+}
+
+// ─── Replay CLI Commands ─────────────────────────────────────────────────────
+
+async function cmdRuntimeReplay(cwd, args, raw) {
+  const replay = require('./replay.cjs');
+  const runtime = require('./runtime.cjs');
+  const telemetry = require('./telemetry.cjs');
+  const config = loadConfig(cwd);
+  const options = parseRuntimeArgs(args);
+
+  if (!options.source) {
+    error('runtime replay requires --source <QRY-...|RCT-...|PE-...>');
+  }
+
+  // Determine source type from ID prefix
+  let sourceType;
+  if (options.source.startsWith('QRY-')) {
+    sourceType = 'query';
+  } else if (options.source.startsWith('RCT-')) {
+    sourceType = 'receipt';
+  } else if (options.source.startsWith('PE-')) {
+    sourceType = 'pack_execution';
+  } else {
+    error(`Unrecognized source ID prefix: "${options.source}". Expected QRY-..., RCT-..., or PE-...`);
+  }
+
+  // Build mutations from args
+  const mutations = {};
+  if (options.start && options.end) {
+    mutations.time_window = { mode: 'absolute', start: options.start, end: options.end };
+  } else if (options.shift) {
+    mutations.time_window = { mode: 'shift', shift_ms: replay.parseShiftDuration(options.shift) };
+  } else if (options.lookback_minutes) {
+    mutations.time_window = { mode: 'lookback', lookback_minutes: parseInt(options.lookback_minutes, 10) };
+  }
+
+  if (options.connector) {
+    mutations.connector = { id: options.connector };
+  }
+
+  if (options.iocs && options.iocs.length > 0) {
+    const parsedIocs = options.iocs.map(pair => {
+      const eq = pair.indexOf('=');
+      if (eq === -1) {
+        error(`--ioc requires type=value format, received "${pair}"`);
+      }
+      return { type: pair.slice(0, eq), value: pair.slice(eq + 1) };
+    });
+    mutations.ioc_injection = {
+      mode: options.ioc_mode || 'append',
+      iocs: parsedIocs,
+    };
+  }
+
+  // Build diff config
+  const diffConfig = {
+    enabled: options.diff === true,
+    mode: options.diff_mode || 'full',
+  };
+
+  // Build evidence lineage
+  const evidenceLineage = {
+    original_query_ids: [options.source],
+    replay_reason: options.reason || 'CLI replay',
+  };
+
+  // Create replay spec
+  const replaySpec = replay.createReplaySpec({
+    source: { type: sourceType, ids: [options.source] },
+    mutations,
+    diff: diffConfig,
+    evidence: { lineage: evidenceLineage },
+  });
+
+  // Resolve original source
+  const resolved = replay.resolveReplaySource(cwd, replaySpec.source);
+  const validResolved = resolved.filter(r => r.original_spec);
+  if (validResolved.length === 0) {
+    const warnings = resolved.flatMap(r => r.warnings || []);
+    error(`Could not resolve source: ${options.source}${warnings.length ? ' (' + warnings.join('; ') + ')' : ''}`);
+  }
+  if (diffConfig.enabled && validResolved.some(r => !r.original_envelope)) {
+    error('runtime replay --diff requires source artifacts that include an original result summary');
+  }
+
+  // Apply mutations to each resolved spec
+  const mutatedSpecs = validResolved.map(r => replay.applyMutations(r.original_spec, replaySpec.mutations));
+
+  // Dry run: output mutated specs and return
+  if (options.dry_run) {
+    output({
+      replay_id: replaySpec.replay_id,
+      dry_run: true,
+      source: options.source,
+      source_type: sourceType,
+      mutations: replaySpec.mutations,
+      diff: diffConfig,
+      mutated_specs: mutatedSpecs,
+    }, raw);
+    return;
+  }
+
+  // Execute each mutated spec
+  const registry = runtime.createBuiltInConnectorRegistry();
+  const results = [];
+
+  for (const mutatedSpec of mutatedSpecs) {
+    const result = await runtime.executeQuerySpec(mutatedSpec, registry, {
+      cwd,
+      config,
+      artifacts: {
+        lineage: {
+          ...evidenceLineage,
+          replay_id: replaySpec.replay_id,
+          mutations_applied: Object.keys(replaySpec.mutations).filter(k => replaySpec.mutations[k]),
+        },
+      },
+    });
+    results.push(result);
+  }
+
+  // Diff if enabled
+  let diffResult = null;
+  if (diffConfig.enabled && results.length > 0) {
+    const originalResolved = validResolved[0];
+    const originalEnvelope = originalResolved.original_envelope;
+    let effectiveDiffMode = diffConfig.mode;
+    let diffNote = null;
+
+    if (originalResolved.baseline_detail_level === 'summary' && diffConfig.mode !== 'counts_only') {
+      if (diffConfig.mode === 'entities_only') {
+        error('runtime replay --diff-mode entities_only requires a source with original entity details');
+      }
+      effectiveDiffMode = 'counts_only';
+      diffNote = 'Original source recorded only aggregate result summary; computed counts_only diff.';
+    }
+
+    const replayEnvelope = results[0].envelope || {
+      query_id: mutatedSpecs[0].query_id,
+      connector: mutatedSpecs[0].connector,
+      time_window: mutatedSpecs[0].time_window,
+      counts: { events: 0, entities: 0 },
+      entities: [],
+      status: 'unknown',
+    };
+
+    try {
+      diffResult = replay.buildDiff(originalEnvelope, replayEnvelope, effectiveDiffMode);
+      if (diffNote) {
+        diffResult.requested_mode = diffConfig.mode;
+        diffResult.note = diffNote;
+      }
+    } catch (e) {
+      diffResult = { error: e.message, fallback: 'counts_only' };
+    }
+
+    // Write diff artifact
+    if (diffResult && !diffResult.error) {
+      const paths = planningPaths(cwd);
+      fs.mkdirSync(paths.queries, { recursive: true });
+      const diffPath = path.join(paths.queries, `DIFF-${replaySpec.replay_id}.json`);
+      fs.writeFileSync(diffPath, JSON.stringify(diffResult, null, 2));
+    }
+  }
+
+  // Record telemetry
+  try {
+    const firstResult = results[0] || {};
+    telemetry.recordReplayExecution(cwd, replaySpec, {
+      events: firstResult.envelope && firstResult.envelope.counts && firstResult.envelope.counts.events || 0,
+      entities: firstResult.envelope && firstResult.envelope.counts && firstResult.envelope.counts.entities || 0,
+      status: firstResult.envelope && firstResult.envelope.status || 'unknown',
+    });
+  } catch {
+    // Telemetry failures must not break replay output
+  }
+
+  output({
+    replay_id: replaySpec.replay_id,
+    source: options.source,
+    source_type: sourceType,
+    mutations: replaySpec.mutations,
+    diff: diffResult,
+    results: results.map(r => ({
+      result: r.envelope,
+      artifacts: r.artifacts,
+      pagination: r.pagination,
+    })),
+  }, raw);
+}
+
+async function cmdReplayList(cwd, args, raw) {
+  const options = parseRuntimeArgs(args);
+  const paths = planningPaths(cwd);
+  const metricsDir = path.join(paths.planning, 'METRICS');
+
+  if (!fs.existsSync(metricsDir)) {
+    output({ replays: [], total: 0 }, raw);
+    return;
+  }
+
+  const files = fs.readdirSync(metricsDir).filter(f => f.startsWith('RE-') && f.endsWith('.json'));
+  const records = [];
+
+  for (const file of files) {
+    try {
+      const content = fs.readFileSync(path.join(metricsDir, file), 'utf-8');
+      const record = JSON.parse(content);
+      records.push(record);
+    } catch {
+      // Skip malformed files
+    }
+  }
+
+  // Filter by --source if provided
+  let filtered = records;
+  if (options.source) {
+    filtered = records.filter(r => {
+      const ids = r.original_query_ids || [];
+      const srcId = (r.source && r.source.ids) || [];
+      return ids.includes(options.source) || srcId.includes(options.source);
+    });
+  }
+
+  // Sort by timestamp descending
+  filtered.sort((a, b) => {
+    const ta = a.timestamp || '';
+    const tb = b.timestamp || '';
+    return tb.localeCompare(ta);
+  });
+
+  // Apply limit
+  const limit = options.limit ? parseInt(options.limit, 10) : 20;
+  const limited = filtered.slice(0, limit);
+
+  output({
+    replays: limited.map(r => ({
+      replay_execution_id: r.replay_execution_id,
+      replay_id: r.replay_id,
+      timestamp: r.timestamp,
+      source: r.source,
+      original_query_ids: r.original_query_ids,
+      mutation_types: r.mutation_types,
+      diff_mode: r.diff_mode,
+      results_summary: r.results_summary,
+    })),
+    total: filtered.length,
+  }, raw);
+}
+
+async function cmdReplayDiff(cwd, args, raw) {
+  const paths = planningPaths(cwd);
+
+  // Extract replay ID from first non-flag arg
+  let replayId = null;
+  for (const arg of args) {
+    if (!arg.startsWith('--')) {
+      replayId = arg;
+      break;
+    }
+  }
+
+  if (!replayId) {
+    error('replay diff requires a replay ID (RPL-...) as argument');
+  }
+
+  const diffPath = path.join(paths.queries, `DIFF-${replayId}.json`);
+  if (!fs.existsSync(diffPath)) {
+    error(`No diff found for ${replayId}`);
+  }
+
+  let diffData;
+  try {
+    diffData = JSON.parse(fs.readFileSync(diffPath, 'utf-8'));
+  } catch (e) {
+    error(`Failed to parse diff file: ${e.message}`);
+  }
+
+  // Build human-readable summary
+  const summary = [];
+  if (diffData.baseline && diffData.replay) {
+    summary.push(`Baseline: ${diffData.baseline.query_id || 'unknown'} (${diffData.baseline.status || 'unknown'})`);
+    summary.push(`Replay:   ${diffData.replay.query_id || 'unknown'} (${diffData.replay.status || 'unknown'})`);
+  }
+  if (diffData.delta) {
+    const d = diffData.delta;
+    if (d.events) {
+      summary.push(`Events: +${d.events.added} -${d.events.removed} =${d.events.unchanged}`);
+    }
+    if (d.entities) {
+      const added = Array.isArray(d.entities.added) ? d.entities.added.length : d.entities.added || 0;
+      const removed = Array.isArray(d.entities.removed) ? d.entities.removed.length : d.entities.removed || 0;
+      const unchanged = d.entities.unchanged || 0;
+      summary.push(`Entities: +${added} -${removed} =${unchanged}`);
+    }
+  }
+  if (diffData.summary) {
+    summary.push(diffData.summary);
+  }
+
+  output({
+    replay_id: replayId,
+    diff: diffData,
+    human_summary: summary.join('\n'),
+  }, raw, summary.join('\n'));
+}
+
+// ─── Tenant command delegates ────────────────────────────────────────────────
+
+async function cmdTenantList(cwd, raw) { return getTenant().cmdTenantList(cwd, raw); }
+async function cmdTenantStatus(cwd, tenantId, raw) { return getTenant().cmdTenantStatus(cwd, tenantId, raw); }
+async function cmdTenantAdd(cwd, args, raw) { return getTenant().cmdTenantAdd(cwd, args, raw); }
+async function cmdTenantDisable(cwd, tenantId, raw) { return getTenant().cmdTenantDisable(cwd, tenantId, raw); }
+async function cmdTenantEnable(cwd, tenantId, raw) { return getTenant().cmdTenantEnable(cwd, tenantId, raw); }
+async function cmdTenantDoctor(cwd, args, raw) { return getTenant().cmdTenantDoctor(cwd, args, raw); }
+
+// ─── Connector ecosystem CLI commands ──────────────────────────────────────────
+
+/**
+ * List all installed connectors (built-in + plugins) with provenance info.
+ * Usage: thrunt connectors list [--raw]
+ */
+async function cmdConnectorsList(cwd, raw) {
+  const { discoverPlugins } = require('./plugin-registry.cjs');
+  const config = loadConfig(cwd);
+
+  const registry = discoverPlugins({ cwd, config, includeBuiltIn: true });
+  const allPlugins = registry.listPlugins();
+
+  const list = allPlugins.map(info => {
+    const adapter = registry.get(info.connector_id);
+    return {
+      id: info.connector_id,
+      display_name: (adapter && adapter.capabilities && adapter.capabilities.display_name) || info.connector_id,
+      source: info.source,
+      version: info.version,
+      package_name: info.package_name,
+    };
+  });
+
+  // Sort: built-in first, then alphabetical by id
+  list.sort((a, b) => {
+    if (a.source === 'built-in' && b.source !== 'built-in') return -1;
+    if (a.source !== 'built-in' && b.source === 'built-in') return 1;
+    return a.id.localeCompare(b.id);
+  });
+
+  output({ connectors: list, count: list.length }, raw);
+}
+
+/**
+ * Search npm registry for available connectors.
+ * Usage: thrunt connectors search <term> [--raw]
+ */
+async function cmdConnectorsSearch(cwd, args, raw) {
+  const term = args[0];
+  if (!term) {
+    error('search term required. Usage: thrunt connectors search <term>');
+  }
+
+  try {
+    let jsonResult;
+    try {
+      const stdout = execFileSync('npm', ['search', 'thrunt-connector', term, '--json', '--long'], {
+        encoding: 'utf8',
+        timeout: 15000,
+        stdio: ['pipe', 'pipe', 'ignore'],
+      });
+      jsonResult = JSON.parse(stdout);
+    } catch (_parseErr) {
+      // JSON parse failed — try non-JSON fallback
+      try {
+        const stdout = execFileSync('npm', ['search', 'thrunt-connector', term], {
+          encoding: 'utf8',
+          timeout: 15000,
+          stdio: ['pipe', 'pipe', 'ignore'],
+        });
+        // Non-JSON output — return as raw text
+        output({ term, results: [], count: 0, raw_output: stdout.trim() }, raw);
+        return;
+      } catch (_fallbackErr) {
+        output({ term, results: [], count: 0, error: 'npm search failed -- check network connection' }, raw);
+        return;
+      }
+    }
+
+    // Filter to only results whose name or keywords include 'thrunt-connector'
+    const filtered = (Array.isArray(jsonResult) ? jsonResult : [])
+      .filter(pkg => {
+        const name = pkg.name || '';
+        const keywords = Array.isArray(pkg.keywords) ? pkg.keywords : [];
+        return name.includes('thrunt-connector') || keywords.some(k => k.includes('thrunt-connector'));
+      })
+      .map(pkg => ({
+        name: pkg.name,
+        description: pkg.description || '',
+        version: pkg.version || '',
+        date: pkg.date || '',
+        keywords: pkg.keywords || [],
+      }));
+
+    output({ term, results: filtered, count: filtered.length }, raw);
+  } catch (_err) {
+    output({ term, results: [], count: 0, error: 'npm search failed -- check network connection' }, raw);
+  }
+}
+
+/**
+ * Scaffold a standalone connector plugin project from the starter template.
+ * Usage: thrunt connectors init <id> [flags]
+ */
+async function cmdConnectorsInit(cwd, args, raw) {
+  const runtime = require('./runtime.cjs');
+  const pluginTemplatesDir = path.join(__dirname, '../../templates/connector-plugin');
+
+  // --- Argument parsing ---
+  let connectorId = args[0] && !args[0].startsWith('--') ? args[0] : null;
+  const cliOptions = parseConnectorArgs(args.slice(connectorId ? 1 : 0));
+
+  if (cliOptions.raw) raw = true;
+
+  // --- Input validation ---
+  if (!connectorId || !/^[a-z][a-z0-9_]*$/.test(connectorId)) {
+    error(`connector ID must match /^[a-z][a-z0-9_]*$/ (lowercase, underscores, starts with letter). Got: ${connectorId || '(empty)'}`);
+  }
+
+  // Collision check against built-in connectors
+  const builtInRegistry = runtime.createBuiltInConnectorRegistry();
+  if (builtInRegistry.has(connectorId)) {
+    const builtIns = builtInRegistry.list().map(c => c.id).join(', ');
+    error(`connector ID '${connectorId}' collides with a built-in connector. Built-in IDs: ${builtIns}`);
+  }
+
+  // Apply defaults
+  const authTypes = cliOptions.authTypes.length > 0 ? cliOptions.authTypes : ['api_key'];
+  const datasetKinds = cliOptions.datasetKinds.length > 0 ? cliOptions.datasetKinds : ['events'];
+  const languages = cliOptions.languages.length > 0 ? cliOptions.languages : ['api'];
+  const paginationModes = cliOptions.paginationModes.length > 0 ? cliOptions.paginationModes : ['none'];
+  const displayName = cliOptions.displayName || toTitleCase(connectorId);
+  const dryRun = cliOptions.dryRun || false;
+  const force = args.includes('--force');
+  const scoped = args.includes('--scoped');
+  const outputBaseDir = cliOptions.outputDir ? path.resolve(cwd, cliOptions.outputDir) : cwd;
+
+  // Path containment: output directory must be within project root
+  if (!outputBaseDir.startsWith(cwd + path.sep) && outputBaseDir !== cwd) {
+    error(`output directory must be within project root. Got: ${outputBaseDir}`);
+  }
+
+  // Determine package name
+  const packageName = scoped
+    ? `@thrunt/connector-${connectorId}`
+    : `thrunt-connector-${connectorId}`;
+
+  // SDK version from root package.json
+  const pkgJson = require('../../../package.json');
+  const versionParts = pkgJson.version.split('.');
+  const sdkVersion = `^${versionParts[0]}.${versionParts[1]}.0`;
+
+  // Compute template variables
+  const functionName = toPascalCase(connectorId);
+  const envPrefix = connectorId.toUpperCase();
+  const authTypesArray = JSON.stringify(authTypes).replace(/"/g, "'");
+  const datasetKindsArray = JSON.stringify(datasetKinds).replace(/"/g, "'");
+  const languagesArray = JSON.stringify(languages).replace(/"/g, "'");
+  const paginationModesArray = JSON.stringify(paginationModes).replace(/"/g, "'");
+  const docsUrl = cliOptions.docsUrl ? `'${escapeJsString(cliOptions.docsUrl)}'` : 'null';
+  const safeDisplayName = escapeJsString(displayName);
+  const dateStr = new Date().toISOString().split('T')[0];
+
+  const vars = {
+    CONNECTOR_ID: connectorId,
+    CONNECTOR_DISPLAY_NAME: safeDisplayName,
+    CONNECTOR_FUNCTION_NAME: functionName,
+    AUTH_TYPES_ARRAY: authTypesArray,
+    AUTH_TYPES_FIRST: authTypes[0],
+    DATASET_KINDS_ARRAY: datasetKindsArray,
+    DATASET_KINDS_FIRST: datasetKinds[0],
+    LANGUAGES_ARRAY: languagesArray,
+    LANGUAGES_FIRST: languages[0],
+    PAGINATION_MODES_ARRAY: paginationModesArray,
+    DOCS_URL: docsUrl,
+    ENV_PREFIX: envPrefix,
+    DATE: dateStr,
+    PACKAGE_NAME: packageName,
+    SDK_VERSION: sdkVersion,
+    AUTH_TYPES_ARRAY_JSON: JSON.stringify(authTypes),
+    DATASET_KINDS_ARRAY_JSON: JSON.stringify(datasetKinds),
+    LANGUAGES_ARRAY_JSON: JSON.stringify(languages),
+    PAGINATION_MODES_ARRAY_JSON: JSON.stringify(paginationModes),
+  };
+
+  // Output directory: <base>/thrunt-connector-<id>
+  const outputDir = path.join(outputBaseDir, `thrunt-connector-${connectorId}`);
+
+  // Build file manifest by scanning template directory
+  const manifest = [];
+
+  function scanTemplateDir(dir, relPrefix) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        scanTemplateDir(fullPath, path.join(relPrefix, entry.name));
+      } else if (entry.name.endsWith('.tmpl')) {
+        const outputName = entry.name.replace(/\.tmpl$/, '');
+        const relOutputPath = path.join(relPrefix, outputName);
+        manifest.push({
+          path: path.join(outputDir, relOutputPath),
+          templateFile: fullPath,
+          relPath: relOutputPath,
+        });
+      }
+    }
+  }
+  scanTemplateDir(pluginTemplatesDir, '');
+
+  // --- Dry-run mode ---
+  if (dryRun) {
+    output({
+      dry_run: true,
+      connector_id: connectorId,
+      package_name: packageName,
+      output_dir: outputDir,
+      files: manifest.map(item => ({
+        path: item.relPath,
+        template: path.basename(item.templateFile),
+      })),
+    }, raw);
+    return;
+  }
+
+  // --- Overwrite protection ---
+  if (!force) {
+    const conflicting = manifest
+      .filter(item => fs.existsSync(item.path))
+      .map(item => item.relPath);
+    if (conflicting.length > 0) {
+      error(`CONNECTOR_FILE_EXISTS: the following files already exist: ${conflicting.join(', ')}. Use --force to overwrite.`);
+    }
+  }
+
+  // --- File writing ---
+  const generatedPaths = [];
+
+  for (const item of manifest) {
+    const tmplContent = fs.readFileSync(item.templateFile, 'utf8');
+    const rendered = renderTemplate(tmplContent, vars);
+    const dir = path.dirname(item.path);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(item.path, rendered);
+    generatedPaths.push(item.relPath);
+  }
+
+  output({
+    connector_id: connectorId,
+    package_name: packageName,
+    output_dir: outputDir,
+    files: generatedPaths,
+  }, raw);
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -1741,10 +3381,20 @@ module.exports = {
   cmdPackLint,
   cmdPackTest,
   cmdPackInit,
+  cmdPackCreate,
+  cmdPackPromote,
   cmdRuntimeListConnectors,
   cmdRuntimeDoctor,
+  cmdDoctorConnectors,
   cmdRuntimeSmoke,
   cmdRuntimeExecute,
+  cmdRuntimeDispatch,
+  cmdRuntimeAggregate,
+  cmdRuntimeHeatmap,
+  cmdRuntimeReplay,
+  cmdReplayList,
+  cmdReplayDiff,
+  parseRuntimeArgs,
   cmdCommit,
   cmdCommitToSubrepo,
   cmdSummaryExtract,
@@ -1754,4 +3404,16 @@ module.exports = {
   cmdTodoMatchPhase,
   cmdScaffold,
   cmdStats,
+  cmdInitConnector,
+  cmdTenantList,
+  cmdTenantStatus,
+  cmdTenantAdd,
+  cmdTenantDisable,
+  cmdTenantEnable,
+  cmdTenantDoctor,
+  cmdConnectorsList,
+  cmdConnectorsSearch,
+  cmdConnectorsInit,
+  escapeJsString,
+  renderTemplate,
 };

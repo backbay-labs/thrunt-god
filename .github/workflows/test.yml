@@ -1,5 +1,8 @@
 name: Tests
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -22,7 +25,7 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest]
-        node-version: [22, 24]
+        node-version: [20, 22, 24]
         include:
           # Single macOS runner — verifies platform compatibility
           - os: macos-latest
@@ -45,4 +48,17 @@ jobs:
 
       - name: Run tests with coverage
         shell: bash
-        run: npm run test:coverage
+        run: |
+          npx c8 --check-coverage --lines 70 \
+            --reporter text --reporter lcov \
+            --include 'thrunt-god/bin/lib/**/*.cjs' \
+            --exclude 'tests/**' --all \
+            node scripts/run-tests.cjs
+
+      - name: Upload coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 22
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882  # v4.4.3
+        with:
+          name: coverage-report
+          path: coverage/lcov.info
+          retention-days: 30

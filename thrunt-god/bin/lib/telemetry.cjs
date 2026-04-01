@@ -109,6 +109,7 @@ function recordHuntExecution(cwd, spec, envelope, options = {}) {
       receipt_ids: options.receipt_ids || [],
       manifest_ids: options.manifest_ids || [],
     },
+    replay_context: options.replay_context || null,
   };
 
   const dir = ensureMetricsDir(cwd);
@@ -186,6 +187,36 @@ function recordPromotionOutcome(cwd, candidate, promotionReceipt) {
     quality_score: (candidate && candidate.quality_score) || 0,
     evidence_chain_length: evidenceLinks.length,
     hypothesis_ids: hypothesisIds,
+  };
+
+  const dir = ensureMetricsDir(cwd);
+  atomicWrite(path.join(dir, `${id}.json`), canonicalSerialize(record));
+  return record;
+}
+
+function recordReplayExecution(cwd, replaySpec, results) {
+  const ts = nowUtc();
+  const stamp = dateStamp();
+  const replayId = (replaySpec && replaySpec.replay_id) || 'unknown';
+  const id = `RE-${stamp}-${hash5(replayId + ts)}`;
+
+  const mutations = (replaySpec && replaySpec.mutations) || {};
+  const mutationTypes = Object.keys(mutations).filter(k => mutations[k]);
+
+  const record = {
+    replay_execution_id: id,
+    record_type: 'replay_execution',
+    timestamp: ts,
+    replay_id: replayId,
+    source: (replaySpec && replaySpec.source) || null,
+    mutation_types: mutationTypes,
+    original_query_ids: (replaySpec && replaySpec.evidence && replaySpec.evidence.lineage && replaySpec.evidence.lineage.original_query_ids) || [],
+    diff_mode: (replaySpec && replaySpec.diff && replaySpec.diff.mode) || null,
+    results_summary: {
+      events: (results && results.events) || 0,
+      entities: (results && results.entities) || 0,
+      status: (results && results.status) || 'unknown',
+    },
   };
 
   const dir = ensureMetricsDir(cwd);
@@ -470,6 +501,7 @@ module.exports = {
   recordHuntExecution,
   recordPackExecution,
   recordPromotionOutcome,
+  recordReplayExecution,
   classifyOutcome,
   listMetrics,
   summarizeMetrics,

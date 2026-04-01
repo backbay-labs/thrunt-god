@@ -21,6 +21,7 @@ If Task is unavailable in the active runtime, fall back to sequential inline exe
 
 Do not start hunting from memory.
 Read the phase `CONTEXT.md` and each `PLAN.md` file.
+If the requested phase has no `PLAN.md` files, stop and tell the operator to run `/hunt:plan <phase>` first instead of hanging or improvising execution.
 
 Every material telemetry action should be representable as a shared runtime `QuerySpec`.
 Backend-specific request shapes belong inside connector adapters, not in the workflow narrative.
@@ -61,6 +62,7 @@ For each material claim or evidence item:
 - Create a receipt in `.planning/RECEIPTS/`
 - Record identifiers, timestamps, source, claim, confidence, and chain-of-custody details
 - Include the runtime metadata needed to reconstruct or audit the execution later
+- Keep query and receipt cross-references exact: every `related_receipts` entry in a query log must match a real receipt ID written in this run, and every receipt `related_queries` entry must point back to the real query log ID that produced it
 
 Never summarize a claim without a receipt.
 
@@ -80,8 +82,9 @@ Create or refresh a phase `SUMMARY.md` covering:
 Update:
 
 - `.planning/STATE.md`
-- `.planning/HYPOTHESES.md` if new theories emerge
-- `.planning/HUNTMAP.md` if the phase is now complete; it remains the source of truth
+- `.planning/HYPOTHESES.md` whenever a hypothesis is confirmed, disproved, or left inconclusive so confidence and status do not stay stale
+- `.planning/HUNTMAP.md` when phase or plan completion changes; it remains the source of truth and must reflect the real completed state before close-out
+- when updating `.planning/HUNTMAP.md`, keep all three representations in sync: the phase checkbox list, the specific plan checklist entry or entries, and the `## Progress` table row for the executed phase
 
 ## 6. Close Out
 

@@ -13,7 +13,7 @@ export interface InteractiveCommandOptions {
 }
 
 function canBypassClaudePermissions(sandboxMode?: SandboxMode): boolean {
-  return sandboxMode === "worktree" || sandboxMode === "tmpdir"
+  return sandboxMode === "worktree"
 }
 
 export function buildInteractiveSessionCommand(

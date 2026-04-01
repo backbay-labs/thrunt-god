@@ -1,0 +1,13 @@
+{
+  "name": "{{PACKAGE_NAME}}",
+  "version": "0.1.0",
+  "sdk_version": "{{SDK_VERSION}}",
+  "connector_id": "{{CONNECTOR_ID}}",
+  "display_name": "{{CONNECTOR_DISPLAY_NAME}}",
+  "entry": "./src/index.cjs",
+  "auth_types": {{AUTH_TYPES_ARRAY_JSON}},
+  "dataset_kinds": {{DATASET_KINDS_ARRAY_JSON}},
+  "languages": {{LANGUAGES_ARRAY_JSON}},
+  "pagination_modes": {{PAGINATION_MODES_ARRAY_JSON}},
+  "permissions": { "network": true, "filesystem": false, "subprocess": false, "env_access": ["{{ENV_PREFIX}}_TOKEN"] }
+}

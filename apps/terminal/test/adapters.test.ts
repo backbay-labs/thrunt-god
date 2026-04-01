@@ -62,7 +62,7 @@ async function probeAdapterAvailability(
   }
 
   const proc = Bun.spawn(["bun", "-e", script], {
-    cwd: process.cwd(),
+    cwd: path.join(process.cwd(), "apps", "terminal"),
     env,
     stdout: "pipe",
     stderr: "pipe",

@@ -99,6 +99,19 @@ function renderWatchSummaryCard(ctx: ScreenContext, width: number): string[] {
       `${THEME.white}space${THEME.reset} pause  ${THEME.white}c${THEME.reset} clear  ${THEME.white}e${THEME.reset} report`,
   )
 
+  content.push("")
+  content.push(`${THEME.secondary}${THEME.bold}Agent Activity${THEME.reset}`)
+  if (state.agentActivity.events.length === 0) {
+    content.push(`${THEME.dim}No external agent updates yet.${THEME.reset}`)
+  } else {
+    for (const event of state.agentActivity.events.slice(0, 2)) {
+      content.push(
+        `${THEME.dim}•${THEME.reset} ${THEME.white}${fitString(event.title, Math.max(12, boxWidth - 14))}${THEME.reset} ` +
+          `${THEME.dim}${event.actor ?? event.kind}${THEME.reset}`,
+      )
+    }
+  }
+
   return renderBox("Watch Session", content, boxWidth, THEME, {
     style: "rounded",
     titleAlign: "left",

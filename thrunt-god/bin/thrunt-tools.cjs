@@ -35,11 +35,24 @@
  *   pack test [<pack-id>]              Smoke-test packs using example parameters
  *   pack init <pack-id>                Scaffold a local pack under .planning/packs/
  *     [--param key=value] [--params '{json}']
+ *   pack create [options]              Interactively create a new hunt pack with guided 8-step flow
+ *     [--non-interactive] [--kind <type>] [--id <id>] [--attack <ids>]
+ *     [--extends <ids>] [--connectors <ids>] [--output <path>] [--dry-run]
+ *   init connector <id>                Scaffold a new connector adapter with tests and Docker boilerplate
+ *   connectors list                    List installed connectors (built-in + plugins)
+ *   connectors search <term>           Search npm registry for available connectors
+ *   connectors init <id>               Scaffold a standalone connector plugin project
  *   runtime list-connectors            List built-in runtime connector capabilities
  *   runtime doctor [<connector-id>]    Score connector readiness and preflight config
  *   runtime smoke [<connector-id>]     Run live connector smoke tests
  *   runtime execute --connector ID --query "..."   Execute a connector-backed hunt query
  *   runtime execute --pack <pack-id>   Execute one or more pack-backed hunt targets
+ *   runtime replay --source QRY-... [--diff] [--shift] [--reason]   Replay a previous hunt query
+ *
+ * Replay:
+ *   replay list [--source QRY-...] [--limit N]   List replay execution records
+ *   replay diff RPL-{id}                          Read and format stored diff result
+ *
  *   config-ensure-section              Initialize .planning/config.json
  *   history-digest                     Aggregate all SUMMARY.md data
  *   summary-extract <path> [--fields]  Extract structured data from SUMMARY.md
@@ -560,8 +573,12 @@ async function runCommand(command, args, cwd, raw) {
         await commands.cmdPackTest(cwd, args.slice(2), raw);
       } else if (subcommand === 'init') {
         await commands.cmdPackInit(cwd, args.slice(2), raw);
+      } else if (subcommand === 'create') {
+        await commands.cmdPackCreate(cwd, args.slice(2), raw);
+      } else if (subcommand === 'promote') {
+        await commands.cmdPackPromote(cwd, args.slice(2), raw);
       } else {
-        error('Unknown pack subcommand. Available: list, show, bootstrap, validate, render-targets, lint, test, init');
+        error('Unknown pack subcommand. Available: list, show, bootstrap, validate, render-targets, lint, test, init, create, promote');
       }
       break;
     }
@@ -576,8 +593,61 @@ async function runCommand(command, args, cwd, raw) {
         await commands.cmdRuntimeSmoke(cwd, args.slice(2), raw);
       } else if (subcommand === 'execute') {
         await commands.cmdRuntimeExecute(cwd, args.slice(2), raw);
+      } else if (subcommand === 'replay') {
+        await commands.cmdRuntimeReplay(cwd, args.slice(2), raw);
+      } else if (subcommand === 'dispatch') {
+        await commands.cmdRuntimeDispatch(cwd, args.slice(2), raw);
+      } else if (subcommand === 'aggregate') {
+        await commands.cmdRuntimeAggregate(cwd, args.slice(2), raw);
+      } else if (subcommand === 'heatmap') {
+        await commands.cmdRuntimeHeatmap(cwd, args.slice(2), raw);
+      } else if (subcommand === 'tenant') {
+        const tenantSub = args[2];
+        if (tenantSub === 'list') {
+          await commands.cmdTenantList(cwd, raw);
+        } else if (tenantSub === 'status') {
+          await commands.cmdTenantStatus(cwd, args[3], raw);
+        } else if (tenantSub === 'add') {
+          await commands.cmdTenantAdd(cwd, args.slice(3), raw);
+        } else if (tenantSub === 'disable') {
+          await commands.cmdTenantDisable(cwd, args[3], raw);
+        } else if (tenantSub === 'enable') {
+          await commands.cmdTenantEnable(cwd, args[3], raw);
+        } else if (tenantSub === 'doctor') {
+          await commands.cmdTenantDoctor(cwd, args.slice(3), raw);
+        } else {
+          error('Unknown tenant subcommand. Available: list, status, add, disable, enable, doctor');
+        }
+      } else if (subcommand === 'doctor-connectors') {
+        await commands.cmdDoctorConnectors(cwd, args.slice(2), raw);
       } else {
-        error('Unknown runtime subcommand. Available: list-connectors, doctor, smoke, execute');
+        error('Unknown runtime subcommand. Available: list-connectors, doctor, doctor-connectors, smoke, execute, replay, dispatch, aggregate, heatmap, tenant');
+      }
+      break;
+    }
+
+    case 'connectors': {
+      const subcommand = args[1];
+      if (subcommand === 'list') {
+        await commands.cmdConnectorsList(cwd, raw);
+      } else if (subcommand === 'search') {
+        await commands.cmdConnectorsSearch(cwd, args.slice(2), raw);
+      } else if (subcommand === 'init') {
+        await commands.cmdConnectorsInit(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown connectors subcommand. Available: list, search, init');
+      }
+      break;
+    }
+
+    case 'replay': {
+      const subcommand = args[1];
+      if (subcommand === 'list') {
+        await commands.cmdReplayList(cwd, args.slice(2), raw);
+      } else if (subcommand === 'diff') {
+        await commands.cmdReplayDiff(cwd, args.slice(2), raw);
+      } else {
+        error('Unknown replay subcommand. Available: list, diff');
       }
       break;
     }
@@ -933,8 +1003,11 @@ async function runCommand(command, args, cwd, raw) {
         case 'remove-workspace':
           init.cmdInitRemoveWorkspace(cwd, args[2], raw);
           break;
+        case 'connector':
+          await commands.cmdInitConnector(cwd, args.slice(2), raw);
+          break;
         default:
-          error(`Unknown init workflow: ${workflow}\nAvailable: run, plan, new-program, new-milestone, quick, resume, validate-findings, phase-op, todos, milestone-op, map-environment, progress, manager, new-workspace, list-workspaces, remove-workspace`);
+          error(`Unknown init workflow: ${workflow}\nAvailable: run, plan, new-program, new-milestone, quick, resume, validate-findings, phase-op, todos, milestone-op, map-environment, progress, manager, new-workspace, list-workspaces, remove-workspace, connector`);
       }
       break;
     }

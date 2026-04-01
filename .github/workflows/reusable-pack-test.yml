@@ -1,0 +1,100 @@
+name: Reusable Pack Test
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    inputs:
+      thrunt-version:
+        description: 'THRUNT GOD version to test against'
+        required: false
+        default: 'latest'
+        type: string
+      node-version:
+        description: 'Node.js version'
+        required: false
+        default: '22'
+        type: string
+      packs-directory:
+        description: 'Directory containing pack JSON files'
+        required: false
+        default: 'packs'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout pack repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Install THRUNT GOD
+        env:
+          THRUNT_VERSION: ${{ inputs.thrunt-version }}
+        run: |
+          npm install -g "thrunt-god@${THRUNT_VERSION}"
+          THRUNT_TOOLS_PATH="$(npm root -g)/thrunt-god/thrunt-god/bin/thrunt-tools.cjs"
+          if [ ! -f "$THRUNT_TOOLS_PATH" ]; then
+            echo "Missing thrunt-tools entrypoint at $THRUNT_TOOLS_PATH"
+            exit 1
+          fi
+          echo "THRUNT_TOOLS_PATH=$THRUNT_TOOLS_PATH" >> "$GITHUB_ENV"
+
+      - name: Discover and validate packs
+        env:
+          PACKS_DIR: ${{ inputs.packs-directory }}
+        run: |
+          if [ ! -d "$PACKS_DIR" ]; then
+            echo "No packs directory found at $PACKS_DIR"
+            exit 1
+          fi
+
+          FAILED=0
+          FOUND=0
+          while IFS= read -r -d '' pack_file; do
+            FOUND=1
+            echo "Validating: $pack_file"
+            if ! PACK_ID=$(node -e "const pack = require(process.argv[1]); if (!pack || typeof pack.id !== 'string' || !pack.id.trim()) { throw new Error('Pack JSON missing non-empty id'); } console.log(pack.id);" "./$pack_file"); then
+              echo "Failed to read pack id from $pack_file"
+              FAILED=$((FAILED + 1))
+              continue
+            fi
+            mkdir -p .planning/packs/
+            cp "$pack_file" .planning/packs/
+            PACK_OUTPUT="$(mktemp)"
+            if ! node "$THRUNT_TOOLS_PATH" pack test "$PACK_ID" >"$PACK_OUTPUT" 2>&1; then
+              cat "$PACK_OUTPUT"
+              rm -f "$PACK_OUTPUT"
+              FAILED=$((FAILED + 1))
+              continue
+            fi
+            cat "$PACK_OUTPUT"
+            if ! node -e "const fs = require('fs'); const result = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); if (result.valid !== true) { const reasons = []; if (Array.isArray(result.errors) && result.errors.length > 0) reasons.push(...result.errors); if (Array.isArray(result.packs)) { for (const pack of result.packs) { if (Array.isArray(pack.errors) && pack.errors.length > 0) reasons.push(...pack.errors.map((error) => \`\${pack.id || 'pack'}: \${error}\`)); } } console.error(reasons[0] || 'pack test reported valid=false'); process.exit(1); }" "$PACK_OUTPUT"; then
+              rm -f "$PACK_OUTPUT"
+              FAILED=$((FAILED + 1))
+              continue
+            fi
+            rm -f "$PACK_OUTPUT"
+          done < <(find "$PACKS_DIR" -type f -name '*.json' -print0)
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No pack JSON files found under $PACKS_DIR"
+            exit 1
+          fi
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "FAILED: $FAILED pack(s) failed validation"
+            exit 1
+          fi

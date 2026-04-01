@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const PLANNING_DIR_NAME = process.env.THRUNT_PLANNING_DIR || '.planning';
 
 let input = '';
 const stdinTimeout = setTimeout(() => process.exit(0), 3000);
@@ -39,8 +40,8 @@ process.stdin.on('end', () => {
     // Check the file being edited
     const filePath = data.tool_input?.file_path || data.tool_input?.path || '';
 
-    // Allow edits to .planning/ files (THRUNT state management)
-    if (filePath.includes('.planning/') || filePath.includes('.planning\\')) {
+    // Allow edits to the configured planning directory (THRUNT state management)
+    if (filePath.includes(`${PLANNING_DIR_NAME}/`) || filePath.includes(`${PLANNING_DIR_NAME}\\`)) {
       process.exit(0);
     }
 
@@ -59,7 +60,7 @@ process.stdin.on('end', () => {
 
     // Check if workflow guard is enabled
     const cwd = data.cwd || process.cwd();
-    const configPath = path.join(cwd, '.planning', 'config.json');
+    const configPath = path.join(cwd, PLANNING_DIR_NAME, 'config.json');
     if (fs.existsSync(configPath)) {
       try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -73,7 +74,7 @@ process.stdin.on('end', () => {
       process.exit(0); // No THRUNT project — don't guard
     }
 
-    // If we get here: THRUNT project, guard enabled, file edit outside .planning/,
+    // If we get here: THRUNT project, guard enabled, file edit outside the planning dir,
     // not in a subagent context. Inject advisory warning.
     const output = {
       hookSpecificOutput: {

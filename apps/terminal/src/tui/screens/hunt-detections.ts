@@ -10,7 +10,7 @@ import type { Screen, ScreenContext } from "../types"
 import { renderSurfaceHeader } from "../components/surface-header"
 import type { ListItem } from "../components/scrollable-list"
 import { renderList, scrollUp, scrollDown } from "../components/scrollable-list"
-import { fitString, stripAnsi } from "../components/types"
+import { fitString } from "../components/types"
 import { listDetections } from "../../thrunt-bridge/detection"
 import type { DetectionCandidate } from "../../thrunt-bridge/detection"
 

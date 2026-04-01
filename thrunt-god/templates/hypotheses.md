@@ -5,39 +5,32 @@ Template for `.planning/HYPOTHESES.md`.
 <template>
 
 ```markdown
-# Hypotheses: [Program or Case Name]
+# Hypotheses: TBD
 
 ## Active Hypotheses
 
-### HYP-01: [Short statement]
-
-- **Signal:** [what suggested this]
-- **Assertion:** [what would have to be true]
-- **Priority:** [Critical | High | Medium | Low]
-- **Scope:** [time window, entities, tenants]
-- **Data sources:** [which telemetry can confirm or disprove]
-- **Evidence needed:** [what supporting evidence should exist]
-- **Disproof condition:** [what would make this false]
-- **Confidence:** [Low | Medium | High]
-- **Status:** [Open | In progress | Supported | Disproved | Inconclusive]
+- TBD
 
 ## Parked Hypotheses
 
-- [Hypothesis parked because ...]
+- TBD
 
 ## Disproved Hypotheses
 
-- **HYP-0X:** [statement] - disproved by [receipt or query id]
+- TBD
 
 ## Notes
 
-[Cross-hypothesis relationships, competing explanations, or confidence caveats]
+TBD
 ```
 
 </template>
 
 <guidelines>
 
+- Bootstrap should always replace the document title with the confirmed program or case name before writing the file.
+- Unknown facts should remain `TBD`; do not fabricate hypotheses just to populate the file.
+- When you have enough confirmed facts to add an active hypothesis, include: Signal, Assertion, Priority, Scope, Data sources, Evidence needed, Disproof condition, Confidence, and Status.
 - One hypothesis per materially distinct theory.
 - A hypothesis must be falsifiable.
 - Confidence is about current evidence, not how plausible the story feels.

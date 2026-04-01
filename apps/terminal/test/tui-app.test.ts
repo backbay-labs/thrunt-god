@@ -1,586 +1,246 @@
-import { mkdtemp } from "node:fs/promises"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
 import { afterEach, describe, expect, test } from "bun:test"
+import { mkdir, mkdtemp, rm } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { ThruntPlanningWatcher } from "../src/thrunt-bridge/watcher"
 import { TUIApp } from "../src/tui/app"
-import { Hushd } from "../src/hushd"
-import { createManagedRun } from "../src/tui/runs"
 
-const originalGetClient = Hushd.getClient
-const originalIsInitialized = Hushd.isInitialized
-const originalInit = Hushd.init
-const originalReset = Hushd.reset
+let tempDir: string | null = null
+let originalCwd = process.cwd()
 
-afterEach(() => {
-  ;(Hushd as unknown as {
-    getClient: typeof Hushd.getClient
-    isInitialized: typeof Hushd.isInitialized
-    init: typeof Hushd.init
-    reset: typeof Hushd.reset
-  }).getClient = originalGetClient
-  ;(Hushd as unknown as {
-    getClient: typeof Hushd.getClient
-    isInitialized: typeof Hushd.isInitialized
-    init: typeof Hushd.init
-    reset: typeof Hushd.reset
-  }).isInitialized = originalIsInitialized
-  ;(Hushd as unknown as {
-    getClient: typeof Hushd.getClient
-    isInitialized: typeof Hushd.isInitialized
-    init: typeof Hushd.init
-    reset: typeof Hushd.reset
-  }).init = originalInit
-  ;(Hushd as unknown as {
-    getClient: typeof Hushd.getClient
-    isInitialized: typeof Hushd.isInitialized
-    init: typeof Hushd.init
-    reset: typeof Hushd.reset
-  }).reset = originalReset
+afterEach(async () => {
+  process.chdir(originalCwd)
+  if (tempDir) {
+    await rm(tempDir, { recursive: true, force: true })
+    tempDir = null
+  }
 })
 
-describe("TUIApp security refresh", () => {
-  test("refreshes the recent audit preview outside the initial hushd connect", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        hushdStatus: string
-        inputMode: string
-        recentAuditPreview: unknown[]
-      }
-      render: () => void
-      refreshRecentAuditPreview: (force?: boolean) => Promise<void>
+async function writeFakeThruntTools(root: string): Promise<void> {
+  const toolsPath = join(root, "thrunt-god", "bin", "thrunt-tools.cjs")
+  await mkdir(join(root, "thrunt-god", "bin"), { recursive: true })
+  await Bun.write(
+    toolsPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2)
+if (args[0] === "runtime" && args[1] === "list-connectors") {
+  console.log(JSON.stringify({ connectors: [{ id: "elastic", name: "Elastic", auth_types: ["api_key"], supported_datasets: ["events"], supported_languages: ["esql"], pagination_modes: ["cursor"] }] }))
+  process.exit(0)
+}
+if (args[0] === "pack" && args[1] === "list") {
+  console.log(JSON.stringify({ packs: [{ id: "pack.oauth", kind: "domain", title: "OAuth Hunt", stability: "stable", source: "builtin", required_connectors: ["elastic"], supported_datasets: ["events"] }] }))
+  process.exit(0)
+}
+if (args[0] === "huntmap" && args[1] === "analyze") {
+  console.log(JSON.stringify({
+    milestones: [],
+    phases: [{ number: "1", name: "Environment Mapping", goal: "Map telemetry", depends_on: null, plan_count: 1, summary_count: 0, has_context: false, has_research: false, disk_status: "planned", roadmap_complete: false }],
+    phase_count: 1,
+    completed_phases: 0,
+    total_plans: 1,
+    total_summaries: 0,
+    progress_percent: 0,
+    current_phase: "1",
+    next_phase: "2",
+    missing_phase_details: null
+  }))
+  process.exit(0)
+}
+console.error("unexpected args", args.join(" "))
+process.exit(1)
+`,
+  )
+}
+
+describe("TUIApp", () => {
+  test("refreshHomeData resolves thrunt-tools from the app cwd", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await writeFakeThruntTools(tempDir)
+
+    const otherDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-other-"))
+    const app = new TUIApp(tempDir) as any
+
+    process.chdir(otherDir)
+    await app.refreshHomeData(true)
+
+    expect(app.state.thruntConnectors.connectors).toHaveLength(1)
+    expect(app.state.thruntConnectors.connectors[0]?.id).toBe("elastic")
+    expect(app.state.thruntPacks.packs[0]?.id).toBe("pack.oauth")
+    expect(app.state.thruntPhases.analysis?.phases[0]?.name).toBe("Environment Mapping")
+
+    await rm(otherDir, { recursive: true, force: true })
+  })
+
+  test("render does not recompute home search results on every frame", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await writeFakeThruntTools(tempDir)
+
+    const app = new TUIApp(tempDir) as any
+    let recomputeCount = 0
+    app.recomputeHomeSearchResults = () => {
+      recomputeCount += 1
     }
 
-    let calls = 0
-    app.state.hushdStatus = "connected"
-    app.state.inputMode = "security"
+    const originalWrite = process.stdout.write
+    process.stdout.write = (() => true) as typeof process.stdout.write
+    try {
+      app.render()
+    } finally {
+      process.stdout.write = originalWrite
+    }
+
+    expect(recomputeCount).toBe(0)
+  })
+
+  test("refreshHomeData retries immediately after a failed refresh", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await writeFakeThruntTools(tempDir)
+
+    const app = new TUIApp(tempDir) as any
+    let recomputeCount = 0
+    app.recomputeHomeSearchResults = () => {
+      recomputeCount += 1
+      if (recomputeCount === 1) {
+        throw new Error("home search failed")
+      }
+    }
+
+    await app.refreshHomeData(true)
+    expect(recomputeCount).toBe(1)
+    expect(app.lastHomeDataRefreshAt).toBe(0)
+    expect(app.state.homeSearch.error).toBe("home search failed")
+
+    await app.refreshHomeData()
+    expect(recomputeCount).toBe(2)
+    expect(app.lastHomeDataRefreshAt).toBeGreaterThan(0)
+    expect(app.state.homeSearch.error).toBeNull()
+  })
+
+  test("refreshAgentActivity retries immediately after a failed refresh", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+
+    const app = new TUIApp(tempDir) as any
+    let recomputeCount = 0
+    app.recomputeHomeSearchResults = () => {
+      recomputeCount += 1
+      if (recomputeCount === 1) {
+        throw new Error("agent activity failed")
+      }
+    }
+
+    await app.refreshAgentActivity(true)
+    expect(recomputeCount).toBe(1)
+    expect(app.lastAgentActivityRefreshAt).toBe(0)
+    expect(app.state.agentActivity.error).toBe("agent activity failed")
+
+    await app.refreshAgentActivity()
+    expect(recomputeCount).toBe(2)
+    expect(app.lastAgentActivityRefreshAt).toBeGreaterThan(0)
+    expect(app.state.agentActivity.error).toBeNull()
+  })
+
+  test("refreshHomeData does not reuse non-home prompt text as a search query", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await writeFakeThruntTools(tempDir)
+
+    const app = new TUIApp(tempDir) as any
+    app.state.inputMode = "dispatch-sheet"
+    app.state.promptBuffer = "oauth"
+
+    await app.refreshHomeData(true)
+
+    expect(app.state.homeSearch.results[0]?.title).toBe("Failed logins in the last 24h")
+    expect(app.state.homeSearch.results[0]?.title).not.toContain("OAuth")
+  })
+
+  test("refreshHomeSearch clamps the live home cursor when results shrink", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await writeFakeThruntTools(tempDir)
+
+    const app = new TUIApp(tempDir) as any
+    await app.refreshHomeData(true)
+
+    app.state.inputMode = "main"
+    app.state.promptBuffer = "oauth"
+    app.state.homeActionIndex = 99
+    app.state.homeSearch.selectedIndex = 99
+
+    app.refreshHomeSearch()
+
+    expect(app.state.homeSearch.results.length).toBeGreaterThan(0)
+    const lastIndex = app.state.homeSearch.results.length - 1
+    expect(app.state.homeActionIndex).toBe(lastIndex)
+    expect(app.state.homeSearch.selectedIndex).toBe(lastIndex)
+  })
+
+  test("copyText skips failing clipboard probes and uses the resolved backend path", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+
+    const app = new TUIApp(tempDir) as any
     app.render = () => {}
 
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-    }).isInitialized = () => true
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-    }).getClient = () => ({
-      getAuditDetailed: async () => {
-        calls += 1
-        return {
-          ok: true,
-          status: 200,
-          data: {
-            events: [{
-              id: "preview-1",
-              timestamp: "2026-03-06T06:00:00Z",
-              event_type: "report_export",
-              action_type: "report_export",
-              decision: "allowed",
-              target: "/tmp/report.md",
-              guard: null,
-              severity: "info",
-              message: "preview refreshed",
-              session_id: null,
-              agent_id: null,
-              metadata: {},
-            }],
-            total: 1,
-            offset: 0,
-            limit: 6,
-            has_more: false,
-          },
-        }
-      },
-    } as never)
+    const whichCalls: string[] = []
+    const spawnCalls: string[][] = []
+    const originalWhich = Bun.which
+    const originalSpawn = Bun.spawn
 
-    await app.refreshRecentAuditPreview(true)
-
-    expect(calls).toBe(1)
-    expect(app.state.recentAuditPreview).toHaveLength(1)
-  })
-
-  test("schedules reconnect when the initial hushd probe fails", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        hushdStatus: string
-        hushdReconnectAttempts: number
-        hushdLastError: string | null
+    ;(Bun as any).which = (command: string) => {
+      whichCalls.push(command)
+      if (command === "pbcopy") {
+        throw new Error("missing")
       }
-      render: () => void
-      connectHushd: () => void
-      hushdReconnectTimer: ReturnType<typeof setTimeout> | null
-    }
-
-    app.render = () => {}
-
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).isInitialized = () => false
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).init = () => {}
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).reset = () => {}
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).getClient = () => ({
-      probe: async () => false,
-    } as never)
-
-    app.connectHushd()
-    await Bun.sleep(0)
-
-    expect(app.state.hushdStatus).toBe("disconnected")
-    expect(app.state.hushdLastError).toBe("health probe failed")
-    expect(app.state.hushdReconnectAttempts).toBe(1)
-    expect(app.hushdReconnectTimer).not.toBeNull()
-
-    if (app.hushdReconnectTimer) {
-      clearTimeout(app.hushdReconnectTimer)
-      app.hushdReconnectTimer = null
-    }
-  })
-
-  test("ignores stale hushd probe failures after lifecycle cleanup", async () => {
-    let resolveProbe!: (value: boolean) => void
-    const probePromise = new Promise<boolean>((resolve) => {
-      resolveProbe = resolve
-    })
-
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        hushdStatus: string
-        hushdReconnectAttempts: number
+      if (command === "wl-copy") {
+        return null
       }
-      render: () => void
-      connectHushd: () => void
-      hushdReconnectTimer: ReturnType<typeof setTimeout> | null
-      hushdLifecycleToken: number
-    }
-
-    app.render = () => {}
-
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).isInitialized = () => false
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).init = () => {}
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).reset = () => {}
-    ;(Hushd as unknown as {
-      getClient: typeof Hushd.getClient
-      isInitialized: typeof Hushd.isInitialized
-      init: typeof Hushd.init
-      reset: typeof Hushd.reset
-    }).getClient = () => ({
-      probe: async () => probePromise,
-    } as never)
-
-    app.connectHushd()
-    app.hushdLifecycleToken += 1
-    resolveProbe(false)
-    await Bun.sleep(0)
-
-    expect(app.state.hushdStatus).toBe("connecting")
-    expect(app.state.hushdReconnectAttempts).toBe(0)
-    expect(app.hushdReconnectTimer).toBeNull()
-  })
-
-  test("cleanup terminates an attached session and clears handoff state", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        attachedRunId: string | null
-        pendingAttachRunId: string | null
-        ptyHandoffActive: boolean
+      if (command === "xclip") {
+        return "/usr/bin/xclip"
       }
-      attachedSession: { terminate: () => void } | null
-      cleanup: () => Promise<void>
+      return null
     }
-
-    let terminated = false
-    app.state.attachedRunId = "run_attach"
-    app.state.pendingAttachRunId = "run_attach"
-    app.state.ptyHandoffActive = true
-    app.attachedSession = {
-      terminate: () => {
-        terminated = true
-      },
-    }
-
-    await app.cleanup()
-
-    expect(terminated).toBe(true)
-    expect(app.state.attachedRunId).toBeNull()
-    expect(app.state.pendingAttachRunId).toBeNull()
-    expect(app.state.ptyHandoffActive).toBe(false)
-  })
-
-  test("run stays active until quit performs final cleanup", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      start: () => Promise<void>
-      cleanup: () => Promise<void>
-      run: () => Promise<void>
-      quit: () => Promise<void>
-    }
-
-    let started = false
-    let cleaned = false
-    let settled = false
-
-    app.start = async () => {
-      started = true
-    }
-    app.cleanup = async () => {
-      cleaned = true
-    }
-
-    const runPromise = app.run().then(() => {
-      settled = true
-    })
-
-    await Bun.sleep(0)
-    expect(started).toBe(true)
-    expect(settled).toBe(false)
-
-    await app.quit()
-    await runPromise
-
-    expect(cleaned).toBe(true)
-    expect(settled).toBe(true)
-  })
-
-  test("rejects unsupported attach runs before creating backlog entries", () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        dispatchSheet: {
-          open: boolean
-          prompt: string
-          action: "dispatch" | "speculate"
-          mode: "managed" | "attach" | "external"
-          agentIndex: number
-          focusedField: 0 | 1 | 2 | 3
-          error: string | null
-        }
-        runs: {
-          entries: unknown[]
-        }
-        inputMode: string
+    ;(Bun as any).spawn = (command: string[]) => {
+      spawnCalls.push(command)
+      return {
+        stdin: {
+          write() {},
+          end() {},
+        },
+        exited: Promise.resolve(0),
       }
-      render: () => void
-      launchDispatchSheet: () => void
     }
 
-    app.render = () => {}
-    app.state.dispatchSheet = {
-      open: true,
-      prompt: "open an attach session on an unsupported agent",
-      action: "dispatch",
-      mode: "attach",
-      agentIndex: 2,
-      focusedField: 0,
-      error: null,
+    try {
+      const copied = await app.copyText("hunt report", "report")
+      expect(copied).toBe(true)
+      expect(whichCalls).toEqual(["pbcopy", "wl-copy", "xclip"])
+      expect(spawnCalls).toEqual([["/usr/bin/xclip", "-selection", "clipboard"]])
+      expect(app.state.statusMessage).toContain("Copied")
+    } finally {
+      ;(Bun as any).which = originalWhich
+      ;(Bun as any).spawn = originalSpawn
     }
-
-    app.launchDispatchSheet()
-
-    expect(app.state.runs.entries).toHaveLength(0)
-    expect(app.state.dispatchSheet.error).toContain("does not expose an interactive attach session yet")
-    expect(app.state.inputMode).toBe("main")
   })
 
-  test("uses the embedded interactive surface for codex attach by default", () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        pendingAttachRunId: string | null
-        runs: {
-          entries: Array<ReturnType<typeof createManagedRun>>
-        }
+  test("startBackgroundServices wires the planning watcher to the app cwd", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await mkdir(join(tempDir, ".planning"), { recursive: true })
+
+    const app = new TUIApp(tempDir) as any
+    app.startMcpServer = async () => {}
+    app.runHealthcheck = () => {}
+    app.refreshHomeData = async () => {}
+    app.refreshAgentActivity = async () => {}
+
+    const originalStart = ThruntPlanningWatcher.prototype.start
+    ThruntPlanningWatcher.prototype.start = () => {}
+    try {
+      app.startBackgroundServices()
+      expect(app.thruntWatcher?.opts).toEqual({ cwd: tempDir })
+    } finally {
+      ThruntPlanningWatcher.prototype.start = originalStart
+      if (app.refreshTimer) {
+        clearInterval(app.refreshTimer)
+        app.refreshTimer = null
       }
-      launchEmbeddedInteractiveRun: (runId: string) => Promise<void>
-      launchAttachRun: (runId: string) => Promise<void>
-      confirmAttachRun: () => void
     }
-
-    let embeddedRunId: string | null = null
-    let rawRunId: string | null = null
-    app.launchEmbeddedInteractiveRun = async (runId) => {
-      embeddedRunId = runId
-    }
-    app.launchAttachRun = async (runId) => {
-      rawRunId = runId
-    }
-
-    const run = createManagedRun({
-      prompt: "open codex interactively",
-      action: "dispatch",
-      agentId: "codex",
-      agentLabel: "Codex",
-      mode: "attach",
-    })
-
-    app.state.runs.entries = [run]
-    app.state.pendingAttachRunId = run.id
-    app.confirmAttachRun()
-
-    expect(embeddedRunId === run.id).toBe(true)
-    expect(rawRunId).toBeNull()
-    expect(app.state.pendingAttachRunId).toBeNull()
-  })
-
-  test("falls back from staged external mode into managed execution", () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        runs: {
-          entries: Array<ReturnType<typeof createManagedRun>>
-        }
-        externalSheet: {
-          runId: string | null
-          adapters: unknown[]
-          selectedIndex: number
-          loading: boolean
-          error: string | null
-        }
-        statusMessage: string
-      }
-      render: () => void
-      launchManagedRun: (run: ReturnType<typeof createManagedRun>) => Promise<void>
-      launchRunInMode: (runId: string, mode: "managed" | "attach" | "external") => void
-    }
-
-    let launchedMode: "managed" | "attach" | "external" | null = null
-    app.render = () => {}
-    app.launchManagedRun = async (run) => {
-      launchedMode = run.mode
-    }
-
-    const run = createManagedRun({
-      prompt: "Retry this in managed mode",
-      action: "dispatch",
-      agentId: "codex",
-      agentLabel: "Codex",
-      mode: "external",
-    })
-    run.phase = "failed"
-    run.completedAt = new Date().toISOString()
-    run.external = {
-      kind: "wezterm",
-      adapterId: "wezterm",
-      ref: null,
-      status: "failed",
-      error: "wezterm not found",
-    }
-
-    app.state.runs.entries = [run]
-    app.state.externalSheet = {
-      runId: run.id,
-      adapters: [],
-      selectedIndex: 0,
-      loading: false,
-      error: "wezterm not found",
-    }
-
-    app.launchRunInMode(run.id, "managed")
-
-    expect(app.state.runs.entries[0]?.mode).toBe("managed")
-    expect(app.state.runs.entries[0]?.phase).toBe("launching")
-    expect(app.state.runs.entries[0]?.external.status).toBe("idle")
-    expect(app.state.externalSheet.runId).toBeNull()
-    expect(launchedMode as string | null).toBe("managed")
-  })
-
-  test("relaunches a completed managed run into external mode without mutating the original run", () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        runs: {
-          entries: Array<ReturnType<typeof createManagedRun>>
-        }
-        statusMessage: string
-        activeRunId: string | null
-      }
-      render: () => void
-      beginExternalRunFlow: (runId: string) => Promise<void>
-      relaunchRunInMode: (runId: string, mode: "attach" | "external") => void
-    }
-
-    let openedExternalRunId: string | null = null
-    app.render = () => {}
-    app.beginExternalRunFlow = async (runId) => {
-      openedExternalRunId = runId
-    }
-
-    const run = createManagedRun({
-      prompt: "Relaunch me externally",
-      action: "dispatch",
-      agentId: "codex",
-      agentLabel: "Codex",
-    })
-    run.phase = "review_ready"
-    run.completedAt = new Date().toISOString()
-    run.result = {
-      success: true,
-      taskId: "task-review",
-      agent: "Codex",
-      action: "dispatch",
-      duration: 1000,
-    }
-
-    app.state.runs.entries = [run]
-    app.state.activeRunId = run.id
-
-    app.relaunchRunInMode(run.id, "external")
-
-    expect(app.state.runs.entries).toHaveLength(2)
-    expect(app.state.runs.entries.some((entry) => entry.id === run.id && entry.phase === "review_ready")).toBe(true)
-    const relaunched = app.state.runs.entries.find((entry) => entry.id !== run.id)
-    const relaunchedId = relaunched?.id as string
-    expect(relaunched?.mode).toBe("external")
-    expect(relaunched?.phase).toBe("launching")
-    expect(openedExternalRunId).not.toBeNull()
-    if (openedExternalRunId === null) {
-      throw new Error("expected external relaunch to open a new run")
-    }
-    expect(openedExternalRunId === relaunchedId).toBe(true)
-  })
-
-  test("showRuns picks a filter that includes the active completed run", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      state: {
-        runs: {
-          entries: Array<ReturnType<typeof createManagedRun>>
-          selectedRunId: string | null
-          filter: "active" | "review_ready" | "all"
-        }
-        activeRunId: string | null
-      }
-      setScreen: (mode: "runs") => void
-      showRuns: () => Promise<void>
-    }
-
-    let openedScreen: string | null = null
-    app.setScreen = (mode) => {
-      openedScreen = mode
-    }
-
-    const run = createManagedRun({
-      prompt: "Reopen me from backlog",
-      action: "dispatch",
-      agentId: "codex",
-      agentLabel: "Codex",
-    })
-    run.phase = "review_ready"
-    run.completedAt = new Date().toISOString()
-    run.result = {
-      success: true,
-      taskId: "task-review",
-      agent: "Codex",
-      action: "dispatch",
-      duration: 1000,
-    }
-
-    app.state.runs.entries = [run]
-    app.state.runs.filter = "active"
-    app.state.runs.selectedRunId = null
-    app.state.activeRunId = run.id
-
-    await app.showRuns()
-
-    expect(openedScreen === "runs").toBe(true)
-    expect((app.state.runs.filter as unknown as string) === "review_ready").toBe(true)
-    expect(app.state.runs.selectedRunId === run.id).toBe(true)
-  })
-
-  test("times out external sessions that never start", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      waitForExternalExit: (
-        statusPath: string,
-        startupTimeoutMs: number,
-        livenessTimeoutMs: number,
-        surfaceAlive?: () => Promise<boolean>,
-        surfaceClosedMessage?: string,
-      ) => Promise<number>
-    }
-    const dir = await mkdtemp(join(tmpdir(), "thrunt-god-external-timeout-"))
-    const statusPath = join(dir, "external-status.json")
-
-    await expect(app.waitForExternalExit(statusPath, 10, 50)).rejects.toThrow(
-      "launch script never started",
-    )
-  })
-
-  test("times out external sessions that stop reporting heartbeat after startup", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      waitForExternalExit: (
-        statusPath: string,
-        startupTimeoutMs: number,
-        livenessTimeoutMs: number,
-        surfaceAlive?: () => Promise<boolean>,
-        surfaceClosedMessage?: string,
-      ) => Promise<number>
-    }
-    const dir = await mkdtemp(join(tmpdir(), "thrunt-god-external-stale-"))
-    const statusPath = join(dir, "external-status.json")
-
-    await Bun.write(
-      statusPath,
-      JSON.stringify({
-        state: "running",
-        startedAt: new Date(Date.now() - 1_000).toISOString(),
-        heartbeatAt: new Date(Date.now() - 1_000).toISOString(),
-      }),
-    )
-
-    await expect(app.waitForExternalExit(statusPath, 100, 20)).rejects.toThrow(
-      "stopped reporting liveness",
-    )
-  })
-
-  test("reports closed external surfaces before heartbeat timeout", async () => {
-    const app = new TUIApp(process.cwd()) as unknown as {
-      waitForExternalExit: (
-        statusPath: string,
-        startupTimeoutMs: number,
-        livenessTimeoutMs: number,
-        surfaceAlive?: () => Promise<boolean>,
-        surfaceClosedMessage?: string,
-      ) => Promise<number>
-    }
-    const dir = await mkdtemp(join(tmpdir(), "thrunt-god-external-closed-"))
-    const statusPath = join(dir, "external-status.json")
-
-    await Bun.write(
-      statusPath,
-      JSON.stringify({
-        state: "running",
-        startedAt: new Date().toISOString(),
-        heartbeatAt: new Date().toISOString(),
-      }),
-    )
-
-    await expect(
-      app.waitForExternalExit(statusPath, 100, 5_000, async () => false, "External terminal window closed"),
-    ).rejects.toThrow("External terminal window closed")
   })
 })
