@@ -21,6 +21,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const PLANNING_DIR_NAME = process.env.THRUNT_PLANNING_DIR || '.planning';
 
 const WARNING_THRESHOLD = 35;  // remaining_percentage <= 35%
 const CRITICAL_THRESHOLD = 25; // remaining_percentage <= 25%
@@ -47,7 +48,7 @@ process.stdin.on('end', () => {
 
     // Check if context warnings are disabled via config
     const cwd = data.cwd || process.cwd();
-    const configPath = path.join(cwd, '.planning', 'config.json');
+    const configPath = path.join(cwd, PLANNING_DIR_NAME, 'config.json');
     if (fs.existsSync(configPath)) {
       try {
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -116,8 +117,8 @@ process.stdin.on('end', () => {
     warnData.lastLevel = currentLevel;
     fs.writeFileSync(warnPath, JSON.stringify(warnData));
 
-    // Detect if THRUNT is active (has .planning/STATE.md in working directory)
-    const isThruntActive = fs.existsSync(path.join(cwd, '.planning', 'STATE.md'));
+    // Detect if THRUNT is active (has STATE.md in the configured planning directory)
+    const isThruntActive = fs.existsSync(path.join(cwd, PLANNING_DIR_NAME, 'STATE.md'));
 
     // Build advisory warning message (never use imperative commands that
     // override user preferences — see #884)

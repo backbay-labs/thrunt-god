@@ -967,6 +967,17 @@ describe('cmdInitQuick', () => {
     assert.ok(output.branch_name, 'branch_name should be set');
     assert.ok(output.branch_name.endsWith('-quick'), `Expected fallback slug in branch name, got "${output.branch_name}"`);
   });
+
+  test('init quick respects custom planning dir in reported paths', () => {
+    fs.mkdirSync(path.join(tmpDir, '.hunt', 'phases'), { recursive: true });
+
+    const result = runThruntTools('init quick "Add caching layer"', tmpDir, { THRUNT_PLANNING_DIR: '.hunt' });
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.quick_dir, '.hunt/quick');
+    assert.ok(output.task_dir.startsWith('.hunt/quick/'));
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

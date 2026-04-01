@@ -554,6 +554,33 @@ describe('writeHeatmapArtifacts', () => {
     assert.ok(result.json_path.endsWith('HM-20260330143022-TESTTEST.json'));
     assert.ok(result.md_path.endsWith('HM-20260330143022-TESTTEST.md'));
   });
+
+  test('writes heatmap artifacts under custom planning dir', () => {
+    const heatmapData = {
+      heatmap_id: 'HM-20260330143022-CUSTOM123',
+      generated_at: NOW_ISO,
+      dispatch_id: 'MTD-test',
+      axes: { tenants: [], techniques: [] },
+      cells: [],
+      summary: { techniques_detected: 0, tenants_with_findings: 0, tenants_clear: 0, highest_severity: null, most_widespread_technique: null },
+    };
+
+    const oldPlanningDir = process.env.THRUNT_PLANNING_DIR;
+    process.env.THRUNT_PLANNING_DIR = '.hunt';
+    try {
+      delete require.cache[require.resolve('../thrunt-god/bin/lib/heatmap.cjs')];
+      delete require.cache[require.resolve('../thrunt-god/bin/lib/core.cjs')];
+      const freshHeatmap = require('../thrunt-god/bin/lib/heatmap.cjs');
+      const result = freshHeatmap.writeHeatmapArtifacts(tmpDir, heatmapData);
+      const heatmapsDir = path.join(tmpDir, '.hunt', 'HEATMAPS');
+      assert.ok(fs.existsSync(heatmapsDir), 'custom HEATMAPS directory should exist');
+      assert.ok(result.json_path.includes(path.join('.hunt', 'HEATMAPS')));
+      assert.ok(result.md_path.includes(path.join('.hunt', 'HEATMAPS')));
+    } finally {
+      if (oldPlanningDir === undefined) delete process.env.THRUNT_PLANNING_DIR;
+      else process.env.THRUNT_PLANNING_DIR = oldPlanningDir;
+    }
+  });
 });
 
 // ─── 5. runtime.cjs re-exports ─────────────────────────────────────────────

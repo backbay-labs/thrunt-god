@@ -459,8 +459,8 @@ function cmdInitQuick(cwd, description, raw) {
     timestamp: now.toISOString(),
 
     // Paths
-    quick_dir: '.planning/quick',
-    task_dir: slug ? `.planning/quick/${quickId}-${slug}` : null,
+    quick_dir: relToCwd(cwd, path.join(planningRoot(cwd), 'quick')),
+    task_dir: slug ? relToCwd(cwd, path.join(planningRoot(cwd), 'quick', `${quickId}-${slug}`)) : null,
 
     // File existence
     huntmap_exists: roadmapDoc.exists,

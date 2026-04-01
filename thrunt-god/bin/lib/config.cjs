@@ -405,7 +405,7 @@ function buildNewProgramConfig(userChoices) {
 }
 
 /**
- * Command: create a fully-materialized .planning/config.json for a new program.
+ * Command: create a fully-materialized planning config for a new program.
  *
  * Accepts user-chosen settings as a JSON string (the keys the user explicitly
  * configured during /hunt:new-program). All remaining keys are filled from
@@ -433,20 +433,20 @@ function cmdConfigNewProgram(cwd, choicesJson, raw) {
     }
   }
 
-  // Ensure .planning directory exists
+  // Ensure planning directory exists
   try {
     if (!fs.existsSync(planningBase)) {
       fs.mkdirSync(planningBase, { recursive: true });
     }
   } catch (err) {
-    error('Failed to create .planning directory: ' + err.message);
+    error(`Failed to create planning directory (${planningBase}): ` + err.message);
   }
 
   const config = buildNewProgramConfig(userChoices);
 
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    output({ created: true, path: '.planning/config.json' }, raw, 'created');
+    output({ created: true, path: path.relative(cwd, configPath).split(path.sep).join('/') }, raw, 'created');
   } catch (err) {
     error('Failed to write config.json: ' + err.message);
   }
@@ -462,13 +462,13 @@ function ensureConfigFile(cwd) {
   const planningBase = planningRoot(cwd);
   const configPath = path.join(planningBase, 'config.json');
 
-  // Ensure .planning directory exists
+  // Ensure planning directory exists
   try {
     if (!fs.existsSync(planningBase)) {
       fs.mkdirSync(planningBase, { recursive: true });
     }
   } catch (err) {
-    error('Failed to create .planning directory: ' + err.message);
+    error(`Failed to create planning directory (${planningBase}): ` + err.message);
   }
 
   // Check if config already exists
@@ -480,7 +480,7 @@ function ensureConfigFile(cwd) {
 
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    return { created: true, path: '.planning/config.json' };
+    return { created: true, path: path.relative(cwd, configPath).split(path.sep).join('/') };
   } catch (err) {
     error('Failed to create config.json: ' + err.message);
   }

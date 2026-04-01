@@ -540,6 +540,17 @@ describe('config-new-program command', () => {
     assert.strictEqual(out.path, '.planning/config.json');
   });
 
+  test('uses custom planning dir in success path output', () => {
+    const choices = JSON.stringify({ mode: 'interactive', granularity: 'standard' });
+    const result = runThruntTools(['config-new-program', choices], tmpDir, { THRUNT_PLANNING_DIR: '.hunt' });
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const out = JSON.parse(result.output);
+    assert.strictEqual(out.created, true);
+    assert.strictEqual(out.path, '.hunt/config.json');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.hunt', 'config.json')));
+  });
+
   test('rejects legacy verifier choice in config-new-program', () => {
     const choices = JSON.stringify({
       workflow: { verifier: false, research: true },

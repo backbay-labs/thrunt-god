@@ -11,6 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { planningRoot } = require('./core.cjs');
 
 // Lazy require to avoid load-time circular dependency
 function getMitreData() { return require('./mitre-data.cjs'); }
@@ -359,7 +360,7 @@ function renderHeatmapTable(heatmapData) {
  * @returns {{ json_path: string, md_path: string }}
  */
 function writeHeatmapArtifacts(cwd, heatmapData, options = {}) {
-  const heatmapsDir = path.join(cwd, '.planning', 'HEATMAPS');
+  const heatmapsDir = path.join(planningRoot(cwd), 'HEATMAPS');
   fs.mkdirSync(heatmapsDir, { recursive: true });
 
   const id = heatmapData.heatmap_id;
