@@ -1024,6 +1024,21 @@ describe('cmdInitMapEnvironment', () => {
     assert.strictEqual(output.codebase_dir_exists, true);
   });
 
+  test('custom planning dir is respected for codebase path and existence', () => {
+    const codebaseDir = path.join(tmpDir, '.hunt', 'codebase');
+    fs.mkdirSync(codebaseDir, { recursive: true });
+    fs.writeFileSync(path.join(codebaseDir, 'STACK.md'), '# Stack');
+
+    const result = runThruntTools('init map-environment', tmpDir, { THRUNT_PLANNING_DIR: '.hunt' });
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.codebase_dir, '.hunt/codebase');
+    assert.strictEqual(output.codebase_dir_exists, true);
+    assert.strictEqual(output.has_maps, true);
+    assert.deepStrictEqual(output.existing_maps, ['STACK.md']);
+  });
+
   test('map-environment workflow does not list OpenCode under runtimes without Task tool (#1316)', () => {
     const workflow = fs.readFileSync(
       path.join(__dirname, '..', 'thrunt-god', 'workflows', 'hunt-map-environment.md'), 'utf8'
@@ -1175,6 +1190,71 @@ describe('cmdInitNewProgram', () => {
     const output = JSON.parse(result.output);
     assert.strictEqual(output.has_existing_code, true);
     assert.strictEqual(output.is_brownfield, true);
+  });
+
+  test('brownfield with TSX files detected', () => {
+    const srcDir = path.join(tmpDir, 'src', 'components');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, 'App.tsx'), 'export function App() { return <div />; }');
+
+    const result = runThruntTools('init new-program', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.has_existing_code, true);
+    assert.strictEqual(output.is_brownfield, true);
+    assert.strictEqual(output.needs_codebase_map, true);
+  });
+
+  test('brownfield with deeply nested JVM files detected', () => {
+    const srcDir = path.join(tmpDir, 'app', 'src', 'main', 'java', 'com', 'example', 'app');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(path.join(srcDir, 'MainActivity.kt'), 'class MainActivity');
+
+    const result = runThruntTools('init new-program', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.has_existing_code, true);
+    assert.strictEqual(output.is_brownfield, true);
+    assert.strictEqual(output.needs_codebase_map, true);
+  });
+
+  test('ignores code that exists only in skipped THRUNT, runtime, and dependency directories', () => {
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'codebase'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.claude', 'agents'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.codex', 'skills'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, 'node_modules', 'demo'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'codebase', 'STACK.ts'), 'export const stack = true;');
+    fs.writeFileSync(path.join(tmpDir, '.claude', 'agents', 'helper.js'), 'console.log("agent");');
+    fs.writeFileSync(path.join(tmpDir, '.codex', 'skills', 'helper.js'), 'module.exports = {};');
+    fs.writeFileSync(path.join(tmpDir, 'node_modules', 'demo', 'index.js'), 'module.exports = {};');
+
+    const result = runThruntTools('init new-program', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.has_existing_code, false);
+    assert.strictEqual(output.has_package_file, false);
+    assert.strictEqual(output.is_brownfield, false);
+    assert.strictEqual(output.needs_codebase_map, false);
+  });
+
+  test('custom planning dir is respected for existing codebase map detection', () => {
+    fs.mkdirSync(path.join(tmpDir, '.hunt', 'codebase'), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, '.hunt', 'phases'), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, '.hunt', 'codebase', 'STACK.md'), '# Stack');
+    fs.writeFileSync(path.join(tmpDir, 'package.json'), '{"name":"test"}');
+
+    const result = runThruntTools('init new-program', tmpDir, { THRUNT_PLANNING_DIR: '.hunt' });
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.planning_exists, true);
+    assert.strictEqual(output.mission_path, '.hunt/MISSION.md');
+    assert.strictEqual(output.has_codebase_map, true);
+    assert.strictEqual(output.is_brownfield, true);
+    assert.strictEqual(output.needs_codebase_map, false);
   });
 });
 
