@@ -59,6 +59,10 @@ If none of these tokens appear, run the standard full-phase execution flow.
 Execute the hunt run workflow from @~/.claude/thrunt-god/workflows/hunt-run.md.
 Every non-trivial claim must cite receipts. Parallelize by telemetry domain when it helps.
 When query execution occurs, treat `/hunt:run` as a `QuerySpec` producer and normalized-result consumer.
+If the requested phase has not been planned yet, stop and instruct the operator to run `/hunt:plan <phase>` first instead of improvising execution.
+Keep query-log `related_receipts` and receipt `related_queries` links exact and bidirectional for artifacts created in the run.
+Before closing out, update `HYPOTHESES.md`, `STATE.md`, and `HUNTMAP.md` so hypothesis confidence and phase completion match the receipts actually collected.
+When updating `HUNTMAP.md`, sync all affected surfaces: phase checkbox, per-plan checklist entries, and the progress table row for the executed phase.
 When onboarding or debugging a real connector, use `thrunt-tools runtime doctor [<connector-id>]` before running hunts, and use `thrunt-tools runtime smoke [<connector-id>]` for a live read-only certification query.
 When a phase is explicitly pack-backed, prefer `thrunt-tools runtime execute --pack <id>` or inspect the generated specs with `thrunt-tools pack render-targets <id>` before running.
 </process>

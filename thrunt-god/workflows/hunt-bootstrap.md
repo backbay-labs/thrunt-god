@@ -62,9 +62,25 @@ Create these paths if they do not exist:
 
 ## 4. Write Hunt-Native Files
 
+Create `.planning/config.json` before the document set if it does not already exist:
+
+- use `node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" config-new-program '{"mode":"interactive"}'` for normal bootstrap
+- use `node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" config-new-program '{"mode":"yolo"}'` when `--auto` is present
+- do not overwrite an existing config; preserve operator connector profiles and workflow choices
+- never hand-write `.planning/config.json` or replace it with an ad hoc environment summary
+- keep `.planning/config.json` in THRUNT schema only; record human-readable connector notes, endpoint status, and environment commentary in `ENVIRONMENT.md`
+- if you need to add or update connector profiles, use `node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" config-set connector_profiles.<connector>.<profile> '<json>'` instead of editing JSON by hand
+- use built-in connector ids exactly as registered by the runtime, for example `splunk` and `elastic`; do not substitute `elasticsearch`
+- connector profiles must use the canonical runtime field `base_url`; do not write `endpoint` as a substitute key
+- only configure connector profiles when the auth type and secret reference names are confirmed from user input or workspace evidence
+- `secret_refs` must be an object keyed by the confirmed connector secret names, and each entry must use the THRUNT reference shape `{ "type": "env", "value": "ENV_VAR_NAME" }`; do not write raw strings such as `"secret_refs":{"authorization":"TOKEN"}`
+- never invent placeholder env vars, placeholder tokens, placeholder usernames, or placeholder secret refs such as `*_UNSET`
+- if a connector is blocked or auth is unknown, record the blocker in `ENVIRONMENT.md` and omit the unusable connector profile from `.planning/config.json`
+
 Write or update in this exact order so the blank environment scaffold and state
 exist even if later formatting or summary work changes:
 
+- `.planning/config.json`
 - `.planning/environment/ENVIRONMENT.md`
 - `.planning/STATE.md`
 - `.planning/MISSION.md`
@@ -91,6 +107,8 @@ Program mode defaults:
 - Do not invent sample query logs, sample receipts, or mark any phase/plan complete during bootstrap
 - Do not invent or simulate environment details. Unknown values must remain `TBD` until the operator confirms them.
 - Write the full bootstrap artifact set, including `STATE.md` and `environment/ENVIRONMENT.md`, before any optional wrap-up work
+- Ensure `.planning/config.json` exists before closing out so later runtime, settings, and connector commands work without manual recovery
+- The bootstrap is not complete if `.planning/config.json` is not valid THRUNT config produced via `thrunt-tools`
 
 Case mode defaults:
 

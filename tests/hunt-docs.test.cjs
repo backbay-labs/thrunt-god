@@ -23,7 +23,21 @@ describe('hunt docs', () => {
   test('hunt bootstrap workflow writes hunt-native artifacts directly', () => {
     const workflow = readRepoFile('thrunt-god', 'workflows', 'hunt-bootstrap.md');
 
+    assert.match(workflow, /Create `\.planning\/config\.json` before the document set if it does not already exist/);
+    assert.match(workflow, /config-new-program '\{"mode":"interactive"\}'/);
+    assert.match(workflow, /config-new-program '\{"mode":"yolo"\}'/);
+    assert.match(workflow, /never hand-write `\.planning\/config\.json`/);
+    assert.match(workflow, /keep `\.planning\/config\.json` in THRUNT schema only/);
+    assert.match(workflow, /config-set connector_profiles\.<connector>\.<profile>/);
+    assert.match(workflow, /use built-in connector ids exactly as registered by the runtime, for example `splunk` and `elastic`/);
+    assert.match(workflow, /connector profiles must use the canonical runtime field `base_url`/);
+    assert.match(workflow, /only configure connector profiles when the auth type and secret reference names are confirmed/);
+    assert.match(workflow, /`secret_refs` must be an object keyed by the confirmed connector secret names/);
+    assert.match(workflow, /\{ "type": "env", "value": "ENV_VAR_NAME" \}/);
+    assert.match(workflow, /never invent placeholder env vars, placeholder tokens, placeholder usernames, or placeholder secret refs/);
+    assert.match(workflow, /omit the unusable connector profile from `\.planning\/config\.json`/);
     assert.match(workflow, /Write or update in this exact order/);
+    assert.match(workflow, /`\.planning\/config\.json`/);
     assert.match(workflow, /`\.planning\/environment\/ENVIRONMENT\.md`/);
     assert.match(workflow, /`\.planning\/STATE\.md`/);
     assert.doesNotMatch(workflow, /Legacy Mirrors/);
@@ -42,6 +56,8 @@ describe('hunt docs', () => {
     assert.match(workflow, /`STATE\.md` should start at `Phase: 1 of 5 \(Signal Intake\)`/);
     assert.match(workflow, /`STATE\.md` should start at `Status: Ready to plan`/);
     assert.match(workflow, /Write the full bootstrap artifact set, including `STATE\.md` and `environment\/ENVIRONMENT\.md`/);
+    assert.match(workflow, /Ensure `\.planning\/config\.json` exists before closing out/);
+    assert.match(workflow, /not complete if `\.planning\/config\.json` is not valid THRUNT config/);
     assert.match(workflow, /Do not generate or update `CLAUDE\.md` during hunt bootstrap/);
     assert.doesNotMatch(workflow, /generate-claude-md/);
     assert.doesNotMatch(workflow, /--skeleton/);
@@ -51,11 +67,20 @@ describe('hunt docs', () => {
     const command = readRepoFile('commands', 'hunt', 'new-program.md');
 
     assert.match(command, /argument-hint: "\[--auto\]"/);
+    assert.match(command, /templates\/config\.json/);
+    assert.match(command, /`\.planning\/config\.json`/);
     assert.match(command, /hunt-program-huntmap\.md/);
     assert.match(command, /Drive the conversation through `\.planning\/environment\/ENVIRONMENT\.md` and the operator toolchain/);
     assert.match(command, /Create `\.planning\/QUERIES\/` and `\.planning\/RECEIPTS\/` as empty directories only/);
     assert.match(command, /Do not load query-log or receipt templates during bootstrap/);
     assert.match(command, /Default behavior is scaffold-first/);
+    assert.match(command, /Create `\.planning\/config\.json` during bootstrap if it does not already exist/);
+    assert.match(command, /Never hand-write `\.planning\/config\.json`; use `thrunt-tools config-new-program` and `thrunt-tools config-set`/);
+    assert.match(command, /Use built-in connector ids exactly as the runtime registers them, for example `splunk` and `elastic`/);
+    assert.match(command, /use `base_url` for the runtime URL field; do not invent or substitute `endpoint`/);
+    assert.match(command, /Only configure connector profiles when auth type and secret ref names are confirmed/);
+    assert.match(command, /When writing `secret_refs`, each confirmed secret must use the THRUNT object shape/);
+    assert.match(command, /Keep connector narrative, status notes, and access commentary in `ENVIRONMENT\.md`/);
     assert.match(command, /Confirmed bootstrap facts such as the program name, mode, opened date, and initial phase\/status must be filled immediately/);
     assert.match(command, /Do not leave bootstrap-known fields as `TBD` after writing the files/);
     assert.doesNotMatch(command, /query-log\.md/);
@@ -79,9 +104,18 @@ describe('hunt docs', () => {
     const template = readRepoFile('thrunt-god', 'templates', 'huntmap.md');
 
     assert.match(command, /Bootstrap should only scaffold the case/);
+    assert.match(command, /templates\/config\.json/);
+    assert.match(command, /`\.planning\/config\.json`/);
     assert.match(command, /Create `\.planning\/QUERIES\/` and `\.planning\/RECEIPTS\/` as empty directories only/);
     assert.match(command, /Do not load query-log or receipt templates during bootstrap/);
     assert.match(command, /Default behavior is scaffold-first/);
+    assert.match(command, /Create `\.planning\/config\.json` during bootstrap if it does not already exist/);
+    assert.match(command, /Never hand-write `\.planning\/config\.json`; use `thrunt-tools config-new-program` and `thrunt-tools config-set`/);
+    assert.match(command, /Use built-in connector ids exactly as the runtime registers them, for example `splunk` and `elastic`/);
+    assert.match(command, /use `base_url` for the runtime URL field; do not invent or substitute `endpoint`/);
+    assert.match(command, /Only configure connector profiles when auth type and secret ref names are confirmed/);
+    assert.match(command, /When writing `secret_refs`, each confirmed secret must use the THRUNT object shape/);
+    assert.match(command, /Keep connector narrative, status notes, and access commentary in `ENVIRONMENT\.md`/);
     assert.match(command, /Confirmed bootstrap facts such as the case name, mode, opened date, and initial phase\/status must be filled immediately/);
     assert.match(command, /Do not leave bootstrap-known fields as `TBD` after writing the files/);
     assert.doesNotMatch(command, /query-log\.md/);
@@ -154,9 +188,20 @@ describe('hunt docs', () => {
   test('hunt command docs center hunt artifacts only', () => {
     const planCommand = readRepoFile('commands', 'hunt', 'plan.md');
     const validateCommand = readRepoFile('commands', 'hunt', 'validate-findings.md');
+    const runCommand = readRepoFile('commands', 'hunt', 'run.md');
+    const runWorkflow = readRepoFile('thrunt-god', 'workflows', 'hunt-run.md');
 
     assert.match(planCommand, /`HUNTMAP\.md` remains the source of truth/);
     assert.match(validateCommand, /`FINDINGS\.md` and `EVIDENCE_REVIEW\.md` remain the source of truth/);
+    assert.match(runCommand, /If the requested phase has not been planned yet, stop and instruct the operator to run `\/hunt:plan <phase>` first/);
+    assert.match(runCommand, /Keep query-log `related_receipts` and receipt `related_queries` links exact and bidirectional/);
+    assert.match(runCommand, /update `HYPOTHESES\.md`, `STATE\.md`, and `HUNTMAP\.md`/);
+    assert.match(runCommand, /sync all affected surfaces: phase checkbox, per-plan checklist entries, and the progress table row/);
+    assert.match(runWorkflow, /If the requested phase has no `PLAN\.md` files, stop and tell the operator to run `\/hunt:plan <phase>` first/);
+    assert.match(runWorkflow, /Keep query and receipt cross-references exact/);
+    assert.match(runWorkflow, /`\.planning\/HYPOTHESES\.md` whenever a hypothesis is confirmed, disproved, or left inconclusive/);
+    assert.match(runWorkflow, /`\.planning\/HUNTMAP\.md` when phase or plan completion changes/);
+    assert.match(runWorkflow, /keep all three representations in sync: the phase checkbox list, the specific plan checklist entry or entries, and the `## Progress` table row/);
     assert.doesNotMatch(planCommand, /ROADMAP\.md/);
     assert.doesNotMatch(validateCommand, /VERIFICATION\.md/);
   });

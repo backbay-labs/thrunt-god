@@ -4,7 +4,7 @@ const { test, describe } = require('node:test');
 const assert = require('node:assert');
 const {
   skipIfNoDocker,
-  waitForHealthy,
+  ensureSplunkHostAccess,
   createSplunkBearerToken,
   SPLUNK_URL,
   SPLUNK_USER,
@@ -20,14 +20,7 @@ describe('splunk integration', async (t) => {
   let queryResult;
 
   test('bootstraps bearer token from Splunk REST API', async () => {
-    await waitForHealthy(`${SPLUNK_URL}/services/server/info`, {
-      timeout: 120000,
-      requestInit: {
-        headers: {
-          Authorization: SPLUNK_AUTH,
-        },
-      },
-    });
+    await ensureSplunkHostAccess({ timeout: 300000 });
     await seedSplunk(SPLUNK_URL, { user: SPLUNK_USER, password: SPLUNK_PASSWORD });
     bearerToken = await createSplunkBearerToken(SPLUNK_URL, { user: SPLUNK_USER, password: SPLUNK_PASSWORD });
     assert.ok(typeof bearerToken === 'string' && bearerToken.length > 0, 'Bearer token should be a non-empty string');

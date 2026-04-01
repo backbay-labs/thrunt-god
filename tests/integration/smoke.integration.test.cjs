@@ -5,6 +5,7 @@ const assert = require('node:assert');
 const {
   skipIfNoDocker,
   waitForHealthy,
+  ensureSplunkHostAccess,
   SPLUNK_URL,
   ELASTIC_URL,
   OPENSEARCH_URL,
@@ -60,14 +61,7 @@ describe('docker infrastructure smoke test', async (t) => {
   // It verifies health and seeds data, then asserts seed data is queryable.
 
   test('splunk container is healthy and accepts seed data', async () => {
-    await waitForHealthy(`${SPLUNK_URL}/services/server/info`, {
-      timeout: 120000,
-      requestInit: {
-        headers: {
-          Authorization: SPLUNK_AUTH,
-        },
-      },
-    });
+    await ensureSplunkHostAccess({ timeout: 300000 });
     const result = await seedSplunk(SPLUNK_URL, { user: SPLUNK_USER, password: SPLUNK_PASSWORD });
     assert.ok(result.indexed >= 3, `Expected at least 3 indexed events, got ${result.indexed}`);
   });
@@ -85,6 +79,7 @@ describe('docker infrastructure smoke test', async (t) => {
   });
 
   test('splunk seed data is queryable via REST search', async () => {
+    await ensureSplunkHostAccess({ timeout: 300000 });
     const text = await runSplunkSearch('index=test_sysmon | head 10');
     assert.ok(
       text.includes('ws-01') || text.includes('alice'),

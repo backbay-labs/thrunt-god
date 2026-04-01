@@ -139,6 +139,20 @@ describe("TUIApp", () => {
     expect(app.state.agentActivity.error).toBeNull()
   })
 
+  test("refreshHomeData does not reuse non-home prompt text as a search query", async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
+    await writeFakeThruntTools(tempDir)
+
+    const app = new TUIApp(tempDir) as any
+    app.state.inputMode = "dispatch-sheet"
+    app.state.promptBuffer = "oauth"
+
+    await app.refreshHomeData(true)
+
+    expect(app.state.homeSearch.results[0]?.title).toBe("Failed logins in the last 24h")
+    expect(app.state.homeSearch.results[0]?.title).not.toContain("OAuth")
+  })
+
   test("copyText skips failing clipboard probes and uses the resolved backend path", async () => {
     tempDir = await mkdtemp(join(tmpdir(), "thrunt-god-tui-app-"))
 

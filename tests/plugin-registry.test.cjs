@@ -43,6 +43,10 @@ function makeTempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'plugin-reg-'));
 }
 
+function symlinkDir(targetPath, linkPath) {
+  fs.symlinkSync(path.resolve(targetPath), linkPath, process.platform === 'win32' ? 'junction' : 'dir');
+}
+
 // -- BUILT_IN_CONNECTOR_IDS --
 
 describe('BUILT_IN_CONNECTOR_IDS', () => {
@@ -130,6 +134,29 @@ describe('validatePluginManifest', () => {
       assert.strictEqual(entryErrors.length, 0, 'existing entry file should pass');
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('rejects entry symlink escaping packageRoot', () => {
+    const tmpDir = makeTempDir();
+    const outsideDir = makeTempDir();
+    try {
+      fs.writeFileSync(path.join(outsideDir, 'index.cjs'), 'module.exports = {}');
+      symlinkDir(outsideDir, path.join(tmpDir, 'linked'));
+
+      const result = validatePluginManifest(
+        validManifest({ entry: './linked/index.cjs' }),
+        { packageRoot: tmpDir }
+      );
+
+      assert.strictEqual(result.valid, false);
+      assert.ok(
+        result.errors.some(error => /resolves outside packageRoot/i.test(error)),
+        `Expected packageRoot boundary error, got: ${result.errors.join('; ')}`
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+      fs.rmSync(outsideDir, { recursive: true, force: true });
     }
   });
 
@@ -691,6 +718,36 @@ describe('discoverPlugins', () => {
     }
   });
 
+  test('config.plugins symlink inside project root pointing outside is blocked', () => {
+    const pluginDir = createMockPluginDir('evil_connector');
+    const projectRoot = makeTempDir();
+    const linkedPath = path.join(projectRoot, 'linked-plugin');
+    try {
+      symlinkDir(pluginDir, linkedPath);
+
+      const origWarn = console.warn;
+      const warnings = [];
+      console.warn = (...args) => warnings.push(args.join(' '));
+      try {
+        const reg = discoverPlugins({
+          includeBuiltIn: false,
+          cwd: projectRoot,
+          config: { connectors: { plugins: ['linked-plugin'] } },
+        });
+        assert.strictEqual(reg.has('evil_connector'), false);
+        assert.ok(
+          warnings.some(w => /path traversal blocked/i.test(w)),
+          `Expected path traversal warning, got: ${warnings.join('; ')}`
+        );
+      } finally {
+        console.warn = origWarn;
+      }
+    } finally {
+      fs.rmSync(pluginDir, { recursive: true, force: true });
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
   test('config.overrides path traversal outside project root is blocked', () => {
     const pluginDir = createMockPluginDir('splunk');
     const projectRoot = makeTempDir(); // separate dir as the project root
@@ -707,6 +764,36 @@ describe('discoverPlugins', () => {
         // Splunk should NOT be overridden since override path is outside project root
         assert.strictEqual(reg.isOverridden('splunk'), false);
         // Should have logged a path traversal warning
+        assert.ok(
+          warnings.some(w => /path traversal blocked/i.test(w)),
+          `Expected path traversal warning, got: ${warnings.join('; ')}`
+        );
+      } finally {
+        console.warn = origWarn;
+      }
+    } finally {
+      fs.rmSync(pluginDir, { recursive: true, force: true });
+      fs.rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('config.overrides symlink inside project root pointing outside is blocked', () => {
+    const pluginDir = createMockPluginDir('splunk');
+    const projectRoot = makeTempDir();
+    const linkedPath = path.join(projectRoot, 'linked-override');
+    try {
+      symlinkDir(pluginDir, linkedPath);
+
+      const origWarn = console.warn;
+      const warnings = [];
+      console.warn = (...args) => warnings.push(args.join(' '));
+      try {
+        const reg = discoverPlugins({
+          includeBuiltIn: true,
+          cwd: projectRoot,
+          config: { connectors: { overrides: { splunk: 'linked-override' } } },
+        });
+        assert.strictEqual(reg.isOverridden('splunk'), false);
         assert.ok(
           warnings.some(w => /path traversal blocked/i.test(w)),
           `Expected path traversal warning, got: ${warnings.join('; ')}`

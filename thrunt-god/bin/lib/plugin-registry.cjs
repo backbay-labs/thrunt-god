@@ -39,18 +39,36 @@ const REQUIRED_MANIFEST_FIELDS = [
   'permissions',
 ];
 
+function realpathOrNull(targetPath) {
+  try {
+    if (typeof fs.realpathSync.native === 'function') {
+      return fs.realpathSync.native(targetPath);
+    }
+    return fs.realpathSync(targetPath);
+  } catch {
+    return null;
+  }
+}
+
+function isWithinPath(rootPath, targetPath) {
+  return targetPath === rootPath || targetPath.startsWith(rootPath + path.sep);
+}
+
 function resolveWithinRoot(rootPath, relativePath) {
   const resolvedRoot = path.resolve(rootPath);
   const resolvedPath = path.resolve(rootPath, relativePath);
+  const realRoot = realpathOrNull(resolvedRoot) || resolvedRoot;
+  const realPath = realpathOrNull(resolvedPath);
 
-  if (
-    resolvedPath === resolvedRoot ||
-    resolvedPath.startsWith(resolvedRoot + path.sep)
-  ) {
+  if (!isWithinPath(resolvedRoot, resolvedPath)) {
+    return null;
+  }
+
+  if (!realPath) {
     return resolvedPath;
   }
 
-  return null;
+  return isWithinPath(realRoot, realPath) ? realPath : null;
 }
 
 function parseSemver(version) {
@@ -560,20 +578,23 @@ function discoverPlugins(options = {}) {
   }
 
   const resolvedCwd = path.resolve(cwd);
-  const nodeModulesRoot = path.join(resolvedCwd, 'node_modules');
+  const canonicalProjectRoot = realpathOrNull(resolvedCwd) || resolvedCwd;
+  const nodeModulesRoot = path.join(canonicalProjectRoot, 'node_modules');
+
+  function canonicalizeForBoundaryCheck(resolvedPath) {
+    return realpathOrNull(resolvedPath) || path.resolve(resolvedPath);
+  }
 
   function isWithinProjectRoot(resolvedPath) {
-    const normalised = path.resolve(resolvedPath);
-    return normalised.startsWith(resolvedCwd + path.sep) || normalised === resolvedCwd;
+    const normalised = canonicalizeForBoundaryCheck(resolvedPath);
+    return isWithinPath(canonicalProjectRoot, normalised);
   }
 
   function isWithinProjectOrNodeModules(resolvedPath) {
-    const normalised = path.resolve(resolvedPath);
+    const normalised = canonicalizeForBoundaryCheck(resolvedPath);
     return (
-      normalised.startsWith(resolvedCwd + path.sep) ||
-      normalised === resolvedCwd ||
-      normalised.startsWith(nodeModulesRoot + path.sep) ||
-      normalised === nodeModulesRoot
+      isWithinPath(canonicalProjectRoot, normalised) ||
+      isWithinPath(nodeModulesRoot, normalised)
     );
   }
 
@@ -581,20 +602,21 @@ function discoverPlugins(options = {}) {
   if (Array.isArray(configPlugins)) {
     for (const pluginPath of configPlugins) {
       const resolvedPath = path.resolve(cwd, pluginPath);
-      if (!isWithinProjectRoot(resolvedPath)) {
+      const canonicalPath = canonicalizeForBoundaryCheck(resolvedPath);
+      if (!isWithinProjectRoot(canonicalPath)) {
         console.warn(`[thrunt] Plugin path '${pluginPath}' resolves outside project root (path traversal blocked)`);
         continue;
       }
-      const result = loadPlugin(resolvedPath);
+      const result = loadPlugin(canonicalPath);
       if (result.valid) {
         pluginEntries.push({
           adapter: result.adapter,
           manifest: result.manifest,
           source: 'config-path',
-          packageRoot: resolvedPath,
+          packageRoot: canonicalPath,
         });
       } else {
-        console.error(`[thrunt] Invalid plugin at ${resolvedPath}: ${result.errors.join('; ')}`);
+        console.error(`[thrunt] Invalid plugin at ${canonicalPath}: ${result.errors.join('; ')}`);
       }
     }
   }
@@ -603,18 +625,19 @@ function discoverPlugins(options = {}) {
   if (configOverrides && typeof configOverrides === 'object') {
     for (const [builtInId, pluginPath] of Object.entries(configOverrides)) {
       const resolvedPath = path.resolve(cwd, pluginPath);
-      if (!isWithinProjectOrNodeModules(resolvedPath)) {
+      const canonicalPath = canonicalizeForBoundaryCheck(resolvedPath);
+      if (!isWithinProjectOrNodeModules(canonicalPath)) {
         console.warn(`[thrunt] Override path '${pluginPath}' resolves outside project root and node_modules (path traversal blocked)`);
         continue;
       }
-      const result = loadPlugin(resolvedPath);
+      const result = loadPlugin(canonicalPath);
       if (result.valid) {
         if (result.adapter.capabilities.id === builtInId) {
           pluginEntries.push({
             adapter: result.adapter,
             manifest: result.manifest,
             source: 'config-override',
-            packageRoot: resolvedPath,
+            packageRoot: canonicalPath,
           });
         } else {
           console.error(
@@ -622,7 +645,7 @@ function discoverPlugins(options = {}) {
           );
         }
       } else {
-        console.error(`[thrunt] Invalid override plugin at ${resolvedPath}: ${result.errors.join('; ')}`);
+        console.error(`[thrunt] Invalid override plugin at ${canonicalPath}: ${result.errors.join('; ')}`);
       }
     }
   }

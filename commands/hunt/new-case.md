@@ -21,6 +21,7 @@ Initialize a threat hunting case.
 These hunt-native artifacts are the source of truth for the case.
 
 **Creates:**
+- `.planning/config.json`
 - `.planning/MISSION.md`
 - `.planning/HYPOTHESES.md`
 - `.planning/SUCCESS_CRITERIA.md`
@@ -38,6 +39,7 @@ Confirmed bootstrap facts such as the case name, mode, opened date, and initial 
 
 <execution_context>
 @~/.claude/thrunt-god/workflows/hunt-bootstrap.md
+@~/.claude/thrunt-god/templates/config.json
 @~/.claude/thrunt-god/templates/mission.md
 @~/.claude/thrunt-god/templates/hypotheses.md
 @~/.claude/thrunt-god/templates/success-criteria.md
@@ -52,6 +54,13 @@ When `--pack <id>` is present, use the pack bootstrap output as the default case
 Create `.planning/QUERIES/` and `.planning/RECEIPTS/` as empty directories only.
 Do not load query-log or receipt templates during bootstrap; those belong to `/hunt:run` after real execution begins.
 Default behavior is scaffold-first: write confirmed facts only and leave unknown values as `TBD` instead of inventing sample content.
+Create `.planning/config.json` during bootstrap if it does not already exist so runtime, settings, and connector commands are immediately usable.
+Never hand-write `.planning/config.json`; use `thrunt-tools config-new-program` and `thrunt-tools config-set` so the file stays valid THRUNT config.
+Use built-in connector ids exactly as the runtime registers them, for example `splunk` and `elastic`; do not substitute `elasticsearch`.
+When writing connector profiles, use `base_url` for the runtime URL field; do not invent or substitute `endpoint`.
+Only configure connector profiles when auth type and secret ref names are confirmed. Never invent placeholder env vars or placeholder secrets for blocked connectors.
+When writing `secret_refs`, each confirmed secret must use the THRUNT object shape `{ "type": "env", "value": "ENV_VAR_NAME" }` rather than a raw string.
+Keep connector narrative, status notes, and access commentary in `ENVIRONMENT.md`, not in ad hoc config keys.
 Do not leave bootstrap-known fields as `TBD` after writing the files.
 Write the hunt artifacts directly.
 </process>

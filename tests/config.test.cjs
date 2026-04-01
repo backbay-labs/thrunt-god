@@ -12,6 +12,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { loadConfig } = require('../thrunt-god/bin/lib/core.cjs');
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -212,6 +213,80 @@ describe('config-set command', () => {
     const config = readConfig(tmpDir);
     assert.strictEqual(config.connector_profiles.splunk.default.auth_type, 'api_key');
     assert.strictEqual(config.connector_profiles.splunk.default.secret_refs.api_key.value, 'SPLUNK_TOKEN');
+  });
+
+  test('canonicalizes legacy endpoint alias to base_url for connector profiles', () => {
+    const result = runThruntTools([
+      'config-set',
+      'connector_profiles.elastic.local',
+      '{"auth_type":"api_key","endpoint":"https://elastic.example.com","secret_refs":{"api_key":{"type":"env","value":"ELASTIC_KEY"}}}',
+    ], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.connector_profiles.elastic.local.base_url, 'https://elastic.example.com');
+    assert.strictEqual(config.connector_profiles.elastic.local.endpoint, undefined);
+  });
+
+  test('normalizes connector_profiles.elasticsearch.* writes to connector_profiles.elastic.*', () => {
+    const result = runThruntTools([
+      'config-set',
+      'connector_profiles.elasticsearch.local',
+      '{"auth_type":"api_key","base_url":"https://elastic.example.com","secret_refs":{"api_key":{"type":"env","value":"ELASTIC_KEY"}}}',
+    ], tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const config = readConfig(tmpDir);
+    assert.strictEqual(config.connector_profiles.elastic.local.base_url, 'https://elastic.example.com');
+    assert.strictEqual(config.connector_profiles.elasticsearch, undefined);
+  });
+
+  test('loadConfig migrates legacy endpoint alias in existing connector profiles', () => {
+    writeConfig(tmpDir, {
+      connector_profiles: {
+        elastic: {
+          local: {
+            auth_type: 'api_key',
+            endpoint: 'https://elastic.example.com',
+            secret_refs: {
+              api_key: { type: 'env', value: 'ELASTIC_KEY' },
+            },
+          },
+        },
+      },
+    });
+
+    const config = loadConfig(tmpDir);
+    assert.strictEqual(config.connector_profiles.elastic.local.base_url, 'https://elastic.example.com');
+    assert.strictEqual(config.connector_profiles.elastic.local.endpoint, undefined);
+
+    const persisted = readConfig(tmpDir);
+    assert.strictEqual(persisted.connector_profiles.elastic.local.base_url, 'https://elastic.example.com');
+    assert.strictEqual(persisted.connector_profiles.elastic.local.endpoint, undefined);
+  });
+
+  test('loadConfig migrates connector_profiles.elasticsearch to connector_profiles.elastic', () => {
+    writeConfig(tmpDir, {
+      connector_profiles: {
+        elasticsearch: {
+          local: {
+            auth_type: 'api_key',
+            base_url: 'https://elastic.example.com',
+            secret_refs: {
+              api_key: { type: 'env', value: 'ELASTIC_KEY' },
+            },
+          },
+        },
+      },
+    });
+
+    const config = loadConfig(tmpDir);
+    assert.strictEqual(config.connector_profiles.elastic.local.base_url, 'https://elastic.example.com');
+    assert.strictEqual(config.connector_profiles.elasticsearch, undefined);
+
+    const persisted = readConfig(tmpDir);
+    assert.strictEqual(persisted.connector_profiles.elastic.local.base_url, 'https://elastic.example.com');
+    assert.strictEqual(persisted.connector_profiles.elasticsearch, undefined);
   });
 
   test('auto-creates nested objects for dot-notation', () => {

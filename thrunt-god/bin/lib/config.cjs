@@ -58,6 +58,14 @@ function isValidConfigKey(keyPath) {
   return false;
 }
 
+function normalizeConnectorProfileKeyPath(keyPath) {
+  const match = /^connector_profiles\.([a-zA-Z0-9_-]+)\.([a-zA-Z0-9_-]+)$/.exec(keyPath);
+  if (!match) return keyPath;
+  const [, connectorId, profileName] = match;
+  const normalizedId = connectorId === 'elasticsearch' ? 'elastic' : connectorId;
+  return `connector_profiles.${normalizedId}.${profileName}`;
+}
+
 const CONFIG_KEY_SUGGESTIONS = {
   'workflow.nyquist_validation_enabled': 'workflow.nyquist_validation',
   'agents.nyquist_validation_enabled': 'workflow.nyquist_validation',
@@ -168,6 +176,10 @@ function normalizeAndValidateConfigValue(keyPath, value) {
   if (/^connector_profiles\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+$/.test(keyPath)) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       error(`Invalid value for ${keyPath}: expected object auth profile, received ${JSON.stringify(value)}`);
+    }
+    if (!value.base_url && typeof value.endpoint === 'string' && value.endpoint.trim()) {
+      value = { ...value, base_url: value.endpoint };
+      delete value.endpoint;
     }
     const [, connectorId, profileName] = keyPath.split('.');
     const validation = validateAuthProfile({
@@ -554,6 +566,8 @@ function cmdConfigSet(cwd, keyPath, value, raw) {
   if (!keyPath) {
     error('Usage: config-set <key.path> <value>');
   }
+
+  keyPath = normalizeConnectorProfileKeyPath(keyPath);
 
   validateKnownConfigKeyPath(keyPath);
 

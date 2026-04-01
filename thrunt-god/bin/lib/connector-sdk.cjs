@@ -310,7 +310,8 @@ function createAuthProfile(input = {}) {
     name: input.name || 'default',
     connector_id: input.connector_id || null,
     auth_type: input.auth_type || null,
-    base_url: input.base_url || null,
+    // Accept legacy `endpoint` and normalize it into the canonical runtime field.
+    base_url: input.base_url || input.endpoint || null,
     token_url: input.token_url || null,
     tenant: input.tenant || null,
     region: input.region || null,

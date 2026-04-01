@@ -754,7 +754,8 @@ export class TUIApp implements AppController {
       packs: this.state.thruntPacks.packs,
       connectors: this.state.thruntConnectors.connectors,
     })
-    const ranked = rankSearchResults(this.state.promptBuffer, catalog, 8)
+    const query = this.state.inputMode === "main" ? this.state.promptBuffer : ""
+    const ranked = rankSearchResults(query, catalog, 8)
     this.state.homeSearch.results = ranked.map(({ score: _score, ...result }) => result)
     if (this.state.homeSearch.selectedIndex >= this.state.homeSearch.results.length) {
       this.state.homeSearch.selectedIndex = Math.max(0, this.state.homeSearch.results.length - 1)
