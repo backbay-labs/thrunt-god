@@ -48,4 +48,7 @@ module.exports = {
   createTestQuerySpec: require('./contract-tests.cjs').createTestQuerySpec,
   createTestProfile: require('./contract-tests.cjs').createTestProfile,
   createTestSecrets: require('./contract-tests.cjs').createTestSecrets,
+
+  // Drain / reduce (Phase 4):
+  reduceEvents: require('./drain.cjs').reduceEvents,
 };
