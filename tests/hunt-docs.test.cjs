@@ -12,6 +12,8 @@ describe('hunt docs', () => {
     const readme = readRepoFile('README.md');
 
     assert.match(readme, /Every query, receipt, and finding is a file/);
+    assert.match(readme, /Bootstrap fills confirmed fields immediately\./);
+    assert.match(readme, /`TBD` only marks live environment or operator-supplied facts that are still unknown\./);
     assert.doesNotMatch(readme, /Legacy mirrors/);
     assert.match(readme, /\/hunt:new-program/);
     assert.match(readme, /\/hunt:map-environment/);
@@ -33,6 +35,12 @@ describe('hunt docs', () => {
     assert.match(workflow, /Do not simulate example telemetry, example detections, example query logs, or example receipts/);
     assert.match(workflow, /Do not leave bracketed template placeholders in the generated files; replace every unknown with `TBD`/);
     assert.match(workflow, /Do not create query-log or receipt files during bootstrap/);
+    assert.match(workflow, /Do not leave bootstrap-known fields as `TBD` after writing the files/);
+    assert.match(workflow, /`MISSION\.md` title should use the confirmed program name/);
+    assert.match(workflow, /`MISSION\.md` title should use the confirmed case name or signal label/);
+    assert.match(workflow, /`STATE\.md` should start at `Phase: 1 of 5 \(Environment Mapping\)`/);
+    assert.match(workflow, /`STATE\.md` should start at `Phase: 1 of 5 \(Signal Intake\)`/);
+    assert.match(workflow, /`STATE\.md` should start at `Status: Ready to plan`/);
     assert.match(workflow, /Write the full bootstrap artifact set, including `STATE\.md` and `environment\/ENVIRONMENT\.md`/);
     assert.match(workflow, /Do not generate or update `CLAUDE\.md` during hunt bootstrap/);
     assert.doesNotMatch(workflow, /generate-claude-md/);
@@ -48,6 +56,8 @@ describe('hunt docs', () => {
     assert.match(command, /Create `\.planning\/QUERIES\/` and `\.planning\/RECEIPTS\/` as empty directories only/);
     assert.match(command, /Do not load query-log or receipt templates during bootstrap/);
     assert.match(command, /Default behavior is scaffold-first/);
+    assert.match(command, /Confirmed bootstrap facts such as the program name, mode, opened date, and initial phase\/status must be filled immediately/);
+    assert.match(command, /Do not leave bootstrap-known fields as `TBD` after writing the files/);
     assert.doesNotMatch(command, /query-log\.md/);
     assert.doesNotMatch(command, /receipt\.md/);
     assert.doesNotMatch(command, /--skeleton/);
@@ -72,6 +82,8 @@ describe('hunt docs', () => {
     assert.match(command, /Create `\.planning\/QUERIES\/` and `\.planning\/RECEIPTS\/` as empty directories only/);
     assert.match(command, /Do not load query-log or receipt templates during bootstrap/);
     assert.match(command, /Default behavior is scaffold-first/);
+    assert.match(command, /Confirmed bootstrap facts such as the case name, mode, opened date, and initial phase\/status must be filled immediately/);
+    assert.match(command, /Do not leave bootstrap-known fields as `TBD` after writing the files/);
     assert.doesNotMatch(command, /query-log\.md/);
     assert.doesNotMatch(command, /receipt\.md/);
 
@@ -98,6 +110,8 @@ describe('hunt docs', () => {
     const workflow = readRepoFile('thrunt-god', 'workflows', 'hunt-map-environment.md');
 
     assert.match(command, /Default behavior is to preserve confirmed facts and leave unknown values as `TBD`/);
+    assert.match(command, /Confirmed environment facts should replace existing `TBD` markers immediately/);
+    assert.match(command, /Replace `TBD` only where live workspace evidence or direct operator input confirms the fact/);
     assert.doesNotMatch(command, /--skeleton/);
     assert.match(workflow, /Never invent or simulate environment details/);
     assert.match(workflow, /If confirmed facts are sparse or absent/);
@@ -115,9 +129,13 @@ describe('hunt docs', () => {
     const helpWorkflow = readRepoFile('thrunt-god', 'workflows', 'hunt-help.md');
 
     assert.match(missionTemplate, /Unknown facts should remain `TBD`/);
+    assert.match(missionTemplate, /Bootstrap should always replace the mission title, mode, opened date, and any confirmed signal or desired outcome before writing the file/);
     assert.match(hypothesesTemplate, /Unknown facts should remain `TBD`/);
+    assert.match(hypothesesTemplate, /Bootstrap should always replace the document title with the confirmed program or case name before writing the file/);
     assert.match(successTemplate, /Unknown gates should remain `TBD`/);
+    assert.match(successTemplate, /Bootstrap should always replace the document title with the confirmed program or case name before writing the file/);
     assert.match(stateTemplate, /Unknown state details should remain `TBD`/);
+    assert.match(stateTemplate, /Bootstrap should replace the mission reference date, active signal, current focus, phase, plan, status, and last activity whenever those facts are already known/);
     assert.match(missionTemplate, /# Mission: TBD/);
     assert.match(hypothesesTemplate, /# Hypotheses: TBD/);
     assert.match(successTemplate, /# Success Criteria: TBD/);
@@ -127,6 +145,7 @@ describe('hunt docs', () => {
     assert.doesNotMatch(hypothesesTemplate, /### HYP-01:/);
     assert.doesNotMatch(successTemplate, /\[Observable condition\]/);
     assert.doesNotMatch(stateTemplate, /\[time window\]/);
+    assert.match(helpWorkflow, /Bootstrap should fill known fields immediately\. `TBD` is only for facts the operator has not confirmed yet\./);
     assert.match(helpWorkflow, /\/hunt:new-program \[--auto\]/);
     assert.match(helpWorkflow, /\/hunt:map-environment/);
     assert.doesNotMatch(helpWorkflow, /--skeleton/);

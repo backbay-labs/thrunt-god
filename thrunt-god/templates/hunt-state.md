@@ -52,6 +52,7 @@ Resume file: TBD
 
 <guidelines>
 
+- Bootstrap should replace the mission reference date, active signal, current focus, phase, plan, status, and last activity whenever those facts are already known from the prompt and selected mode.
 - Unknown state details should remain `TBD`; do not backfill fake progress or data sources.
 - Keep this short and current.
 - Preserve the `Current Position` field names because THRUNT state tooling reads them directly.

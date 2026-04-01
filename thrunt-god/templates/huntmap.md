@@ -102,6 +102,7 @@ Plans:
 
 <guidelines>
 
+- Bootstrap should always replace the huntmap title and overview when the case name or signal is already known.
 - Keep phase names operational.
 - Each phase should produce evidence, decisions, or a publishable artifact.
 

@@ -56,6 +56,7 @@ TBD
 
 <guidelines>
 
+- Bootstrap should always replace the mission title, mode, opened date, and any confirmed signal or desired outcome before writing the file.
 - Unknown facts should remain `TBD`; do not invent a mission narrative to make the file feel complete.
 - Use precise analyst language, not product language.
 - Keep the signal and desired outcome separate.

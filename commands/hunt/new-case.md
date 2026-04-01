@@ -31,6 +31,7 @@ These hunt-native artifacts are the source of truth for the case.
 
 Bootstrap should only scaffold the case. Do not seed sample queries, sample receipts, or completed phases.
 Unknown scope details, data sources, operators, and constraints must remain `TBD` unless the operator confirms them.
+Confirmed bootstrap facts such as the case name, mode, opened date, and initial phase/status must be filled immediately.
 
 **After this command:** Run `/hunt:shape-hypothesis` or `/hunt:plan 1`.
 </objective>
@@ -51,5 +52,6 @@ When `--pack <id>` is present, use the pack bootstrap output as the default case
 Create `.planning/QUERIES/` and `.planning/RECEIPTS/` as empty directories only.
 Do not load query-log or receipt templates during bootstrap; those belong to `/hunt:run` after real execution begins.
 Default behavior is scaffold-first: write confirmed facts only and leave unknown values as `TBD` instead of inventing sample content.
+Do not leave bootstrap-known fields as `TBD` after writing the files.
 Write the hunt artifacts directly.
 </process>

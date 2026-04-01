@@ -37,6 +37,7 @@ Bootstrap should default to honest scaffolding:
 
 - Ask only for the minimum naming/context needed to label the artifacts
 - If the name and high-level goal are already supplied, do not ask additional follow-up questions before writing the bootstrap docs
+- Replace bootstrap-known fields immediately: program or case name, mode, opened date, active signal or goal, current phase label, initial plan, and initial status
 - Scaffold the hunt docs without filling in unknown environment facts
 - Use `TBD` for missing tenants, tools, query paths, retention windows, entities, owners, and constraints
 - Do not simulate example telemetry, example detections, example query logs, or example receipts
@@ -130,6 +131,21 @@ When facts are still unknown, keep the scaffold honest:
 - `MISSION.md`, `HYPOTHESES.md`, `SUCCESS_CRITERIA.md`, and `STATE.md` may contain `TBD` placeholders
 - `ENVIRONMENT.md` should stay scaffold-only rather than being populated with guessed products or invented retention windows
 - Open questions should be surfaced explicitly instead of being answered by inference
+- Do not leave bootstrap-known fields as `TBD` after writing the files
+
+Program mode initial state defaults:
+
+- `MISSION.md` title should use the confirmed program name
+- `STATE.md` should start at `Phase: 1 of 5 (Environment Mapping)`
+- `STATE.md` should start at `Plan: 1 of 1 in current phase`
+- `STATE.md` should start at `Status: Ready to plan`
+
+Case mode initial state defaults:
+
+- `MISSION.md` title should use the confirmed case name or signal label
+- `STATE.md` should start at `Phase: 1 of 5 (Signal Intake)`
+- `STATE.md` should start at `Plan: 1 of 1 in current phase`
+- `STATE.md` should start at `Status: Ready to plan`
 
 ## 6. Close Out
 

@@ -101,6 +101,7 @@ Plans:
 
 <guidelines>
 
+- Bootstrap should always replace the huntmap title and overview when the program name or high-level goal is already known.
 - Bootstrap only scaffolds the program. Do not mark any phase or plan complete.
 - Do not write sample query logs or sample receipts during bootstrap.
 - Phase 1 should usually feed `.planning/environment/ENVIRONMENT.md`.
