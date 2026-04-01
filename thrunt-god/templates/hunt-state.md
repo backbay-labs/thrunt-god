@@ -56,6 +56,7 @@ Resume file: [path or None]
 
 <guidelines>
 
+- Unknown state details should remain `TBD`; do not backfill fake progress or data sources.
 - Keep this short and current.
 - Preserve the `Current Position` field names because THRUNT state tooling reads them directly.
 - Confidence should move as evidence moves.

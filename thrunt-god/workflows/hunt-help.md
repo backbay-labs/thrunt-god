@@ -14,9 +14,9 @@ The operating loop is:
 | Command | Purpose |
 |---------|---------|
 | `/hunt:help` | Show this reference |
-| `/hunt:new-program [--auto]` | Initialize a long-lived threat hunting program |
+| `/hunt:new-program [--auto] [--skeleton]` | Initialize a long-lived threat hunting program |
 | `/hunt:new-case [--auto]` | Initialize a case from a detection, intel lead, or analyst suspicion |
-| `/hunt:map-environment` | Inventory telemetry, retention, blind spots, and query surfaces |
+| `/hunt:map-environment [--skeleton]` | Inventory telemetry, retention, blind spots, and query surfaces |
 | `/hunt:shape-hypothesis [signal-or-phase]` | Refine raw leads into testable hypotheses |
 | `/hunt:plan <phase>` | Create phase plans with exact evidence and receipt expectations |
 | `/hunt:run <phase>` | Execute hunt plans and record query logs plus receipts |
@@ -77,7 +77,8 @@ New signal:
 New program:
 
 ```text
-/hunt:new-program
+/hunt:new-program --skeleton
+/hunt:map-environment --skeleton
 /hunt:map-environment
 /hunt:new-case
 ```

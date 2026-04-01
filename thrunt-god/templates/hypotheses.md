@@ -38,6 +38,7 @@ Template for `.planning/HYPOTHESES.md`.
 
 <guidelines>
 
+- Unknown facts should remain `TBD`; do not fabricate hypotheses just to populate the file.
 - One hypothesis per materially distinct theory.
 - A hypothesis must be falsifiable.
 - Confidence is about current evidence, not how plausible the story feels.

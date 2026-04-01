@@ -79,9 +79,9 @@ Every hunt resolves through five phases. Each step is explicit.
 
 | Command                           | Purpose                                      |
 | --------------------------------- | -------------------------------------------- |
-| `/hunt:new-program`               | Stand up a long-lived hunt program           |
+| `/hunt:new-program [--skeleton]`  | Stand up a long-lived hunt program           |
 | `/hunt:new-case`                  | Open a case from a signal                    |
-| `/hunt:map-environment`           | Inventory data sources, access, and topology |
+| `/hunt:map-environment [--skeleton]` | Inventory data sources, access, and topology |
 | `/hunt:shape-hypothesis`          | Develop and refine testable hypotheses       |
 | `/hunt:plan <phase>`              | Plan a hunt phase                            |
 | `/hunt:run <phase>`               | Execute a hunt phase                         |
@@ -118,7 +118,8 @@ Utility and orchestration commands (`/thrunt:*`) for workspace management, diagn
 ### Long-lived program
 
 ```text
-/hunt:new-program
+/hunt:new-program --skeleton
+/hunt:map-environment --skeleton
 /hunt:map-environment
 /hunt:new-case
   ... repeat per signal ...

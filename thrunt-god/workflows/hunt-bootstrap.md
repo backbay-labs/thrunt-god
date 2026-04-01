@@ -33,6 +33,15 @@ Collect:
 
 If `--auto` is present, use the supplied brief as the primary source of truth and ask only where ambiguity would materially change the hunt.
 
+If `--skeleton` is present, or the user says they want to populate the hunt docs manually:
+
+- Ask only for the minimum naming/context needed to label the artifacts
+- If the name and high-level goal are already supplied, do not ask additional follow-up questions
+- Scaffold the hunt docs without filling in unknown environment facts
+- Use `TBD` or `Unknown` for missing tenants, tools, query paths, retention windows, entities, owners, and constraints
+- Do not simulate example telemetry, example detections, example query logs, or example receipts
+- Keep the environment-mapping phase present but not started
+
 If `--pack <id>` is present:
 
 - inspect the pack first with `node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" pack bootstrap <id> ...`
@@ -51,24 +60,19 @@ Create these paths if they do not exist:
 
 ## 4. Write Hunt-Native Files
 
-Write or update:
+Write or update in this exact order so the blank environment scaffold and state
+exist even if later formatting or summary work changes:
 
+- `.planning/environment/ENVIRONMENT.md`
+- `.planning/STATE.md`
 - `.planning/MISSION.md`
 - `.planning/HYPOTHESES.md`
 - `.planning/SUCCESS_CRITERIA.md`
 - `.planning/HUNTMAP.md`
-- `.planning/STATE.md`
-- `CLAUDE.md`
 
-| Purpose | Artifact |
-| --- | --- |
-| Project guide  | `CLAUDE.md` |
-
-Generate `CLAUDE.md` before the final commit:
-
-```bash
-node "$HOME/.claude/thrunt-god/bin/thrunt-tools.cjs" generate-claude-md
-```
+Do not generate or update `CLAUDE.md` during hunt bootstrap. The bootstrap must
+complete using hunt-native artifacts only and must not depend on optional
+profile-generation steps.
 
 Program mode defaults:
 
@@ -82,6 +86,8 @@ Program mode defaults:
   5. Publish Cadence
 - Create `.planning/QUERIES/` and `.planning/RECEIPTS/` as empty directories only during bootstrap
 - Do not invent sample query logs, sample receipts, or mark any phase/plan complete during bootstrap
+- Do not invent or simulate environment details. Unknown values must remain `TBD` until the operator confirms them.
+- Even in skeleton mode, write the full bootstrap artifact set, including `STATE.md` and `environment/ENVIRONMENT.md`, before any optional wrap-up work
 
 Case mode defaults:
 
@@ -117,6 +123,12 @@ Also include hunt-specific sections for:
 - Current confidence
 - Open blockers
 
+When facts are still unknown, keep the skeleton honest:
+
+- `MISSION.md`, `HYPOTHESES.md`, `SUCCESS_CRITERIA.md`, and `STATE.md` may contain `TBD` placeholders
+- `ENVIRONMENT.md` should stay scaffold-only rather than being populated with guessed products or invented retention windows
+- Open questions should be surfaced explicitly instead of being answered by inference
+
 ## 6. Close Out
 
 Summarize:
@@ -138,7 +150,7 @@ Case mode next steps:
 When committing the bootstrap, include:
 
 ```text
---files .planning/HUNTMAP.md .planning/STATE.md .planning/HYPOTHESES.md CLAUDE.md
+--files .planning/MISSION.md .planning/HUNTMAP.md .planning/STATE.md .planning/HYPOTHESES.md .planning/SUCCESS_CRITERIA.md .planning/environment/ENVIRONMENT.md
 ```
 
 </process>

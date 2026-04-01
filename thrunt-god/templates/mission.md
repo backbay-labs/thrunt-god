@@ -56,6 +56,7 @@ Template for `.planning/MISSION.md` - the source-of-truth description of the hun
 
 <guidelines>
 
+- Unknown facts should remain `TBD`; do not invent a mission narrative to make the file feel complete.
 - Use precise analyst language, not product language.
 - Keep the signal and desired outcome separate.
 - Scope should reflect what is actually in play, not every possible pivot.

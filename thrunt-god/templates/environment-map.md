@@ -7,52 +7,58 @@ Template for `.planning/environment/ENVIRONMENT.md`.
 ```markdown
 # Environment Map
 
+> Replace `TBD` only with confirmed operator-provided facts. Do not fill unknown fields with guessed products, retention windows, or simulated telemetry.
+
 ## Scope
 
-- **Program / case:** [name]
-- **Covered tenants:** [list]
-- **Excluded areas:** [list]
+- **Program / case:** TBD
+- **Covered tenants:** TBD
+- **Excluded areas:** TBD
 
 ## Telemetry Surfaces
 
 | Surface | System | Retention | Query Path | Notes |
 |---------|--------|-----------|------------|-------|
-| Endpoint | [EDR] | [days] | [how to query] | [blind spots / caveats] |
-| Identity | [IdP] | [days] | [how to query] | [blind spots / caveats] |
-| Cloud | [AWS/Azure/GCP] | [days] | [how to query] | [blind spots / caveats] |
-| Email | [provider] | [days] | [how to query] | [blind spots / caveats] |
+| Endpoint | TBD | TBD | TBD | TBD |
+| Identity | TBD | TBD | TBD | TBD |
+| Cloud | TBD | TBD | TBD | TBD |
+| Email | TBD | TBD | TBD | TBD |
 
 ## Tooling And Access
 
 | Workflow | Tool | Auth / Access Path | Notes |
 |----------|------|--------------------|-------|
-| Primary query console | [tool] | [SSO / API key / role] | [owner, caveats] |
-| Secondary / fallback path | [tool] | [method] | [when to use it] |
-| Case / ticketing system | [tool] | [method] | [handoff expectations] |
-| Reporting / publish path | [tool] | [method] | [where final output lands] |
+| Primary query console | TBD | TBD | TBD |
+| Secondary / fallback path | TBD | TBD | TBD |
+| Case / ticketing system | TBD | TBD | TBD |
+| Reporting / publish path | TBD | TBD | TBD |
 
 ## Key Entities And Pivots
 
-- **User identifiers:** [UPN, SID, email, employee ID]
-- **Host identifiers:** [hostname, sensor ID, asset ID]
-- **Cloud identifiers:** [account ID, subscription ID, project ID]
-- **Message identifiers:** [internet message ID, message trace ID]
+- **User identifiers:** TBD
+- **Host identifiers:** TBD
+- **Cloud identifiers:** TBD
+- **Message identifiers:** TBD
 
 ## Known Blind Spots
 
-- [blind spot]
-- [blind spot]
+- TBD
+- TBD
 
 ## Escalation Boundaries
 
-- **IR / SOC owner:** [team]
-- **Cloud owner:** [team]
-- **Identity owner:** [team]
-- **Legal / privacy:** [team]
+- **IR / SOC owner:** TBD
+- **Cloud owner:** TBD
+- **Identity owner:** TBD
+- **Legal / privacy:** TBD
 
 ## Notes
 
-[Anything that affects hunt execution quality]
+TBD
+
+## Open Questions
+
+- TBD
 ```
 
 </template>
