@@ -56,7 +56,7 @@ const PAGINATION_MODES = ['auto', 'none', 'cursor', 'offset', 'page', 'token'];
 const CONSISTENCY_MODES = ['best_effort', 'strict'];
 const RESULT_STATUSES = ['ok', 'partial', 'error', 'empty'];
 const EVIDENCE_POLICIES = ['all', 'material', 'none'];
-const LIFECYCLE_STAGES = ['preflight', 'prepare', 'execute', 'paginate', 'normalize', 'emit', 'complete'];
+const LIFECYCLE_STAGES = ['preflight', 'prepare', 'execute', 'paginate', 'normalize', 'reduce', 'emit', 'complete'];
 const AUTH_TYPES = [
   'api_key',
   'basic',
@@ -873,6 +873,18 @@ async function executeQuerySpec(specInput, adapterOrRegistry, options = {}) {
     accumulator.errors.push(runtimeError);
   }
 
+  // ── REDUCE stage: template-based event grouping ──
+  let templateMetadata = null;
+  if (accumulator.events.length > 0 && options.reduce !== false) {
+    try {
+      stage = 'reduce';
+      const { reduceEvents } = require('./drain.cjs');
+      templateMetadata = reduceEvents(accumulator.events, typeof options.reduce === 'object' ? options.reduce : {});
+    } catch (reduceErr) {
+      accumulator.warnings.push(createWarning('REDUCE_FAILED', `Template reduction failed: ${reduceErr.message}`));
+    }
+  }
+
   const envelope = createResultEnvelope(spec, {
     started_at: startedAt,
     completed_at: nowIso(),
@@ -890,6 +902,7 @@ async function executeQuerySpec(specInput, adapterOrRegistry, options = {}) {
       connector_id: spec.connector.id,
       artifact_ids: [],
       last_stage: stage,
+      ...(templateMetadata ? { templates: templateMetadata } : {}),
     },
   });
 
