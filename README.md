@@ -5,7 +5,7 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/thrunt-god"><img src="https://img.shields.io/npm/v/thrunt-god?style=flat-square&logo=npm&label=npm" alt="npm"></a>
   <a href="https://github.com/backbay-labs/thrunt-god/actions"><img src="https://img.shields.io/github/actions/workflow/status/backbay-labs/thrunt-god/test.yml?branch=main&style=flat-square&logo=github&label=CI" alt="CI Status"></a>
-  <a href="https://discord.gg/tWKSGCvq"><img src="https://img.shields.io/badge/discord-join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://discord.gg/zTegcebS"><img src="https://img.shields.io/badge/discord-join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License: MIT"></a>
 </p>
 
