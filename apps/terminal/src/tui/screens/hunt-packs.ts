@@ -10,7 +10,7 @@ import type { Screen, ScreenContext } from "../types"
 import { renderSurfaceHeader } from "../components/surface-header"
 import type { TreeNode } from "../components/tree-view"
 import { renderTree, flattenTree, toggleExpand, moveUp, moveDown } from "../components/tree-view"
-import { fitString, stripAnsi } from "../components/types"
+import { fitString } from "../components/types"
 import { listPacks } from "../../thrunt-bridge/pack"
 import type { PackListEntry } from "../../thrunt-bridge/pack"
 
