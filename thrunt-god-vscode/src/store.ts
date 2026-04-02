@@ -9,8 +9,15 @@ import type {
   Hypotheses,
   HuntMap,
   HuntState,
+  EvidenceReview,
 } from './types';
 import type { HuntOverviewViewModel, SessionDiff } from '../shared/hunt-overview';
+import type {
+  EvidenceBoardViewModel,
+  EvidenceBoardNode,
+  EvidenceBoardEdge,
+  EvidenceBoardMatrixCell,
+} from '../shared/evidence-board';
 import { parseArtifact } from './parsers/index';
 import { extractFrontmatter } from './parsers/base';
 import { resolveArtifactType } from './watcher';
@@ -165,6 +172,13 @@ export class HuntDataStore implements vscode.Disposable {
     const info = this.artifactPaths.get(receiptId);
     if (!info || info.type !== 'receipt') return undefined;
     return this.getCachedOrParse(receiptId, info.filePath, info.type) as ParseResult<Receipt> | undefined;
+  }
+
+  /**
+   * Get the parsed EvidenceReview singleton artifact.
+   */
+  getEvidenceReview(): ParseResult<EvidenceReview> | undefined {
+    return this.getArtifactByType<EvidenceReview>('evidenceReview', 'EVIDENCE_REVIEW');
   }
 
   /**
@@ -357,6 +371,172 @@ export class HuntDataStore implements vscode.Disposable {
       diagnosticsHealth,
       activityFeed: sessionDiff ? sessionDiff.entries : [],
       sessionDiff,
+    };
+  }
+
+  /**
+   * Derive a complete EvidenceBoardViewModel from current store state.
+   * Builds the graph (nodes + edges), matrix cells, and blind spots.
+   */
+  deriveEvidenceBoard(): EvidenceBoardViewModel {
+    const nodes: EvidenceBoardNode[] = [];
+    const edges: EvidenceBoardEdge[] = [];
+    const hypothesisIds: string[] = [];
+    const receiptIds: string[] = [];
+
+    // 1. Hypothesis nodes (tier 0)
+    const hunt = this.getHunt();
+    if (hunt && hunt.hypotheses.status === 'loaded') {
+      const allHypotheses = [
+        ...hunt.hypotheses.data.active,
+        ...hunt.hypotheses.data.parked,
+        ...hunt.hypotheses.data.disproved,
+      ];
+      for (const h of allHypotheses) {
+        const label =
+          h.assertion.length > 80
+            ? h.assertion.slice(0, 80) + '...'
+            : h.assertion;
+        nodes.push({
+          id: h.id,
+          type: 'hypothesis',
+          label,
+          tier: 0,
+          verdict: h.status,
+          confidence: h.confidence,
+        });
+        hypothesisIds.push(h.id);
+      }
+    }
+
+    // 2. Receipt nodes (tier 1) + edges from receipts
+    const receipts = this.getReceipts();
+    for (const [, result] of receipts) {
+      if (result.status !== 'loaded') continue;
+      const r = result.data;
+      const label =
+        r.claim.length > 80 ? r.claim.slice(0, 80) + '...' : r.claim;
+      nodes.push({
+        id: r.receiptId,
+        type: 'receipt',
+        label,
+        tier: 1,
+        verdict: r.claimStatus,
+        confidence: r.confidence,
+        deviationScore:
+          r.anomalyFrame?.deviationScore.totalScore ?? undefined,
+      });
+      receiptIds.push(r.receiptId);
+
+      // Edges: receipt -> hypothesis
+      if (r.relatedHypotheses) {
+        for (const hypId of r.relatedHypotheses) {
+          let relationship: 'supports' | 'contradicts' | 'context';
+          if (r.claimStatus === 'supports') {
+            relationship = 'supports';
+          } else if (r.claimStatus === 'contradicts') {
+            relationship = 'contradicts';
+          } else {
+            relationship = 'context';
+          }
+          edges.push({
+            source: r.receiptId,
+            target: hypId,
+            relationship,
+          });
+        }
+      }
+
+      // Edges: query -> receipt
+      if (r.relatedQueries) {
+        for (const qryId of r.relatedQueries) {
+          edges.push({
+            source: qryId,
+            target: r.receiptId,
+            relationship: 'context',
+          });
+        }
+      }
+    }
+
+    // 3. Query nodes (tier 2)
+    const queries = this.getQueries();
+    for (const [, result] of queries) {
+      if (result.status !== 'loaded') continue;
+      const q = result.data;
+      const label =
+        q.title.length > 80 ? q.title.slice(0, 80) + '...' : q.title;
+      nodes.push({
+        id: q.queryId,
+        type: 'query',
+        label,
+        tier: 2,
+      });
+    }
+
+    // 4. Build receipt->hypothesis edge lookup for matrix
+    const edgeLookup = new Map<string, EvidenceBoardEdge>();
+    for (const edge of edges) {
+      // Only receipt->hypothesis edges matter for matrix
+      if (
+        receiptIds.includes(edge.source) &&
+        hypothesisIds.includes(edge.target)
+      ) {
+        edgeLookup.set(`${edge.target}:${edge.source}`, edge);
+      }
+    }
+
+    // 5. Build matrixCells for every hypothesis x receipt pair
+    const matrixCells: EvidenceBoardMatrixCell[] = [];
+    for (const hypId of hypothesisIds) {
+      for (const rctId of receiptIds) {
+        const edge = edgeLookup.get(`${hypId}:${rctId}`);
+        if (edge) {
+          // Find the receipt's deviationScore
+          const rctResult = receipts.get(rctId);
+          const devScore =
+            rctResult?.status === 'loaded'
+              ? rctResult.data.anomalyFrame?.deviationScore.totalScore ?? null
+              : null;
+          matrixCells.push({
+            hypothesisId: hypId,
+            receiptId: rctId,
+            relationship: edge.relationship,
+            deviationScore: devScore,
+          });
+        } else {
+          matrixCells.push({
+            hypothesisId: hypId,
+            receiptId: rctId,
+            relationship: 'absent',
+            deviationScore: null,
+          });
+        }
+      }
+    }
+
+    // 6. Extract blindSpots from EvidenceReview
+    let blindSpots: string[] = [];
+    const evReview = this.getEvidenceReview();
+    if (
+      evReview &&
+      evReview.status === 'loaded' &&
+      evReview.data.blindSpots &&
+      evReview.data.blindSpots.length > 0
+    ) {
+      blindSpots = evReview.data.blindSpots
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    }
+
+    return {
+      nodes,
+      edges,
+      matrixCells,
+      hypothesisIds,
+      receiptIds,
+      blindSpots,
     };
   }
 
