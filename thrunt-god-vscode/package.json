@@ -12,7 +12,10 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Visualization", "Other"],
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
   "activationEvents": [
     "workspaceContains:.hunt/MISSION.md",
     "workspaceContains:.planning/MISSION.md"
@@ -41,6 +44,7 @@
     "pretest:smoke": "npm run build"
   },
   "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
     "@types/vscode": "^1.85.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.4.1",
@@ -48,5 +52,13 @@
     "esbuild": "^0.24.0",
     "esbuild-register": "^3.6.0",
     "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-frontmatter": "^2.0.1",
+    "mdast-util-gfm-table": "^2.0.0",
+    "micromark-extension-frontmatter": "^2.0.0",
+    "micromark-extension-gfm-table": "^2.1.1"
   }
 }
