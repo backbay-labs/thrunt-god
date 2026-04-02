@@ -11,9 +11,9 @@ Requirements for the VS Code extension. Each maps to roadmap phases.
 
 - [x] **BUILD-01**: Extension activates when workspace contains `.hunt/MISSION.md` or `.planning/MISSION.md`
 - [x] **BUILD-02**: esbuild produces dual bundles -- CJS for extension host, ESM for webview -- in sub-second builds
-- [ ] **BUILD-03**: CI smoke test validates `require('./dist/extension.js')` succeeds (catches CJS/ESM collision)
+- [x] **BUILD-03**: CI smoke test validates `require('./dist/extension.js')` succeeds (catches CJS/ESM collision)
 - [x] **BUILD-04**: `.vscodeignore` excludes source, tests, and design docs from published `.vsix`
-- [ ] **BUILD-05**: Unit tests run via `node:test` for parsers/store; integration tests run via `@vscode/test-cli` for VS Code providers
+- [x] **BUILD-05**: Unit tests run via `node:test` for parsers/store; integration tests run via `@vscode/test-cli` for VS Code providers
 
 ### Artifact Parsers
 
@@ -125,9 +125,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | BUILD-01 | Phase 7 | Complete |
 | BUILD-02 | Phase 7 | Complete |
-| BUILD-03 | Phase 7 | Pending |
+| BUILD-03 | Phase 7 | Complete |
 | BUILD-04 | Phase 7 | Complete |
-| BUILD-05 | Phase 7 | Pending |
+| BUILD-05 | Phase 7 | Complete |
 | PARSE-01 | Phase 8 | Pending |
 | PARSE-02 | Phase 8 | Pending |
 | PARSE-03 | Phase 8 | Pending |
