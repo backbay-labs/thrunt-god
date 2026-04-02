@@ -68,11 +68,5 @@ export function deactivate(): void {
 }
 
 // Re-export parsers for test access via the built bundle
-export { parseMission } from './parsers/mission';
-export { parseHypotheses } from './parsers/hypotheses';
-export { parseHuntMap } from './parsers/huntmap';
-export { parseState } from './parsers/state';
-export { parseQuery } from './parsers/query';
-export { parseEvidenceReview } from './parsers/evidenceReview';
-export { parsePhaseSummary } from './parsers/phaseSummary';
+export { parseArtifact, parseMission, parseHypotheses, parseHuntMap, parseState, parseQuery, parseReceipt, parseEvidenceReview, parsePhaseSummary } from './parsers/index';
 export { extractFrontmatter, extractBody, extractMarkdownSections } from './parsers/base';
