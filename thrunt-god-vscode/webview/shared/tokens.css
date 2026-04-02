@@ -143,3 +143,257 @@ button {
 .hunt-ghost-button:hover {
   transform: translateY(-1px);
 }
+
+/* ==========================================================================
+   Component Styles -- Phase Rail (Hunt Overview)
+   ========================================================================== */
+
+.hunt-phase-rail {
+  display: flex;
+  gap: 2px;
+  align-items: stretch;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.hunt-phase-rail__segment {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+  border: none;
+  padding: 0 4px;
+  font-family: inherit;
+  color: var(--hunt-text);
+  background: none;
+}
+
+.hunt-phase-rail__segment:hover {
+  opacity: 0.8;
+}
+
+.hunt-phase-rail__segment:focus-visible {
+  outline: 2px solid var(--hunt-accent);
+  outline-offset: -2px;
+}
+
+.hunt-phase-rail__segment--complete {
+  background: color-mix(in srgb, var(--hunt-success) 28%, var(--hunt-surface));
+}
+
+.hunt-phase-rail__segment--running {
+  background: color-mix(in srgb, var(--hunt-accent) 32%, var(--hunt-surface));
+  font-weight: 600;
+}
+
+.hunt-phase-rail__segment--planned {
+  background: var(--hunt-surface);
+  color: var(--hunt-text-muted);
+}
+
+/* ==========================================================================
+   Component Styles -- Confidence Meter (Hunt Overview)
+   ========================================================================== */
+
+.hunt-confidence-meter {
+  position: relative;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--hunt-surface);
+  overflow: hidden;
+}
+
+.hunt-confidence-meter__fill {
+  height: 100%;
+  border-radius: 10px;
+  background: var(--hunt-accent);
+  transition: width 300ms ease;
+}
+
+.hunt-confidence-meter__ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+/* ==========================================================================
+   Component Styles -- Blocker Stack (Hunt Overview)
+   ========================================================================== */
+
+.hunt-blocker-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hunt-blocker-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-blocker-toggle:hover {
+  color: var(--hunt-text);
+}
+
+.hunt-blocker-toggle__chevron {
+  display: inline-block;
+  transition: transform 150ms ease;
+  font-size: 12px;
+}
+
+.hunt-blocker-toggle__chevron--open {
+  transform: rotate(90deg);
+}
+
+.hunt-blocker-card {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--hunt-danger);
+  background: color-mix(in srgb, var(--hunt-danger) 8%, var(--hunt-surface));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hunt-blocker-card__timestamp {
+  font-size: 11px;
+  color: var(--hunt-text-muted);
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   Component Styles -- Activity Feed (Hunt Overview)
+   ========================================================================== */
+
+.hunt-activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.hunt-activity-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--hunt-surface);
+  font-size: 13px;
+}
+
+.hunt-diff-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.hunt-diff-badge--added {
+  background: color-mix(in srgb, var(--hunt-success) 22%, transparent);
+  color: var(--hunt-success);
+}
+
+.hunt-diff-badge--modified {
+  background: color-mix(in srgb, var(--hunt-accent) 22%, transparent);
+  color: var(--hunt-accent);
+}
+
+.hunt-diff-badge--removed {
+  background: color-mix(in srgb, var(--hunt-danger) 22%, transparent);
+  color: var(--hunt-danger);
+}
+
+/* ==========================================================================
+   Component Styles -- Health Card (Hunt Overview)
+   ========================================================================== */
+
+.hunt-health-card {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: transform 120ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hunt-health-card:hover {
+  transform: translateY(-1px);
+}
+
+.hunt-health-card--clean {
+  border-color: color-mix(in srgb, var(--hunt-success) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-success) 6%, var(--hunt-surface));
+}
+
+.hunt-health-card--warnings {
+  border-color: color-mix(in srgb, var(--hunt-warning) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-warning) 6%, var(--hunt-surface));
+}
+
+.hunt-health-card--errors {
+  border-color: color-mix(in srgb, var(--hunt-danger) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-danger) 6%, var(--hunt-surface));
+}
+
+.hunt-health-card__label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-health-card__stats {
+  display: flex;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   Component Styles -- Verdict StatCards Clickable (Hunt Overview)
+   ========================================================================== */
+
+.hunt-verdict-card {
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.hunt-verdict-card:hover {
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Utility -- Section Heading (Hunt Overview)
+   ========================================================================== */
+
+.hunt-section-heading {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+  margin: 0 0 10px;
+}
