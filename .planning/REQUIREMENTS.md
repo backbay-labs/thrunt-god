@@ -60,11 +60,11 @@ Requirements for the VS Code extension. Each maps to roadmap phases.
 
 ### Status Bar & CodeLens
 
-- [ ] **STATUS-01**: Status bar item shows hunt identity and current phase progress (e.g., "THRUNT: Phase 3/7")
-- [ ] **STATUS-02**: Status bar pulses with warning color when any receipt has deviation score 5-6 (critical alert)
-- [ ] **STATUS-03**: CodeLens on receipt files shows deviation score above claim sections
-- [ ] **STATUS-04**: CodeLens on query files shows template count above result summary sections
-- [ ] **STATUS-05**: Clicking CodeLens annotation navigates to the relevant detail (receipt claim, query templates)
+- [x] **STATUS-01**: Status bar item shows hunt identity and current phase progress (e.g., "THRUNT: Phase 3/7")
+- [x] **STATUS-02**: Status bar pulses with warning color when any receipt has deviation score 5-6 (critical alert)
+- [x] **STATUS-03**: CodeLens on receipt files shows deviation score above claim sections
+- [x] **STATUS-04**: CodeLens on query files shows template count above result summary sections
+- [x] **STATUS-05**: Clicking CodeLens annotation navigates to the relevant detail (receipt claim, query templates)
 
 ### Drain Template Viewer
 
@@ -147,11 +147,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIDE-06 | Phase 9 | Complete |
 | SIDE-07 | Phase 9 | Complete |
 | SIDE-08 | Phase 9 | Complete |
-| STATUS-01 | Phase 9 | Pending |
-| STATUS-02 | Phase 9 | Pending |
-| STATUS-03 | Phase 9 | Pending |
-| STATUS-04 | Phase 9 | Pending |
-| STATUS-05 | Phase 9 | Pending |
+| STATUS-01 | Phase 9 | Complete |
+| STATUS-02 | Phase 9 | Complete |
+| STATUS-03 | Phase 9 | Complete |
+| STATUS-04 | Phase 9 | Complete |
+| STATUS-05 | Phase 9 | Complete |
 | DIAG-01 | Phase 10 | Pending |
 | DIAG-02 | Phase 10 | Pending |
 | DIAG-03 | Phase 10 | Pending |

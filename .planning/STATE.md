@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: THRUNT God VS Code Extension
 status: in-progress
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-04-02T16:06:42Z"
-last_activity: 2026-04-02 -- Completed 09-01 sidebar TreeDataProvider
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-04-02T16:13:59Z"
+last_activity: 2026-04-02 -- Completed 09-02 status bar and CodeLens
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 55
+  completed_plans: 7
+  percent: 65
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Surface hidden structure in security telemetry so interesting events become obvious without requiring hunters to write perfect queries
-**Current focus:** v2.0 VS Code Extension -- Phase 9 in progress, sidebar TreeDataProvider complete
+**Current focus:** v2.0 VS Code Extension -- Phase 9 complete, all native UI features implemented
 
 ## Current Position
 
-Phase: 9 of 11 (Hunt Sidebar, Status Bar, and CodeLens) -- IN PROGRESS
-Plan: 1 of 2 complete
-Status: In Progress
-Last activity: 2026-04-02 -- Completed 09-01 sidebar TreeDataProvider
+Phase: 9 of 11 (Hunt Sidebar, Status Bar, and CodeLens) -- COMPLETE
+Plan: 2 of 2 complete
+Status: Phase Complete
+Last activity: 2026-04-02 -- Completed 09-02 status bar and CodeLens
 
-Progress: [█████░░░░░] 55%
+Progress: [██████░░░░] 65%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [█████░░░░░] 55%
 *Updated after each plan completion*
 | Phase 08 P03 | 3min | 3 tasks | 4 files |
 | Phase 09 P01 | 5min | 2 tasks | 5 files |
+| Phase 09 P02 | 4min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 09]: NodeType discriminant on HuntTreeItem for dispatch in getChildren
 - [Phase 09]: Deviation scores color-coded: 0-2 green, 3-4 yellow, 5-6 red
 - [Phase 09]: Verdict badges use ThemeIcon with ThemeColor for native VS Code theme integration
+- [Phase 09]: StatusBarItem priority 100 places THRUNT after git branch indicator
+- [Phase 09]: CodeLens severity labels: low <= 2, medium 3-4, critical >= 5
+- [Phase 09]: scrollToSection command registered inline in extension.ts activate()
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T16:06:42Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-04-02T16:13:59Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
