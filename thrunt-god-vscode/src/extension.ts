@@ -72,6 +72,7 @@ export { parseMission } from './parsers/mission';
 export { parseHypotheses } from './parsers/hypotheses';
 export { parseHuntMap } from './parsers/huntmap';
 export { parseState } from './parsers/state';
+export { parseQuery } from './parsers/query';
 export { parseEvidenceReview } from './parsers/evidenceReview';
 export { parsePhaseSummary } from './parsers/phaseSummary';
 export { extractFrontmatter, extractBody, extractMarkdownSections } from './parsers/base';
