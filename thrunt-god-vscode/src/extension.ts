@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { HUNT_MARKERS, OUTPUT_CHANNEL_NAME } from './constants';
+import { ArtifactWatcher } from './watcher';
+import { HuntDataStore } from './store';
 
 /**
  * Find the workspace folder containing hunt artifacts.
@@ -52,13 +54,39 @@ export function activate(context: vscode.ExtensionContext): void {
 
     outputChannel.appendLine(`THRUNT God activated. Hunt root: ${huntRoot.fsPath}`);
 
-    // Re-register the info command with hunt root context
+    // --- Phase 8: Wire data layer ---
+
+    // 1. Create ArtifactWatcher monitoring the hunt directory
+    const watcher = new ArtifactWatcher(huntRoot);
+    context.subscriptions.push(watcher);
+
+    // 2. Create HuntDataStore wired to the watcher
+    const store = new HuntDataStore(huntRoot, watcher, outputChannel);
+    context.subscriptions.push(store);
+
+    // 3. Log store events for debugging
     context.subscriptions.push(
-      vscode.commands.registerCommand('thrunt-god.showInfo', () => {
-        vscode.window.showInformationMessage(
-          `THRUNT God: Hunt workspace detected at ${huntRoot.fsPath}`
+      store.onDidChange((event) => {
+        outputChannel.appendLine(
+          `[Store] ${event.type}: ${event.artifactType} ${event.id}`
         );
       })
+    );
+
+    // 4. Re-register the info command with hunt root + store context
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.showInfo', () => {
+        const queries = store.getQueries();
+        const receipts = store.getReceipts();
+        vscode.window.showInformationMessage(
+          `THRUNT God: Hunt at ${huntRoot.fsPath} ` +
+          `(${queries.size} queries, ${receipts.size} receipts)`
+        );
+      })
+    );
+
+    outputChannel.appendLine(
+      'THRUNT God data layer initialized. Watching for artifact changes...'
     );
   });
 }
@@ -67,6 +95,8 @@ export function deactivate(): void {
   // Cleanup will be added as subsystems are registered
 }
 
-// Re-export parsers for test access via the built bundle
+// Re-export parsers, store, and watcher for test access via the built bundle
 export { parseArtifact, parseMission, parseHypotheses, parseHuntMap, parseState, parseQuery, parseReceipt, parseEvidenceReview, parsePhaseSummary } from './parsers/index';
 export { extractFrontmatter, extractBody, extractMarkdownSections } from './parsers/base';
+export { HuntDataStore } from './store';
+export { ArtifactWatcher, resolveArtifactType } from './watcher';
