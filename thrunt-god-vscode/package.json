@@ -68,6 +68,10 @@
         "command": "thrunt-god.refreshSidebar",
         "title": "THRUNT: Refresh Sidebar",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "thrunt-god.scrollToSection",
+        "title": "THRUNT: Scroll to Section"
       }
     ],
     "menus": {

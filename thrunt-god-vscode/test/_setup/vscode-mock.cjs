@@ -118,6 +118,38 @@ try {
       Expanded: 2,
     },
 
+    // StatusBarAlignment enum
+    StatusBarAlignment: {
+      Left: 1,
+      Right: 2,
+    },
+
+    // TextEditorRevealType enum
+    TextEditorRevealType: {
+      Default: 0,
+      InCenterIfOutsideViewport: 1,
+      InCenter: 2,
+      AtTop: 3,
+    },
+
+    // Range constructor
+    Range: function Range(startLine, startChar, endLine, endChar) {
+      this.start = { line: startLine, character: startChar };
+      this.end = { line: endLine, character: endChar };
+    },
+
+    // Selection constructor
+    Selection: function Selection(anchor, active) {
+      this.anchor = anchor;
+      this.active = active;
+    },
+
+    // CodeLens constructor
+    CodeLens: function CodeLens(range, command) {
+      this.range = range;
+      this.command = command;
+    },
+
     workspace: {
       workspaceFolders: undefined,
       createFileSystemWatcher: (_pattern, _ignoreCreate, _ignoreChange, _ignoreDelete) => {
@@ -152,6 +184,11 @@ try {
           return Promise.resolve([]);
         },
       },
+      openTextDocument: (uri) => Promise.resolve({
+        lineCount: 0,
+        lineAt: () => ({ text: '' }),
+        uri: typeof uri === 'string' ? { fsPath: uri, scheme: 'file' } : uri,
+      }),
       // Expose mock file store for test setup
       _mockFiles,
     },
@@ -161,8 +198,28 @@ try {
         dispose: () => {},
       }),
       showInformationMessage: () => Promise.resolve(undefined),
-      showTextDocument: () => Promise.resolve(undefined),
+      showTextDocument: (doc) => Promise.resolve({
+        revealRange: () => {},
+        selection: null,
+        document: doc,
+      }),
       registerTreeDataProvider: () => ({ dispose: () => {} }),
+      createStatusBarItem: (alignment, priority) => ({
+        alignment,
+        priority,
+        text: '',
+        tooltip: '',
+        command: '',
+        backgroundColor: undefined,
+        show: function() { this._visible = true; },
+        hide: function() { this._visible = false; },
+        dispose: function() { this._disposed = true; },
+        _visible: false,
+        _disposed: false,
+      }),
+    },
+    languages: {
+      registerCodeLensProvider: () => ({ dispose: () => {} }),
     },
     commands: {
       registerCommand: () => ({ dispose: () => {} }),

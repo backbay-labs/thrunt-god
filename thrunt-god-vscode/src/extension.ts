@@ -3,6 +3,8 @@ import { HUNT_MARKERS, OUTPUT_CHANNEL_NAME } from './constants';
 import { ArtifactWatcher } from './watcher';
 import { HuntDataStore } from './store';
 import { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
+import { HuntStatusBar } from './statusBar';
+import { HuntCodeLensProvider } from './codeLens';
 
 /**
  * Find the workspace folder containing hunt artifacts.
@@ -117,6 +119,34 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
+    // --- Phase 9: Status bar ---
+    const statusBar = new HuntStatusBar(store);
+    context.subscriptions.push(statusBar);
+
+    // --- Phase 9: CodeLens ---
+    const codeLensProvider = new HuntCodeLensProvider(store);
+    context.subscriptions.push(codeLensProvider);
+
+    // Register for .md files only
+    const mdSelector: vscode.DocumentSelector = { language: 'markdown', scheme: 'file' };
+    context.subscriptions.push(
+      vscode.languages.registerCodeLensProvider(mdSelector, codeLensProvider)
+    );
+
+    // CodeLens navigation command
+    context.subscriptions.push(
+      vscode.commands.registerCommand(
+        'thrunt-god.scrollToSection',
+        async (uri: vscode.Uri, lineNumber: number) => {
+          const doc = await vscode.workspace.openTextDocument(uri);
+          const editor = await vscode.window.showTextDocument(doc);
+          const range = new vscode.Range(lineNumber, 0, lineNumber, 0);
+          editor.revealRange(range, vscode.TextEditorRevealType.AtTop);
+          editor.selection = new vscode.Selection(range.start, range.start);
+        }
+      )
+    );
+
     // 4. Re-register the info command with hunt root + store context
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.showInfo', () => {
@@ -145,3 +175,5 @@ export { extractFrontmatter, extractBody, extractMarkdownSections } from './pars
 export { HuntDataStore } from './store';
 export { ArtifactWatcher, resolveArtifactType } from './watcher';
 export { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
+export { HuntStatusBar } from './statusBar';
+export { HuntCodeLensProvider } from './codeLens';
