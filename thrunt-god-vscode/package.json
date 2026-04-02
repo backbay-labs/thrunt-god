@@ -25,7 +25,8 @@
     "onCommand:thrunt-god.showProgressReport",
     "onCommand:thrunt-god.analyzeHuntmap",
     "onCommand:thrunt-god.showRuntimeDoctor",
-    "onCommand:thrunt-god.openHuntOverview"
+    "onCommand:thrunt-god.openHuntOverview",
+    "onCommand:thrunt-god.openEvidenceBoard"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -113,6 +114,11 @@
         "command": "thrunt-god.openHuntOverview",
         "title": "THRUNT: Open Hunt Overview",
         "icon": "$(dashboard)"
+      },
+      {
+        "command": "thrunt-god.openEvidenceBoard",
+        "title": "THRUNT: Open Evidence Board",
+        "icon": "$(graph)"
       }
     ],
     "menus": {
@@ -176,6 +182,11 @@
         },
         {
           "command": "thrunt-god.openHuntOverview",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.openEvidenceBoard",
           "when": "view == thruntGod.huntTree",
           "group": "navigation"
         }

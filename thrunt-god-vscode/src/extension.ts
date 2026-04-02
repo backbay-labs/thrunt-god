@@ -17,6 +17,7 @@ import {
   computeArtifactHashes,
   computeSessionDiff,
 } from './huntOverviewPanel';
+import { EvidenceBoardPanel } from './evidenceBoardPanel';
 import type { SessionDiff } from '../shared/hunt-overview';
 import { resolveArtifactType } from './watcher';
 
@@ -887,6 +888,13 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     });
 
+    // --- Phase 14: Evidence Board ---
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.openEvidenceBoard', () => {
+        EvidenceBoardPanel.createOrShow(context, store);
+      })
+    );
+
     // CodeLens navigation command
     context.subscriptions.push(
       vscode.commands.registerCommand(
@@ -988,3 +996,7 @@ export {
   computeSessionDiff,
   getDiagnosticsHealth,
 } from './huntOverviewPanel';
+export {
+  EvidenceBoardPanel,
+  EVIDENCE_BOARD_VIEW_TYPE,
+} from './evidenceBoardPanel';
