@@ -32,12 +32,21 @@
     "watch": "node esbuild.config.mjs --watch",
     "package": "vsce package --no-dependencies",
     "lint": "tsc --noEmit",
-    "prepackage": "npm run build:production"
+    "prepackage": "npm run build:production",
+    "test": "npm run test:unit && npm run test:smoke",
+    "test:unit": "node --require ./test/_setup/vscode-mock.cjs --test test/unit/**/*.test.cjs",
+    "test:smoke": "node test/smoke.cjs",
+    "test:integration": "vscode-test",
+    "pretest:unit": "npm run build",
+    "pretest:smoke": "npm run build"
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.4.1",
     "@vscode/vsce": "^3.2.0",
     "esbuild": "^0.24.0",
+    "esbuild-register": "^3.6.0",
     "typescript": "^5.5.0"
   }
 }
