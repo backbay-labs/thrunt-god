@@ -69,7 +69,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 14-01-PLAN.md -- Extension-host layer: deriveEvidenceBoard store derivation, EvidenceBoardPanel provider, command registration, unit tests
+- [x] 14-01-PLAN.md -- Extension-host layer: deriveEvidenceBoard store derivation, EvidenceBoardPanel provider, command registration, unit tests
 - [ ] 14-02-PLAN.md -- Graph mode webview: d3-force simulation with tier constraints, SVG rendering, tooltips, focus dimming, trace animation
 - [ ] 14-03-PLAN.md -- Matrix mode webview: coverage grid, gap highlighting, blind spot callout, mode toggle completion
 
@@ -112,6 +112,6 @@ Plans:
 | 7-11 | v2.0 | 12/12 | Complete | 2026-04-02 |
 | 12. Design System & Webview Infrastructure | 3/3 | Complete    | 2026-04-02 | - |
 | 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
-| 14. Evidence Board | v3.0 | 0/3 | Not started | - |
+| 14. Evidence Board | v3.0 | 1/3 | In progress | - |
 | 15. Query Analysis Upgrades | v3.0 | 0/2 | Not started | - |
 | 16. Cross-Surface Navigation | v3.0 | 0/2 | Not started | - |

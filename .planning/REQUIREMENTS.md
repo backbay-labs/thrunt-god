@@ -103,18 +103,18 @@ Deferred to v3.1+:
 | DASH-07 | Phase 13 | Complete |
 | DASH-08 | Phase 13 | Complete |
 | DASH-09 | Phase 13 | Complete |
-| EVBD-01 | Phase 14 | Pending |
-| EVBD-02 | Phase 14 | Pending |
+| EVBD-01 | Phase 14 | In Progress |
+| EVBD-02 | Phase 14 | In Progress |
 | EVBD-03 | Phase 14 | Pending |
 | EVBD-04 | Phase 14 | Pending |
 | EVBD-05 | Phase 14 | Pending |
-| EVBD-06 | Phase 14 | Pending |
-| EVBD-07 | Phase 14 | Pending |
-| EVBD-08 | Phase 14 | Pending |
+| EVBD-06 | Phase 14 | In Progress |
+| EVBD-07 | Phase 14 | In Progress |
+| EVBD-08 | Phase 14 | In Progress |
 | EVBD-09 | Phase 14 | Pending |
 | EVBD-10 | Phase 14 | Pending |
 | EVBD-11 | Phase 14 | Pending |
-| EVBD-12 | Phase 14 | Pending |
+| EVBD-12 | Phase 14 | In Progress |
 | QANL-01 | Phase 15 | Pending |
 | QANL-02 | Phase 15 | Pending |
 | QANL-03 | Phase 15 | Pending |
