@@ -211,8 +211,9 @@
     "pretest:dogfood": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@types/d3-force": "^3.0.10",
     "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.10.1",
     "@types/vscode": "^1.85.0",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.4.1",
