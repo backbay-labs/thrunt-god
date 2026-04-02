@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: THRUNT God VS Code Extension
 status: in-progress
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-04-02T15:12:17Z"
-last_activity: 2026-04-02 -- Completed 08-01 artifact parsers
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-04-02T15:21:44Z"
+last_activity: 2026-04-02 -- Completed 08-02 query/receipt parsers and barrel index
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 11
-  completed_plans: 3
-  percent: 27
+  completed_plans: 4
+  percent: 36
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 8 of 11 (Artifact Parsers, File Watcher, and Data Store)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: In Progress
-Last activity: 2026-04-02 -- Completed 08-01 artifact parsers
+Last activity: 2026-04-02 -- Completed 08-02 query/receipt parsers and barrel index
 
-Progress: [██░░░░░░░░] 27%
+Progress: [███░░░░░░░] 36%
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Progress: [██░░░░░░░░] 27%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1-6 (v1.0) | 12 | -- | -- |
-| 7-11 (v2.0) | 3 | 12min | 4min |
+| 7-11 (v2.0) | 4 | 18min | 4.5min |
 
 **Recent Trend:**
 - Last 5 plans: --
@@ -75,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 08]: extractTableRows parses via mdast GFM table AST nodes, not regex -- more robust for complex cells
 - [Phase 08]: ParseResult<T> discriminated union (loaded/error/loading/missing) for all parser return types
 - [Phase 08]: Bold-field extraction uses regex since metadata lines like **Mode:** are not markdown headings
+- [Phase 08]: Template table isolation by header signature prevents confusion with other tables in Result Summary
+- [Phase 08]: Pipe-cell parsing preserves empty cells for positional alignment in deviation score tables
+- [Phase 08]: Subsection extraction uses regex for ### headings within ## sections (extractMarkdownSections only handles ##)
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T15:12:17Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-04-02T15:21:44Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None

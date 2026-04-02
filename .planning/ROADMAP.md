@@ -65,8 +65,8 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md -- Types, base parser, 6 simple artifact parsers (Mission, Hypotheses, HuntMap, State, EvidenceReview, PhaseSummary) with unit tests
-- [ ] 08-02-PLAN.md -- Query parser (Drain template extraction) and Receipt parser (anomaly framing extraction) with parser barrel index
+- [x] 08-01-PLAN.md -- Types, base parser, 6 simple artifact parsers (Mission, Hypotheses, HuntMap, State, EvidenceReview, PhaseSummary) with unit tests
+- [x] 08-02-PLAN.md -- Query parser (Drain template extraction) and Receipt parser (anomaly framing extraction) with parser barrel index
 - [ ] 08-03-PLAN.md -- ArtifactWatcher, HuntDataStore with cross-artifact indexes and batch coalescing, extension activation wiring
 
 ### Phase 9: Hunt Sidebar, Status Bar, and CodeLens
@@ -131,8 +131,8 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11
 | 4. Reduce Stage | v1.0 | 2/2 | Complete | 2026-04-01 |
 | 5. Anomaly Framing and Pack Progressions | v1.0 | 2/2 | Complete | 2026-04-01 |
 | 6. Validator Enhancement and Test Suite | v1.0 | 3/3 | Complete | 2026-04-01 |
-| 7. Extension Scaffold and Build Infrastructure | v2.0 | 0/2 | In Progress | - |
-| 8. Artifact Parsers, File Watcher, and Data Store | v2.0 | 0/3 | Not started | - |
+| 7. Extension Scaffold and Build Infrastructure | v2.0 | 2/2 | Complete | 2026-04-02 |
+| 8. Artifact Parsers, File Watcher, and Data Store | v2.0 | 2/3 | In Progress | - |
 | 9. Hunt Sidebar, Status Bar, and CodeLens | v2.0 | 0/0 | Not started | - |
 | 10. Evidence Integrity Diagnostics | v2.0 | 0/0 | Not started | - |
 | 11. Webview Bridge and Drain Template Viewer | v2.0 | 0/0 | Not started | - |

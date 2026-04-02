@@ -21,8 +21,8 @@ Requirements for the VS Code extension. Each maps to roadmap phases.
 - [x] **PARSE-02**: Parser produces typed `ParseResult<T>` with `loaded | error | loading | missing` states
 - [x] **PARSE-03**: Parser handles malformed/half-written artifacts gracefully (partial parse, warning, no crash)
 - [x] **PARSE-04**: 8 artifact-type parsers: Mission, Hypotheses, HuntMap, State, Query, Receipt, EvidenceReview, PhaseSummary
-- [ ] **PARSE-05**: Query parser extracts Drain template metadata (template_id, template text, count, event_ids) from embedded JSON/tables
-- [ ] **PARSE-06**: Receipt parser extracts anomaly framing (baseline, prediction, observation, deviation score 0-6, pack progression match)
+- [x] **PARSE-05**: Query parser extracts Drain template metadata (template_id, template text, count, event_ids) from embedded JSON/tables
+- [x] **PARSE-06**: Receipt parser extracts anomaly framing (baseline, prediction, observation, deviation score 0-6, pack progression match)
 
 ### File Watcher & Store
 
@@ -132,8 +132,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PARSE-02 | Phase 8 | Complete |
 | PARSE-03 | Phase 8 | Complete |
 | PARSE-04 | Phase 8 | Complete |
-| PARSE-05 | Phase 8 | Pending |
-| PARSE-06 | Phase 8 | Pending |
+| PARSE-05 | Phase 8 | Complete |
+| PARSE-06 | Phase 8 | Complete |
 | STORE-01 | Phase 8 | Pending |
 | STORE-02 | Phase 8 | Pending |
 | STORE-03 | Phase 8 | Pending |
