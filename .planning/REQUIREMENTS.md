@@ -18,15 +18,15 @@ Requirements for the Investigative Surfaces milestone. Each maps to roadmap phas
 
 ### Hunt Overview Dashboard
 
-- [ ] **DASH-01**: User can view mission identity card (signal, owner, date, mode, focus)
-- [ ] **DASH-02**: User can view phase progress rail showing current stage and completion
-- [ ] **DASH-03**: User can view hypothesis verdict summary (counts by Supported/Disproved/Inconclusive/Open)
-- [ ] **DASH-04**: User can view confidence meter showing hunt-level confidence
-- [ ] **DASH-05**: User can view evidence count stat bar (receipts, queries, templates)
-- [ ] **DASH-06**: User can view blocker stack with current blockers surfaced
-- [ ] **DASH-07**: User can see "what changed since last session" notification on extension activation
-- [ ] **DASH-08**: User can view activity feed showing chronological artifact changes with diff badges
-- [ ] **DASH-09**: User can view evidence integrity health indicator bridging v2.0 diagnostics into dashboard
+- [x] **DASH-01**: User can view mission identity card (signal, owner, date, mode, focus)
+- [x] **DASH-02**: User can view phase progress rail showing current stage and completion
+- [x] **DASH-03**: User can view hypothesis verdict summary (counts by Supported/Disproved/Inconclusive/Open)
+- [x] **DASH-04**: User can view confidence meter showing hunt-level confidence
+- [x] **DASH-05**: User can view evidence count stat bar (receipts, queries, templates)
+- [x] **DASH-06**: User can view blocker stack with current blockers surfaced
+- [x] **DASH-07**: User can see "what changed since last session" notification on extension activation
+- [x] **DASH-08**: User can view activity feed showing chronological artifact changes with diff badges
+- [x] **DASH-09**: User can view evidence integrity health indicator bridging v2.0 diagnostics into dashboard
 
 ### Evidence Board
 
@@ -94,15 +94,15 @@ Deferred to v3.1+:
 | DSYS-04 | Phase 12 | Complete |
 | DSYS-05 | Phase 12 | Pending |
 | DSYS-06 | Phase 12 | Complete |
-| DASH-01 | Phase 13 | In Progress |
-| DASH-02 | Phase 13 | In Progress |
-| DASH-03 | Phase 13 | In Progress |
-| DASH-04 | Phase 13 | In Progress |
-| DASH-05 | Phase 13 | In Progress |
-| DASH-06 | Phase 13 | In Progress |
-| DASH-07 | Phase 13 | In Progress |
-| DASH-08 | Phase 13 | In Progress |
-| DASH-09 | Phase 13 | In Progress |
+| DASH-01 | Phase 13 | Complete |
+| DASH-02 | Phase 13 | Complete |
+| DASH-03 | Phase 13 | Complete |
+| DASH-04 | Phase 13 | Complete |
+| DASH-05 | Phase 13 | Complete |
+| DASH-06 | Phase 13 | Complete |
+| DASH-07 | Phase 13 | Complete |
+| DASH-08 | Phase 13 | Complete |
+| DASH-09 | Phase 13 | Complete |
 | EVBD-01 | Phase 14 | Pending |
 | EVBD-02 | Phase 14 | Pending |
 | EVBD-03 | Phase 14 | Pending |

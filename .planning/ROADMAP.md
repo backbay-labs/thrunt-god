@@ -15,7 +15,7 @@
 ### v3.0 Investigative Surfaces
 
 - [x] **Phase 12: Shared Design System & Webview Infrastructure** - CSS tokens, shared Preact primitives, hooks library, esbuild multi-entry, Drain Viewer token migration (completed 2026-04-02)
-- [ ] **Phase 13: Hunt Overview Dashboard** - Mission cockpit, phase rail, confidence meter, blocker stack, activity feed, "what changed?" notification
+- [x] **Phase 13: Hunt Overview Dashboard** - Mission cockpit, phase rail, confidence meter, blocker stack, activity feed, "what changed?" notification (completed 2026-04-02)
 - [ ] **Phase 14: Evidence Board** - Force-directed lineage graph with tier constraints, coverage matrix with gap detection, mode toggle in single panel
 - [ ] **Phase 15: Query Analysis Upgrades** - Template comparison, presence matrix heatmap, sort controls, receipt QA inspector with anomaly framing
 - [ ] **Phase 16: Cross-Surface Navigation & Session Continuity** - WebviewPanelSerializer, cross-surface artifact highlighting, contextual actions, session continuity summary
@@ -54,7 +54,7 @@ Plans:
 Plans:
 - [x] 13-01-PLAN.md -- Extension-host layer: ViewModel, store derivation, panel provider, session diff, toast notification
 - [ ] 13-02-PLAN.md -- Dashboard webview: all card sections, phase rail, activity feed, health card CSS and JSX
-- [ ] 13-03-PLAN.md -- Unit tests for store derivation and session diff logic
+- [x] 13-03-PLAN.md -- Unit tests for store derivation and session diff logic
 
 ### Phase 14: Evidence Board
 **Goal**: Users can visualize the entire evidence structure of their hunt -- hypothesis-to-receipt-to-query lineage as an interactive graph, and hypothesis-vs-receipt coverage as a color-coded matrix -- to identify gaps, trace chains, and spot weak evidence
@@ -66,12 +66,12 @@ Plans:
   3. User can trace an evidence chain and see flow animation highlighting the path from hypothesis through receipts to queries
   4. User can toggle to matrix mode and see a hypothesis-columns-by-receipt-rows grid with color-coded cells, gap highlighting for uncovered rows/columns, and a blind spot callout row from the Evidence Review artifact
   5. Both graph and matrix modes live in the same panel, toggled without losing selection state
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 14-01: TBD
-- [ ] 14-02: TBD
-- [ ] 14-03: TBD
+- [ ] 14-01-PLAN.md -- Extension-host layer: deriveEvidenceBoard store derivation, EvidenceBoardPanel provider, command registration, unit tests
+- [ ] 14-02-PLAN.md -- Graph mode webview: d3-force simulation with tier constraints, SVG rendering, tooltips, focus dimming, trace animation
+- [ ] 14-03-PLAN.md -- Matrix mode webview: coverage grid, gap highlighting, blind spot callout, mode toggle completion
 
 ### Phase 15: Query Analysis Upgrades
 **Goal**: Users can compare template distributions across queries and inspect receipt quality, turning the Drain Template Viewer from a single-query tool into a multi-query analysis surface
@@ -111,7 +111,7 @@ Plans:
 | 1-6 | v1.0 | 12/12 | Complete | 2026-04-01 |
 | 7-11 | v2.0 | 12/12 | Complete | 2026-04-02 |
 | 12. Design System & Webview Infrastructure | 3/3 | Complete    | 2026-04-02 | - |
-| 13. Hunt Overview Dashboard | v3.0 | 1/3 | In progress | - |
+| 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 0/3 | Not started | - |
 | 15. Query Analysis Upgrades | v3.0 | 0/2 | Not started | - |
 | 16. Cross-Surface Navigation | v3.0 | 0/2 | Not started | - |
