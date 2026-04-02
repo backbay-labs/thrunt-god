@@ -30,7 +30,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 - Decimal phases (7.1, 7.2): Urgent insertions (marked with INSERTED)
 
 - [ ] **Phase 7: Extension Scaffold and Build Infrastructure** - Working extension skeleton with dual CJS/ESM esbuild, activation, test harness, and packaging
-- [ ] **Phase 8: Artifact Parsers, File Watcher, and Data Store** - Reactive data pipeline: filesystem watcher, 8 artifact parsers, cross-artifact indexed store
+- [x] **Phase 8: Artifact Parsers, File Watcher, and Data Store** - Reactive data pipeline: filesystem watcher, 8 artifact parsers, cross-artifact indexed store
 - [ ] **Phase 9: Hunt Sidebar, Status Bar, and CodeLens** - Native VS Code UI: semantic investigation tree, hunt progress indicator, inline score annotations
 - [ ] **Phase 10: Evidence Integrity Diagnostics** - Anti-pattern detection surfaced in VS Code Problems panel with quick-fix scaffolds
 - [ ] **Phase 11: Webview Bridge and Drain Template Viewer** - Type-safe host/webview messaging and Preact + Observable Plot stacked bar visualization
@@ -67,7 +67,7 @@ Plans:
 Plans:
 - [x] 08-01-PLAN.md -- Types, base parser, 6 simple artifact parsers (Mission, Hypotheses, HuntMap, State, EvidenceReview, PhaseSummary) with unit tests
 - [x] 08-02-PLAN.md -- Query parser (Drain template extraction) and Receipt parser (anomaly framing extraction) with parser barrel index
-- [ ] 08-03-PLAN.md -- ArtifactWatcher, HuntDataStore with cross-artifact indexes and batch coalescing, extension activation wiring
+- [x] 08-03-PLAN.md -- ArtifactWatcher, HuntDataStore with cross-artifact indexes and batch coalescing, extension activation wiring
 
 ### Phase 9: Hunt Sidebar, Status Bar, and CodeLens
 **Goal**: Hunters navigate the investigation through a semantic sidebar tree, see hunt progress in the status bar, and read inline deviation scores and template counts via CodeLens -- all powered by store subscriptions

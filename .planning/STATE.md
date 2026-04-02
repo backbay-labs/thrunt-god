@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: THRUNT God VS Code Extension
 status: in-progress
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-04-02T15:21:44Z"
-last_activity: 2026-04-02 -- Completed 08-02 query/receipt parsers and barrel index
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-04-02T15:40:45.687Z"
+last_activity: 2026-04-02 -- Completed 08-03 file watcher and data store
 progress:
   total_phases: 5
-  completed_phases: 1
-  total_plans: 11
-  completed_plans: 4
-  percent: 36
+  completed_phases: 2
+  total_plans: 5
+  completed_plans: 5
+  percent: 45
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Surface hidden structure in security telemetry so interesting events become obvious without requiring hunters to write perfect queries
-**Current focus:** v2.0 VS Code Extension -- Phase 8: Artifact Parsers, File Watcher, and Data Store
+**Current focus:** v2.0 VS Code Extension -- Phase 8 complete, ready for Phase 9: Native UI Providers
 
 ## Current Position
 
-Phase: 8 of 11 (Artifact Parsers, File Watcher, and Data Store)
-Plan: 2 of 3 complete
-Status: In Progress
-Last activity: 2026-04-02 -- Completed 08-02 query/receipt parsers and barrel index
+Phase: 8 of 11 (Artifact Parsers, File Watcher, and Data Store) -- COMPLETE
+Plan: 3 of 3 complete
+Status: Phase Complete
+Last activity: 2026-04-02 -- Completed 08-03 file watcher and data store
 
-Progress: [███░░░░░░░] 36%
+Progress: [████░░░░░░] 45%
 
 ## Performance Metrics
 
@@ -44,13 +44,14 @@ Progress: [███░░░░░░░] 36%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1-6 (v1.0) | 12 | -- | -- |
-| 7-11 (v2.0) | 4 | 18min | 4.5min |
+| 7-11 (v2.0) | 5 | 21min | 4.2min |
 
 **Recent Trend:**
 - Last 5 plans: --
 - Trend: --
 
 *Updated after each plan completion*
+| Phase 08 P03 | 3min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,10 @@ Recent decisions affecting current work:
 - [Phase 08]: Template table isolation by header signature prevents confusion with other tables in Result Summary
 - [Phase 08]: Pipe-cell parsing preserves empty cells for positional alignment in deviation score tables
 - [Phase 08]: Subsection extraction uses regex for ### headings within ## sections (extractMarkdownSections only handles ##)
+- [Phase 08]: WatcherLike interface decouples store from concrete ArtifactWatcher for testability
+- [Phase 08]: Raw content cache retained alongside body cache enables on-demand re-parsing on LRU miss
+- [Phase 08]: Query-to-phase index uses hypothesis ID heuristic through receipt chain (HYP-01 -> phase 1)
+- [Phase 08]: Fallback probing of known artifact paths when readDirectory unavailable (mock environments)
 
 ### Pending Todos
 
@@ -89,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02T15:21:44Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-04-02T15:40:44.756Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None

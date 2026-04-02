@@ -26,11 +26,11 @@ Requirements for the VS Code extension. Each maps to roadmap phases.
 
 ### File Watcher & Store
 
-- [ ] **STORE-01**: ArtifactWatcher monitors `.planning/` with per-file 300ms debounce and mtime/size stability check
-- [ ] **STORE-02**: HuntDataStore maintains cross-artifact indexes (receipt→query, receipt→hypothesis, query→phase)
-- [ ] **STORE-03**: Store implements 500ms batch collection window to coalesce rapid file changes into single index rebuild
-- [ ] **STORE-04**: Store emits typed change events that UI providers subscribe to (never subscribe to filesystem directly)
-- [ ] **STORE-05**: Two-level parse cache: frontmatter always cached, body parsed on demand with LRU eviction
+- [x] **STORE-01**: ArtifactWatcher monitors `.planning/` with per-file 300ms debounce and mtime/size stability check
+- [x] **STORE-02**: HuntDataStore maintains cross-artifact indexes (receipt→query, receipt→hypothesis, query→phase)
+- [x] **STORE-03**: Store implements 500ms batch collection window to coalesce rapid file changes into single index rebuild
+- [x] **STORE-04**: Store emits typed change events that UI providers subscribe to (never subscribe to filesystem directly)
+- [x] **STORE-05**: Two-level parse cache: frontmatter always cached, body parsed on demand with LRU eviction
 
 ### Webview Bridge
 
@@ -134,11 +134,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PARSE-04 | Phase 8 | Complete |
 | PARSE-05 | Phase 8 | Complete |
 | PARSE-06 | Phase 8 | Complete |
-| STORE-01 | Phase 8 | Pending |
-| STORE-02 | Phase 8 | Pending |
-| STORE-03 | Phase 8 | Pending |
-| STORE-04 | Phase 8 | Pending |
-| STORE-05 | Phase 8 | Pending |
+| STORE-01 | Phase 8 | Complete |
+| STORE-02 | Phase 8 | Complete |
+| STORE-03 | Phase 8 | Complete |
+| STORE-04 | Phase 8 | Complete |
+| STORE-05 | Phase 8 | Complete |
 | SIDE-01 | Phase 9 | Pending |
 | SIDE-02 | Phase 9 | Pending |
 | SIDE-03 | Phase 9 | Pending |
