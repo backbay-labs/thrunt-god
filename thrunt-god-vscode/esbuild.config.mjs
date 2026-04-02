@@ -1,8 +1,11 @@
 import * as esbuild from 'esbuild';
-import { readFileSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
+import path from 'path';
 
 const isWatch = process.argv.includes('--watch');
 const isProduction = process.env.NODE_ENV === 'production';
+const packageRoot = process.cwd();
+const repoRoot = path.resolve(packageRoot, '..');
 
 /** Shared build options */
 const shared = {
@@ -23,15 +26,24 @@ const extensionConfig = {
   external: ['vscode'],
 };
 
-/** Webview bundle -- ESM for the browser-based webview iframe */
-const webviewConfig = {
-  ...shared,
-  entryPoints: ['webview/drain-template-viewer/index.ts'],
-  outfile: 'dist/webview-drain.js',
-  format: 'esm',
-  platform: 'browser',
-  target: 'es2022',
-};
+/** Create a webview bundle config -- ESM for the browser-based webview iframe */
+function createWebviewConfig(entryPoint, outfile) {
+  return {
+    ...shared,
+    entryPoints: [entryPoint],
+    outfile,
+    format: 'esm',
+    platform: 'browser',
+    target: 'es2022',
+  };
+}
+
+const webviewConfigs = [
+  createWebviewConfig('webview/drain-template-viewer/index.tsx', 'dist/webview-drain.js'),
+  createWebviewConfig('webview/hunt-overview/index.tsx', 'dist/webview-hunt-overview.js'),
+  createWebviewConfig('webview/evidence-board/index.tsx', 'dist/webview-evidence-board.js'),
+  createWebviewConfig('webview/query-analysis/index.tsx', 'dist/webview-query-analysis.js'),
+];
 
 /**
  * Format bytes into human-readable string.
@@ -56,31 +68,92 @@ function reportSizes(label, outfile) {
   }
 }
 
+function syncBundledThruntRuntime() {
+  const distRoot = path.join(packageRoot, 'dist');
+  const thruntSourceRoot = path.join(repoRoot, 'thrunt-god');
+  const agentsSourceRoot = path.join(repoRoot, 'agents');
+  const packageJsonSource = path.join(repoRoot, 'package.json');
+  const runtimeFixturesSource = path.join(repoRoot, 'tests', 'runtime-fixtures.cjs');
+
+  const requiredSources = [thruntSourceRoot, agentsSourceRoot, packageJsonSource, runtimeFixturesSource];
+  for (const source of requiredSources) {
+    if (!existsSync(source)) {
+      throw new Error(`Missing THRUNT runtime source: ${source}`);
+    }
+  }
+
+  const thruntDestRoot = path.join(distRoot, 'thrunt-god');
+  const agentsDestRoot = path.join(distRoot, 'agents');
+  const packageJsonDest = path.join(distRoot, 'package.json');
+  const runtimeFixturesDest = path.join(distRoot, 'tests', 'runtime-fixtures.cjs');
+
+  mkdirSync(distRoot, { recursive: true });
+
+  rmSync(thruntDestRoot, { recursive: true, force: true });
+  rmSync(agentsDestRoot, { recursive: true, force: true });
+  rmSync(packageJsonDest, { force: true });
+
+  const thruntRuntimeDirs = [
+    'bin',
+    'commands',
+    'data',
+    'packs',
+    'references',
+    'templates',
+    'workflows',
+  ];
+
+  for (const dir of thruntRuntimeDirs) {
+    cpSync(path.join(thruntSourceRoot, dir), path.join(thruntDestRoot, dir), {
+      recursive: true,
+      force: true,
+    });
+  }
+
+  cpSync(agentsSourceRoot, agentsDestRoot, {
+    recursive: true,
+    force: true,
+  });
+  cpSync(packageJsonSource, packageJsonDest, {
+    force: true,
+  });
+  mkdirSync(path.dirname(runtimeFixturesDest), { recursive: true });
+  cpSync(runtimeFixturesSource, runtimeFixturesDest, {
+    force: true,
+  });
+}
+
 async function build() {
   const start = Date.now();
 
   if (isWatch) {
     // Use esbuild context API for incremental rebuilds
-    const [extCtx, webCtx] = await Promise.all([
+    const contexts = await Promise.all([
       esbuild.context(extensionConfig),
-      esbuild.context(webviewConfig),
+      ...webviewConfigs.map((cfg) => esbuild.context(cfg)),
     ]);
 
-    await Promise.all([extCtx.watch(), webCtx.watch()]);
+    await Promise.all(contexts.map((ctx) => ctx.watch()));
+    syncBundledThruntRuntime();
 
     console.log('[watch] Watching for changes...');
   } else {
     // Single build
     await Promise.all([
       esbuild.build(extensionConfig),
-      esbuild.build(webviewConfig),
+      ...webviewConfigs.map((cfg) => esbuild.build(cfg)),
     ]);
+    syncBundledThruntRuntime();
 
     const elapsed = Date.now() - start;
 
     console.log(`\nBuild complete in ${elapsed}ms${isProduction ? ' (production)' : ''}`);
     reportSizes('Extension host (CJS)', 'dist/extension.js');
-    reportSizes('Webview (ESM)', 'dist/webview-drain.js');
+    reportSizes('Webview: Drain (ESM)', 'dist/webview-drain.js');
+    reportSizes('Webview: Hunt Overview (ESM)', 'dist/webview-hunt-overview.js');
+    reportSizes('Webview: Evidence Board (ESM)', 'dist/webview-evidence-board.js');
+    reportSizes('Webview: Query Analysis (ESM)', 'dist/webview-query-analysis.js');
+    reportSizes('Bundled THRUNT CLI', 'dist/thrunt-god/bin/thrunt-tools.cjs');
 
     if (elapsed < 1000) {
       console.log('\nBuild completed in under 1 second.');
