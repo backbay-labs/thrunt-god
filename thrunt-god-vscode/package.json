@@ -22,12 +22,80 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "thruntGodSidebar",
+          "title": "THRUNT God",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "thruntGodSidebar": [
+        {
+          "id": "thruntGod.huntTree",
+          "name": "Investigation",
+          "when": "thruntGod.huntDetected"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "thruntGod.huntTree",
+        "contents": "No hunt detected in this workspace.\n\nOpen a folder containing .planning/MISSION.md or .hunt/MISSION.md to get started.\n[Open Folder](command:vscode.openFolder)",
+        "when": "!thruntGod.huntDetected"
+      }
+    ],
     "commands": [
       {
         "command": "thrunt-god.showInfo",
         "title": "THRUNT: Show Extension Info"
+      },
+      {
+        "command": "thrunt-god.openArtifact",
+        "title": "THRUNT: Open Artifact"
+      },
+      {
+        "command": "thrunt-god.revealInExplorer",
+        "title": "THRUNT: Reveal in Explorer"
+      },
+      {
+        "command": "thrunt-god.copyPath",
+        "title": "THRUNT: Copy Path"
+      },
+      {
+        "command": "thrunt-god.refreshSidebar",
+        "title": "THRUNT: Refresh Sidebar",
+        "icon": "$(refresh)"
       }
-    ]
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "thrunt-god.openArtifact",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.revealInExplorer",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.copyPath",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "thrunt-god.refreshSidebar",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        }
+      ]
+    }
   },
   "scripts": {
     "build": "node esbuild.config.mjs",

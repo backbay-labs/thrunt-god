@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { HUNT_MARKERS, OUTPUT_CHANNEL_NAME } from './constants';
 import { ArtifactWatcher } from './watcher';
 import { HuntDataStore } from './store';
+import { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
 
 /**
  * Find the workspace folder containing hunt artifacts.
@@ -42,6 +43,9 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
+  // Default: no hunt detected (sidebar hidden until proven otherwise)
+  vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', false);
+
   // Fire hunt root detection asynchronously (VS Code best practice: activate() returns void)
   findHuntRoot().then((huntRoot) => {
     if (!huntRoot) {
@@ -73,6 +77,46 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
+    // --- Phase 9: Sidebar tree view ---
+    vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', true);
+
+    const treeProvider = new HuntTreeDataProvider(store, huntRoot);
+    context.subscriptions.push(treeProvider);
+    context.subscriptions.push(
+      vscode.window.registerTreeDataProvider('thruntGod.huntTree', treeProvider)
+    );
+
+    // Sidebar commands
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.openArtifact', (item: HuntTreeItem) => {
+        if (item?.artifactPath) {
+          vscode.window.showTextDocument(vscode.Uri.file(item.artifactPath));
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.revealInExplorer', (item: HuntTreeItem) => {
+        if (item?.artifactPath) {
+          vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(item.artifactPath));
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.copyPath', (item: HuntTreeItem) => {
+        if (item?.artifactPath) {
+          vscode.env.clipboard.writeText(item.artifactPath);
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.refreshSidebar', () => {
+        treeProvider.refresh();
+      })
+    );
+
     // 4. Re-register the info command with hunt root + store context
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.showInfo', () => {
@@ -100,3 +144,4 @@ export { parseArtifact, parseMission, parseHypotheses, parseHuntMap, parseState,
 export { extractFrontmatter, extractBody, extractMarkdownSections } from './parsers/base';
 export { HuntDataStore } from './store';
 export { ArtifactWatcher, resolveArtifactType } from './watcher';
+export { HuntTreeDataProvider, HuntTreeItem } from './sidebar';

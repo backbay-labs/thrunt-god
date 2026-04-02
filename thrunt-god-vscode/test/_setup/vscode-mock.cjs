@@ -67,6 +67,35 @@ try {
   // Track mock filesystem state for tests
   const _mockFiles = new Map();
 
+  /**
+   * Mock ThemeColor -- stores ID for assertion.
+   */
+  class MockThemeColor {
+    constructor(id) {
+      this.id = id;
+    }
+  }
+
+  /**
+   * Mock ThemeIcon -- stores ID and optional color for assertion.
+   */
+  class MockThemeIcon {
+    constructor(id, color) {
+      this.id = id;
+      this.color = color;
+    }
+  }
+
+  /**
+   * Mock TreeItem -- base class for tree items.
+   */
+  class MockTreeItem {
+    constructor(label, collapsibleState) {
+      this.label = label;
+      this.collapsibleState = collapsibleState;
+    }
+  }
+
   const mock = {
     // Expose MockEventEmitter for direct construction in extension code
     EventEmitter: MockEventEmitter,
@@ -75,6 +104,18 @@ try {
     RelativePattern: function RelativePattern(base, pattern) {
       this.base = base;
       this.pattern = pattern;
+    },
+
+    // Theme classes
+    ThemeColor: MockThemeColor,
+    ThemeIcon: MockThemeIcon,
+    TreeItem: MockTreeItem,
+
+    // TreeItemCollapsibleState enum
+    TreeItemCollapsibleState: {
+      None: 0,
+      Collapsed: 1,
+      Expanded: 2,
     },
 
     workspace: {
@@ -120,9 +161,18 @@ try {
         dispose: () => {},
       }),
       showInformationMessage: () => Promise.resolve(undefined),
+      showTextDocument: () => Promise.resolve(undefined),
+      registerTreeDataProvider: () => ({ dispose: () => {} }),
     },
     commands: {
       registerCommand: () => ({ dispose: () => {} }),
+      executeCommand: () => Promise.resolve(undefined),
+    },
+    env: {
+      clipboard: {
+        writeText: () => Promise.resolve(),
+        readText: () => Promise.resolve(''),
+      },
     },
     Uri: {
       file: (fsPath) => ({ fsPath, path: fsPath, scheme: 'file' }),

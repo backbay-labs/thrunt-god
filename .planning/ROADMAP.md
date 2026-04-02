@@ -79,12 +79,11 @@ Plans:
   3. Status bar displays hunt identity and current phase progress (e.g., "THRUNT: Phase 3/7"), and pulses with warning color when any receipt has a critical deviation score (5-6)
   4. CodeLens annotations appear above claim sections in receipt files (showing deviation score) and above result summary sections in query files (showing template count), and clicking them navigates to the relevant detail
   5. When no hunt is detected in the workspace, the sidebar shows an empty state message and the status bar item is hidden
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
-- [ ] 09-03: TBD
+- [ ] 09-01-PLAN.md -- Sidebar TreeDataProvider with semantic tree, verdict/deviation badges, commands, context menus, empty state, and unit tests
+- [ ] 09-02-PLAN.md -- StatusBarItem with phase progress and critical alerts, CodeLensProvider with deviation scores and template counts, and unit tests
 
 ### Phase 10: Evidence Integrity Diagnostics
 **Goal**: The extension surfaces evidence quality problems as native VS Code diagnostics so hunters catch anti-patterns during active investigation rather than during review
@@ -132,7 +131,7 @@ Phases execute in numeric order: 7 -> 8 -> 9 -> 10 -> 11
 | 5. Anomaly Framing and Pack Progressions | v1.0 | 2/2 | Complete | 2026-04-01 |
 | 6. Validator Enhancement and Test Suite | v1.0 | 3/3 | Complete | 2026-04-01 |
 | 7. Extension Scaffold and Build Infrastructure | v2.0 | 2/2 | Complete | 2026-04-02 |
-| 8. Artifact Parsers, File Watcher, and Data Store | v2.0 | 2/3 | In Progress | - |
-| 9. Hunt Sidebar, Status Bar, and CodeLens | v2.0 | 0/0 | Not started | - |
+| 8. Artifact Parsers, File Watcher, and Data Store | v2.0 | 3/3 | Complete | 2026-04-02 |
+| 9. Hunt Sidebar, Status Bar, and CodeLens | v2.0 | 0/2 | Not started | - |
 | 10. Evidence Integrity Diagnostics | v2.0 | 0/0 | Not started | - |
 | 11. Webview Bridge and Drain Template Viewer | v2.0 | 0/0 | Not started | - |
