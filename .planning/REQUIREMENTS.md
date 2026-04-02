@@ -1,180 +1,135 @@
-# Requirements: THRUNT God VS Code Extension
+# Requirements: THRUNT God VS Code Extension v3.0
 
 **Defined:** 2026-04-02
-**Core Value:** Surface hidden structure in security telemetry so interesting events become obvious without requiring hunters to write perfect queries -- now as a live visualization layer inside VS Code.
+**Core Value:** Surface hidden structure in security telemetry so interesting events become obvious without requiring hunters to write perfect queries
 
-## v2.0 Requirements
+## v3.0 Requirements
 
-Requirements for the VS Code extension. Each maps to roadmap phases.
+Requirements for the Investigative Surfaces milestone. Each maps to roadmap phases.
 
-### Build Infrastructure
+### Design System & Infrastructure
 
-- [x] **BUILD-01**: Extension activates when workspace contains `.hunt/MISSION.md` or `.planning/MISSION.md`
-- [x] **BUILD-02**: esbuild produces dual bundles -- CJS for extension host, ESM for webview -- in sub-second builds
-- [x] **BUILD-03**: CI smoke test validates `require('./dist/extension.js')` succeeds (catches CJS/ESM collision)
-- [x] **BUILD-04**: `.vscodeignore` excludes source, tests, and design docs from published `.vsix`
-- [x] **BUILD-05**: Unit tests run via `node:test` for parsers/store; integration tests run via `@vscode/test-cli` for VS Code providers
+- [x] **DSYS-01**: All webview surfaces share a CSS token system (`--hunt-*` semantic layer over `--vscode-*`)
+- [x] **DSYS-02**: Shared Preact card/layout primitives (StatCard, Panel, Badge, GhostButton) available to all webviews
+- [x] **DSYS-03**: Shared hooks library (useRovingTabindex, useTheme, useVsCodeApi, useHostMessage) available to all webviews
+- [ ] **DSYS-04**: esbuild config produces 3 new webview ESM bundles alongside existing Drain Template Viewer
+- [ ] **DSYS-05**: Existing Drain Template Viewer migrated from `--viewer-*` tokens to shared `--hunt-*` tokens
+- [x] **DSYS-06**: Keyboard-first navigation (roving tabindex, ARIA roles) works across all webview surfaces
 
-### Artifact Parsers
+### Hunt Overview Dashboard
 
-- [x] **PARSE-01**: Parser extracts YAML frontmatter and markdown body from all `.planning/` artifact types
-- [x] **PARSE-02**: Parser produces typed `ParseResult<T>` with `loaded | error | loading | missing` states
-- [x] **PARSE-03**: Parser handles malformed/half-written artifacts gracefully (partial parse, warning, no crash)
-- [x] **PARSE-04**: 8 artifact-type parsers: Mission, Hypotheses, HuntMap, State, Query, Receipt, EvidenceReview, PhaseSummary
-- [x] **PARSE-05**: Query parser extracts Drain template metadata (template_id, template text, count, event_ids) from embedded JSON/tables
-- [x] **PARSE-06**: Receipt parser extracts anomaly framing (baseline, prediction, observation, deviation score 0-6, pack progression match)
+- [ ] **DASH-01**: User can view mission identity card (signal, owner, date, mode, focus)
+- [ ] **DASH-02**: User can view phase progress rail showing current stage and completion
+- [ ] **DASH-03**: User can view hypothesis verdict summary (counts by Supported/Disproved/Inconclusive/Open)
+- [ ] **DASH-04**: User can view confidence meter showing hunt-level confidence
+- [ ] **DASH-05**: User can view evidence count stat bar (receipts, queries, templates)
+- [ ] **DASH-06**: User can view blocker stack with current blockers surfaced
+- [ ] **DASH-07**: User can see "what changed since last session" notification on extension activation
+- [ ] **DASH-08**: User can view activity feed showing chronological artifact changes with diff badges
+- [ ] **DASH-09**: User can view evidence integrity health indicator bridging v2.0 diagnostics into dashboard
 
-### File Watcher & Store
+### Evidence Board
 
-- [x] **STORE-01**: ArtifactWatcher monitors `.planning/` with per-file 300ms debounce and mtime/size stability check
-- [x] **STORE-02**: HuntDataStore maintains cross-artifact indexes (receipt→query, receipt→hypothesis, query→phase)
-- [x] **STORE-03**: Store implements 500ms batch collection window to coalesce rapid file changes into single index rebuild
-- [x] **STORE-04**: Store emits typed change events that UI providers subscribe to (never subscribe to filesystem directly)
-- [x] **STORE-05**: Two-level parse cache: frontmatter always cached, body parsed on demand with LRU eviction
+- [ ] **EVBD-01**: User can view force-directed lineage graph with hypothesis->receipt->query tiers
+- [ ] **EVBD-02**: User can click graph nodes to open corresponding artifact file
+- [ ] **EVBD-03**: Graph nodes encode verdict/score with semantic colors
+- [ ] **EVBD-04**: Graph edges encode relationship type (supports/contradicts/context) with line style
+- [ ] **EVBD-05**: User can hover graph nodes to see artifact summary tooltips
+- [ ] **EVBD-06**: User can view coverage matrix (hypothesis columns x receipt rows) with color-coded cells
+- [ ] **EVBD-07**: Coverage matrix highlights gaps (rows/columns with no coverage)
+- [ ] **EVBD-08**: User can toggle between graph and matrix modes within the same panel
+- [ ] **EVBD-09**: User can trace evidence chains with flow animation highlighting
+- [ ] **EVBD-10**: User can focus on a single hypothesis to dim unconnected nodes
+- [ ] **EVBD-11**: Deviation scores encoded as node size for pre-attentive visual cues
+- [ ] **EVBD-12**: Coverage matrix includes blind spot callout row from Evidence Review artifact
 
-### Webview Bridge
+### Query Analysis
 
-- [ ] **BRIDGE-01**: Type-safe postMessage protocol between extension host and webview panels
-- [ ] **BRIDGE-02**: Host→webview messages deliver pre-computed view models (webview is a dumb render surface)
-- [ ] **BRIDGE-03**: Webview→host messages handle navigation requests (open artifact in editor)
-- [ ] **BRIDGE-04**: Bridge cleans up event listeners on panel dispose (prevents MaxListenersExceededWarning)
+- [ ] **QANL-01**: User can compare templates from two queries side-by-side
+- [ ] **QANL-02**: User can view template presence matrix across 3+ queries as a heatmap grid
+- [ ] **QANL-03**: User can sort templates by count, deviation, novelty, or recency
+- [ ] **QANL-04**: User can view receipt QA inspector with anomaly framing breakdown, prediction/baseline gaps, and score drivers
 
-### Hunt Sidebar
+### Cross-Surface Navigation
 
-- [x] **SIDE-01**: Semantic tree structure: Mission (root) → Hypotheses → Phases → Queries/Receipts (not a file tree)
-- [x] **SIDE-02**: Hypothesis nodes show verdict badges (Supported/Disproved/Inconclusive/Open) with color-coded icons
-- [x] **SIDE-03**: Receipt nodes show deviation score as color-coded badge (0-2 green, 3-4 yellow, 5-6 red)
-- [x] **SIDE-04**: Phase nodes show status indicator (planned/running/complete)
-- [x] **SIDE-05**: Double-click any tree node opens the corresponding artifact in the editor
-- [x] **SIDE-06**: Context menu on nodes: "Open Artifact", "Reveal in Explorer", "Copy Path"
-- [x] **SIDE-07**: Empty state shown when no hunt detected in workspace
-- [x] **SIDE-08**: Sidebar works at narrow widths (240px minimum)
+- [ ] **XNAV-01**: All webview panels restore state on VS Code restart via WebviewPanelSerializer
+- [ ] **XNAV-02**: Pinned template and view state persists across sessions via workspaceState
+- [ ] **XNAV-03**: Selecting an artifact in any surface highlights it in all other open surfaces
+- [ ] **XNAV-04**: User can invoke "Show in Evidence Board" and "Open Template Viewer" from any artifact context
+- [ ] **XNAV-05**: User can view session continuity summary driven from STATE.md plus recent file changes
 
-### Evidence Integrity Diagnostics
+## Future Requirements
 
-- [ ] **DIAG-01**: 7 anti-pattern checks surfaced as VS Code diagnostics in the Problems panel
-- [ ] **DIAG-02**: Anti-patterns detected: post-hoc rationalization, missing baseline, score inflation, temporal gaps, causality without evidence, missing prediction, unsupported claim
-- [ ] **DIAG-03**: Diagnostic severity: Error for unsupported claims, Warning for missing sections, Info for style improvements
-- [ ] **DIAG-04**: Quick-fix CodeActions insert structured scaffold templates (prediction section, baseline section)
-- [ ] **DIAG-05**: Diagnostics update after store batch window completes (no false positives during rapid writes)
+Deferred to v3.1+:
 
-### Status Bar & CodeLens
+### Query Analysis Extensions
+- **QANL-F01**: Timeline/sparkline mode for multi-query temporal data
+- **QANL-F02**: Entity pivot from templates (requires event-level data parsing)
+- **QANL-F03**: Template structural variant detection (pairwise similarity computation)
+- **QANL-F04**: Replay/diff between time windows
 
-- [x] **STATUS-01**: Status bar item shows hunt identity and current phase progress (e.g., "THRUNT: Phase 3/7")
-- [x] **STATUS-02**: Status bar pulses with warning color when any receipt has deviation score 5-6 (critical alert)
-- [x] **STATUS-03**: CodeLens on receipt files shows deviation score above claim sections
-- [x] **STATUS-04**: CodeLens on query files shows template count above result summary sections
-- [x] **STATUS-05**: Clicking CodeLens annotation navigates to the relevant detail (receipt claim, query templates)
-
-### Drain Template Viewer
-
-- [ ] **DRAIN-01**: Webview panel opens from sidebar context menu or command palette for any query with templates
-- [ ] **DRAIN-02**: Horizontal stacked bar chart shows template distribution (event count per template, proportional width)
-- [ ] **DRAIN-03**: Hover on template bar segment shows tooltip: template text, event count, percentage
-- [ ] **DRAIN-04**: Click on template bar segment shows detail pane with full template text, sample events, event IDs
-- [ ] **DRAIN-05**: Template pinning persists across queries via VS Code workspaceState (not filesystem)
-- [ ] **DRAIN-06**: Theme-aware rendering using `--vscode-*` CSS variables (Dark, Light, HC Dark, HC Light)
-- [ ] **DRAIN-07**: Webview state persists across hide/show cycles via `getState()`/`setState()`
-- [ ] **DRAIN-08**: CSP configured with `'unsafe-inline'` in `style-src` for Observable Plot SVG rendering
-
-## v2.1 Requirements
-
-Deferred to next minor release. Tracked but not in current roadmap.
-
-### Template Comparison
-
-- **COMP-01**: Side-by-side stacked bars from two queries showing template distribution changes
-- **COMP-02**: Template presence matrix across all queries in a phase
-
-### Evidence Graph
-
-- **GRAPH-01**: DAG visualization of hypothesis → receipt → query lineage
-- **GRAPH-02**: Node colors encode verdict/score, edge types encode "supported by"/"contradicted by"
-
-### Multi-Source Timeline
-
-- **TIME-01**: Unified timeline with swimlanes by connector/entity
-- **TIME-02**: Drain template overlay bands showing distribution over time
-
-### Enhanced Interactions
-
-- **INTERACT-01**: IOC quick-entry and propagation across views
-- **INTERACT-02**: Cross-hunt template search
-- **INTERACT-03**: Artifact-level search within the extension
+### Evidence Board Extensions
+- **EVBD-F01**: Entity relationship graph (separate from evidence lineage)
+- **EVBD-F02**: Graph export (PNG/SVG serialization)
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
-
 | Feature | Reason |
 |---------|--------|
-| CLI execution bridge | Extension is a viewer, not a CLI wrapper. IPC adds coupling. |
-| Write operations to .planning/ | Read-only in v2.0. Keeps extension simple and reliable. |
-| Multi-hunt workspace | A hunter works one hunt at a time. Single hunt scope. |
-| Embedding/vector features | thrunt-god stays zero-dependency for ML/AI |
-| Mobile/web extension | Desktop VS Code only for v2.0 |
-| WebviewPanelSerializer | Adds startup race conditions. Panels re-opened manually. |
-| Virtual scrolling | Premature -- 50 templates = 50 rows. Add if profiling shows lag. |
-| Sparklines in TreeView | Infeasible: TreeItem.description accepts only plain strings. |
+| Entity relationship graph | Separate graph type from evidence lineage; defer to v4+ |
+| Graph editing / artifact mutation | Extension is read-only; never writes to `.planning/` |
+| Real-time KPI trend charts | Single hunt has too few data points for meaningful trends |
+| Playbook execution from dashboard | Extension does not execute CLI commands |
+| Graph export (PNG/SVG) | Defer serialization to v4+ |
+| Second charting library | Observable Plot covers all chart types needed |
+| CSS-in-JS / state management library | CSS custom properties and useState/useReducer sufficient |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | Phase 7 | Complete |
-| BUILD-02 | Phase 7 | Complete |
-| BUILD-03 | Phase 7 | Complete |
-| BUILD-04 | Phase 7 | Complete |
-| BUILD-05 | Phase 7 | Complete |
-| PARSE-01 | Phase 8 | Complete |
-| PARSE-02 | Phase 8 | Complete |
-| PARSE-03 | Phase 8 | Complete |
-| PARSE-04 | Phase 8 | Complete |
-| PARSE-05 | Phase 8 | Complete |
-| PARSE-06 | Phase 8 | Complete |
-| STORE-01 | Phase 8 | Complete |
-| STORE-02 | Phase 8 | Complete |
-| STORE-03 | Phase 8 | Complete |
-| STORE-04 | Phase 8 | Complete |
-| STORE-05 | Phase 8 | Complete |
-| SIDE-01 | Phase 9 | Complete |
-| SIDE-02 | Phase 9 | Complete |
-| SIDE-03 | Phase 9 | Complete |
-| SIDE-04 | Phase 9 | Complete |
-| SIDE-05 | Phase 9 | Complete |
-| SIDE-06 | Phase 9 | Complete |
-| SIDE-07 | Phase 9 | Complete |
-| SIDE-08 | Phase 9 | Complete |
-| STATUS-01 | Phase 9 | Complete |
-| STATUS-02 | Phase 9 | Complete |
-| STATUS-03 | Phase 9 | Complete |
-| STATUS-04 | Phase 9 | Complete |
-| STATUS-05 | Phase 9 | Complete |
-| DIAG-01 | Phase 10 | Pending |
-| DIAG-02 | Phase 10 | Pending |
-| DIAG-03 | Phase 10 | Pending |
-| DIAG-04 | Phase 10 | Pending |
-| DIAG-05 | Phase 10 | Pending |
-| BRIDGE-01 | Phase 11 | Pending |
-| BRIDGE-02 | Phase 11 | Pending |
-| BRIDGE-03 | Phase 11 | Pending |
-| BRIDGE-04 | Phase 11 | Pending |
-| DRAIN-01 | Phase 11 | Pending |
-| DRAIN-02 | Phase 11 | Pending |
-| DRAIN-03 | Phase 11 | Pending |
-| DRAIN-04 | Phase 11 | Pending |
-| DRAIN-05 | Phase 11 | Pending |
-| DRAIN-06 | Phase 11 | Pending |
-| DRAIN-07 | Phase 11 | Pending |
-| DRAIN-08 | Phase 11 | Pending |
+| DSYS-01 | Phase 12 | Complete |
+| DSYS-02 | Phase 12 | Complete |
+| DSYS-03 | Phase 12 | Complete |
+| DSYS-04 | Phase 12 | Pending |
+| DSYS-05 | Phase 12 | Pending |
+| DSYS-06 | Phase 12 | Complete |
+| DASH-01 | Phase 13 | Pending |
+| DASH-02 | Phase 13 | Pending |
+| DASH-03 | Phase 13 | Pending |
+| DASH-04 | Phase 13 | Pending |
+| DASH-05 | Phase 13 | Pending |
+| DASH-06 | Phase 13 | Pending |
+| DASH-07 | Phase 13 | Pending |
+| DASH-08 | Phase 13 | Pending |
+| DASH-09 | Phase 13 | Pending |
+| EVBD-01 | Phase 14 | Pending |
+| EVBD-02 | Phase 14 | Pending |
+| EVBD-03 | Phase 14 | Pending |
+| EVBD-04 | Phase 14 | Pending |
+| EVBD-05 | Phase 14 | Pending |
+| EVBD-06 | Phase 14 | Pending |
+| EVBD-07 | Phase 14 | Pending |
+| EVBD-08 | Phase 14 | Pending |
+| EVBD-09 | Phase 14 | Pending |
+| EVBD-10 | Phase 14 | Pending |
+| EVBD-11 | Phase 14 | Pending |
+| EVBD-12 | Phase 14 | Pending |
+| QANL-01 | Phase 15 | Pending |
+| QANL-02 | Phase 15 | Pending |
+| QANL-03 | Phase 15 | Pending |
+| QANL-04 | Phase 15 | Pending |
+| XNAV-01 | Phase 16 | Pending |
+| XNAV-02 | Phase 16 | Pending |
+| XNAV-03 | Phase 16 | Pending |
+| XNAV-04 | Phase 16 | Pending |
+| XNAV-05 | Phase 16 | Pending |
 
 **Coverage:**
-- v2.0 requirements: 46 total
-- Mapped to phases: 46
+- v3.0 requirements: 31 total
+- Mapped to phases: 31
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-02*
-*Last updated: 2026-04-02 after roadmap creation (traceability populated)*
+*Last updated: 2026-04-02 after roadmap creation*

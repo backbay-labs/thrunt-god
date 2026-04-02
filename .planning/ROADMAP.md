@@ -110,7 +110,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 12/12 | Complete | 2026-04-01 |
 | 7-11 | v2.0 | 12/12 | Complete | 2026-04-02 |
-| 12. Design System & Webview Infrastructure | v3.0 | 0/3 | Not started | - |
+| 12. Design System & Webview Infrastructure | 1/3 | In Progress|  | - |
 | 13. Hunt Overview Dashboard | v3.0 | 0/3 | Not started | - |
 | 14. Evidence Board | v3.0 | 0/3 | Not started | - |
 | 15. Query Analysis Upgrades | v3.0 | 0/2 | Not started | - |
