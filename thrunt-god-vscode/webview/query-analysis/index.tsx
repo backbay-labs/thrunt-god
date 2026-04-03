@@ -1,17 +1,19 @@
 import { render } from 'preact';
-import { useEffect } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import type {
   HostToQueryAnalysisMessage,
   QueryAnalysisToHostMessage,
+  QueryAnalysisViewModel,
 } from '../../shared/query-analysis';
-import { Panel } from '../shared/components';
 import { useTheme, useHostMessage, createVsCodeApi } from '../shared/hooks';
+import { App } from './app';
 import '../shared/tokens.css';
 
 const vscode = createVsCodeApi<unknown, QueryAnalysisToHostMessage>();
 
-function App() {
-  const { setIsDark } = useTheme();
+function Root() {
+  const { isDark, setIsDark } = useTheme();
+  const [viewModel, setViewModel] = useState<QueryAnalysisViewModel | null>(null);
 
   useEffect(() => {
     vscode.postMessage({ type: 'webview:ready' });
@@ -20,6 +22,12 @@ function App() {
   useHostMessage<HostToQueryAnalysisMessage>((message) => {
     switch (message.type) {
       case 'init':
+        setViewModel(message.viewModel);
+        setIsDark(message.isDark);
+        break;
+      case 'update':
+        setViewModel(message.viewModel);
+        break;
       case 'theme':
         setIsDark(message.isDark);
         break;
@@ -27,23 +35,21 @@ function App() {
   });
 
   return (
-    <main class="hunt-surface" style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 18px', color: 'var(--hunt-text)' }}>
-      <Panel>
-        <p style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--hunt-text-muted)', margin: '0 0 8px' }}>
-          Query Analysis
-        </p>
-        <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 2.5vw, 2.4rem)', lineHeight: 1.1 }}>
-          Template Comparison
-        </h1>
-        <p style={{ color: 'var(--hunt-text-muted)', marginTop: '10px' }}>
-          Stub surface. Implementation in Phase 15.
-        </p>
-      </Panel>
-    </main>
+    <App
+      viewModel={viewModel}
+      isDark={isDark}
+      onQuerySelect={(queryId) => vscode.postMessage({ type: 'query:select', queryId })}
+      onSortChange={(sortBy) => vscode.postMessage({ type: 'sort:change', sortBy })}
+      onModeChange={(mode) => vscode.postMessage({ type: 'mode:change', mode })}
+      onReceiptSelect={(receiptId) => vscode.postMessage({ type: 'receipt:select', receiptId })}
+      onInspectorOpen={(receiptId) => vscode.postMessage({ type: 'inspector:open', receiptId })}
+      onInspectorClose={() => vscode.postMessage({ type: 'inspector:close' })}
+      onBlur={() => vscode.postMessage({ type: 'blur' })}
+    />
   );
 }
 
 const root = document.getElementById('root');
 if (root) {
-  render(<App />, root);
+  render(<Root />, root);
 }
