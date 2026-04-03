@@ -139,6 +139,7 @@ describe('HuntStatusBar', () => {
 
     assert.ok(capturedItem, 'StatusBarItem should have been created');
     assert.equal(capturedItem.text, '$(shield) THRUNT: Phase 3/7');
+    assert.equal(capturedItem.command, 'thrunt-god.showProgressReport');
     assert.ok(capturedItem._visible, 'StatusBarItem should be visible');
 
     statusBar2.dispose();
@@ -161,6 +162,7 @@ describe('HuntStatusBar', () => {
     assert.ok(capturedItem.backgroundColor, 'Should have warning background');
     assert.equal(capturedItem.backgroundColor.id, 'statusBarItem.warningBackground');
     assert.ok(capturedItem.tooltip.includes('Critical deviation'), 'Tooltip should mention critical deviation');
+    assert.ok(capturedItem.tooltip.includes('progress report'), 'Tooltip should point to progress report');
 
     statusBar.dispose();
     vscode.window.createStatusBarItem = origCreate;
@@ -180,7 +182,10 @@ describe('HuntStatusBar', () => {
     const statusBar = new ext.HuntStatusBar(store);
 
     assert.equal(capturedItem.backgroundColor, undefined, 'Should have no warning background');
-    assert.equal(capturedItem.tooltip, 'THRUNT God Hunt Investigation');
+    assert.equal(
+      capturedItem.tooltip,
+      'THRUNT God Hunt Investigation. Click to open the progress report.'
+    );
 
     statusBar.dispose();
     vscode.window.createStatusBarItem = origCreate;

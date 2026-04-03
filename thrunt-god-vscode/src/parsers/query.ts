@@ -1,4 +1,10 @@
-import type { Query, DrainTemplate, ParseResult } from '../types';
+import type {
+  Query,
+  DrainTemplate,
+  DrainTemplateDetail,
+  ParseResult,
+  QueryTimeWindow,
+} from '../types';
 import {
   extractFrontmatter,
   extractBody,
@@ -50,9 +56,12 @@ export function parseQuery(raw: string): ParseResult<Query> {
     const manifestId = String(fm.manifest_id ?? '');
 
     // Extract body sections
+    const title = extractTitle(body, queryId);
     const intent = sections.get('Intent') ?? '';
     const queryText = extractCodeBlock(sections.get('Query Or Procedure') ?? '');
+    const parametersSection = sections.get('Parameters') ?? '';
     const resultSummarySection = sections.get('Result Summary') ?? '';
+    const timeWindow = parseTimeWindow(parametersSection);
 
     // Parse Result Summary header line: **events=N, templates=N, entities=N**
     const summaryMatch = resultSummarySection.match(
@@ -73,6 +82,7 @@ export function parseQuery(raw: string): ParseResult<Query> {
 
     // Parse Drain template table from Result Summary section
     const templates = parseTemplateTable(resultSummarySection);
+    const templateDetails = parseTemplateDetails(body);
 
     return makeLoadedResult<Query>({
       queryId,
@@ -86,13 +96,16 @@ export function parseQuery(raw: string): ParseResult<Query> {
       relatedReceipts,
       contentHash,
       manifestId,
+      title,
       intent,
       queryText,
       resultSummary,
       templates,
+      templateDetails,
       eventCount,
       templateCount,
       entityCount,
+      timeWindow,
     });
   } catch (e) {
     return makeErrorResult(`Parse error: ${e instanceof Error ? e.message : String(e)}`);
@@ -146,11 +159,93 @@ function parseTemplateTable(sectionText: string): DrainTemplate[] {
 }
 
 /**
+ * Parse "### Template Tn Details" subsections from the body.
+ */
+function parseTemplateDetails(body: string): DrainTemplateDetail[] {
+  const details: DrainTemplateDetail[] = [];
+  const regex =
+    /^###\s+Template\s+(T\d+)\s+Details(?:\s+\(([^)]+)\))?\s*\n([\s\S]*?)(?=^###\s+Template\s+T\d+\s+Details|^##\s+|$)/gm;
+
+  for (const match of body.matchAll(regex)) {
+    const templateId = match[1];
+    const detailLabel = match[2] ? ` (${match[2]})` : '';
+    const summary = match[3].trim();
+    const detailLines = summary
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+    const sampleEventText = extractSampleEventText(detailLines);
+    const eventIds = extractEventIds(summary);
+
+    details.push({
+      templateId,
+      heading: `Template ${templateId} Details${detailLabel}`,
+      summary,
+      detailLines,
+      sampleEventText,
+      sampleEventId: eventIds[0] ?? null,
+      eventIds,
+    });
+  }
+
+  return details;
+}
+
+/**
  * Extract the text content of a ~~~text or ```text code block from a section.
  */
 function extractCodeBlock(sectionText: string): string {
   const match = sectionText.match(/(?:~~~|```)(?:text)?\r?\n([\s\S]*?)(?:~~~|```)/);
   return match ? match[1].trim() : sectionText.trim();
+}
+
+/**
+ * Extract the H1 query title from the markdown body.
+ */
+function extractTitle(body: string, queryId: string): string {
+  const match = body.match(/^#\s+(.+)$/m);
+  return match ? match[1].trim() : queryId;
+}
+
+/**
+ * Extract a structured time window from the Parameters section.
+ */
+function parseTimeWindow(parametersSection: string): QueryTimeWindow | null {
+  const match = parametersSection.match(
+    /\*\*Time window:\*\*\s*([^\n]+?)\s*--\s*([^\n]+)/
+  );
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    start: match[1].trim(),
+    end: match[2].trim(),
+  };
+}
+
+/**
+ * Derive the most useful human-readable sample line from a template detail block.
+ */
+function extractSampleEventText(detailLines: string[]): string | null {
+  for (const line of detailLines) {
+    const normalized = line.replace(/^[-*]\s+/, '').trim();
+    if (!normalized || normalized.startsWith('###')) {
+      continue;
+    }
+    return normalized;
+  }
+  return null;
+}
+
+/**
+ * Extract serialized sample event identifiers when present.
+ * Current fixtures do not expose them, so this usually returns [].
+ */
+function extractEventIds(text: string): string[] {
+  const ids = text.match(/\bevt-[A-Za-z0-9_-]+\b/g) ?? [];
+  return [...new Set(ids)];
 }
 
 /**

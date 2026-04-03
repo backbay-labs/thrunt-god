@@ -5,6 +5,8 @@
 - ✅ **v1.0 Patent-Inspired Log Intelligence** -- Phases 1-6 (shipped 2026-04-01). Archive: `.planning/milestones/v1.0-ROADMAP.md`
 - ✅ **v2.0 THRUNT God VS Code Extension** -- Phases 7-11 (shipped 2026-04-02). Archive: `.planning/milestones/v2.0-ROADMAP.md`
 - **v3.0 Investigative Surfaces** -- Phases 12-16 (in progress)
+- **v4.0 Active Incident Workflow** -- Phases 17-20 (planned). Design: `design/ACTIVE-INCIDENT-WORKFLOW.md`
+- **v5.0 MCP/SIEM Platform** -- Phases 21-24 (planned). Design: `design/MCP-SIEM-CONNECTORS.md`
 
 ## Phases
 
@@ -86,7 +88,7 @@ Plans:
 
 Plans:
 - [x] 15-01-PLAN.md -- Extension-host data pipeline: ViewModel expansion, deriveQueryAnalysis store derivation, QueryAnalysisPanel provider, command registration, unit tests
-- [ ] 15-02-PLAN.md -- Comparison and heatmap webview: two-column template diff, presence matrix, sort controls, CSS
+- [x] 15-02-PLAN.md -- Comparison and heatmap webview: two-column template diff, presence matrix, sort controls, CSS
 - [ ] 15-03-PLAN.md -- Receipt QA inspector webview: split-pane layout, deviation score card, factor table, framing breakdown, CSS
 
 ### Phase 16: Cross-Surface Navigation & Session Continuity
@@ -105,6 +107,151 @@ Plans:
 - [ ] 16-01: TBD
 - [ ] 16-02: TBD
 
+### v4.0 Active Incident Workflow
+
+- [ ] **Phase 17: War Room Copy** - Clipboard-ready formatted summaries of findings, hypotheses, hunt overviews, and ATT&CK mappings for war room chat (completed in 3 days)
+- [ ] **Phase 18: SLA Countdown Timer** - Configurable incident response timer in status bar with detect/contain/report phases, color progression, workspaceState persistence (completed in 4 days)
+- [ ] **Phase 19: IOC Quick-Entry** - Paste IOCs (IP, hash, domain, email) via command palette, auto-classify, cross-reference against all queries/receipts, highlight across editors and webviews (completed in 5 days)
+- [ ] **Phase 20: CLI Bridge** - Run hunt phases from VSCode via child_process.spawn, streaming progress in output channel, auto-refresh sidebar on new artifacts, error-to-diagnostic mapping (completed in 7 days)
+
+### Phase Details (v4.0)
+
+### Phase 17: War Room Copy
+**Goal**: Hunters can copy formatted summaries of any finding, hypothesis, or hunt overview to clipboard in one click, ready to paste into Slack/Teams war room chat
+**Depends on**: Phase 16 (v3.0 complete)
+**Requirements**: AIRW-01, AIRW-02, AIRW-03, AIRW-04
+**Success Criteria** (what must be TRUE):
+  1. User right-clicks a receipt in the sidebar and selects "Copy Finding Summary" to get a Slack-formatted summary on the clipboard
+  2. User right-clicks a hypothesis and selects "Copy Hypothesis Summary" to get a formatted assessment with verdict and supporting evidence
+  3. User invokes "Copy Hunt Overview" command to get a full-status summary with phase progress, hypothesis verdicts, and top findings
+  4. User invokes "Copy ATT&CK Summary" to get a technique-mapped finding table ready for briefing
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01-PLAN.md -- WarRoomFormatter class, format functions, command registration, context menus, unit tests
+
+### Phase 18: SLA Countdown Timer
+**Goal**: Hunters can track incident response SLA deadlines directly in the VS Code status bar with phase-aware countdown, color progression, and persistence across restarts
+**Depends on**: Phase 17
+**Requirements**: AIRW-05, AIRW-06, AIRW-07, AIRW-08
+**Success Criteria** (what must be TRUE):
+  1. User starts an SLA timer from the command palette with configurable phase durations (detect, contain, report)
+  2. Status bar shows remaining time with color progression (green → yellow → orange → red) based on configurable thresholds
+  3. Timer persists across VS Code restarts via workspaceState, resuming from the correct elapsed time
+  4. User receives notification when an SLA phase expires, with options to snooze or advance to the next phase
+  5. User can copy current SLA status via War Room formatter integration
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01-PLAN.md -- SLATimerManager class, status bar integration, persistence, commands, unit tests
+
+### Phase 19: IOC Quick-Entry
+**Goal**: Hunters can paste an IOC and instantly see it highlighted across all open query logs, template views, and receipts, with cross-reference suggestions for related telemetry
+**Depends on**: Phase 17
+**Requirements**: AIRW-09, AIRW-10, AIRW-11, AIRW-12
+**Success Criteria** (what must be TRUE):
+  1. User invokes "Add IOC" from command palette, pastes a value, and the system auto-classifies it (IPv4, hash, domain, email, etc.)
+  2. All open editors with QRY-*.md or RCT-*.md files show text decorations highlighting IOC matches
+  3. The Drain Template Viewer highlights template bars containing the IOC via webview messaging
+  4. Sidebar nodes for queries/receipts with IOC matches show a visual badge
+  5. IOC list is ephemeral (session-scoped) and clearable via command
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01-PLAN.md -- IOC Registry and classification, text editor decorations, webview integration, sidebar badges, unit tests
+
+### Phase 20: CLI Bridge
+**Goal**: Hunters can run hunt phases directly from VS Code without switching to a terminal, with streaming progress, auto-refresh, and error integration
+**Depends on**: Phase 18, Phase 19
+**Requirements**: AIRW-13, AIRW-14, AIRW-15, AIRW-16, AIRW-17
+**Success Criteria** (what must be TRUE):
+  1. User selects a phase from a QuickPick and the CLI executes via child_process.spawn with streaming output in a dedicated output channel
+  2. Status bar shows live progress (query count, event count) parsed from CLI structured output
+  3. Sidebar and webview panels auto-refresh when new artifacts are written by the CLI (via existing ArtifactWatcher)
+  4. CLI errors are mapped to VS Code diagnostics with actionable quick-fix suggestions
+  5. User can cancel a running CLI command, and the process terminates cleanly (SIGTERM, then SIGKILL after timeout)
+**Plans**: TBD
+
+Plans:
+- [ ] 20-01-PLAN.md -- CLIBridge class, spawn lifecycle, progress parsing, output channel
+- [ ] 20-02-PLAN.md -- QuickPick phase selector, error-to-diagnostic mapping, cancellation, integration tests
+
+### v5.0 MCP/SIEM Platform
+
+- [ ] **Phase 21: Splunk MVP** - Connector orchestrator, siem_query/siem_status/siem_discover MCP tools, SPL query translation, Drain clustering integration, file-based progress reporting (2 weeks)
+- [ ] **Phase 22: Sentinel + Environment Auto-Population** - KQL query translation, OAuth token cache, siem_env_populate MCP tool, ENVIRONMENT.md auto-population, rate limiting (2 weeks)
+- [ ] **Phase 23: CrowdStrike + Hardening** - FQL query translation, multi-surface routing, circuit breaker, error classification, sliding window rate limiter (2 weeks)
+- [ ] **Phase 24: Polish + Real-Time Progress** - MCP WebSocket notifications, VSCode extension MCP client, multi-connector queries, query history panel, documentation (2 weeks)
+
+### Phase Details (v5.0)
+
+### Phase 21: Splunk MVP
+**Goal**: A user can invoke siem_query from Claude Code or the terminal TUI, execute an SPL query against a live Splunk instance, and see Drain template clusters in the VSCode extension's Drain Template Viewer
+**Depends on**: v4.0 complete (CLI Bridge provides foundation)
+**Requirements**: SIEM-01, SIEM-02, SIEM-03, SIEM-04, SIEM-05, SIEM-06, SIEM-07
+**Success Criteria** (what must be TRUE):
+  1. Connector orchestrator manages query lifecycle (submit → poll → paginate → normalize → cluster → emit)
+  2. siem_query MCP tool accepts abstract or native SPL queries with dataset/time-window parameters
+  3. siem_status MCP tool returns job progress with event count and estimated completion
+  4. siem_discover MCP tool returns available indexes, sourcetypes, and field schemas from Splunk metadata API
+  5. Query results are normalized to NormalizedEvent schema and fed through Drain clustering pipeline
+  6. QRY-*.md artifact is emitted with template metadata compatible with existing extension parsers
+  7. File-based progress reporting (.thrunt-god/query-progress/*.json) enables VSCode status bar updates
+**Plans**: TBD
+
+Plans:
+- [ ] 21-01-PLAN.md -- Connector orchestrator, query lifecycle, pagination state machine
+- [ ] 21-02-PLAN.md -- MCP tool definitions (siem_query, siem_status, siem_discover), Splunk SPL translation
+- [ ] 21-03-PLAN.md -- Drain clustering integration, result normalization, artifact emission, progress reporting, contract tests
+
+### Phase 22: Sentinel + Environment Auto-Population
+**Goal**: Sentinel connector is fully operational with OAuth, and any configured SIEM can auto-populate ENVIRONMENT.md with discovered telemetry surfaces, retention windows, and field schemas
+**Depends on**: Phase 21
+**Requirements**: SIEM-08, SIEM-09, SIEM-10, SIEM-11, SIEM-12
+**Success Criteria** (what must be TRUE):
+  1. KQL query translation produces correct Sentinel queries from abstract query format
+  2. OAuth token cache handles automatic refresh with 5-minute pre-expiry, single-flight deduplication
+  3. Time-window splitting handles Sentinel's 500K row limit transparently
+  4. siem_env_populate MCP tool writes structured ENVIRONMENT.md sections from Splunk + Sentinel metadata
+  5. Token bucket rate limiter enforces Sentinel API quotas without user configuration
+**Plans**: TBD
+
+Plans:
+- [ ] 22-01-PLAN.md -- Sentinel adapter wiring, KQL translation, OAuth token cache
+- [ ] 22-02-PLAN.md -- siem_env_populate tool, ENVIRONMENT.md writer, rate limiting, contract tests
+
+### Phase 23: CrowdStrike + Hardening
+**Goal**: All three SIEM connectors are operational with production-grade error handling, rate limiting, and circuit breakers
+**Depends on**: Phase 22
+**Requirements**: SIEM-13, SIEM-14, SIEM-15, SIEM-16, SIEM-17
+**Success Criteria** (what must be TRUE):
+  1. CrowdStrike multi-surface routing (alerts, detections, devices) works via FQL query translation
+  2. Header-driven sliding window rate limiter respects CrowdStrike's X-Ratelimit headers
+  3. Circuit breaker opens after configurable consecutive failures, with half-open probe recovery
+  4. Structured error responses classify failures (auth, rate-limit, timeout, server, query-syntax) with actionable messages
+  5. CrowdStrike metadata discovery works via scope-based field enumeration
+**Plans**: TBD
+
+Plans:
+- [ ] 23-01-PLAN.md -- CrowdStrike adapter wiring, FQL translation, multi-surface routing
+- [ ] 23-02-PLAN.md -- Circuit breaker, error classification, sliding window rate limiter, contract tests
+
+### Phase 24: Polish + Real-Time Progress
+**Goal**: MCP/SIEM integration is polished with real-time WebSocket progress, multi-connector queries, query history, and documentation
+**Depends on**: Phase 23
+**Requirements**: SIEM-18, SIEM-19, SIEM-20, SIEM-21, SIEM-22
+**Success Criteria** (what must be TRUE):
+  1. MCP WebSocket notifications deliver real-time query progress to connected clients
+  2. VSCode extension connects as MCP client and shows live query progress in status bar
+  3. Multi-connector queries execute the same abstract query against multiple SIEMs and merge results
+  4. Query history panel in sidebar shows past queries with re-run capability
+  5. Setup guide and connector configuration reference are complete
+**Plans**: TBD
+
+Plans:
+- [ ] 24-01-PLAN.md -- MCP WebSocket notifications, VSCode MCP client integration, status bar progress
+- [ ] 24-02-PLAN.md -- Multi-connector queries, query history panel, documentation
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -114,5 +261,13 @@ Plans:
 | 12. Design System & Webview Infrastructure | 3/3 | Complete    | 2026-04-02 | - |
 | 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 3/3 | Complete | 2026-04-02 |
-| 15. Query Analysis Upgrades | v3.0 | 1/3 | In progress | - |
+| 15. Query Analysis Upgrades | v3.0 | 2/3 | In progress | - |
 | 16. Cross-Surface Navigation | v3.0 | 0/2 | Not started | - |
+| 17. War Room Copy | v4.0 | 0/1 | Not started | - |
+| 18. SLA Countdown Timer | v4.0 | 0/1 | Not started | - |
+| 19. IOC Quick-Entry | v4.0 | 0/1 | Not started | - |
+| 20. CLI Bridge | v4.0 | 0/2 | Not started | - |
+| 21. Splunk MVP | v5.0 | 0/3 | Not started | - |
+| 22. Sentinel + Env Auto-Pop | v5.0 | 0/2 | Not started | - |
+| 23. CrowdStrike + Hardening | v5.0 | 0/2 | Not started | - |
+| 24. Polish + Real-Time Progress | v5.0 | 0/2 | Not started | - |

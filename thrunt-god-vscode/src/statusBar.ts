@@ -18,7 +18,7 @@ export class HuntStatusBar implements vscode.Disposable {
       vscode.StatusBarAlignment.Left,
       100
     );
-    this._statusBarItem.command = 'thrunt-god.showInfo';
+    this._statusBarItem.command = 'thrunt-god.showProgressReport';
 
     // Subscribe to store changes for live updates
     this._storeSubscription = store.onDidChange(() => {
@@ -67,10 +67,10 @@ export class HuntStatusBar implements vscode.Disposable {
         'statusBarItem.warningBackground'
       );
       this._statusBarItem.tooltip =
-        'Critical deviation detected (score >= 5)';
+        'Critical deviation detected (score >= 5). Click to open the THRUNT progress report.';
     } else {
       this._statusBarItem.backgroundColor = undefined;
-      this._statusBarItem.tooltip = 'THRUNT God Hunt Investigation';
+      this._statusBarItem.tooltip = 'THRUNT God Hunt Investigation. Click to open the progress report.';
     }
 
     this._statusBarItem.show();

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import type { ArtifactType, Hypothesis, Receipt, HuntPhase, Query } from './types';
+import type { ArtifactType, Hypothesis, Receipt, Query } from './types';
 import type { HuntDataStore } from './store';
 
 // ---------------------------------------------------------------------------
@@ -190,18 +190,21 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
     return [
       new HuntTreeItem(missionLabel, vscode.TreeItemCollapsibleState.None, {
         iconPath: new vscode.ThemeIcon('shield'),
+        contextValue: 'mission',
         nodeType: 'mission',
         artifactPath: resolveArtifactPath(this.huntRoot, 'mission', ''),
         artifactType: 'mission',
       }),
       new HuntTreeItem('Hypotheses', vscode.TreeItemCollapsibleState.Expanded, {
         iconPath: new vscode.ThemeIcon('lightbulb'),
+        contextValue: 'hypotheses-group',
         nodeType: 'hypotheses-group',
         artifactPath: resolveArtifactPath(this.huntRoot, 'hypotheses-group', ''),
         artifactType: 'hypotheses',
       }),
       new HuntTreeItem('Phases', vscode.TreeItemCollapsibleState.Expanded, {
         iconPath: new vscode.ThemeIcon('layers'),
+        contextValue: 'phases-group',
         nodeType: 'phases-group',
       }),
     ];
@@ -316,6 +319,7 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
         return new HuntTreeItem(query.queryId, vscode.TreeItemCollapsibleState.Collapsed, {
           description: `${query.templateCount} templates`,
           iconPath: new vscode.ThemeIcon('beaker'),
+          contextValue: 'query',
           nodeType: 'query',
           dataId: query.queryId,
           artifactPath: resolveArtifactPath(this.huntRoot, 'query', query.queryId),

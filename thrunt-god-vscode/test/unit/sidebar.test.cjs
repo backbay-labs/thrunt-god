@@ -442,10 +442,10 @@ describe('HuntTreeDataProvider', () => {
 
     it('tree items have contextValue', () => {
       const roots = provider.getChildren(undefined);
-      for (const root of roots) {
-        assert.ok(root.contextValue, 'Root node should have contextValue');
-        assert.equal(root.contextValue, 'huntTreeItem');
-      }
+      assert.deepEqual(
+        roots.map((root) => root.contextValue),
+        ['mission', 'hypotheses-group', 'phases-group']
+      );
 
       // Check children too
       const hypotheses = provider.getChildren(roots[1]);

@@ -94,6 +94,21 @@ export interface DrainTemplate {
   percentage: number;         // % of total events
 }
 
+export interface QueryTimeWindow {
+  start: string;
+  end: string;
+}
+
+export interface DrainTemplateDetail {
+  templateId: string;
+  heading: string;
+  summary: string;
+  detailLines: string[];
+  sampleEventText: string | null;
+  sampleEventId: string | null;
+  eventIds: string[];
+}
+
 export interface Query {
   queryId: string;            // from frontmatter: query_id
   querySpecVersion: string;
@@ -106,13 +121,16 @@ export interface Query {
   relatedReceipts: string[];
   contentHash: string;
   manifestId: string;
+  title: string;              // H1 query title
   intent: string;             // ## Intent section
   queryText: string;          // ## Query Or Procedure code block
   resultSummary: string;      // ## Result Summary first line (events=N, templates=N, entities=N)
   templates: DrainTemplate[]; // Extracted from Result Summary table
+  templateDetails: DrainTemplateDetail[]; // Extracted from ### Template Tn Details subsections
   entityCount: number;
   eventCount: number;
   templateCount: number;
+  timeWindow: QueryTimeWindow | null;
 }
 
 // Anomaly framing (extracted from Receipt)

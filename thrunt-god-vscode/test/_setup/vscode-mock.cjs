@@ -24,12 +24,17 @@ try {
     constructor() {
       this._listeners = [];
       this._disposed = false;
-      this.event = (listener) => {
-        this._listeners.push(listener);
-        return { dispose: () => {
-          const idx = this._listeners.indexOf(listener);
+      this.event = (listener, thisArg, disposables) => {
+        const wrapped = thisArg ? listener.bind(thisArg) : listener;
+        this._listeners.push(wrapped);
+        const disposable = { dispose: () => {
+          const idx = this._listeners.indexOf(wrapped);
           if (idx >= 0) this._listeners.splice(idx, 1);
         }};
+        if (Array.isArray(disposables)) {
+          disposables.push(disposable);
+        }
+        return disposable;
       };
     }
     fire(data) {
@@ -66,6 +71,100 @@ try {
 
   // Track mock filesystem state for tests
   const _mockFiles = new Map();
+  const _registeredCommands = new Map();
+  const _executedCommands = [];
+  const _createdWebviewPanels = [];
+  const _themeEmitter = new MockEventEmitter();
+
+  function createMemento(initialState = {}) {
+    const values = new Map(Object.entries(initialState));
+    return {
+      _values: values,
+      get(key, defaultValue) {
+        return values.has(key) ? values.get(key) : defaultValue;
+      },
+      update(key, value) {
+        values.set(key, value);
+        return Promise.resolve();
+      },
+    };
+  }
+
+  function createMockTextDocument(input) {
+    const text =
+      typeof input === 'object' && input && 'content' in input && typeof input.content === 'string'
+        ? input.content
+        : '';
+    const lines = text.length > 0 ? text.split(/\r?\n/) : [''];
+    const languageId =
+      typeof input === 'object' && input && 'language' in input && typeof input.language === 'string'
+        ? input.language
+        : 'plaintext';
+    const uri =
+      typeof input === 'string'
+        ? { fsPath: input, scheme: 'file' }
+        : (input && input.fsPath)
+          ? input
+          : { fsPath: '', scheme: 'untitled' };
+
+    return {
+      uri,
+      languageId,
+      lineCount: lines.length,
+      lineAt: (line) => ({ text: lines[line] ?? '' }),
+      getText: () => text,
+    };
+  }
+
+  function createWebviewPanel(viewType, title, showOptions, options) {
+    const disposeEmitter = new MockEventEmitter();
+    const messageEmitter = new MockEventEmitter();
+    const panel = {
+      viewType,
+      title,
+      options,
+      showOptions,
+      visible: true,
+      _disposed: false,
+      webview: {
+        html: '',
+        options,
+        cspSource: 'vscode-resource:',
+        _messages: [],
+        asWebviewUri: (uri) => ({
+          fsPath: uri.fsPath,
+          path: uri.path,
+          scheme: 'vscode-webview-resource',
+          toString() {
+            return `vscode-webview-resource:${uri.fsPath}`;
+          },
+        }),
+        postMessage(message) {
+          this._messages.push(message);
+          return Promise.resolve(true);
+        },
+        onDidReceiveMessage: messageEmitter.event,
+        _fireMessage(message) {
+          messageEmitter.fire(message);
+        },
+      },
+      onDidDispose: disposeEmitter.event,
+      reveal(viewColumn, preserveFocus) {
+        this.visible = true;
+        this.showOptions = { viewColumn, preserveFocus };
+      },
+      dispose() {
+        if (this._disposed) return;
+        this._disposed = true;
+        this.visible = false;
+        disposeEmitter.fire();
+        disposeEmitter.dispose();
+        messageEmitter.dispose();
+      },
+    };
+    _createdWebviewPanels.push(panel);
+    return panel;
+  }
 
   /**
    * Mock ThemeColor -- stores ID for assertion.
@@ -124,6 +223,18 @@ try {
       Right: 2,
     },
 
+    ViewColumn: {
+      Active: -1,
+      Beside: 2,
+    },
+
+    ColorThemeKind: {
+      Light: 1,
+      Dark: 2,
+      HighContrast: 3,
+      HighContrastLight: 4,
+    },
+
     // TextEditorRevealType enum
     TextEditorRevealType: {
       Default: 0,
@@ -138,6 +249,11 @@ try {
       this.end = { line: endLine, character: endChar };
     },
 
+    Position: function Position(line, character) {
+      this.line = line;
+      this.character = character;
+    },
+
     // Selection constructor
     Selection: function Selection(anchor, active) {
       this.anchor = anchor;
@@ -150,18 +266,27 @@ try {
       this.command = command;
     },
 
-    // CodeActionKind enum stub
-    CodeActionKind: {
-      QuickFix: { value: 'quickfix' },
-      Refactor: { value: 'refactor' },
-      Source: { value: 'source' },
+    CodeAction: function CodeAction(title, kind) {
+      this.title = title;
+      this.kind = kind;
+      this.diagnostics = [];
+      this.edit = null;
     },
 
-    // Diagnostic classes
+    WorkspaceEdit: function WorkspaceEdit() {
+      this._edits = [];
+    },
+
     Diagnostic: function Diagnostic(range, message, severity) {
       this.range = range;
       this.message = message;
       this.severity = severity;
+      this.source = '';
+    },
+
+    CodeActionKind: {
+      QuickFix: 'quickfix',
+      Refactor: 'refactor',
     },
 
     DiagnosticSeverity: {
@@ -205,25 +330,37 @@ try {
           return Promise.resolve([]);
         },
       },
-      openTextDocument: (uri) => Promise.resolve({
-        lineCount: 0,
-        lineAt: () => ({ text: '' }),
-        uri: typeof uri === 'string' ? { fsPath: uri, scheme: 'file' } : uri,
-      }),
+      openTextDocument: (uri) => Promise.resolve(createMockTextDocument(uri)),
       // Expose mock file store for test setup
       _mockFiles,
+      createMemento,
     },
     window: {
+      _createdWebviewPanels,
+      _themeEmitter,
+      activeColorTheme: { kind: 1 },
+      activeTextEditor: undefined,
       createOutputChannel: () => ({
         appendLine: () => {},
+        show: () => {},
+        clear: () => {},
         dispose: () => {},
       }),
       showInformationMessage: () => Promise.resolve(undefined),
-      showTextDocument: (doc) => Promise.resolve({
-        revealRange: () => {},
-        selection: null,
-        document: doc,
-      }),
+      showWarningMessage: () => Promise.resolve(undefined),
+      showErrorMessage: () => Promise.resolve(undefined),
+      showInputBox: () => Promise.resolve(undefined),
+      showTextDocument: (doc) => {
+        const editor = {
+          revealRange: () => {},
+          selection: null,
+          document: doc,
+        };
+        mock.window.activeTextEditor = editor;
+        return Promise.resolve(editor);
+      },
+      createWebviewPanel,
+      onDidChangeActiveColorTheme: _themeEmitter.event,
       registerTreeDataProvider: () => ({ dispose: () => {} }),
       createStatusBarItem: (alignment, priority) => ({
         alignment,
@@ -240,11 +377,46 @@ try {
       }),
     },
     languages: {
+      createDiagnosticCollection: (name) => {
+        const diagnostics = new Map();
+        return {
+          name,
+          set: (uri, entries) => {
+            diagnostics.set(uri.fsPath, entries);
+          },
+          get: (uri) => diagnostics.get(uri.fsPath),
+          delete: (uri) => diagnostics.delete(uri.fsPath),
+          clear: () => diagnostics.clear(),
+          forEach: (callback) => diagnostics.forEach((value, key) => callback(value, key)),
+          dispose: function() {
+            diagnostics.clear();
+            this._disposed = true;
+          },
+          _disposed: false,
+        };
+      },
       registerCodeLensProvider: () => ({ dispose: () => {} }),
+      registerCodeActionsProvider: () => ({ dispose: () => {} }),
     },
     commands: {
-      registerCommand: () => ({ dispose: () => {} }),
-      executeCommand: () => Promise.resolve(undefined),
+      _registry: _registeredCommands,
+      _executed: _executedCommands,
+      registerCommand: (name, callback) => {
+        _registeredCommands.set(name, callback);
+        return {
+          dispose: () => {
+            _registeredCommands.delete(name);
+          },
+        };
+      },
+      executeCommand: (name, ...args) => {
+        _executedCommands.push({ name, args });
+        const callback = _registeredCommands.get(name);
+        if (callback) {
+          return Promise.resolve(callback(...args));
+        }
+        return Promise.resolve(undefined);
+      },
     },
     env: {
       clipboard: {
@@ -270,6 +442,10 @@ try {
       Directory: 2,
       SymbolicLink: 64,
     },
+  };
+
+  mock.WorkspaceEdit.prototype.insert = function insert(uri, position, text) {
+    this._edits.push({ uri, position, text });
   };
 
   // Inject into Node module cache so require('vscode') returns our mock

@@ -144,7 +144,7 @@ describe('HuntCodeLensProvider', () => {
     provider.dispose();
   });
 
-  it('returns template count lenses above ## Result Summary in query files', () => {
+  it('returns summary and viewer lenses above ## Result Summary in query files', () => {
     const queries = new Map([
       ['QRY-20260329-001', {
         status: 'loaded',
@@ -160,13 +160,16 @@ describe('HuntCodeLensProvider', () => {
           relatedReceipts: [],
           contentHash: 'abc',
           manifestId: 'm1',
+          title: 'Query Log: Test Authentication Events',
           intent: 'Check logins',
           queryText: 'SELECT *',
           resultSummary: 'events=100, templates=5, entities=3',
           templates: [],
+          templateDetails: [],
           entityCount: 3,
           eventCount: 100,
           templateCount: 5,
+          timeWindow: null,
         },
       }],
     ]);
@@ -193,10 +196,12 @@ describe('HuntCodeLensProvider', () => {
 
     const lenses = provider.provideCodeLenses(doc, nullToken);
 
-    assert.equal(lenses.length, 1, 'Should have 1 CodeLens on Result Summary');
+    assert.equal(lenses.length, 2, 'Should have 2 CodeLens on Result Summary');
     assert.equal(lenses[0].range.start.line, 7, 'Lens should be on line 7 (## Result Summary)');
     assert.ok(lenses[0].command.title.includes('5 templates'), 'Title should include template count');
     assert.ok(lenses[0].command.title.includes('100 events'), 'Title should include event count');
+    assert.equal(lenses[1].command.command, 'thrunt-god.openTemplateViewer');
+    assert.deepEqual(lenses[1].command.arguments, ['QRY-20260329-001']);
 
     provider.dispose();
   });

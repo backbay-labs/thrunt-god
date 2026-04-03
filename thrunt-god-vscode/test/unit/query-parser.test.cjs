@@ -132,6 +132,31 @@ describe('parseQuery', () => {
     assert.equal(result.data.entityCount, 1);
   });
 
+  it('extracts query title, time window, and template detail blocks from QRY-001', () => {
+    const raw = fixture('QUERIES/QRY-20260329-001.md');
+    const result = ext.parseQuery(raw);
+    assert.equal(result.status, 'loaded');
+
+    assert.equal(
+      result.data.title,
+      'Query Log: Okta Authentication Events During Password Spray Window'
+    );
+    assert.deepEqual(result.data.timeWindow, {
+      start: '2026-03-29T14:00:00Z',
+      end: '2026-03-29T14:15:00Z',
+    });
+
+    assert.equal(result.data.templateDetails.length, 3);
+    assert.equal(result.data.templateDetails[0].templateId, 'T1');
+    assert.ok(result.data.templateDetails[0].summary.includes('failed authentication attempts'));
+    assert.equal(
+      result.data.templateDetails[0].sampleEventText,
+      '1,189 failed authentication attempts across 15 unique accounts'
+    );
+    assert.equal(result.data.templateDetails[0].sampleEventId, null);
+    assert.deepEqual(result.data.templateDetails[0].eventIds, []);
+  });
+
   it('returns error ParseResult on empty string', () => {
     const result = ext.parseQuery('');
     assert.equal(result.status, 'error');

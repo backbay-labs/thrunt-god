@@ -93,6 +93,14 @@ export class HuntCodeLensProvider
               tooltip: 'Drain template summary for this query',
             })
           );
+          lenses.push(
+            new vscode.CodeLens(range, {
+              title: '$(graph) Open Template Viewer',
+              command: 'thrunt-god.openTemplateViewer',
+              arguments: [query.data.queryId],
+              tooltip: 'Open the Drain Template Viewer for this query',
+            })
+          );
         }
       }
     }

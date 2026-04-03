@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Investigative Surfaces
 status: in-progress
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-04-03T00:37:24.000Z"
-last_activity: 2026-04-03 -- Completed 15-01 Query Analysis data pipeline
+stopped_at: Completed 15-02-PLAN.md
+last_updated: "2026-04-03T00:46:45.000Z"
+last_activity: 2026-04-03 -- Completed 15-02 Query Analysis webview rendering
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 12
-  completed_plans: 10
-  percent: 83
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -26,16 +26,16 @@ See: .planning/PROJECT.md (updated 2026-04-02)
 ## Current Position
 
 Phase: 15 of 16 (Query Analysis Upgrades)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: In Progress
-Last activity: 2026-04-03 -- Completed 15-01 Query Analysis data pipeline
+Last activity: 2026-04-03 -- Completed 15-02 Query Analysis webview rendering
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33 (v1.0: 12, v2.0: 12, v3.0: 9)
+- Total plans completed: 34 (v1.0: 12, v2.0: 12, v3.0: 10)
 
 **By Phase:**
 
@@ -52,6 +52,7 @@ Progress: [████████░░] 83%
 | Phase 14 P02 | 5min | 2 tasks | 3 files |
 | Phase 14 P03 | 2min | 2 tasks | 2 files |
 | Phase 15 P01 | 6min | 2 tasks | 7 files |
+| Phase 15 P02 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,8 @@ Recent decisions affecting current work:
 - [Phase 15-01]: Inline sort logic in deriveQueryAnalysis (prototype.call() testing cannot access private methods)
 - [Phase 15-01]: QueryAnalysisPanel defaults selectedQueryIds to first 2 queries from store
 - [Phase 15-01]: Inspector mode opens via initialReceiptId parameter on createOrShow
+- [Phase 15-02]: Added --hunt-panel-bg, --hunt-surface-raised, --hunt-text-on-accent token aliases for query analysis CSS
+- [Phase 15-02]: Heatmap opacity minimum 0.15 for non-zero cells; count bar width relative to max(queryA, queryB) event counts
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ No blocking issues.
 
 ## Session Continuity
 
-Last session: 2026-04-03T00:37:24.000Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-04-03T00:46:45.000Z
+Stopped at: Completed 15-02-PLAN.md
 Resume file: None
