@@ -4,8 +4,26 @@ import type {
   ComparisonData,
   ComparisonTemplate,
   HeatmapData,
+  ReceiptInspectorData,
+  ReceiptInspectorItem,
 } from '../../shared/query-analysis';
 import { Panel, GhostButton } from '../shared/components';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function scoreColor(score: number): string {
+  if (score <= 1) return 'low';
+  if (score <= 3) return 'medium';
+  return 'high';
+}
+
+function scoreLevelLabel(score: number): string {
+  if (score <= 1) return 'Low';
+  if (score <= 3) return 'Medium';
+  return 'High';
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -276,6 +294,194 @@ function HeatmapView({ data }: { data: HeatmapData }) {
 }
 
 // ---------------------------------------------------------------------------
+// ReceiptDetail
+// ---------------------------------------------------------------------------
+
+function ReceiptDetail(props: { receipt: ReceiptInspectorItem }) {
+  const r = props.receipt;
+
+  return (
+    <div class="hunt-qa-receipt-detail">
+      {/* Header */}
+      <div class="hunt-qa-receipt-detail__header">
+        <h3>{r.receiptId}</h3>
+        <span class={`hunt-qa-verdict-badge hunt-qa-verdict-badge--${r.claimStatus}`}>
+          {r.claimStatus}
+        </span>
+        <span class="hunt-qa-receipt-detail__confidence">
+          Confidence: {r.confidence}
+        </span>
+      </div>
+
+      {/* Claim */}
+      <div class="hunt-qa-receipt-detail__claim">
+        <span class="hunt-qa-label">Claim</span>
+        <p>{r.claim}</p>
+      </div>
+
+      {/* Anomaly Framing Section */}
+      {r.hasAnomalyFrame ? (
+        <>
+          {/* Score Card -- large 0-6 number + color badge + category */}
+          <div class="hunt-qa-score-card">
+            <div class="hunt-qa-score-card__value">
+              <span class={`hunt-qa-score-number hunt-qa-score-number--${scoreColor(r.deviationScore ?? 0)}`}>
+                {r.deviationScore !== null ? r.deviationScore.toFixed(1) : '?'}
+              </span>
+              <span class={`hunt-qa-score-badge hunt-qa-score-badge--${scoreColor(r.deviationScore ?? 0)}`}>
+                {scoreLevelLabel(r.deviationScore ?? 0)}
+              </span>
+            </div>
+            <span class="hunt-qa-score-card__category">
+              {r.deviationCategory ?? 'Unknown'}
+            </span>
+          </div>
+
+          {/* Factor Table -- category, base score, modifier contributions */}
+          <div class="hunt-qa-factor-table-wrapper">
+            <span class="hunt-qa-label">Score Breakdown</span>
+            <table class="hunt-qa-factor-table">
+              <thead>
+                <tr>
+                  <th>Factor</th>
+                  <th>Value</th>
+                  <th>Contribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Base score ({r.deviationCategory ?? '?'})</td>
+                  <td>--</td>
+                  <td class="hunt-qa-factor-table__num">
+                    {r.baseScore !== null ? r.baseScore.toFixed(1) : '?'}
+                  </td>
+                </tr>
+                {r.modifiers.map((mod) => (
+                  <tr key={mod.factor}>
+                    <td>{mod.factor}</td>
+                    <td>{mod.value}</td>
+                    <td class="hunt-qa-factor-table__num">
+                      {mod.contribution >= 0 ? '+' : ''}{mod.contribution.toFixed(1)}
+                    </td>
+                  </tr>
+                ))}
+                <tr class="hunt-qa-factor-table__total">
+                  <td colSpan={2}>Total</td>
+                  <td class="hunt-qa-factor-table__num">
+                    {r.deviationScore !== null ? r.deviationScore.toFixed(1) : '?'}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Baseline / Prediction / Observation */}
+          <div class="hunt-qa-framing-section">
+            <div class="hunt-qa-framing-block">
+              <span class="hunt-qa-label">Baseline</span>
+              <p>{r.baseline ?? 'Not available'}</p>
+            </div>
+            <div class="hunt-qa-framing-block">
+              <span class="hunt-qa-label">Prediction</span>
+              <p>{r.prediction ?? 'Not available'}</p>
+            </div>
+            <div class="hunt-qa-framing-block">
+              <span class="hunt-qa-label">Observation</span>
+              <p>{r.observation ?? 'Not available'}</p>
+            </div>
+          </div>
+
+          {/* ATT&CK Mapping */}
+          {r.attackMapping.length > 0 && (
+            <div class="hunt-qa-attack-mapping">
+              <span class="hunt-qa-label">ATT&CK Techniques</span>
+              <div class="hunt-qa-attack-tags">
+                {r.attackMapping.map((technique) => (
+                  <span key={technique} class="hunt-qa-attack-tag">{technique}</span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div class="hunt-qa-no-framing">
+          <p>No anomaly framing available for this receipt.</p>
+          <p class="hunt-qa-text-muted">
+            Anomaly framing is generated when the receipt includes a Deviation Score section.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ReceiptInspectorView
+// ---------------------------------------------------------------------------
+
+function ReceiptInspectorView(props: {
+  data: ReceiptInspectorData;
+  onReceiptSelect: (receiptId: string) => void;
+  onClose: () => void;
+}) {
+  const selected = props.data.receipts.find(
+    (r) => r.receiptId === props.data.selectedReceiptId
+  ) ?? props.data.receipts[0] ?? null;
+
+  return (
+    <section class="hunt-qa-inspector">
+      <div class="hunt-qa-inspector-header">
+        <h2>Receipt QA Inspector</h2>
+        <button class="hunt-ghost-button" onClick={props.onClose} type="button">
+          Close Inspector
+        </button>
+      </div>
+      <div class="hunt-qa-inspector-split">
+        {/* Left: receipt list */}
+        <div class="hunt-qa-inspector-list" role="list" aria-label="Receipts">
+          {props.data.receipts.map((receipt) => (
+            <button
+              key={receipt.receiptId}
+              class={`hunt-qa-inspector-item ${
+                receipt.receiptId === (selected?.receiptId ?? '') ? 'hunt-qa-inspector-item--selected' : ''
+              }`}
+              role="listitem"
+              onClick={() => props.onReceiptSelect(receipt.receiptId)}
+              type="button"
+            >
+              <span class="hunt-qa-inspector-item__id">{receipt.receiptId}</span>
+              <span class={`hunt-qa-verdict-badge hunt-qa-verdict-badge--${receipt.claimStatus}`}>
+                {receipt.claimStatus}
+              </span>
+              {receipt.hasAnomalyFrame && receipt.deviationScore !== null && (
+                <span class="hunt-qa-inspector-item__score">
+                  {receipt.deviationScore.toFixed(1)}
+                </span>
+              )}
+              <span class="hunt-qa-inspector-item__claim">
+                {receipt.claim.length > 60 ? receipt.claim.slice(0, 60) + '...' : receipt.claim}
+              </span>
+            </button>
+          ))}
+          {props.data.receipts.length === 0 && (
+            <p class="hunt-qa-inspector-empty">No receipts available.</p>
+          )}
+        </div>
+
+        {/* Right: detail panel */}
+        <div class="hunt-qa-inspector-detail">
+          {selected ? (
+            <ReceiptDetail receipt={selected} />
+          ) : (
+            <p class="hunt-qa-inspector-empty">Select a receipt to inspect.</p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // App (main export)
 // ---------------------------------------------------------------------------
 
@@ -309,15 +515,25 @@ export function App(props: AppProps) {
 
       <SortControls viewModel={viewModel} onSortChange={props.onSortChange} />
 
-      {viewModel.comparison && <ComparisonView data={viewModel.comparison} />}
+      {viewModel.receiptInspector ? (
+        <ReceiptInspectorView
+          data={viewModel.receiptInspector}
+          onReceiptSelect={props.onReceiptSelect}
+          onClose={props.onInspectorClose}
+        />
+      ) : (
+        <>
+          {viewModel.comparison && <ComparisonView data={viewModel.comparison} />}
 
-      {viewModel.heatmap && <HeatmapView data={viewModel.heatmap} />}
+          {viewModel.heatmap && <HeatmapView data={viewModel.heatmap} />}
 
-      <div style={{ marginTop: '24px' }}>
-        <GhostButton onClick={() => props.onInspectorOpen()}>
-          Open Receipt QA Inspector
-        </GhostButton>
-      </div>
+          <div style={{ marginTop: '24px' }}>
+            <GhostButton onClick={() => props.onInspectorOpen()}>
+              Open Receipt QA Inspector
+            </GhostButton>
+          </div>
+        </>
+      )}
     </main>
   );
 }
