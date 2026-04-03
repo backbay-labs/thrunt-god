@@ -258,8 +258,8 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 12/12 | Complete | 2026-04-01 |
 | 7-11 | v2.0 | 12/12 | Complete | 2026-04-02 |
-| 12. Design System & Webview Infrastructure | 3/3 | Complete    | 2026-04-02 | - |
-| 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
+| 12. Design System & Webview Infrastructure | v3.0 | 3/3 | Complete | 2026-04-02 |
+| 13. Hunt Overview Dashboard | v3.0 | 3/3 | Complete | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 3/3 | Complete | 2026-04-02 |
 | 15. Query Analysis Upgrades | v3.0 | 2/3 | In progress | - |
 | 16. Cross-Surface Navigation | v3.0 | 0/2 | Not started | - |
