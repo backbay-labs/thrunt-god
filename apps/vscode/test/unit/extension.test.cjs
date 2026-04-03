@@ -48,3 +48,50 @@ describe('extension exports', () => {
     assert.ok(exportedKeys.includes('extractMarkdownSections'));
   });
 });
+
+describe('CLI parsing helpers', () => {
+  it('preserves literal Windows path backslashes', () => {
+    const ext = require(BUNDLE_PATH);
+    assert.deepEqual(
+      ext.parseCliInput('runtime execute --workspace C:\\Logs\\hunt'),
+      ['runtime', 'execute', '--workspace', 'C:\\Logs\\hunt']
+    );
+  });
+
+  it('still supports escaped delimiters in unquoted input', () => {
+    const ext = require(BUNDLE_PATH);
+    assert.deepEqual(
+      ext.parseCliInput('runtime execute --label incident\\ response --note \\\"quoted\\\"'),
+      ['runtime', 'execute', '--label', 'incident response', '--note', '"quoted"']
+    );
+  });
+
+  it('rejects phase templates that require an unset packId', () => {
+    const ext = require(BUNDLE_PATH);
+    assert.throws(
+      () => ext.resolvePhaseCommandTemplate('runtime execute --pack {packId} --phase {phase}', {
+        phase: '4',
+        phaseName: 'Collect Evidence',
+        phaseNameSlug: 'collect-evidence',
+        packId: '',
+      }),
+      /defaultPackId/
+    );
+  });
+
+  it('allows phase templates that do not use packId', () => {
+    const ext = require(BUNDLE_PATH);
+    assert.deepEqual(
+      ext.resolvePhaseCommandTemplate('runtime execute --phase {phase}', {
+        phase: '4',
+        phaseName: 'Collect Evidence',
+        phaseNameSlug: 'collect-evidence',
+        packId: '',
+      }),
+      {
+        commandString: 'runtime execute --phase 4',
+        args: ['runtime', 'execute', '--phase', '4'],
+      }
+    );
+  });
+});

@@ -23,3 +23,4 @@ docs/**
 *.map
 **/*.ts
 !dist/**
+dist/**/*.map

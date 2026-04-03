@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild';
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
+import { cpSync, existsSync, mkdirSync, rmSync, statSync } from 'fs';
 import path from 'path';
 
 const isWatch = process.argv.includes('--watch');
@@ -26,7 +26,7 @@ const repoRoot = resolveRepoRoot(packageRoot);
 /** Shared build options */
 const shared = {
   bundle: true,
-  sourcemap: true,
+  sourcemap: !isProduction,
   minify: isProduction,
   logLevel: 'info',
 };
@@ -77,8 +77,8 @@ function formatSize(bytes) {
  */
 function reportSizes(label, outfile) {
   try {
-    const stat = readFileSync(outfile);
-    console.log(`  ${label}: ${outfile} (${formatSize(stat.length)})`);
+    const stat = statSync(outfile);
+    console.log(`  ${label}: ${outfile} (${formatSize(stat.size)})`);
   } catch {
     // File may not exist yet during watch initialization
   }
@@ -141,6 +141,7 @@ function syncBundledThruntRuntime() {
 
 async function build() {
   const start = Date.now();
+  const distRoot = path.join(packageRoot, 'dist');
 
   if (isWatch) {
     // Use esbuild context API for incremental rebuilds
@@ -154,6 +155,8 @@ async function build() {
 
     console.log('[watch] Watching for changes...');
   } else {
+    rmSync(distRoot, { recursive: true, force: true });
+
     // Single build
     await Promise.all([
       esbuild.build(extensionConfig),

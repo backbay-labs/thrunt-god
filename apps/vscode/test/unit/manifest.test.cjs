@@ -7,6 +7,8 @@ const path = require('node:path');
 
 const manifestPath = path.join(__dirname, '..', '..', 'package.json');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+const vscodeIgnorePath = path.join(__dirname, '..', '..', '.vscodeignore');
+const vscodeIgnoreLines = fs.readFileSync(vscodeIgnorePath, 'utf8').split(/\r?\n/);
 
 function findCommand(commandId) {
   return manifest.contributes.commands.find((entry) => entry.command === commandId);
@@ -65,5 +67,17 @@ describe('extension manifest', () => {
     assert.match(titleCli.when, /view == thruntGod\.huntTree/);
     assert.match(missionState.when, /viewItem == mission/);
     assert.match(phasesHuntmap.when, /viewItem == phases-group/);
+  });
+
+  it('keeps built assets while excluding dist sourcemaps from packaged VSIX output', () => {
+    const keepDistIndex = vscodeIgnoreLines.indexOf('!dist/**');
+    const excludeSourcemapIndex = vscodeIgnoreLines.indexOf('dist/**/*.map');
+
+    assert.notEqual(keepDistIndex, -1, 'expected dist re-include rule');
+    assert.notEqual(excludeSourcemapIndex, -1, 'expected dist sourcemap exclusion');
+    assert.ok(
+      excludeSourcemapIndex > keepDistIndex,
+      'dist sourcemap exclusion must come after the dist re-include rule'
+    );
   });
 });

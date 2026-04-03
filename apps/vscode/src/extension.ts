@@ -253,21 +253,36 @@ function fillPhaseCommandTemplate(
 
 const execFileAsync = promisify(execFile);
 
+function canEscapeCliCharacter(
+  next: string | undefined,
+  quote: '"' | '\'' | null
+): boolean {
+  if (!next || quote === '\'') {
+    return false;
+  }
+
+  if (quote === '"') {
+    return next === '"' || next === '\\';
+  }
+
+  return /\s/.test(next) || next === '"' || next === '\'' || next === '\\';
+}
+
 function parseCliInput(input: string): string[] {
   const tokens: string[] = [];
   let current = '';
   let quote: '"' | '\'' | null = null;
-  let escaping = false;
-
-  for (const char of input) {
-    if (escaping) {
-      current += char;
-      escaping = false;
-      continue;
-    }
+  for (let index = 0; index < input.length; index += 1) {
+    const char = input[index];
 
     if (char === '\\') {
-      escaping = true;
+      const next = input[index + 1];
+      if (canEscapeCliCharacter(next, quote)) {
+        current += next;
+        index += 1;
+      } else {
+        current += '\\';
+      }
       continue;
     }
 
@@ -296,15 +311,42 @@ function parseCliInput(input: string): string[] {
     current += char;
   }
 
-  if (escaping) {
-    current += '\\';
-  }
-
   if (current.length > 0) {
     tokens.push(current);
   }
 
   return tokens;
+}
+
+function templateUsesPlaceholder(template: string, key: string): boolean {
+  return new RegExp(`\\{${key}\\}`, 'g').test(template);
+}
+
+function resolvePhaseCommandTemplate(
+  template: string,
+  values: Record<string, string>
+): { commandString: string; args: string[] } {
+  const packId = values.packId?.trim() ?? '';
+  if (templateUsesPlaceholder(template, 'packId') && packId.length === 0) {
+    throw new Error(
+      'Run Hunt Phase requires `thruntGod.cli.defaultPackId` when the phase command template uses {packId}.'
+    );
+  }
+
+  const commandString = fillPhaseCommandTemplate(template, {
+    ...values,
+    packId,
+  }).trim();
+  const args = parseCliInput(commandString);
+
+  if (args.length === 0) {
+    throw new Error('Run Hunt Phase command template resolved to an empty command.');
+  }
+
+  return {
+    commandString,
+    args,
+  };
 }
 
 function formatCliArg(arg: string): string {
@@ -1354,23 +1396,26 @@ export function activate(context: vscode.ExtensionContext): void {
           'cli.phaseCommandTemplate',
           DEFAULT_PHASE_COMMAND_TEMPLATE
         );
-        const packId = cliConfig.get<string>('cli.defaultPackId', '');
-        const commandString = fillPhaseCommandTemplate(commandTemplate, {
-          phase: String(selectedPhase.number),
-          phaseName: selectedPhase.name,
-          phaseNameSlug: slugifyPhaseName(selectedPhase.name),
-          packId,
-        }).trim();
+        const packId = cliConfig.get<string>('cli.defaultPackId', '').trim();
 
-        const args = parseCliInput(commandString);
-        if (args.length === 0) {
-          await vscode.window.showErrorMessage('Run Hunt Phase command template resolved to an empty command.');
+        let resolvedCommand: { commandString: string; args: string[] };
+        try {
+          resolvedCommand = resolvePhaseCommandTemplate(commandTemplate, {
+            phase: String(selectedPhase.number),
+            phaseName: selectedPhase.name,
+            phaseNameSlug: slugifyPhaseName(selectedPhase.name),
+            packId,
+          });
+        } catch (error) {
+          await vscode.window.showErrorMessage(
+            error instanceof Error ? error.message : 'Failed to resolve the hunt phase command.'
+          );
           return undefined;
         }
 
-        await context.workspaceState.update(LAST_PHASE_COMMAND_KEY, commandString);
+        await context.workspaceState.update(LAST_PHASE_COMMAND_KEY, resolvedCommand.commandString);
         const result = await runStreamingCliCommand({
-          command: args,
+          command: resolvedCommand.args,
           cwd: workspaceRoot,
           huntRoot,
           phase: selectedPhase.number,
@@ -1625,6 +1670,7 @@ export function deactivate(): void {
 
 export { parseArtifact, parseMission, parseHypotheses, parseHuntMap, parseState, parseQuery, parseReceipt, parseEvidenceReview, parsePhaseSummary } from './parsers/index';
 export { extractFrontmatter, extractBody, extractMarkdownSections } from './parsers/base';
+export { parseCliInput, resolvePhaseCommandTemplate };
 export { HuntDataStore } from './store';
 export { ArtifactWatcher, resolveArtifactType } from './watcher';
 export { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
