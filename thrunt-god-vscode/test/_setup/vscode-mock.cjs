@@ -150,6 +150,27 @@ try {
       this.command = command;
     },
 
+    // CodeActionKind enum stub
+    CodeActionKind: {
+      QuickFix: { value: 'quickfix' },
+      Refactor: { value: 'refactor' },
+      Source: { value: 'source' },
+    },
+
+    // Diagnostic classes
+    Diagnostic: function Diagnostic(range, message, severity) {
+      this.range = range;
+      this.message = message;
+      this.severity = severity;
+    },
+
+    DiagnosticSeverity: {
+      Error: 0,
+      Warning: 1,
+      Information: 2,
+      Hint: 3,
+    },
+
     workspace: {
       workspaceFolders: undefined,
       createFileSystemWatcher: (_pattern, _ignoreCreate, _ignoreChange, _ignoreDelete) => {

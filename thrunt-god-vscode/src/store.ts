@@ -18,6 +18,17 @@ import type {
   EvidenceBoardEdge,
   EvidenceBoardMatrixCell,
 } from '../shared/evidence-board';
+import type {
+  QueryAnalysisViewModel,
+  QueryAnalysisQuery,
+  ComparisonData,
+  ComparisonTemplate,
+  HeatmapData,
+  HeatmapRow,
+  HeatmapCell,
+  ReceiptInspectorData,
+  ReceiptInspectorItem,
+} from '../shared/query-analysis';
 import { parseArtifact } from './parsers/index';
 import { extractFrontmatter } from './parsers/base';
 import { resolveArtifactType } from './watcher';
@@ -537,6 +548,234 @@ export class HuntDataStore implements vscode.Disposable {
       hypothesisIds,
       receiptIds,
       blindSpots,
+    };
+  }
+
+  /**
+   * Derive a complete QueryAnalysisViewModel from current store state.
+   * Builds comparison (2 queries), heatmap (3+ queries), sort controls,
+   * and receipt inspector data.
+   */
+  deriveQueryAnalysis(
+    selectedQueryIds: string[],
+    sortBy: string,
+    inspectorReceiptId: string | null
+  ): QueryAnalysisViewModel {
+    // 1. Build queries array from store
+    const allQueries = this.getQueries();
+    const queries: QueryAnalysisQuery[] = [];
+    for (const [, result] of allQueries) {
+      if (result.status !== 'loaded') continue;
+      const q = result.data;
+      queries.push({
+        queryId: q.queryId,
+        title: q.title ?? q.queryId,
+        templates: q.templates.map((t) => ({
+          templateId: t.templateId,
+          template: t.template,
+          count: t.count,
+          percentage: t.percentage,
+        })),
+        eventCount: q.eventCount,
+      });
+    }
+
+    // Resolve selected query data
+    const selectedQueries = selectedQueryIds
+      .map((id) => {
+        const result = allQueries.get(id);
+        return result?.status === 'loaded' ? result.data : undefined;
+      })
+      .filter((q): q is Query => q !== undefined);
+
+    // 2. Build comparison for exactly 2 selected queries
+    let comparison: ComparisonData | null = null;
+    if (selectedQueries.length === 2) {
+      const [qA, qB] = selectedQueries;
+      const templateMapA = new Map(qA.templates.map((t) => [t.templateId, t]));
+      const templateMapB = new Map(qB.templates.map((t) => [t.templateId, t]));
+      const allTemplateIds = new Set([...templateMapA.keys(), ...templateMapB.keys()]);
+
+      const comparisonTemplates: ComparisonTemplate[] = [];
+      for (const tid of allTemplateIds) {
+        const tA = templateMapA.get(tid);
+        const tB = templateMapB.get(tid);
+        let presence: 'both' | 'a-only' | 'b-only';
+        if (tA && tB) {
+          presence = 'both';
+        } else if (tA) {
+          presence = 'a-only';
+        } else {
+          presence = 'b-only';
+        }
+        comparisonTemplates.push({
+          templateId: tid,
+          template: (tA ?? tB)!.template,
+          countA: tA?.count ?? 0,
+          percentageA: tA?.percentage ?? 0,
+          countB: tB?.count ?? 0,
+          percentageB: tB?.percentage ?? 0,
+          presence,
+        });
+      }
+
+      // Sort comparison templates inline (avoid private method call for prototype.call() testing)
+      if (sortBy === 'count') {
+        comparisonTemplates.sort((a, b) => (b.countA + b.countB) - (a.countA + a.countB));
+      } else if (sortBy === 'novelty') {
+        comparisonTemplates.sort((a, b) => {
+          const aPresence = a.presence === 'both' ? 2 : 1;
+          const bPresence = b.presence === 'both' ? 2 : 1;
+          if (aPresence !== bPresence) return aPresence - bPresence;
+          return (b.countA + b.countB) - (a.countA + a.countB);
+        });
+      } else {
+        comparisonTemplates.sort((a, b) => (b.countA + b.countB) - (a.countA + a.countB));
+      }
+
+      comparison = {
+        queryA: { queryId: qA.queryId, title: qA.title ?? qA.queryId, eventCount: qA.eventCount },
+        queryB: { queryId: qB.queryId, title: qB.title ?? qB.queryId, eventCount: qB.eventCount },
+        templates: comparisonTemplates,
+      };
+    }
+
+    // 3. Build heatmap for 3+ selected queries
+    let heatmap: HeatmapData | null = null;
+    if (selectedQueries.length >= 3) {
+      const queryIds = selectedQueries.map((q) => q.queryId);
+      const queryTitles = selectedQueries.map((q) => q.title ?? q.queryId);
+
+      // Collect all unique templates across selected queries
+      const allTemplateIds = new Set<string>();
+      const templateTextMap = new Map<string, string>();
+      for (const q of selectedQueries) {
+        for (const t of q.templates) {
+          allTemplateIds.add(t.templateId);
+          if (!templateTextMap.has(t.templateId)) {
+            templateTextMap.set(t.templateId, t.template);
+          }
+        }
+      }
+
+      // Build template lookup per query
+      const queryTemplateMaps = selectedQueries.map(
+        (q) => new Map(q.templates.map((t) => [t.templateId, t]))
+      );
+
+      const rows: HeatmapRow[] = [];
+      for (const tid of allTemplateIds) {
+        const cells: HeatmapCell[] = selectedQueries.map((q, idx) => ({
+          queryId: q.queryId,
+          count: queryTemplateMaps[idx].get(tid)?.count ?? 0,
+        }));
+        const totalCount = cells.reduce((sum, c) => sum + c.count, 0);
+        rows.push({
+          templateId: tid,
+          template: templateTextMap.get(tid) ?? tid,
+          cells,
+          totalCount,
+        });
+      }
+
+      // Sort heatmap rows
+      if (sortBy === 'count') {
+        rows.sort((a, b) => b.totalCount - a.totalCount);
+      } else if (sortBy === 'novelty') {
+        // Templates appearing in fewer queries first
+        rows.sort((a, b) => {
+          const aNonZero = a.cells.filter((c) => c.count > 0).length;
+          const bNonZero = b.cells.filter((c) => c.count > 0).length;
+          if (aNonZero !== bNonZero) return aNonZero - bNonZero;
+          return b.totalCount - a.totalCount;
+        });
+      } else {
+        // Default sort by count for other modes
+        rows.sort((a, b) => b.totalCount - a.totalCount);
+      }
+
+      heatmap = { queryIds, queryTitles, rows };
+    }
+
+    // 4. Build availableSorts
+    const allReceipts = this.getReceipts();
+    let hasAnomalyFrame = false;
+    for (const [, r] of allReceipts) {
+      if (r.status === 'loaded' && r.data.anomalyFrame) {
+        hasAnomalyFrame = true;
+        break;
+      }
+    }
+    const hasMultipleQueries = selectedQueries.length >= 2;
+    const hasTimestamps = selectedQueries.some(
+      (q) => q.executedAt && q.executedAt.length > 0
+    );
+
+    const availableSorts = [
+      { key: 'count', available: true, tooltip: 'Sort by template event count' },
+      {
+        key: 'deviation',
+        available: hasAnomalyFrame,
+        tooltip: hasAnomalyFrame
+          ? 'Sort by deviation score'
+          : 'Requires receipts with anomaly framing',
+      },
+      {
+        key: 'novelty',
+        available: hasMultipleQueries,
+        tooltip: hasMultipleQueries
+          ? 'Sort by template uniqueness'
+          : 'Requires 2+ selected queries',
+      },
+      {
+        key: 'recency',
+        available: hasTimestamps,
+        tooltip: hasTimestamps
+          ? 'Sort by query execution time'
+          : 'Requires timestamp data',
+      },
+    ];
+
+    // 5. Build receipt inspector if inspectorReceiptId is set
+    let receiptInspector: ReceiptInspectorData | null = null;
+    if (inspectorReceiptId !== null) {
+      const receipts: ReceiptInspectorItem[] = [];
+      for (const [, result] of allReceipts) {
+        if (result.status !== 'loaded') continue;
+        const r = result.data;
+        const af = r.anomalyFrame;
+        receipts.push({
+          receiptId: r.receiptId,
+          claim: r.claim,
+          claimStatus: r.claimStatus,
+          confidence: r.confidence,
+          relatedQueries: r.relatedQueries ?? [],
+          hasAnomalyFrame: af !== null,
+          deviationScore: af?.deviationScore.totalScore ?? null,
+          deviationCategory: af?.deviationScore.category ?? null,
+          baseScore: af?.deviationScore.baseScore ?? null,
+          modifiers: af?.deviationScore.modifiers ?? [],
+          baseline: af?.baseline ?? null,
+          prediction: af?.prediction ?? null,
+          observation: af?.observation ?? null,
+          attackMapping: af?.attackMapping ?? [],
+        });
+      }
+      receiptInspector = {
+        receipts,
+        selectedReceiptId: inspectorReceiptId,
+      };
+    }
+
+    return {
+      queries,
+      selectedQueryIds,
+      comparisonMode: 'side-by-side',
+      sortBy: (sortBy as QueryAnalysisViewModel['sortBy']) ?? 'count',
+      comparison,
+      heatmap,
+      receiptInspector,
+      availableSorts,
     };
   }
 
