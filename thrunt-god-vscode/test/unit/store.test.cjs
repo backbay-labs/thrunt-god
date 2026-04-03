@@ -85,49 +85,60 @@ function populateMockFiles(huntRoot) {
 // ---------------------------------------------------------------------------
 describe('resolveArtifactType', () => {
   it('resolves MISSION.md to mission type', () => {
-    const result = ext.resolveArtifactType('/hunt/MISSION.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/MISSION.md');
     assert.deepEqual(result, { type: 'mission', id: 'MISSION' });
   });
 
   it('resolves HYPOTHESES.md to hypotheses type', () => {
-    const result = ext.resolveArtifactType('/hunt/HYPOTHESES.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/HYPOTHESES.md');
     assert.deepEqual(result, { type: 'hypotheses', id: 'HYPOTHESES' });
   });
 
   it('resolves HUNTMAP.md to huntmap type', () => {
-    const result = ext.resolveArtifactType('/hunt/HUNTMAP.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/HUNTMAP.md');
     assert.deepEqual(result, { type: 'huntmap', id: 'HUNTMAP' });
   });
 
   it('resolves STATE.md to state type', () => {
-    const result = ext.resolveArtifactType('/hunt/STATE.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/STATE.md');
     assert.deepEqual(result, { type: 'state', id: 'STATE' });
   });
 
   it('resolves EVIDENCE_REVIEW.md to evidenceReview type', () => {
-    const result = ext.resolveArtifactType('/hunt/EVIDENCE_REVIEW.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/EVIDENCE_REVIEW.md');
     assert.deepEqual(result, { type: 'evidenceReview', id: 'EVIDENCE_REVIEW' });
   });
 
   it('resolves FINDINGS.md to phaseSummary type', () => {
-    const result = ext.resolveArtifactType('/hunt/FINDINGS.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/FINDINGS.md');
     assert.deepEqual(result, { type: 'phaseSummary', id: 'FINDINGS' });
   });
 
   it('resolves QUERIES/QRY-*.md to query type with filename as id', () => {
-    const result = ext.resolveArtifactType('/hunt/QUERIES/QRY-20260329-001.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/QUERIES/QRY-20260329-001.md');
     assert.deepEqual(result, { type: 'query', id: 'QRY-20260329-001' });
   });
 
   it('resolves RECEIPTS/RCT-*.md to receipt type with filename as id', () => {
-    const result = ext.resolveArtifactType('/hunt/RECEIPTS/RCT-20260329-001.md');
+    const result = ext.resolveArtifactType('/workspace/.planning/RECEIPTS/RCT-20260329-001.md');
     assert.deepEqual(result, { type: 'receipt', id: 'RCT-20260329-001' });
   });
 
   it('returns null for unknown files', () => {
-    assert.equal(ext.resolveArtifactType('/hunt/SUCCESS_CRITERIA.md'), null);
-    assert.equal(ext.resolveArtifactType('/hunt/environment/ENVIRONMENT.md'), null);
-    assert.equal(ext.resolveArtifactType('/hunt/README.md'), null);
+    assert.equal(ext.resolveArtifactType('/workspace/.planning/SUCCESS_CRITERIA.md'), null);
+    assert.equal(ext.resolveArtifactType('/workspace/.planning/environment/ENVIRONMENT.md'), null);
+    assert.equal(ext.resolveArtifactType('/workspace/.planning/README.md'), null);
+  });
+
+  it('returns null for archived nested singleton copies under the hunt root', () => {
+    assert.equal(
+      ext.resolveArtifactType('/workspace/.planning/milestones/v3.0/MISSION.md'),
+      null
+    );
+    assert.equal(
+      ext.resolveArtifactType('/workspace/.planning/archive/STATE.md'),
+      null
+    );
   });
 });
 

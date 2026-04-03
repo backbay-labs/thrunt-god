@@ -1,18 +1,60 @@
 import * as vscode from 'vscode';
+import { HUNT_DIRS } from './constants';
 import type { ArtifactType } from './types';
+
+function toArtifactRelativePath(filePath: string): string {
+  const normalized = filePath.replace(/\\/g, '/');
+
+  for (const huntDir of HUNT_DIRS) {
+    const marker = `/${huntDir}/`;
+    const markerIndex = normalized.lastIndexOf(marker);
+    if (markerIndex >= 0) {
+      return normalized.slice(markerIndex + marker.length);
+    }
+
+    if (normalized === huntDir || normalized.startsWith(`${huntDir}/`)) {
+      return normalized.slice(huntDir.length).replace(/^\/+/, '');
+    }
+  }
+
+  const fallback = normalized.replace(/^\/+/, '');
+  const parts = fallback.split('/').filter(Boolean);
+  const filename = parts[parts.length - 1] ?? '';
+  const directContainer = parts[parts.length - 2] ?? '';
+
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  if (
+    filename === 'MISSION.md' ||
+    filename === 'HYPOTHESES.md' ||
+    filename === 'HUNTMAP.md' ||
+    filename === 'STATE.md' ||
+    filename === 'EVIDENCE_REVIEW.md' ||
+    filename === 'FINDINGS.md'
+  ) {
+    return filename;
+  }
+
+  if (directContainer === 'QUERIES' || directContainer === 'RECEIPTS') {
+    return `${directContainer}/${filename}`;
+  }
+
+  return fallback;
+}
 
 /**
  * Resolve a file path (relative to hunt root) to an artifact type and ID.
  * Returns null for unrecognized files.
  */
 export function resolveArtifactType(filePath: string): { type: ArtifactType; id: string } | null {
-  // Normalize path separators to forward slashes
-  const normalized = filePath.replace(/\\/g, '/');
+  const normalized = toArtifactRelativePath(filePath);
   const basename = normalized.split('/').pop() ?? '';
   const nameNoExt = basename.replace(/\.md$/i, '');
 
   // Top-level singleton artifacts
-  switch (basename) {
+  switch (normalized) {
     case 'MISSION.md':
       return { type: 'mission', id: 'MISSION' };
     case 'HYPOTHESES.md':
@@ -28,10 +70,10 @@ export function resolveArtifactType(filePath: string): { type: ArtifactType; id:
   }
 
   // Directory-based artifacts: QUERIES/QRY-*.md and RECEIPTS/RCT-*.md
-  if (/QUERIES\/QRY-[^/]+\.md$/i.test(normalized)) {
+  if (/^QUERIES\/QRY-[^/]+\.md$/i.test(normalized)) {
     return { type: 'query', id: nameNoExt };
   }
-  if (/RECEIPTS\/RCT-[^/]+\.md$/i.test(normalized)) {
+  if (/^RECEIPTS\/RCT-[^/]+\.md$/i.test(normalized)) {
     return { type: 'receipt', id: nameNoExt };
   }
 

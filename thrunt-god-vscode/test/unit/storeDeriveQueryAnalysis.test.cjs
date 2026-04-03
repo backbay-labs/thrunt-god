@@ -36,7 +36,13 @@ function createMockStore(options = {}) {
   return {
     getQueries: () => defaultQueries,
     getReceipts: () => defaultReceipts,
-    getReceiptsForQuery: (queryId) => receiptsByQuery[queryId] ?? [],
+    getReceiptsForQuery: (queryId) =>
+      receiptsByQuery[queryId] ??
+      [...defaultReceipts.values()].filter(
+        (receipt) =>
+          receipt.status === 'loaded' &&
+          receipt.data.relatedQueries.includes(queryId)
+      ),
   };
 }
 
@@ -219,6 +225,108 @@ describe('deriveQueryAnalysis', () => {
       assert.equal(vm.heatmap.rows[0].templateId, 'T2');
       assert.equal(vm.heatmap.rows[1].templateId, 'T3');
       assert.equal(vm.heatmap.rows[2].templateId, 'T1');
+    });
+  });
+
+  describe('sort by deviation', () => {
+    it('orders heatmap rows by the highest linked receipt deviation score', () => {
+      const queries = new Map([
+        ['QRY-001', makeQuery('QRY-001', 'Older Query', [
+          makeTemplate('T1', 'template one', 10, 50),
+          makeTemplate('T2', 'template two', 10, 50),
+        ])],
+        ['QRY-002', makeQuery('QRY-002', 'Newer Query', [
+          makeTemplate('T2', 'template two', 8, 80),
+          makeTemplate('T3', 'template three', 2, 20),
+        ])],
+        ['QRY-003', makeQuery('QRY-003', 'Latest Query', [
+          makeTemplate('T1', 'template one', 6, 60),
+          makeTemplate('T3', 'template three', 4, 40),
+        ])],
+      ]);
+
+      const receipts = new Map([
+        ['RCT-001', makeReceipt('RCT-001', 'Low deviation', 'supports', {
+          relatedQueries: ['QRY-001'],
+          anomalyFrame: {
+            baseline: 'baseline',
+            prediction: 'prediction',
+            observation: 'observation',
+            deviationScore: {
+              category: 'EXPECTED_BENIGN',
+              baseScore: 1,
+              modifiers: [],
+              totalScore: 1,
+            },
+            attackMapping: [],
+          },
+        })],
+        ['RCT-002', makeReceipt('RCT-002', 'High deviation', 'supports', {
+          relatedQueries: ['QRY-002'],
+          anomalyFrame: {
+            baseline: 'baseline',
+            prediction: 'prediction',
+            observation: 'observation',
+            deviationScore: {
+              category: 'EXPECTED_MALICIOUS',
+              baseScore: 4,
+              modifiers: [],
+              totalScore: 6,
+            },
+            attackMapping: [],
+          },
+        })],
+        ['RCT-003', makeReceipt('RCT-003', 'Medium deviation', 'supports', {
+          relatedQueries: ['QRY-003'],
+          anomalyFrame: {
+            baseline: 'baseline',
+            prediction: 'prediction',
+            observation: 'observation',
+            deviationScore: {
+              category: 'AMBIGUOUS',
+              baseScore: 2,
+              modifiers: [],
+              totalScore: 3,
+            },
+            attackMapping: [],
+          },
+        })],
+      ]);
+
+      const store = createMockStore({ queries, receipts });
+      const vm = callDerive(store, ['QRY-001', 'QRY-002', 'QRY-003'], 'deviation', null);
+
+      assert.ok(vm.heatmap);
+      assert.equal(vm.heatmap.rows[0].templateId, 'T2');
+      assert.equal(vm.heatmap.rows[1].templateId, 'T3');
+      assert.equal(vm.heatmap.rows[2].templateId, 'T1');
+    });
+  });
+
+  describe('sort by recency', () => {
+    it('orders comparison templates by the newest query that contains them', () => {
+      const queries = new Map([
+        ['QRY-001', makeQuery('QRY-001', 'Older Query', [
+          makeTemplate('T1', 'template one', 5, 50),
+          makeTemplate('T2', 'template two', 5, 50),
+        ], {
+          executedAt: '2026-03-29T10:00:00Z',
+        })],
+        ['QRY-002', makeQuery('QRY-002', 'Newer Query', [
+          makeTemplate('T2', 'template two', 5, 50),
+          makeTemplate('T3', 'template three', 5, 50),
+        ], {
+          executedAt: '2026-03-30T12:00:00Z',
+        })],
+      ]);
+
+      const store = createMockStore({ queries });
+      const vm = callDerive(store, ['QRY-001', 'QRY-002'], 'recency', null);
+
+      assert.ok(vm.comparison);
+      assert.equal(vm.comparison.templates[0].templateId, 'T2');
+      assert.equal(vm.comparison.templates[1].templateId, 'T3');
+      assert.equal(vm.comparison.templates[2].templateId, 'T1');
     });
   });
 

@@ -656,6 +656,31 @@ export class HuntDataStore implements vscode.Disposable {
         return result?.status === 'loaded' ? result.data : undefined;
       })
       .filter((q): q is Query => q !== undefined);
+    const queryTimestamps = new Map(
+      selectedQueries.map((query) => [
+        query.queryId,
+        Number.isNaN(Date.parse(query.executedAt))
+          ? Number.NEGATIVE_INFINITY
+          : Date.parse(query.executedAt),
+      ])
+    );
+    const queryDeviationScores = new Map(
+      selectedQueries.map((query) => {
+        const maxDeviation = this.getReceiptsForQuery(query.queryId)
+          .filter((receipt): receipt is ParseResult<Receipt> & { status: 'loaded' } => receipt.status === 'loaded')
+          .reduce(
+            (maxScore, receipt) =>
+              Math.max(
+                maxScore,
+                receipt.data.anomalyFrame?.deviationScore.totalScore ?? Number.NEGATIVE_INFINITY
+              ),
+            Number.NEGATIVE_INFINITY
+          );
+        return [query.queryId, maxDeviation];
+      })
+    );
+
+    const compareDescending = (left: number, right: number): number => right - left;
 
     const resolvedMode: QueryAnalysisMode =
       mode ??
@@ -699,11 +724,57 @@ export class HuntDataStore implements vscode.Disposable {
       // Sort comparison templates inline (avoid private method call for prototype.call() testing)
       if (sortBy === 'count') {
         comparisonTemplates.sort((a, b) => (b.countA + b.countB) - (a.countA + a.countB));
+      } else if (sortBy === 'deviation') {
+        comparisonTemplates.sort((a, b) => {
+          const aDeviation = Math.max(
+            a.countA > 0
+              ? (queryDeviationScores.get(qA.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY,
+            a.countB > 0
+              ? (queryDeviationScores.get(qB.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY
+          );
+          const bDeviation = Math.max(
+            b.countA > 0
+              ? (queryDeviationScores.get(qA.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY,
+            b.countB > 0
+              ? (queryDeviationScores.get(qB.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY
+          );
+          if (aDeviation !== bDeviation) {
+            return compareDescending(aDeviation, bDeviation);
+          }
+          return (b.countA + b.countB) - (a.countA + a.countB);
+        });
       } else if (sortBy === 'novelty') {
         comparisonTemplates.sort((a, b) => {
           const aPresence = a.presence === 'both' ? 2 : 1;
           const bPresence = b.presence === 'both' ? 2 : 1;
           if (aPresence !== bPresence) return aPresence - bPresence;
+          return (b.countA + b.countB) - (a.countA + a.countB);
+        });
+      } else if (sortBy === 'recency') {
+        comparisonTemplates.sort((a, b) => {
+          const aRecency = Math.max(
+            a.countA > 0
+              ? (queryTimestamps.get(qA.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY,
+            a.countB > 0
+              ? (queryTimestamps.get(qB.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY
+          );
+          const bRecency = Math.max(
+            b.countA > 0
+              ? (queryTimestamps.get(qA.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY,
+            b.countB > 0
+              ? (queryTimestamps.get(qB.queryId) ?? Number.NEGATIVE_INFINITY)
+              : Number.NEGATIVE_INFINITY
+          );
+          if (aRecency !== bRecency) {
+            return compareDescending(aRecency, bRecency);
+          }
           return (b.countA + b.countB) - (a.countA + a.countB);
         });
       } else {
@@ -758,12 +829,66 @@ export class HuntDataStore implements vscode.Disposable {
       // Sort heatmap rows
       if (sortBy === 'count') {
         rows.sort((a, b) => b.totalCount - a.totalCount);
+      } else if (sortBy === 'deviation') {
+        rows.sort((a, b) => {
+          const aDeviation = a.cells.reduce(
+            (maxScore, cell) =>
+              cell.count > 0
+                ? Math.max(
+                    maxScore,
+                    queryDeviationScores.get(cell.queryId) ?? Number.NEGATIVE_INFINITY
+                  )
+                : maxScore,
+            Number.NEGATIVE_INFINITY
+          );
+          const bDeviation = b.cells.reduce(
+            (maxScore, cell) =>
+              cell.count > 0
+                ? Math.max(
+                    maxScore,
+                    queryDeviationScores.get(cell.queryId) ?? Number.NEGATIVE_INFINITY
+                  )
+                : maxScore,
+            Number.NEGATIVE_INFINITY
+          );
+          if (aDeviation !== bDeviation) {
+            return compareDescending(aDeviation, bDeviation);
+          }
+          return b.totalCount - a.totalCount;
+        });
       } else if (sortBy === 'novelty') {
         // Templates appearing in fewer queries first
         rows.sort((a, b) => {
           const aNonZero = a.cells.filter((c) => c.count > 0).length;
           const bNonZero = b.cells.filter((c) => c.count > 0).length;
           if (aNonZero !== bNonZero) return aNonZero - bNonZero;
+          return b.totalCount - a.totalCount;
+        });
+      } else if (sortBy === 'recency') {
+        rows.sort((a, b) => {
+          const aRecency = a.cells.reduce(
+            (maxTimestamp, cell) =>
+              cell.count > 0
+                ? Math.max(
+                    maxTimestamp,
+                    queryTimestamps.get(cell.queryId) ?? Number.NEGATIVE_INFINITY
+                  )
+                : maxTimestamp,
+            Number.NEGATIVE_INFINITY
+          );
+          const bRecency = b.cells.reduce(
+            (maxTimestamp, cell) =>
+              cell.count > 0
+                ? Math.max(
+                    maxTimestamp,
+                    queryTimestamps.get(cell.queryId) ?? Number.NEGATIVE_INFINITY
+                  )
+                : maxTimestamp,
+            Number.NEGATIVE_INFINITY
+          );
+          if (aRecency !== bRecency) {
+            return compareDescending(aRecency, bRecency);
+          }
           return b.totalCount - a.totalCount;
         });
       } else {
