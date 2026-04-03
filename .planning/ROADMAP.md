@@ -82,11 +82,12 @@ Plans:
   2. User can view a heatmap grid showing template presence across 3 or more queries, with cells colored by template count
   3. User can sort templates by count, deviation, novelty, or recency and the view re-orders immediately
   4. User can open a receipt QA inspector that shows anomaly framing breakdown, prediction/baseline gaps, and score drivers for a selected receipt
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 15-01: TBD
-- [ ] 15-02: TBD
+- [ ] 15-01-PLAN.md -- Extension-host data pipeline: ViewModel expansion, deriveQueryAnalysis store derivation, QueryAnalysisPanel provider, command registration, unit tests
+- [ ] 15-02-PLAN.md -- Comparison and heatmap webview: two-column template diff, presence matrix, sort controls, CSS
+- [ ] 15-03-PLAN.md -- Receipt QA inspector webview: split-pane layout, deviation score card, factor table, framing breakdown, CSS
 
 ### Phase 16: Cross-Surface Navigation & Session Continuity
 **Goal**: All webview surfaces behave as a cohesive investigation tool -- artifact selection syncs across panels, contextual actions navigate between surfaces, and session state persists across VS Code restarts
@@ -113,5 +114,5 @@ Plans:
 | 12. Design System & Webview Infrastructure | 3/3 | Complete    | 2026-04-02 | - |
 | 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 3/3 | Complete | 2026-04-02 |
-| 15. Query Analysis Upgrades | v3.0 | 0/2 | Not started | - |
+| 15. Query Analysis Upgrades | v3.0 | 0/3 | Not started | - |
 | 16. Cross-Surface Navigation | v3.0 | 0/2 | Not started | - |
