@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Investigative Surfaces
 status: in_progress
-stopped_at: Completed 16-01-PLAN.md
-last_updated: "2026-04-03T01:56:42.000Z"
-last_activity: 2026-04-03 -- Completed 16-01 Cross-Surface Selection Sync
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-04-03T02:19:00Z"
+last_activity: 2026-04-03 -- Completed 16-03 Session Continuity Resume Card
 progress:
   total_phases: 13
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -21,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-02)
 
 **Core value:** Surface hidden structure in security telemetry so interesting events become obvious without requiring hunters to write perfect queries
-**Current focus:** v3.0 Investigative Surfaces -- Phase 13 in progress
+**Current focus:** v3.0 Investigative Surfaces -- Phase 16 complete
 
 ## Current Position
 
 Phase: 16 of 16 (Cross-Surface Navigation & Session Continuity)
-Plan: 1 of 3 complete
-Status: In Progress
-Last activity: 2026-04-03 -- Completed 16-01 Cross-Surface Selection Sync
+Plan: 3 of 3 complete
+Status: Phase Complete
+Last activity: 2026-04-03 -- Completed 16-03 Session Continuity Resume Card
 
-Progress: [████████░░] 87%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 35 (v1.0: 12, v2.0: 12, v3.0: 11)
+- Total plans completed: 37 (v1.0: 12, v2.0: 12, v3.0: 13)
 
 **By Phase:**
 
@@ -55,6 +55,8 @@ Progress: [████████░░] 87%
 | Phase 15 P02 | 3min | 2 tasks | 3 files |
 | Phase 15 P03 | 3min | 2 tasks | 2 files |
 | Phase 16 P01 | 5min | 2 tasks | 13 files |
+| Phase 16 P02 | 4min | 2 tasks | 7 files |
+| Phase 16 P03 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -105,6 +107,12 @@ Recent decisions affecting current work:
 - [Phase 16-01]: selection:highlight message added to all 4 host-to-webview contracts for uniform cross-surface sync
 - [Phase 16-01]: EvidenceBoard node:select handler calls store.select() (no longer no-op)
 - [Phase 16-01]: openTemplateViewer resolves receipt items to their first related query
+- [Phase 16-02]: Deferred store pattern: Promise + resolver for serializers registered sync but needing async store
+- [Phase 16-02]: restorePanel static factory delegates to private constructor, sets currentPanel singleton
+- [Phase 16-02]: Query Analysis validates persisted IDs against current store before restoring
+- [Phase 16-02]: Drain Viewer serializer disposes panel if no queryId persisted
+- [Phase 16-03]: suggestedAction prioritizes "Review N changed artifacts" when 3+ changes, otherwise "Continue Phase N: Name"
+- [Phase 16-03]: ResumeCard renders conditionally via sessionContinuity truthiness check for forward-compatibility
 
 ### Pending Todos
 
@@ -116,6 +124,6 @@ No blocking issues.
 
 ## Session Continuity
 
-Last session: 2026-04-03T01:56:42.000Z
-Stopped at: Completed 16-01-PLAN.md
+Last session: 2026-04-03T02:19:00Z
+Stopped at: Completed 16-03-PLAN.md
 Resume file: None

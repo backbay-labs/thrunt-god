@@ -20,7 +20,7 @@
 - [x] **Phase 13: Hunt Overview Dashboard** - Mission cockpit, phase rail, confidence meter, blocker stack, activity feed, "what changed?" notification (completed 2026-04-02)
 - [x] **Phase 14: Evidence Board** - Force-directed lineage graph with tier constraints, coverage matrix with gap detection, mode toggle in single panel (completed 2026-04-02)
 - [x] **Phase 15: Query Analysis Upgrades** - Template comparison, presence matrix heatmap, sort controls, receipt QA inspector with anomaly framing (completed 2026-04-03)
-- [ ] **Phase 16: Cross-Surface Navigation & Session Continuity** - WebviewPanelSerializer, cross-surface artifact highlighting, contextual actions, session continuity summary
+- [x] **Phase 16: Cross-Surface Navigation & Session Continuity** - WebviewPanelSerializer, cross-surface artifact highlighting, contextual actions, session continuity summary (completed 2026-04-03)
 
 ## Phase Details
 
@@ -105,8 +105,8 @@ Plans:
 
 Plans:
 - [x] 16-01-PLAN.md -- Cross-surface selection API, context menu commands, highlight wiring
-- [ ] 16-02-PLAN.md -- WebviewPanelSerializer registration and workspaceState persistence
-- [ ] 16-03-PLAN.md -- Session continuity Resume card in Hunt Overview
+- [x] 16-02-PLAN.md -- WebviewPanelSerializer registration and workspaceState persistence
+- [x] 16-03-PLAN.md -- Session continuity Resume card in Hunt Overview
 
 ### v4.0 Active Incident Workflow
 
@@ -263,7 +263,7 @@ Plans:
 | 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 3/3 | Complete | 2026-04-02 |
 | 15. Query Analysis Upgrades | v3.0 | Complete    | 2026-04-03 | 2026-04-03 |
-| 16. Cross-Surface Navigation | v3.0 | 1/3 | In progress | - |
+| 16. Cross-Surface Navigation | 3/3 | Complete   | 2026-04-03 | - |
 | 17. War Room Copy | v4.0 | 0/1 | Not started | - |
 | 18. SLA Countdown Timer | v4.0 | 0/1 | Not started | - |
 | 19. IOC Quick-Entry | v4.0 | 0/1 | Not started | - |
