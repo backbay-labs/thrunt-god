@@ -5,6 +5,7 @@ import type {
   HuntOverviewToHostMessage,
   HuntOverviewViewModel,
   ActivityFeedEntry,
+  SessionContinuitySummary,
 } from '../../shared/hunt-overview';
 import { Panel, StatCard, GhostButton } from '../shared/components';
 import { useTheme, useHostMessage, createVsCodeApi } from '../shared/hooks';
@@ -32,6 +33,53 @@ function confidenceToPercent(confidence: string): number {
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+
+function ResumeCard({ sessionContinuity }: { sessionContinuity: SessionContinuitySummary }) {
+  return (
+    <Panel>
+      <p class="hunt-section-heading">Resume</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div>
+          <span style={{ display: 'block', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--hunt-text-muted)' }}>
+            Last Activity
+          </span>
+          <span style={{ display: 'block', marginTop: '2px' }}>
+            {sessionContinuity.lastActivity}
+          </span>
+        </div>
+        <div>
+          <span style={{ display: 'block', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--hunt-text-muted)' }}>
+            Position
+          </span>
+          <span style={{ display: 'block', marginTop: '2px' }}>
+            {sessionContinuity.currentPosition}
+          </span>
+        </div>
+        <div>
+          <span style={{ display: 'block', fontSize: '11px', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--hunt-text-muted)' }}>
+            Since Last Session
+          </span>
+          <span style={{
+            display: 'block',
+            marginTop: '2px',
+            color: sessionContinuity.hasChanges ? 'var(--hunt-accent)' : 'var(--hunt-text-muted)',
+          }}>
+            {sessionContinuity.changesSummary}
+          </span>
+        </div>
+        <div style={{
+          marginTop: '4px',
+          padding: '8px 12px',
+          background: 'var(--hunt-surface-raised, var(--vscode-editor-inactiveSelectionBackground))',
+          borderRadius: '4px',
+          fontSize: '13px',
+        }}>
+          <strong>Next:</strong> {sessionContinuity.suggestedAction}
+        </div>
+      </div>
+    </Panel>
+  );
+}
 
 function MissionCard({ mission }: { mission: HuntOverviewViewModel['mission'] }) {
   if (mission === null) {
@@ -436,6 +484,7 @@ function App() {
             gap: '20px',
           }}
         >
+          {viewModel.sessionContinuity && <ResumeCard sessionContinuity={viewModel.sessionContinuity} />}
           <MissionCard mission={viewModel.mission} />
           <PhaseRail
             phases={viewModel.phases}
