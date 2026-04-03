@@ -60,6 +60,11 @@ export class HuntDataStore implements vscode.Disposable {
   private readonly _onDidChange = new vscode.EventEmitter<ArtifactChangeEvent>();
   readonly onDidChange: vscode.Event<ArtifactChangeEvent> = this._onDidChange.event;
 
+  // --- Selection state (cross-surface sync) ---
+  private _selectedArtifactId: string | null = null;
+  private readonly _onDidSelect = new vscode.EventEmitter<string | null>();
+  readonly onDidSelect: vscode.Event<string | null> = this._onDidSelect.event;
+
   // --- Caches ---
   // Level 1: frontmatter cache (always retained, never evicted)
   private readonly _frontmatterCache = new Map<string, Record<string, unknown>>();
@@ -113,6 +118,24 @@ export class HuntDataStore implements vscode.Disposable {
   // ---------------------------------------------------------------------------
   // Public API
   // ---------------------------------------------------------------------------
+
+  /**
+   * Select an artifact across all surfaces. Fires onDidSelect only if value changed (dedup).
+   */
+  select(artifactId: string | null): void {
+    if (artifactId === this._selectedArtifactId) {
+      return;
+    }
+    this._selectedArtifactId = artifactId;
+    this._onDidSelect.fire(artifactId);
+  }
+
+  /**
+   * Get the currently selected artifact ID, or null if no selection.
+   */
+  getSelectedArtifactId(): string | null {
+    return this._selectedArtifactId;
+  }
 
   /**
    * Get all singleton hunt artifacts.
@@ -1182,6 +1205,7 @@ export class HuntDataStore implements vscode.Disposable {
 
     this.watcherDisposable.dispose();
     this._onDidChange.dispose();
+    this._onDidSelect.dispose();
 
     this._frontmatterCache.clear();
     this._rawCache.clear();

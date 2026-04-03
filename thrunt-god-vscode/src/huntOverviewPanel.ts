@@ -267,6 +267,14 @@ export class HuntOverviewPanel implements vscode.Disposable {
     );
 
     this.disposables.push(
+      this.store.onDidSelect((id) => {
+        if (this.ready) {
+          this.postMessage({ type: 'selection:highlight', artifactId: id });
+        }
+      })
+    );
+
+    this.disposables.push(
       vscode.window.onDidChangeActiveColorTheme((theme) => {
         if (this.ready) {
           this.postMessage({ type: 'theme', isDark: isDarkTheme(theme.kind) });

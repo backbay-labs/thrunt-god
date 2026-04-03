@@ -74,7 +74,8 @@ export interface HuntOverviewBootData {
 export type HostToHuntOverviewMessage =
   | { type: 'init'; viewModel: HuntOverviewViewModel; isDark: boolean }
   | { type: 'update'; viewModel: HuntOverviewViewModel }
-  | { type: 'theme'; isDark: boolean };
+  | { type: 'theme'; isDark: boolean }
+  | { type: 'selection:highlight'; artifactId: string | null };
 
 export type HuntOverviewToHostMessage =
   | { type: 'webview:ready' }

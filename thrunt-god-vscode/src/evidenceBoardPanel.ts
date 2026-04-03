@@ -126,6 +126,14 @@ export class EvidenceBoardPanel implements vscode.Disposable {
     );
 
     this.disposables.push(
+      this.store.onDidSelect((id) => {
+        if (this.ready) {
+          this.postMessage({ type: 'selection:highlight', artifactId: id });
+        }
+      })
+    );
+
+    this.disposables.push(
       vscode.window.onDidChangeActiveColorTheme((theme) => {
         if (this.ready) {
           this.postMessage({ type: 'theme', isDark: isDarkTheme(theme.kind) });
@@ -214,7 +222,7 @@ export class EvidenceBoardPanel implements vscode.Disposable {
         return;
       }
       case 'node:select':
-        // No-op for now -- future cross-surface sync
+        this.store.select(msg.nodeId);
         return;
       case 'mode:toggle':
         // No-op on host side -- webview handles mode internally

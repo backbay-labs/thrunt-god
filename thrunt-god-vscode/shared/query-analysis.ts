@@ -94,7 +94,8 @@ export interface QueryAnalysisBootData {
 export type HostToQueryAnalysisMessage =
   | { type: 'init'; viewModel: QueryAnalysisViewModel; isDark: boolean }
   | { type: 'update'; viewModel: QueryAnalysisViewModel }
-  | { type: 'theme'; isDark: boolean };
+  | { type: 'theme'; isDark: boolean }
+  | { type: 'selection:highlight'; artifactId: string | null };
 
 export type QueryAnalysisToHostMessage =
   | { type: 'webview:ready' }
