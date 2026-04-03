@@ -415,8 +415,9 @@ export class HuntDataStore implements vscode.Disposable {
     if (hasChanges && sessionDiff && sessionDiff.entries.length >= 3) {
       suggestedAction = `Review ${sessionDiff.entries.length} changed artifacts`;
     } else if (hunt.state.status === 'loaded') {
-      const phaseName = phases.find(p => p.number === hunt.state.data.phase)?.name ?? '';
-      suggestedAction = `Continue Phase ${hunt.state.data.phase}${phaseName ? `: ${phaseName}` : ''}`;
+      const stateData = hunt.state.data;
+      const phaseName = phases.find(p => p.number === stateData.phase)?.name ?? '';
+      suggestedAction = `Continue Phase ${stateData.phase}${phaseName ? `: ${phaseName}` : ''}`;
     } else {
       suggestedAction = 'Open the sidebar to explore artifacts';
     }

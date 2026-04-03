@@ -300,6 +300,7 @@ export class QueryAnalysisPanel implements vscode.Disposable {
         } else {
           this.selectedQueryIds.push(msg.queryId);
         }
+        this.store.select(msg.queryId);
         this.persistState();
         this.postMessage({
           type: 'update',
@@ -325,6 +326,7 @@ export class QueryAnalysisPanel implements vscode.Disposable {
         return;
       case 'receipt:select':
         this.inspectorReceiptId = msg.receiptId;
+        this.store.select(msg.receiptId);
         this.postMessage({
           type: 'update',
           viewModel: this.buildViewModel(),
