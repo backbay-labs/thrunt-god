@@ -9,18 +9,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.3.0] - 2026-04-03
 
 ### Added
-- **VS Code extension alpha** under `apps/vscode/` with the THRUNT investigation sidebar, status bar, CodeLens actions, Hunt Overview, Evidence Board, Query Analysis, and Drain Viewer surfaces
-- **Program and case navigation** with nested case discovery, case-aware program summaries, and session continuity across investigative surfaces
-- **Operator workflows in the extension** including IOC tracking, SLA timers, phase execution controls, runtime diagnostics, and war-room summary exports
+- **VS Code extension alpha** under `apps/vscode/` with the THRUNT investigation sidebar, status bar, CodeLens actions, diagnostics, runtime doctor, and bundled CLI execution hooks
+- **Investigative webviews** for Hunt Overview, Evidence Board, Query Analysis, Receipt Inspector, and Drain Template Viewer, including shared design tokens, keyboard navigation, serializer restore, and cross-surface selection sync
+- **Program and case awareness** in the extension with nested case discovery, case summaries, published findings surfacing, session continuity, IOC tracking, SLA timers, and war-room export helpers
+- **Drain reduction and template mining pipeline** in runtime code, including `reduceEvents`, template metadata in query/receipt artifacts, aggregation helpers, and clustering/heatmap support
+- **Sequential evidence integrity guidance** with anomaly-framing reference material, evidence-review template updates, and expected progression support in hunt packs
+- **New example hunts and fixtures** for brute-force-to-persistence and OAuth session hijack, plus a large VS Code fixture corpus for smoke, dogfood, and unit coverage
 
 ### Changed
-- Moved the VS Code package from `thrunt-god-vscode/` to `apps/vscode/` and aligned repository scripts around the new package path
-- Release automation now validates, packages, and publishes the VSIX alongside the root release artifact so GitHub releases ship the extension directly
+- Moved the VS Code package from `thrunt-god-vscode/` to `apps/vscode/` and aligned repository scripts, build tooling, packaging, and tests around the new package path
+- Expanded the release pipeline so `v0.3.0` validates the VS Code extension, packages the VSIX, and uploads it alongside the root release artifact
+- Extended runtime and SDK export surfaces for dataset defaults, drain helpers, connector SDK coverage, and extension-facing runtime packaging
+- Updated hunt templates, pack templates, and pack metadata to better support anomaly framing, expected progressions, and hunt-native examples
 
 ### Fixed
 - Published findings detection now recognizes `.planning/published/FINDINGS.md` and maps them into the publish phase correctly
-- Query-to-phase mapping, query analysis sorting, and CLI cancellation cleanup now behave correctly under repeated investigative runs
-- Program-mode UI copy and nested case labeling now use consistent release-ready wording in the extension
+- Query-to-phase mapping, query-analysis sorting, artifact resolution, and cross-surface navigation now behave correctly under repeated investigative runs
+- CLI parsing, cancellation cleanup, Windows path handling, and extension packaging are hardened for repeated local and CI execution
+- Prompt-injection scanning, entity deduplication, and release packaging safeguards are tightened to reduce false positives and stale-artifact leakage
+- Program-mode UI copy, nested case labeling, and hunt overview/sidebar wording now use consistent release-ready terminology
 
 ## [1.28.0] - 2026-03-22
 
