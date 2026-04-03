@@ -32,6 +32,8 @@ function scoreLevelLabel(score: number): string {
 interface AppProps {
   viewModel: QueryAnalysisViewModel | null;
   isDark: boolean;
+  highlightedArtifactId?: string | null;
+  isPulsing?: boolean;
   onQuerySelect: (queryId: string) => void;
   onSortChange: (sortBy: 'count' | 'deviation' | 'novelty' | 'recency') => void;
   onModeChange: (mode: 'side-by-side' | 'matrix') => void;
@@ -421,6 +423,8 @@ function ReceiptDetail(props: { receipt: ReceiptInspectorItem }) {
 
 function ReceiptInspectorView(props: {
   data: ReceiptInspectorData;
+  highlightedArtifactId?: string | null;
+  isPulsing?: boolean;
   onReceiptSelect: (receiptId: string) => void;
   onClose: () => void;
 }) {
@@ -439,12 +443,18 @@ function ReceiptInspectorView(props: {
       <div class="hunt-qa-inspector-split">
         {/* Left: receipt list */}
         <div class="hunt-qa-inspector-list" role="list" aria-label="Receipts">
-          {props.data.receipts.map((receipt) => (
+          {props.data.receipts.map((receipt) => {
+            const isHighlighted = receipt.receiptId === props.highlightedArtifactId;
+            let itemClass = `hunt-qa-inspector-item ${
+              receipt.receiptId === (selected?.receiptId ?? '') ? 'hunt-qa-inspector-item--selected' : ''
+            }`;
+            if (isHighlighted) itemClass += ' hunt-selection-highlight';
+            if (isHighlighted && props.isPulsing) itemClass += ' hunt-selection-pulse';
+
+            return (
             <button
               key={receipt.receiptId}
-              class={`hunt-qa-inspector-item ${
-                receipt.receiptId === (selected?.receiptId ?? '') ? 'hunt-qa-inspector-item--selected' : ''
-              }`}
+              class={itemClass}
               role="listitem"
               onClick={() => props.onReceiptSelect(receipt.receiptId)}
               type="button"
@@ -462,7 +472,8 @@ function ReceiptInspectorView(props: {
                 {receipt.claim.length > 60 ? receipt.claim.slice(0, 60) + '...' : receipt.claim}
               </span>
             </button>
-          ))}
+            );
+          })}
           {props.data.receipts.length === 0 && (
             <p class="hunt-qa-inspector-empty">No receipts available.</p>
           )}
@@ -518,6 +529,8 @@ export function App(props: AppProps) {
       {viewModel.receiptInspector ? (
         <ReceiptInspectorView
           data={viewModel.receiptInspector}
+          highlightedArtifactId={props.highlightedArtifactId}
+          isPulsing={props.isPulsing}
           onReceiptSelect={props.onReceiptSelect}
           onClose={props.onInspectorClose}
         />

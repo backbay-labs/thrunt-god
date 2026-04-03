@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import type {
   HostToQueryAnalysisMessage,
   QueryAnalysisToHostMessage,
@@ -14,10 +14,24 @@ const vscode = createVsCodeApi<unknown, QueryAnalysisToHostMessage>();
 function Root() {
   const { isDark, setIsDark } = useTheme();
   const [viewModel, setViewModel] = useState<QueryAnalysisViewModel | null>(null);
+  const [highlightedArtifactId, setHighlightedArtifactId] = useState<string | null>(null);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     vscode.postMessage({ type: 'webview:ready' });
   }, []);
+
+  useEffect(() => {
+    if (highlightedArtifactId !== null) {
+      setIsPulsing(true);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = setTimeout(() => setIsPulsing(false), 200);
+    }
+    return () => {
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    };
+  }, [highlightedArtifactId]);
 
   useHostMessage<HostToQueryAnalysisMessage>((message) => {
     switch (message.type) {
@@ -31,6 +45,9 @@ function Root() {
       case 'theme':
         setIsDark(message.isDark);
         break;
+      case 'selection:highlight':
+        setHighlightedArtifactId(message.artifactId);
+        break;
     }
   });
 
@@ -38,6 +55,8 @@ function Root() {
     <App
       viewModel={viewModel}
       isDark={isDark}
+      highlightedArtifactId={highlightedArtifactId}
+      isPulsing={isPulsing}
       onQuerySelect={(queryId) => vscode.postMessage({ type: 'query:select', queryId })}
       onSortChange={(sortBy) => vscode.postMessage({ type: 'sort:change', sortBy })}
       onModeChange={(mode) => vscode.postMessage({ type: 'mode:change', mode })}

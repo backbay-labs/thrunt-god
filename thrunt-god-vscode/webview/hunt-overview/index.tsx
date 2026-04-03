@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type {
   HostToHuntOverviewMessage,
   HuntOverviewToHostMessage,
@@ -369,9 +369,13 @@ function HealthCard({
 function ActivityFeed({
   entries,
   sessionDiff,
+  highlightedArtifactId,
+  isPulsing,
 }: {
   entries: ActivityFeedEntry[];
   sessionDiff: HuntOverviewViewModel['sessionDiff'];
+  highlightedArtifactId: string | null;
+  isPulsing: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
 
@@ -418,16 +422,23 @@ function ActivityFeed({
         {showAll ? 'Since Last Session' : 'Show All'}
       </GhostButton>
       <div class="hunt-activity-feed" style={{ marginTop: '10px' }}>
-        {displayEntries.map((entry, index) => (
-          <div class="hunt-activity-entry" key={index}>
-            <span class={`hunt-diff-badge hunt-diff-badge--${entry.diffKind}`}>
-              {entry.diffKind}
-            </span>
-            <span>
-              {entry.artifactType}: {entry.artifactId}
-            </span>
-          </div>
-        ))}
+        {displayEntries.map((entry, index) => {
+          const isHighlighted = entry.artifactId === highlightedArtifactId;
+          let entryClass = 'hunt-activity-entry';
+          if (isHighlighted) entryClass += ' hunt-selection-highlight';
+          if (isHighlighted && isPulsing) entryClass += ' hunt-selection-pulse';
+
+          return (
+            <div class={entryClass} key={index}>
+              <span class={`hunt-diff-badge hunt-diff-badge--${entry.diffKind}`}>
+                {entry.diffKind}
+              </span>
+              <span>
+                {entry.artifactType}: {entry.artifactId}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -440,10 +451,24 @@ function ActivityFeed({
 function App() {
   const { setIsDark } = useTheme();
   const [viewModel, setViewModel] = useState<HuntOverviewViewModel | null>(null);
+  const [highlightedArtifactId, setHighlightedArtifactId] = useState<string | null>(null);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     vscode.postMessage({ type: 'webview:ready' });
   }, []);
+
+  useEffect(() => {
+    if (highlightedArtifactId !== null) {
+      setIsPulsing(true);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = setTimeout(() => setIsPulsing(false), 200);
+    }
+    return () => {
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    };
+  }, [highlightedArtifactId]);
 
   useHostMessage<HostToHuntOverviewMessage>((message) => {
     switch (message.type) {
@@ -456,6 +481,9 @@ function App() {
         break;
       case 'theme':
         setIsDark(message.isDark);
+        break;
+      case 'selection:highlight':
+        setHighlightedArtifactId(message.artifactId);
         break;
     }
   });
@@ -522,6 +550,8 @@ function App() {
           <ActivityFeed
             entries={viewModel.activityFeed}
             sessionDiff={viewModel.sessionDiff}
+            highlightedArtifactId={highlightedArtifactId}
+            isPulsing={isPulsing}
           />
         </div>
       )}

@@ -1,5 +1,5 @@
 import { render } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type {
   DrainViewerBootData,
   DrainViewerViewModel,
@@ -56,6 +56,20 @@ function Root() {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     initialState?.selectedTemplateId ?? null
   );
+  const [highlightedArtifactId, setHighlightedArtifactId] = useState<string | null>(null);
+  const [isPulsing, setIsPulsing] = useState(false);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (highlightedArtifactId !== null) {
+      setIsPulsing(true);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = setTimeout(() => setIsPulsing(false), 200);
+    }
+    return () => {
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+    };
+  }, [highlightedArtifactId]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent<HostToDrainWebviewMessage>) => {
@@ -77,6 +91,10 @@ function Root() {
           if (message.affectedIds.includes(viewModel?.query.queryId ?? '')) {
             setIsStale(true);
           }
+          return;
+        case 'selection:highlight':
+          setHighlightedArtifactId(message.artifactId);
+          return;
       }
     };
 
@@ -159,6 +177,8 @@ function Root() {
       isDark={isDark}
       isStale={isStale}
       selectedTemplateId={selectedTemplateId}
+      highlightedArtifactId={highlightedArtifactId}
+      isPulsing={isPulsing}
       onNavigate={(queryId, templateId) => {
         vscode.postMessage({ type: 'navigate', queryId, templateId: templateId ?? null });
       }}

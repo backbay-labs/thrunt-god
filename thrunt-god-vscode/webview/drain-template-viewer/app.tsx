@@ -12,6 +12,8 @@ interface AppProps {
   isDark: boolean;
   isStale: boolean;
   selectedTemplateId: string | null;
+  highlightedArtifactId?: string | null;
+  isPulsing?: boolean;
   onNavigate: (queryId: string, templateId?: string | null) => void;
   onSelectTemplate: (templateId: string) => void;
   onTogglePin: (queryId: string, templateId: string, isPinned: boolean) => void;
@@ -81,8 +83,12 @@ function DrainChart(props: {
   clusters: DrainViewerCluster[];
   selectedTemplateId: string | null;
   totalCount: number;
+  highlightedArtifactId?: string | null;
+  isPulsing?: boolean;
+  queryId?: string | null;
   onSelectTemplate: (templateId: string) => void;
 }) {
+  const { highlightedArtifactId, isPulsing, queryId } = props;
   const hostRef = useRef<HTMLDivElement | null>(null);
   const clusterListRef = useRef<HTMLDivElement>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
@@ -266,10 +272,16 @@ function DrainChart(props: {
         </div>
       ) : null}
       <div class="cluster-list" role="list" aria-label="Template clusters" ref={clusterListRef}>
-        {props.clusters.map((cluster) => (
+        {props.clusters.map((cluster) => {
+          let chipClass = `cluster-chip ${cluster.templateId === props.selectedTemplateId ? 'is-selected' : ''}`;
+          const isHighlighted = cluster.templateId === highlightedArtifactId || queryId === highlightedArtifactId;
+          if (isHighlighted) chipClass += ' hunt-selection-highlight';
+          if (isHighlighted && isPulsing) chipClass += ' hunt-selection-pulse';
+
+          return (
           <button
             key={cluster.templateId}
-            class={`cluster-chip ${cluster.templateId === props.selectedTemplateId ? 'is-selected' : ''}`}
+            class={chipClass}
             role="listitem"
             onClick={() => props.onSelectTemplate(cluster.templateId)}
             type="button"
@@ -285,7 +297,8 @@ function DrainChart(props: {
               {formatCount(cluster.count)} · {formatPercentage(cluster.percentage)}
             </span>
           </button>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -372,6 +385,9 @@ export function App(props: AppProps) {
             clusters={clusters}
             selectedTemplateId={selectedCluster?.templateId ?? null}
             totalCount={query.eventCount}
+            highlightedArtifactId={props.highlightedArtifactId}
+            isPulsing={props.isPulsing}
+            queryId={query.queryId}
             onSelectTemplate={props.onSelectTemplate}
           />
 

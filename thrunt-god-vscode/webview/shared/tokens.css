@@ -1233,3 +1233,26 @@ button {
   color: var(--hunt-text);
   background: var(--hunt-panel-bg);
 }
+
+/* ==========================================================================
+   Cross-Surface Selection Highlighting
+   ========================================================================== */
+
+.hunt-selection-highlight {
+  outline: 2px solid var(--hunt-accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.hunt-selection-pulse {
+  animation: hunt-selection-pulse 200ms ease-out;
+}
+
+@keyframes hunt-selection-pulse {
+  from {
+    box-shadow: 0 0 0 3px var(--hunt-accent);
+  }
+  to {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
