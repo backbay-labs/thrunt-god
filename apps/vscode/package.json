@@ -115,7 +115,7 @@
       },
       {
         "command": "thrunt-god.showRuntimeDoctor",
-        "title": "THRUNT: Show Runtime Doctor",
+        "title": "THRUNT: Check Runtime",
         "icon": "$(tools)"
       },
       {
@@ -152,17 +152,15 @@
       },
       {
         "command": "thrunt-god.openQueryAnalysis",
-        "title": "THRUNT God: Open Query Analysis",
-        "category": "THRUNT"
+        "title": "THRUNT: Open Query Analysis"
       },
       {
         "command": "thrunt-god.openReceiptInspector",
-        "title": "THRUNT God: Open Receipt QA Inspector",
-        "category": "THRUNT"
+        "title": "THRUNT: Open Receipt Review"
       },
       {
         "command": "thrunt-god.copyWarRoomSummary",
-        "title": "THRUNT: Copy War Room Summary",
+        "title": "THRUNT: Copy Hunt Summary",
         "icon": "$(clippy)"
       },
       {

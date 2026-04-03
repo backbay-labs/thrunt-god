@@ -214,7 +214,7 @@ export class WarRoomFormatter {
   formatFinding(receipt: Receipt): WarRoomOutput {
     const { score, label } = summarizeReceiptScore(receipt);
     const query = firstLoadedQuery(this.store, receipt);
-    const entity = deriveImpactEntities(receipt)[0] ?? 'No entity extracted';
+    const entity = deriveImpactEntities(receipt)[0] ?? 'Unknown';
     const attackLine = joinList(
       sortUnique(receipt.anomalyFrame?.attackMapping ?? extractAttackIds(receipt.evidence))
     );
@@ -276,7 +276,7 @@ export class WarRoomFormatter {
             return `${receipt.receiptId}${score !== null ? ` (score ${score})` : ''}`;
           })
           .join(', ')
-      : 'No receipts linked';
+      : 'No linked receipts';
 
     const keyFinding = receipts.length > 0
       ? truncate(
@@ -290,7 +290,7 @@ export class WarRoomFormatter {
           })[0].claim,
           180
         )
-      : 'No key finding yet';
+      : 'No key finding captured';
 
     const markdown = [
       `**${hypothesis.id}**: ${escapeMarkdown(truncate(hypothesis.assertion, 160))}`,
@@ -343,7 +343,7 @@ export class WarRoomFormatter {
           );
           return `  - ${hypothesis.id}: ${truncate(hypothesis.assertion, 96)} -- *${hypothesis.status}* (${relatedReceipts.length} receipts)`;
         })
-      : ['  - Hypotheses not yet defined.'];
+      : ['  - No hypotheses recorded.'];
 
     const markdownLines = [
       `**THRUNT Hunt: ${escapeMarkdown(describeMissionTitle(mission))}**`,
@@ -356,8 +356,8 @@ export class WarRoomFormatter {
       '',
       `Critical findings: ${criticalCount} receipts with score >= 5`,
       `Evidence integrity: ${errorCount} errors, ${warningCount} warnings`,
-      `ATT&CK coverage: ${joinList([...attackCoverage.keys()]) || 'None mapped'}`,
-      `Impacted: ${joinList(impactedEntities) || 'No entities extracted'}`,
+      `ATT&CK coverage: ${joinList([...attackCoverage.keys()]) || 'Unmapped'}`,
+      `Impacted: ${joinList(impactedEntities) || 'None identified'}`,
       ...(deriveTimeWindow(this.store, mission) ? [`Time window: ${deriveTimeWindow(this.store, mission)}`] : []),
     ];
 
@@ -371,8 +371,8 @@ export class WarRoomFormatter {
       '',
       `Critical findings: ${criticalCount}`,
       `Evidence integrity: ${errorCount} errors, ${warningCount} warnings`,
-      `ATT&CK coverage: ${joinList([...attackCoverage.keys()]) || 'None mapped'}`,
-      `Impacted: ${joinList(impactedEntities) || 'No entities extracted'}`,
+      `ATT&CK coverage: ${joinList([...attackCoverage.keys()]) || 'Unmapped'}`,
+      `Impacted: ${joinList(impactedEntities) || 'None identified'}`,
       ...(deriveTimeWindow(this.store, mission) ? [`Time window: ${deriveTimeWindow(this.store, mission)}`] : []),
     ];
 

@@ -5,7 +5,23 @@ import path from 'path';
 const isWatch = process.argv.includes('--watch');
 const isProduction = process.env.NODE_ENV === 'production';
 const packageRoot = process.cwd();
-const repoRoot = path.resolve(packageRoot, '..');
+
+function resolveRepoRoot(startDir) {
+  const candidates = [
+    path.resolve(startDir, '..', '..'),
+    path.resolve(startDir, '..'),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(path.join(candidate, 'thrunt-god')) && existsSync(path.join(candidate, 'package.json'))) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Unable to resolve repo root from ${startDir}`);
+}
+
+const repoRoot = resolveRepoRoot(packageRoot);
 
 /** Shared build options */
 const shared = {

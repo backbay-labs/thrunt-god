@@ -3023,6 +3023,13 @@ function copyWithPathReplacement(srcDir, destDir, pathPrefix, runtime, isCommand
   for (const entry of entries) {
     const srcPath = path.join(srcDir, entry.name);
     const destPath = path.join(destDir, entry.name);
+    const isGeneratedConnectorFixture =
+      srcDir.includes(`${path.sep}thrunt-god${path.sep}bin${path.sep}lib${path.sep}connectors`) &&
+      /^test_gen_.*\.cjs$/.test(entry.name);
+
+    if (isGeneratedConnectorFixture) {
+      continue;
+    }
 
     if (entry.isDirectory()) {
       copyWithPathReplacement(srcPath, destPath, pathPrefix, runtime, isCommand, isGlobal);

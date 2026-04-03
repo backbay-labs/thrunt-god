@@ -67,11 +67,6 @@ interface RuntimeDoctorReport {
   connectors?: RuntimeDoctorConnector[];
 }
 
-/**
- * Find the workspace folder containing hunt artifacts.
- * Checks each workspace folder for marker files in order.
- * Returns the URI of the first folder where a marker is found, or undefined.
- */
 async function findHuntRoot(): Promise<vscode.Uri | undefined> {
   const folders = vscode.workspace.workspaceFolders;
   if (!folders) {
@@ -86,7 +81,6 @@ async function findHuntRoot(): Promise<vscode.Uri | undefined> {
         const huntDir = marker.slice(0, marker.lastIndexOf('/'));
         return vscode.Uri.joinPath(folder.uri, huntDir);
       } catch {
-        // Marker not found in this folder, continue
       }
     }
   }
@@ -517,6 +511,14 @@ function resolveThruntCliPath(context: vscode.ExtensionContext): string {
   const override = process.env.THRUNT_TEST_CLI_PATH;
   const candidates = [
     override && override.trim() ? path.resolve(override) : null,
+    path.resolve(
+      context.extensionUri.fsPath,
+      '..',
+      '..',
+      'thrunt-god',
+      'bin',
+      'thrunt-tools.cjs'
+    ),
     path.resolve(context.extensionUri.fsPath, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs'),
     path.resolve(context.extensionUri.fsPath, 'dist', 'thrunt-god', 'bin', 'thrunt-tools.cjs'),
   ].filter((candidate): candidate is string => Boolean(candidate));
@@ -787,9 +789,6 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }
 
-  // --- Deferred store pattern for WebviewPanelSerializers ---
-  // Serializers must be registered synchronously during activate(), but
-  // the store is only available after async hunt root detection.
   let resolveStore: ((store: HuntDataStore) => void) | undefined;
   const storeReady = new Promise<HuntDataStore>((resolve) => {
     resolveStore = resolve;
@@ -799,7 +798,6 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   let deferredSessionDiff: SessionDiff | null = null;
 
-  // Register WebviewPanelSerializers immediately (VS Code needs them sync)
   context.subscriptions.push(
     vscode.window.registerWebviewPanelSerializer(HUNT_OVERVIEW_VIEW_TYPE, {
       async deserializeWebviewPanel(panel: vscode.WebviewPanel, _state: unknown) {
@@ -839,13 +837,12 @@ export function activate(context: vscode.ExtensionContext): void {
             queryId
           );
         } else {
-          panel.dispose(); // Can't restore without a queryId
+          panel.dispose();
         }
       },
     })
   );
 
-  // Register the info command immediately (available even before hunt root detection)
   context.subscriptions.push(
     vscode.commands.registerCommand('thrunt-god.showInfo', () => {
       if (activeHuntRoot && activeStore) {
@@ -994,10 +991,8 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  // Default: no hunt detected (sidebar hidden until proven otherwise)
   vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', false);
 
-  // Fire hunt root detection asynchronously (VS Code best practice: activate() returns void)
   findHuntRoot().then((huntRoot) => {
     if (!huntRoot) {
       outputChannel.appendLine(
@@ -1009,13 +1004,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
     outputChannel.appendLine(`THRUNT God activated. Hunt root: ${huntRoot.fsPath}`);
 
-    // --- Phase 8: Wire data layer ---
-
-    // 1. Create ArtifactWatcher monitoring the hunt directory
     const watcher = new ArtifactWatcher(huntRoot);
     context.subscriptions.push(watcher);
 
-    // 2. Create HuntDataStore wired to the watcher
     const store = new HuntDataStore(huntRoot, watcher, outputChannel);
     activeHuntRoot = huntRoot;
     activeStore = store;
@@ -1027,10 +1018,8 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(iocRegistry);
     context.subscriptions.push(iocDecorations);
 
-    // Resolve deferred store so serializers can proceed
     resolveStore?.(store);
 
-    // 3. Log store events for debugging
     context.subscriptions.push(
       store.onDidChange((event) => {
         outputChannel.appendLine(
@@ -1039,7 +1028,6 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // --- Phase 9: Sidebar tree view ---
     vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', true);
 
     const treeProvider = new HuntTreeDataProvider(store, huntRoot, {
@@ -1434,7 +1422,6 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.registerCommand('thrunt-god.openTemplateViewer', async (target?: unknown) => {
         let queryId = extractQueryIdFromTarget(target);
 
-        // Fallback: if target is a receipt tree item, resolve its first related query
         if (!queryId && target && typeof target === 'object') {
           const item = target as Partial<HuntTreeItem>;
           if (item.nodeType === 'receipt' && typeof item.dataId === 'string') {
@@ -1460,10 +1447,8 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // --- Phase 16: Cross-surface navigation ---
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.showInEvidenceBoard', (target?: unknown) => {
-        // Extract artifact ID from tree item or active editor
         let artifactId: string | undefined;
         if (target && typeof target === 'object') {
           const item = target as Partial<HuntTreeItem>;
@@ -1483,7 +1468,6 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // Log selection changes for debugging
     context.subscriptions.push(
       store.onDidSelect((id) => {
         outputChannel.appendLine(`[Store] Selection: ${id ?? 'cleared'}`);
@@ -1496,21 +1480,17 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // --- Phase 9: Status bar ---
     const statusBar = new HuntStatusBar(store);
     context.subscriptions.push(statusBar);
 
-    // --- Phase 9: CodeLens ---
     const codeLensProvider = new HuntCodeLensProvider(store);
     context.subscriptions.push(codeLensProvider);
 
-    // Register for .md files only
     const mdSelector: vscode.DocumentSelector = { language: 'markdown', scheme: 'file' };
     context.subscriptions.push(
       vscode.languages.registerCodeLensProvider(mdSelector, codeLensProvider)
     );
 
-    // --- Phase 10: Evidence integrity diagnostics ---
     const diagnostics = new EvidenceIntegrityDiagnostics(store);
     context.subscriptions.push(diagnostics);
     context.subscriptions.push(
@@ -1519,7 +1499,6 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // --- Phase 13: Hunt Overview Dashboard ---
     let sessionDiff: SessionDiff | null = null;
 
     context.subscriptions.push(
@@ -1528,7 +1507,6 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // Session diff and "what changed" toast
     store.initialScanComplete().then(() => {
       const previousHashes = context.workspaceState.get<Record<string, string>>(SESSION_HASH_KEY, {});
       const currentHashes = computeArtifactHashes(store);
@@ -1548,7 +1526,6 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     });
 
-    // Store artifact hashes for session diff on next activation
     context.subscriptions.push({
       dispose() {
         const hashes = computeArtifactHashes(store);
@@ -1556,14 +1533,12 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     });
 
-    // --- Phase 14: Evidence Board ---
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openEvidenceBoard', () => {
         EvidenceBoardPanel.createOrShow(context, store);
       })
     );
 
-    // --- Phase 15: Query Analysis ---
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openQueryAnalysis', () => {
         QueryAnalysisPanel.createOrShow(context, store);
@@ -1576,7 +1551,6 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
-    // CodeLens navigation command
     context.subscriptions.push(
       vscode.commands.registerCommand(
         'thrunt-god.scrollToSection',
@@ -1647,10 +1621,8 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-  // Cleanup will be added as subsystems are registered
 }
 
-// Re-export parsers, store, and watcher for test access via the built bundle
 export { parseArtifact, parseMission, parseHypotheses, parseHuntMap, parseState, parseQuery, parseReceipt, parseEvidenceReview, parsePhaseSummary } from './parsers/index';
 export { extractFrontmatter, extractBody, extractMarkdownSections } from './parsers/base';
 export { HuntDataStore } from './store';

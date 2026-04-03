@@ -299,8 +299,6 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
       );
   }
 
-  // --- Phase nodes ---
-
   private getPhaseNodes(): HuntTreeItem[] {
     const hunt = this.store.getHunt();
     if (!hunt || hunt.huntMap.status !== 'loaded') return [];

@@ -1,14 +1,6 @@
 import * as vscode from 'vscode';
 import type { HuntDataStore } from './store';
 
-/**
- * HuntStatusBar manages a StatusBarItem showing hunt phase progress
- * and critical deviation alerts.
- *
- * Displays "$(shield) THRUNT: Phase N/M" when a hunt is active.
- * Pulses warning background when any receipt has deviation score >= 5.
- * Hidden when no hunt workspace detected.
- */
 export class HuntStatusBar implements vscode.Disposable {
   private readonly _statusBarItem: vscode.StatusBarItem;
   private readonly _storeSubscription: vscode.Disposable;
@@ -20,18 +12,13 @@ export class HuntStatusBar implements vscode.Disposable {
     );
     this._statusBarItem.command = 'thrunt-god.showProgressReport';
 
-    // Subscribe to store changes for live updates
     this._storeSubscription = store.onDidChange(() => {
       this.update();
     });
 
-    // Initial render
     this.update();
   }
 
-  /**
-   * Update the status bar item based on current store state.
-   */
   update(): void {
     const hunt = this.store.getHunt();
 
@@ -40,7 +27,6 @@ export class HuntStatusBar implements vscode.Disposable {
       return;
     }
 
-    // Extract phase progress from HuntState
     if (hunt.state.status === 'loaded') {
       const { phase, totalPhases } = hunt.state.data;
       this._statusBarItem.text = `$(shield) THRUNT: Phase ${phase}/${totalPhases}`;
@@ -48,7 +34,6 @@ export class HuntStatusBar implements vscode.Disposable {
       this._statusBarItem.text = '$(shield) THRUNT: Loading...';
     }
 
-    // Check for critical deviations (score >= 5) across all receipts
     let hasCritical = false;
     const receipts = this.store.getReceipts();
     for (const [, receipt] of receipts) {

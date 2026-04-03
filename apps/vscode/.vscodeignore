@@ -15,8 +15,7 @@ esbuild.config.mjs
 .vscode-test/**
 node_modules/**
 
-# Design and planning docs
-design/**
+# Planning docs
 docs/**
 .planning/**
 

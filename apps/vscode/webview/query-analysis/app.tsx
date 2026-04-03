@@ -92,7 +92,7 @@ function ModeTabs({
         class={viewModel.mode === 'inspector' ? 'active' : ''}
         onClick={() => onModeChange('inspector')}
       >
-        Inspector
+        Receipts
       </button>
     </div>
   );
@@ -345,7 +345,7 @@ function DiagnosticsSummary({ receipt }: { receipt: ReceiptInspectorItem }) {
   return (
     <div class="hunt-qa-framing-section">
       <div class="hunt-qa-framing-block">
-        <span class="hunt-qa-label">QA Diagnostics</span>
+        <span class="hunt-qa-label">Diagnostics</span>
         <p>
           {receipt.diagnosticCounts.errors} errors, {receipt.diagnosticCounts.warnings}{' '}
           warnings, {receipt.diagnosticCounts.infos} info flags
@@ -363,7 +363,7 @@ function DiagnosticsSummary({ receipt }: { receipt: ReceiptInspectorItem }) {
       ) : (
         <div class="hunt-qa-framing-block">
           <span class="hunt-qa-label">Status</span>
-          <p>No receipt QA issues detected.</p>
+          <p>No issues detected for this receipt.</p>
         </div>
       )}
     </div>
@@ -553,9 +553,9 @@ function ReceiptInspectorView(props: {
   return (
     <section class="hunt-qa-inspector">
       <div class="hunt-qa-inspector-header">
-        <h2>Receipt QA Inspector</h2>
+        <h2>Receipt Review</h2>
         <button class="hunt-ghost-button" onClick={props.onClose} type="button">
-          Close Inspector
+          Close Review
         </button>
       </div>
       <div class="hunt-qa-inspector-split">
@@ -608,7 +608,7 @@ function ReceiptInspectorView(props: {
           {selected ? (
             <ReceiptDetail receipt={selected} onNavigate={props.onNavigate} />
           ) : (
-            <p class="hunt-qa-inspector-empty">Select a receipt to inspect.</p>
+            <p class="hunt-qa-inspector-empty">Select a receipt to review.</p>
           )}
         </div>
       </div>
@@ -654,7 +654,7 @@ export function App(props: AppProps) {
               }}
             >
               {viewModel.mode === 'inspector'
-                ? 'Receipt QA Inspector'
+                ? 'Receipt Review'
                 : viewModel.mode === 'heatmap'
                   ? 'Template Heatmap'
                   : 'Template Comparison'}

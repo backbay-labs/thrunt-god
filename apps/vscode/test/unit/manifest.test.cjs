@@ -23,18 +23,28 @@ describe('extension manifest', () => {
     const huntmapCommand = findCommand('thrunt-god.analyzeHuntmap');
     const cliCommand = findCommand('thrunt-god.runThruntCli');
     const runtimeDoctorCommand = findCommand('thrunt-god.showRuntimeDoctor');
+    const queryAnalysisCommand = findCommand('thrunt-god.openQueryAnalysis');
+    const receiptReviewCommand = findCommand('thrunt-god.openReceiptInspector');
+    const huntSummaryCommand = findCommand('thrunt-god.copyWarRoomSummary');
 
     assert.ok(stateCommand, 'showStateJson command should be contributed');
     assert.ok(progressCommand, 'showProgressReport command should be contributed');
     assert.ok(huntmapCommand, 'analyzeHuntmap command should be contributed');
     assert.ok(cliCommand, 'runThruntCli command should be contributed');
     assert.ok(runtimeDoctorCommand, 'showRuntimeDoctor command should be contributed');
+    assert.ok(queryAnalysisCommand, 'openQueryAnalysis command should be contributed');
+    assert.ok(receiptReviewCommand, 'openReceiptInspector command should be contributed');
+    assert.ok(huntSummaryCommand, 'copyWarRoomSummary command should be contributed');
 
     assert.equal(stateCommand.icon, '$(output)');
     assert.equal(progressCommand.icon, '$(graph)');
     assert.equal(huntmapCommand.icon, '$(graph)');
     assert.equal(cliCommand.icon, '$(terminal)');
     assert.equal(runtimeDoctorCommand.icon, '$(tools)');
+    assert.equal(runtimeDoctorCommand.title, 'THRUNT: Check Runtime');
+    assert.equal(queryAnalysisCommand.title, 'THRUNT: Open Query Analysis');
+    assert.equal(receiptReviewCommand.title, 'THRUNT: Open Receipt Review');
+    assert.equal(huntSummaryCommand.title, 'THRUNT: Copy Hunt Summary');
   });
 
   it('surfaces THRUNT actions in the sidebar title and relevant item menus', () => {
