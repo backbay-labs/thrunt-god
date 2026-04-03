@@ -48,7 +48,7 @@ Requirements for the Investigative Surfaces milestone. Each maps to roadmap phas
 - [x] **QANL-01**: User can compare templates from two queries side-by-side
 - [x] **QANL-02**: User can view template presence matrix across 3+ queries as a heatmap grid
 - [x] **QANL-03**: User can sort templates by count, deviation, novelty, or recency
-- [ ] **QANL-04**: User can view receipt QA inspector with anomaly framing breakdown, prediction/baseline gaps, and score drivers
+- [x] **QANL-04**: User can view receipt QA inspector with anomaly framing breakdown, prediction/baseline gaps, and score drivers
 
 ### Cross-Surface Navigation
 
@@ -193,7 +193,7 @@ Deferred to v5.1+:
 | QANL-01 | Phase 15 | Complete |
 | QANL-02 | Phase 15 | Complete |
 | QANL-03 | Phase 15 | Complete |
-| QANL-04 | Phase 15 | Pending |
+| QANL-04 | Phase 15 | Complete |
 | XNAV-01 | Phase 16 | Pending |
 | XNAV-02 | Phase 16 | Pending |
 | XNAV-03 | Phase 16 | Pending |

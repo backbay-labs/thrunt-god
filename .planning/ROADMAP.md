@@ -19,7 +19,7 @@
 - [x] **Phase 12: Shared Design System & Webview Infrastructure** - CSS tokens, shared Preact primitives, hooks library, esbuild multi-entry, Drain Viewer token migration (completed 2026-04-02)
 - [x] **Phase 13: Hunt Overview Dashboard** - Mission cockpit, phase rail, confidence meter, blocker stack, activity feed, "what changed?" notification (completed 2026-04-02)
 - [x] **Phase 14: Evidence Board** - Force-directed lineage graph with tier constraints, coverage matrix with gap detection, mode toggle in single panel (completed 2026-04-02)
-- [ ] **Phase 15: Query Analysis Upgrades** - Template comparison, presence matrix heatmap, sort controls, receipt QA inspector with anomaly framing
+- [x] **Phase 15: Query Analysis Upgrades** - Template comparison, presence matrix heatmap, sort controls, receipt QA inspector with anomaly framing (completed 2026-04-03)
 - [ ] **Phase 16: Cross-Surface Navigation & Session Continuity** - WebviewPanelSerializer, cross-surface artifact highlighting, contextual actions, session continuity summary
 
 ## Phase Details
@@ -89,7 +89,7 @@ Plans:
 Plans:
 - [x] 15-01-PLAN.md -- Extension-host data pipeline: ViewModel expansion, deriveQueryAnalysis store derivation, QueryAnalysisPanel provider, command registration, unit tests
 - [x] 15-02-PLAN.md -- Comparison and heatmap webview: two-column template diff, presence matrix, sort controls, CSS
-- [ ] 15-03-PLAN.md -- Receipt QA inspector webview: split-pane layout, deviation score card, factor table, framing breakdown, CSS
+- [x] 15-03-PLAN.md -- Receipt QA inspector webview: split-pane layout, deviation score card, factor table, framing breakdown, CSS
 
 ### Phase 16: Cross-Surface Navigation & Session Continuity
 **Goal**: All webview surfaces behave as a cohesive investigation tool -- artifact selection syncs across panels, contextual actions navigate between surfaces, and session state persists across VS Code restarts
@@ -261,7 +261,7 @@ Plans:
 | 12. Design System & Webview Infrastructure | 3/3 | Complete    | 2026-04-02 | - |
 | 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 3/3 | Complete | 2026-04-02 |
-| 15. Query Analysis Upgrades | v3.0 | 2/3 | In progress | - |
+| 15. Query Analysis Upgrades | v3.0 | 3/3 | Complete | 2026-04-03 |
 | 16. Cross-Surface Navigation | v3.0 | 0/2 | Not started | - |
 | 17. War Room Copy | v4.0 | 0/1 | Not started | - |
 | 18. SLA Countdown Timer | v4.0 | 0/1 | Not started | - |
