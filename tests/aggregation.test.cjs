@@ -242,6 +242,29 @@ describe('deduplicateEntities', () => {
     assert.deepStrictEqual(entities[0].tenant_ids, ['a']);
     assert.strictEqual(entities[0].occurrence_count, 2);
   });
+
+  test('coerces scalar entity values instead of throwing during deduplication', () => {
+    const results = [
+      makeTenantResult('a', [], [{ kind: 'port', value: 443 }]),
+      makeTenantResult('b', [], [{ kind: 'port', value: '443' }]),
+    ];
+
+    const entities = deduplicateEntities(results);
+    assert.strictEqual(entities.length, 1);
+    assert.deepStrictEqual(entities[0].tenant_ids, ['a', 'b']);
+    assert.strictEqual(entities[0].occurrence_count, 2);
+  });
+
+  test('skips malformed entities with missing values', () => {
+    const results = [
+      makeTenantResult('a', [], [{ kind: 'ip' }, { kind: 'user', value: 'admin' }]),
+    ];
+
+    const entities = deduplicateEntities(results);
+    assert.strictEqual(entities.length, 1);
+    assert.strictEqual(entities[0].kind, 'user');
+    assert.strictEqual(entities[0].value, 'admin');
+  });
 });
 
 // ─── aggregateResults ───────────────────────────────────────────────────────
@@ -523,6 +546,134 @@ describe('writeMultiTenantArtifacts', () => {
     ]);
     const result = writeMultiTenantArtifacts(tmpDir, mtr);
     assert.strictEqual(result.tenant_isolation_mode, 'flat');
+  });
+});
+
+// ─── deduplicateEvents ─────────────────────────────────────────────────────
+
+describe('deduplicateEvents', () => {
+  let deduplicateEvents;
+
+  beforeEach(() => {
+    deduplicateEvents = require('../thrunt-god/bin/lib/aggregation.cjs').deduplicateEvents;
+  });
+
+  test('by_id: removes duplicate event.id, keeps first occurrence', () => {
+    const events = [
+      { id: 'a', title: 'first' },
+      { id: 'b', title: 'second' },
+      { id: 'a', title: 'third' },
+    ];
+    const result = deduplicateEvents(events, { strategy: 'by_id' });
+    assert.strictEqual(result.length, 2);
+    assert.strictEqual(result[0].title, 'first');
+    assert.strictEqual(result[1].title, 'second');
+  });
+
+  test('by_id: filters out events with null/undefined id', () => {
+    const events = [
+      { id: null, title: 'null-id' },
+      { id: 'a', title: 'valid' },
+      { id: undefined, title: 'undef-id' },
+    ];
+    const result = deduplicateEvents(events, { strategy: 'by_id' });
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].id, 'a');
+  });
+
+  test('by_content_hash: deduplicates on SHA-256 of connector_id:title:summary:timestamp_minute', () => {
+    const events = [
+      { id: 'e1', connector_id: 'splunk', title: 'Failed login', summary: 'brute force', timestamp: '2024-01-15T10:30:45Z' },
+      { id: 'e2', connector_id: 'splunk', title: 'Failed login', summary: 'brute force', timestamp: '2024-01-15T10:30:59Z' },
+    ];
+    const result = deduplicateEvents(events, { strategy: 'by_content_hash' });
+    assert.strictEqual(result.length, 1);
+    assert.strictEqual(result[0].id, 'e1');
+  });
+
+  test('by_content_hash: different timestamp minutes produce different hashes', () => {
+    const events = [
+      { id: 'e1', connector_id: 'splunk', title: 'Failed login', summary: 'brute force', timestamp: '2024-01-15T10:30:45Z' },
+      { id: 'e2', connector_id: 'splunk', title: 'Failed login', summary: 'brute force', timestamp: '2024-01-15T10:31:45Z' },
+    ];
+    const result = deduplicateEvents(events, { strategy: 'by_content_hash' });
+    assert.strictEqual(result.length, 2);
+  });
+
+  test('by_content_hash: missing fields default to empty string', () => {
+    const events = [
+      { connector_id: 's' },
+      { connector_id: 's' },
+    ];
+    const result = deduplicateEvents(events, { strategy: 'by_content_hash' });
+    assert.strictEqual(result.length, 1);
+  });
+
+  test('by_content_hash: preserves tenant provenance when event content matches', () => {
+    const events = [
+      {
+        id: 'e1',
+        tenant_id: 'tenant-a',
+        tenant_connector_id: 'tenant-a:splunk',
+        connector_id: 'splunk',
+        title: 'Failed login',
+        summary: 'brute force',
+        timestamp: '2024-01-15T10:30:45Z',
+      },
+      {
+        id: 'e2',
+        tenant_id: 'tenant-b',
+        tenant_connector_id: 'tenant-b:splunk',
+        connector_id: 'splunk',
+        title: 'Failed login',
+        summary: 'brute force',
+        timestamp: '2024-01-15T10:30:59Z',
+      },
+    ];
+    const result = deduplicateEvents(events, { strategy: 'by_content_hash' });
+    assert.strictEqual(result.length, 2);
+  });
+
+  test('by_content_hash: supports non-string timestamps without throwing', () => {
+    const minute = Date.parse('2024-01-15T10:30:00Z');
+    const events = [
+      { id: 'e1', connector_id: 'splunk', title: 'Failed login', summary: 'brute force', timestamp: minute },
+      { id: 'e2', connector_id: 'splunk', title: 'Failed login', summary: 'brute force', timestamp: minute + 30_000 },
+    ];
+
+    const result = deduplicateEvents(events, { strategy: 'by_content_hash' });
+    assert.strictEqual(result.length, 1);
+  });
+
+  test('defaults to by_id when no strategy specified', () => {
+    const events = [{ id: 'a' }, { id: 'a' }];
+    const result = deduplicateEvents(events);
+    assert.strictEqual(result.length, 1);
+  });
+
+  test('returns empty array for empty input', () => {
+    const result = deduplicateEvents([]);
+    assert.strictEqual(result.length, 0);
+  });
+
+  test('returns empty array for null/undefined input', () => {
+    assert.deepStrictEqual(deduplicateEvents(null), []);
+    assert.deepStrictEqual(deduplicateEvents(undefined), []);
+  });
+
+  test('skips null entries in events array', () => {
+    const events = [null, { id: 'a' }, undefined, { id: 'b' }];
+    const result = deduplicateEvents(events);
+    assert.strictEqual(result.length, 2);
+  });
+
+  test('handles large sets with duplicates', () => {
+    const events = [];
+    for (let i = 0; i < 1000; i++) {
+      events.push({ id: String(i % 500) });
+    }
+    const result = deduplicateEvents(events, { strategy: 'by_id' });
+    assert.strictEqual(result.length, 500);
   });
 });
 

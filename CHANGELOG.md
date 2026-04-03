@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-04-03
+
+### Added
+- **VS Code extension alpha** under `apps/vscode/` with the THRUNT investigation sidebar, status bar, CodeLens actions, Hunt Overview, Evidence Board, Query Analysis, and Drain Viewer surfaces
+- **Program and case navigation** with nested case discovery, case-aware program summaries, and session continuity across investigative surfaces
+- **Operator workflows in the extension** including IOC tracking, SLA timers, phase execution controls, runtime diagnostics, and war-room summary exports
+
+### Changed
+- Moved the VS Code package from `thrunt-god-vscode/` to `apps/vscode/` and aligned repository scripts around the new package path
+- Release automation now validates, packages, and publishes the VSIX alongside the root release artifact so GitHub releases ship the extension directly
+
+### Fixed
+- Published findings detection now recognizes `.planning/published/FINDINGS.md` and maps them into the publish phase correctly
+- Query-to-phase mapping, query analysis sorting, and CLI cancellation cleanup now behave correctly under repeated investigative runs
+- Program-mode UI copy and nested case labeling now use consistent release-ready wording in the extension
+
 ## [1.28.0] - 2026-03-22
 
 ### Added
@@ -1665,7 +1681,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - YOLO mode for autonomous execution
 - Interactive mode with checkpoints
 
-[Unreleased]: https://github.com/glittercowboy/thrunt-god/compare/v1.28.0...HEAD
+[Unreleased]: https://github.com/backbay-labs/thrunt-god/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/backbay-labs/thrunt-god/releases/tag/v0.3.0
 [1.28.0]: https://github.com/glittercowboy/thrunt-god/releases/tag/v1.28.0
 [1.27.0]: https://github.com/glittercowboy/thrunt-god/releases/tag/v1.27.0
 [1.26.0]: https://github.com/glittercowboy/thrunt-god/releases/tag/v1.26.0

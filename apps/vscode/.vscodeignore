@@ -1,0 +1,26 @@
+# Source files (bundled via esbuild)
+src/**
+webview/**
+
+# Test files
+test/**
+
+# Config files
+tsconfig.json
+esbuild.config.mjs
+.gitignore
+
+# Development files
+.vscode/**
+.vscode-test/**
+node_modules/**
+
+# Planning docs
+docs/**
+.planning/**
+
+# Other
+*.map
+**/*.ts
+!dist/**
+dist/**/*.map

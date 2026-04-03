@@ -209,6 +209,28 @@ describe('scoreEvidenceQuality', () => {
     assert.equal(result.dimensions.receipt_coverage.covered, 1);
   });
 
+  it('counts heading-style hunt hypotheses when scoring evidence quality', () => {
+    const review = require('../thrunt-god/bin/lib/review.cjs');
+
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HYPOTHESES.md'),
+      [
+        '# Hypotheses',
+        '',
+        '### HYP-01: Spray succeeded against david.park',
+        '',
+        '### HYP-02: Another admin account was compromised',
+      ].join('\n'),
+      'utf-8'
+    );
+    writeReceipt(tmpDir, 'RCT-001', ['HYP-01']);
+
+    const result = review.scoreEvidenceQuality(tmpDir, {});
+    assert.equal(result.dimensions.receipt_coverage.total, 2);
+    assert.equal(result.dimensions.receipt_coverage.covered, 1);
+    assert.equal(result.dimensions.receipt_coverage.score, 0.5);
+  });
+
   it('returns integrity below 1.0 with integrity failures', () => {
     const review = require('../thrunt-god/bin/lib/review.cjs');
 

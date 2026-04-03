@@ -50,10 +50,16 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            apps/vscode/package-lock.json
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install VS Code extension dependencies
+        run: npm --prefix apps/vscode ci
 
       - name: Resolve package metadata
         id: package_meta
@@ -62,6 +68,17 @@ jobs:
           set -euo pipefail
           echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Verify VS Code extension version matches release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT_VERSION="${{ steps.package_meta.outputs.version }}"
+          VSCODE_VERSION="$(node -p "require('./apps/vscode/package.json').version")"
+          if [ "${VSCODE_VERSION}" != "${ROOT_VERSION}" ]; then
+            echo "apps/vscode/package.json version ${VSCODE_VERSION} does not match root package version ${ROOT_VERSION}" >&2
+            exit 1
+          fi
 
       - name: Verify tag matches package version
         shell: bash
@@ -89,9 +106,17 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:coverage
 
+      - name: Run VS Code extension verification
+        run: |
+          npm run lint:vscode
+          npm run test:vscode:unit
+          npm run test:vscode:smoke
+
       - name: Build publish artifacts
         run: |
+          rm -f apps/vscode/*.vsix
           npm run build:hooks
+          npm --prefix apps/vscode run package
           npm pack --json > pack-output.json
 
       - name: Check whether version already exists on npm
@@ -118,9 +143,12 @@ jobs:
         run: |
           set -euo pipefail
           PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('pack-output.json','utf8')); console.log(output[0].filename)")"
+          VSIX_FILE="$(find apps/vscode -maxdepth 1 -name '*.vsix' | head -n 1)"
           TAG="${{ steps.release_tag.outputs.tag }}"
+          TITLE="${TAG} - VS Code Extension Alpha"
           if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
-            gh release upload "${TAG}" "${PACKAGE_FILE}" --repo "${GITHUB_REPOSITORY}" --clobber
+            gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}"
+            gh release upload "${TAG}" "${PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --clobber
           else
-            gh release create "${TAG}" "${PACKAGE_FILE}" --repo "${GITHUB_REPOSITORY}" --title "${TAG}" --generate-notes
+            gh release create "${TAG}" "${PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}" --generate-notes
           fi

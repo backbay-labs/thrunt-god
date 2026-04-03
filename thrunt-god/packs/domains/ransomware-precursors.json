@@ -21,6 +21,39 @@
   "blind_spots": [
     "Early precursor activity on unmanaged hosts or identities can still escape this pack even when later stages are visible."
   ],
+  "expected_progressions": [
+    {
+      "name": "access-to-execution-to-impact",
+      "description": "Initial access via stolen credentials progresses through execution to ransomware impact",
+      "entity_scope": "host",
+      "steps": [
+        {
+          "technique": "T1078",
+          "event_class": "anomalous_logon",
+          "signals": ["unusual_logon_type", "off_hours_rdp", "service_account_interactive"],
+          "expected_benign_next": ["normal_admin_activity", "scheduled_maintenance"],
+          "expected_malicious_next": ["cmd_execution", "powershell_execution", "remote_service_use"]
+        },
+        {
+          "technique": "T1059",
+          "event_class": "suspicious_execution",
+          "signals": ["encoded_command", "unusual_parent_process", "script_download"],
+          "expected_benign_next": ["it_automation", "ci_cd_pipeline"],
+          "expected_malicious_next": ["credential_dumping", "network_scanning", "lateral_tool_transfer"]
+        },
+        {
+          "technique": "T1021",
+          "event_class": "lateral_movement",
+          "signals": ["rdp_to_new_host", "psexec_usage", "wmi_remote"],
+          "expected_malicious_next": ["additional_execution", "data_staging", "encryption_preparation"]
+        }
+      ],
+      "scoring": {
+        "benign_indicators": ["known_admin_account", "change_ticket_exists", "during_maintenance_window"],
+        "malicious_indicators": ["encoded_powershell", "credential_tool_detected", "rapid_multi_host_access"]
+      }
+    }
+  ],
   "examples": {
     "parameters": {
       "tenant": "example-tenant",

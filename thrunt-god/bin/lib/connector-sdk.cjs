@@ -33,11 +33,30 @@ const DATASET_KINDS = [
   'other',
 ];
 
+const DATASET_DEFAULTS = {
+  identity:  { pagination: { limit: 200, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  endpoint:  { pagination: { limit: 1000, max_pages: 5 }, execution: { timeout_ms: 60_000 } },
+  alerts:    { pagination: { limit: 100, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  cloud:     { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 45_000 } },
+  email:     { pagination: { limit: 200, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  entities:  { pagination: { limit: 100, max_pages: 5 },  execution: { timeout_ms: 20_000 } },
+  events:    { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+  other:     { pagination: { limit: 500, max_pages: 10 }, execution: { timeout_ms: 30_000 } },
+};
+
+function getDatasetDefaults(kind) {
+  const entry = DATASET_DEFAULTS[kind] || DATASET_DEFAULTS.events;
+  return {
+    pagination: { ...entry.pagination },
+    execution: { ...entry.execution },
+  };
+}
+
 const PAGINATION_MODES = ['auto', 'none', 'cursor', 'offset', 'page', 'token'];
 const CONSISTENCY_MODES = ['best_effort', 'strict'];
 const RESULT_STATUSES = ['ok', 'partial', 'error', 'empty'];
 const EVIDENCE_POLICIES = ['all', 'material', 'none'];
-const LIFECYCLE_STAGES = ['preflight', 'prepare', 'execute', 'paginate', 'normalize', 'emit', 'complete'];
+const LIFECYCLE_STAGES = ['preflight', 'prepare', 'execute', 'paginate', 'normalize', 'reduce', 'emit', 'complete'];
 const AUTH_TYPES = [
   'api_key',
   'basic',
@@ -168,7 +187,13 @@ function normalizeEvidence(input = {}) {
 }
 
 function createQuerySpec(input = {}, now = new Date()) {
-  const normalizedExecution = normalizeExecution(input.execution);
+  const datasetKind = input.dataset?.kind || 'events';
+  const dsDefaults = DATASET_DEFAULTS[datasetKind] || DATASET_DEFAULTS.events;
+
+  const paginationInput = { ...dsDefaults.pagination, ...(input.pagination || {}) };
+  const executionInput = { ...dsDefaults.execution, ...(input.execution || {}) };
+
+  const normalizedExecution = normalizeExecution(executionInput);
   if ((!input.execution || input.execution.profile === undefined) && input.connector?.profile) {
     normalizedExecution.profile = input.connector.profile;
   }
@@ -188,7 +213,7 @@ function createQuerySpec(input = {}, now = new Date()) {
     },
     time_window: normalizeTimeWindow(input.time_window, now),
     parameters: isPlainObject(input.parameters) ? cloneObject(input.parameters) : {},
-    pagination: normalizePagination(input.pagination),
+    pagination: normalizePagination(paginationInput),
     execution: normalizedExecution,
     query: normalizeQuery(input.query),
     evidence: normalizeEvidence(input.evidence),
@@ -849,6 +874,18 @@ async function executeQuerySpec(specInput, adapterOrRegistry, options = {}) {
     accumulator.errors.push(runtimeError);
   }
 
+  // ── REDUCE stage: template-based event grouping ──
+  let templateMetadata = null;
+  if (accumulator.events.length > 0 && options.reduce !== false) {
+    try {
+      stage = 'reduce';
+      const { reduceEvents } = require('./drain.cjs');
+      templateMetadata = reduceEvents(accumulator.events, typeof options.reduce === 'object' ? options.reduce : {});
+    } catch (reduceErr) {
+      accumulator.warnings.push(createWarning('REDUCE_FAILED', `Template reduction failed: ${reduceErr.message}`));
+    }
+  }
+
   const envelope = createResultEnvelope(spec, {
     started_at: startedAt,
     completed_at: nowIso(),
@@ -866,6 +903,7 @@ async function executeQuerySpec(specInput, adapterOrRegistry, options = {}) {
       connector_id: spec.connector.id,
       artifact_ids: [],
       last_stage: stage,
+      ...(templateMetadata ? { templates: templateMetadata } : {}),
     },
   });
 
@@ -2014,6 +2052,7 @@ module.exports = {
   QUERY_SPEC_VERSION,
   RESULT_ENVELOPE_VERSION,
   DATASET_KINDS,
+  DATASET_DEFAULTS,
   PAGINATION_MODES,
   CONSISTENCY_MODES,
   RESULT_STATUSES,
@@ -2027,7 +2066,8 @@ module.exports = {
   DEFAULT_MAX_RETRIES,
   DEFAULT_BACKOFF_MS,
 
-  // 46 functions
+  // 47 functions
+  getDatasetDefaults,
   createQuerySpec,
   validateQuerySpec,
   normalizeTimeWindow,

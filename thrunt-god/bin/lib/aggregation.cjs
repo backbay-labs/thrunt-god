@@ -9,6 +9,8 @@
 
 'use strict';
 
+const crypto = require('crypto');
+
 // ─── tagEventsWithTenant ────────────────────────────────────────────────────
 
 /**
@@ -55,7 +57,8 @@ function deduplicateEntities(tenantResults) {
     const tenantId = tr.tenant_id;
 
     for (const entity of entities) {
-      const key = `${entity.kind}:${entity.value.toLowerCase()}`;
+      const key = computeEntityDedupKey(entity);
+      if (!key) continue;
       const existing = map.get(key);
 
       if (existing) {
@@ -74,6 +77,100 @@ function deduplicateEntities(tenantResults) {
   }
 
   return Array.from(map.values());
+}
+
+function computeEntityDedupKey(entity) {
+  if (!entity || typeof entity.kind !== 'string') return null;
+
+  const normalizedValue = normalizeEntityValue(entity.value);
+  if (normalizedValue == null) return null;
+
+  return `${entity.kind}:${normalizedValue.toLowerCase()}`;
+}
+
+function normalizeEntityValue(value) {
+  if (typeof value === 'string') return value;
+  if (
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    typeof value === 'boolean'
+  ) {
+    return String(value);
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  return null;
+}
+
+// ─── deduplicateEvents ─────────────────────────────────────────────────────
+
+/**
+ * Compute a dedup key for an event based on the chosen strategy.
+ *
+ * @param {object|null|undefined} event - A single event object
+ * @param {string} strategy - 'by_id' or 'by_content_hash'
+ * @returns {string|null} Dedup key, or null if event is falsy or key cannot be computed
+ */
+function computeEventDedupKey(event, strategy) {
+  if (!event) return null;
+  switch (strategy) {
+    case 'by_id':
+      return event.id || null;
+    case 'by_content_hash': {
+      const timestampMinute = normalizeTimestampMinute(event.timestamp);
+      const seed = [
+        event.tenant_id || '',
+        event.tenant_connector_id || '',
+        event.connector_id || '',
+        event.title || '',
+        event.summary || '',
+        timestampMinute,
+      ].join(':');
+      return crypto.createHash('sha256').update(seed).digest('hex').slice(0, 16);
+    }
+    default:
+      return event.id || null;
+  }
+}
+
+function normalizeTimestampMinute(value) {
+  if (typeof value === 'string') {
+    return value.slice(0, 16);
+  }
+
+  if (typeof value === 'number' || value instanceof Date) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toISOString().slice(0, 16);
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Deduplicate an array of events using the specified strategy.
+ *
+ * Strategies:
+ *   - 'by_id' (default): Remove events with duplicate event.id, keep first occurrence
+ *   - 'by_content_hash': Remove events where SHA-256 of connector_id:title:summary:timestamp_minute matches
+ *
+ * @param {Array|null|undefined} events - Array of event objects
+ * @param {object} [options] - Configuration
+ * @param {string} [options.strategy='by_id'] - Dedup strategy
+ * @returns {Array} Deduplicated events
+ */
+function deduplicateEvents(events, options) {
+  if (!Array.isArray(events)) return [];
+  const strategy = options?.strategy || 'by_id';
+  const seen = new Set();
+  return events.filter(event => {
+    const key = computeEventDedupKey(event, strategy);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // ─── aggregateResults ───────────────────────────────────────────────────────
@@ -282,6 +379,7 @@ function correlateFindings(tenantResults, options = {}) {
 module.exports = {
   tagEventsWithTenant,
   deduplicateEntities,
+  deduplicateEvents,
   correlateFindings,
   aggregateResults,
 };

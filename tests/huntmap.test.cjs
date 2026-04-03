@@ -370,6 +370,34 @@ describe('huntmap analyze command', () => {
     assert.strictEqual(output.phases[1].depends_on, 'Phase 1');
   });
 
+  test('falls back to phase completion progress when completed hunts have no tracked plan files', () => {
+    fs.rmSync(path.join(tmpDir, '.planning'), { recursive: true, force: true });
+    fs.mkdirSync(path.join(tmpDir, '.hunt', 'phases'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, '.hunt', 'HUNTMAP.md'),
+      `# Huntmap
+
+- [x] **Phase 1: Signal Intake**
+- [x] **Phase 2: Evidence Review**
+
+### Phase 1: Signal Intake
+**Goal:** Gather the initial signal
+
+### Phase 2: Evidence Review
+**Goal:** Publish the final results
+`
+    );
+
+    const result = runThruntTools('huntmap analyze', tmpDir, { THRUNT_PLANNING_DIR: '.hunt' });
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.completed_phases, 2);
+    assert.strictEqual(output.total_plans, 0);
+    assert.strictEqual(output.total_summaries, 0);
+    assert.strictEqual(output.progress_percent, 100);
+  });
+
   test('extracts goals and depends_on with colon outside bold (**Goal**: format)', () => {
     fs.writeFileSync(
       path.join(tmpDir, '.planning', 'HUNTMAP.md'),

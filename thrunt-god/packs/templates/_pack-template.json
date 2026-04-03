@@ -22,6 +22,7 @@
   ],
   "scope_defaults": {},
   "execution_defaults": {},
+  "expected_progressions": [],
   "examples": {
     "parameters": {
       "tenant": "example-tenant"
@@ -36,6 +37,7 @@
     "receipt_tags": ["pack:starter.replace-me"]
   },
   "notes": [
-    "Template files are intentionally excluded from registry discovery."
+    "Template files are intentionally excluded from registry discovery.",
+    "expected_progressions is optional. Define attack chains when a pack composes multiple technique packs and sequential reasoning applies."
   ]
 }

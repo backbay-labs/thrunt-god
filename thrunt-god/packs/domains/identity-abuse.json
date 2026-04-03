@@ -29,6 +29,56 @@
   "blind_spots": [
     "Helpdesk-assisted account recovery performed outside centralized identity telemetry can obscure the earliest takeover steps."
   ],
+  "expected_progressions": [
+    {
+      "name": "credential-to-persistence",
+      "description": "After anomalous credential use, adversary establishes persistence",
+      "entity_scope": "user",
+      "steps": [
+        {
+          "technique": "T1078",
+          "event_class": "anomalous_sign_in",
+          "signals": ["unusual_location", "impossible_travel", "new_device", "off_hours"],
+          "expected_benign_next": ["normal_app_access", "expected_geo", "mfa_success"],
+          "expected_malicious_next": ["mfa_change", "mailbox_rule", "oauth_consent", "privilege_escalation"]
+        },
+        {
+          "technique": "T1098",
+          "event_class": "account_modification",
+          "signals": ["mfa_factor_added", "password_reset", "group_membership_change", "role_assignment"],
+          "expected_malicious_next": ["new_account_creation", "security_control_disable", "lateral_movement"]
+        }
+      ],
+      "scoring": {
+        "benign_indicators": ["change_request_ticket_exists", "admin_session_from_known_ip", "during_business_hours"],
+        "malicious_indicators": ["no_change_ticket", "from_anomalous_ip", "outside_business_hours", "multiple_accounts_affected"]
+      }
+    },
+    {
+      "name": "brute-force-to-access",
+      "description": "Brute-force authentication failures followed by successful access",
+      "entity_scope": "user",
+      "steps": [
+        {
+          "technique": "T1110",
+          "event_class": "auth_failure_burst",
+          "signals": ["multiple_failed_logins", "password_spray_pattern", "credential_stuffing"],
+          "expected_benign_next": ["account_lockout", "helpdesk_reset"],
+          "expected_malicious_next": ["successful_auth_from_same_source", "credential_change"]
+        },
+        {
+          "technique": "T1078",
+          "event_class": "successful_auth_after_failures",
+          "signals": ["login_success_after_failures", "new_session_from_attack_source"],
+          "expected_malicious_next": ["mfa_change", "data_access", "persistence"]
+        }
+      ],
+      "scoring": {
+        "benign_indicators": ["user_initiated_reset", "helpdesk_ticket_exists", "known_testing_source"],
+        "malicious_indicators": ["success_from_same_ip_as_failures", "immediate_privilege_use", "no_prior_successful_auth"]
+      }
+    }
+  ],
   "examples": {
     "parameters": {
       "tenant": "example-tenant",

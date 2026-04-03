@@ -1,0 +1,468 @@
+{
+  "name": "thrunt-god",
+  "displayName": "THRUNT God",
+  "description": "Hunt investigation dashboard for THRUNT God threat-hunting framework",
+  "version": "0.3.0",
+  "publisher": "backbay-labs",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/backbay-labs/thrunt-god"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:.hunt/MISSION.md",
+    "workspaceContains:.planning/MISSION.md",
+    "onCommand:thrunt-god.openTemplateViewer",
+    "onCommand:thrunt-god.runThruntCli",
+    "onCommand:thrunt-god.showStateJson",
+    "onCommand:thrunt-god.showProgressReport",
+    "onCommand:thrunt-god.analyzeHuntmap",
+    "onCommand:thrunt-god.showRuntimeDoctor",
+    "onCommand:thrunt-god.showInEvidenceBoard",
+    "onCommand:thrunt-god.openHuntOverview",
+    "onCommand:thrunt-god.openEvidenceBoard",
+    "onCommand:thrunt-god.openQueryAnalysis",
+    "onCommand:thrunt-god.openReceiptInspector",
+    "onCommand:thrunt-god.copyWarRoomSummary",
+    "onCommand:thrunt-god.copyFindingSummary",
+    "onCommand:thrunt-god.copyHypothesisSummary",
+    "onCommand:thrunt-god.copyAttackSummary",
+    "onCommand:thrunt-god.startSlaTimer",
+    "onCommand:thrunt-god.pauseSlaTimer",
+    "onCommand:thrunt-god.resumeSlaTimer",
+    "onCommand:thrunt-god.stopSlaTimer",
+    "onCommand:thrunt-god.advanceSlaPhase",
+    "onCommand:thrunt-god.showSlaStatus",
+    "onCommand:thrunt-god.copySlaStatus",
+    "onCommand:thrunt-god.addIoc",
+    "onCommand:thrunt-god.listIocs",
+    "onCommand:thrunt-god.removeIoc",
+    "onCommand:thrunt-god.clearIocs",
+    "onCommand:thrunt-god.runHuntPhase",
+    "onCommand:thrunt-god.rerunLastPhase",
+    "onCommand:thrunt-god.cancelCliCommand",
+    "onWebviewPanel:thruntGod.huntOverview",
+    "onWebviewPanel:thruntGod.evidenceBoard",
+    "onWebviewPanel:thruntGod.queryAnalysis",
+    "onWebviewPanel:thruntGod.drainViewer"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "thruntGodSidebar",
+          "title": "THRUNT God",
+          "icon": "$(shield)"
+        }
+      ]
+    },
+    "views": {
+      "thruntGodSidebar": [
+        {
+          "id": "thruntGod.huntTree",
+          "name": "Investigation",
+          "when": "thruntGod.huntDetected"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "thruntGod.huntTree",
+        "contents": "No hunt detected in this workspace.\n\nOpen a folder containing .planning/MISSION.md or .hunt/MISSION.md to get started.\n[Open Folder](command:vscode.openFolder)",
+        "when": "!thruntGod.huntDetected"
+      }
+    ],
+    "commands": [
+      {
+        "command": "thrunt-god.showInfo",
+        "title": "THRUNT: Show Extension Info"
+      },
+      {
+        "command": "thrunt-god.openArtifact",
+        "title": "THRUNT: Open Artifact"
+      },
+      {
+        "command": "thrunt-god.openTemplateViewer",
+        "title": "THRUNT: Open Template Viewer"
+      },
+      {
+        "command": "thrunt-god.runThruntCli",
+        "title": "THRUNT: Run CLI Command",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "thrunt-god.showStateJson",
+        "title": "THRUNT: Show State JSON",
+        "icon": "$(output)"
+      },
+      {
+        "command": "thrunt-god.showProgressReport",
+        "title": "THRUNT: Show Progress Report",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "thrunt-god.analyzeHuntmap",
+        "title": "THRUNT: Analyze Huntmap",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "thrunt-god.showRuntimeDoctor",
+        "title": "THRUNT: Check Runtime",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "thrunt-god.revealInExplorer",
+        "title": "THRUNT: Reveal in Explorer"
+      },
+      {
+        "command": "thrunt-god.copyPath",
+        "title": "THRUNT: Copy Path"
+      },
+      {
+        "command": "thrunt-god.refreshSidebar",
+        "title": "THRUNT: Refresh Sidebar",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "thrunt-god.scrollToSection",
+        "title": "THRUNT: Scroll to Section"
+      },
+      {
+        "command": "thrunt-god.openHuntOverview",
+        "title": "THRUNT: Open Hunt Overview",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "thrunt-god.openEvidenceBoard",
+        "title": "THRUNT: Open Evidence Board",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "thrunt-god.showInEvidenceBoard",
+        "title": "THRUNT: Show in Evidence Board",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "thrunt-god.openQueryAnalysis",
+        "title": "THRUNT: Open Query Analysis"
+      },
+      {
+        "command": "thrunt-god.openReceiptInspector",
+        "title": "THRUNT: Open Receipt Review"
+      },
+      {
+        "command": "thrunt-god.copyWarRoomSummary",
+        "title": "THRUNT: Copy Hunt Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.copyFindingSummary",
+        "title": "THRUNT: Copy Finding Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.copyHypothesisSummary",
+        "title": "THRUNT: Copy Hypothesis Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.copyAttackSummary",
+        "title": "THRUNT: Copy ATT&CK Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.startSlaTimer",
+        "title": "THRUNT: Start SLA Timer",
+        "icon": "$(clock)"
+      },
+      {
+        "command": "thrunt-god.pauseSlaTimer",
+        "title": "THRUNT: Pause SLA Timer"
+      },
+      {
+        "command": "thrunt-god.resumeSlaTimer",
+        "title": "THRUNT: Resume SLA Timer"
+      },
+      {
+        "command": "thrunt-god.stopSlaTimer",
+        "title": "THRUNT: Stop SLA Timer"
+      },
+      {
+        "command": "thrunt-god.advanceSlaPhase",
+        "title": "THRUNT: Advance SLA Phase"
+      },
+      {
+        "command": "thrunt-god.showSlaStatus",
+        "title": "THRUNT: Show SLA Status"
+      },
+      {
+        "command": "thrunt-god.copySlaStatus",
+        "title": "THRUNT: Copy SLA Status"
+      },
+      {
+        "command": "thrunt-god.addIoc",
+        "title": "THRUNT: Add IOC",
+        "icon": "$(search)"
+      },
+      {
+        "command": "thrunt-god.listIocs",
+        "title": "THRUNT: List IOCs"
+      },
+      {
+        "command": "thrunt-god.removeIoc",
+        "title": "THRUNT: Remove IOC"
+      },
+      {
+        "command": "thrunt-god.clearIocs",
+        "title": "THRUNT: Clear All IOCs"
+      },
+      {
+        "command": "thrunt-god.runHuntPhase",
+        "title": "THRUNT: Run Hunt Phase",
+        "icon": "$(play)"
+      },
+      {
+        "command": "thrunt-god.rerunLastPhase",
+        "title": "THRUNT: Re-run Last Phase"
+      },
+      {
+        "command": "thrunt-god.cancelCliCommand",
+        "title": "THRUNT: Cancel Running Command"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "thrunt-god.runHuntPhase",
+          "when": "view == thruntGod.huntTree && viewItem == phase",
+          "group": "execution@1"
+        },
+        {
+          "command": "thrunt-god.copyFindingSummary",
+          "when": "view == thruntGod.huntTree && viewItem == receipt",
+          "group": "warroom@1"
+        },
+        {
+          "command": "thrunt-god.copyHypothesisSummary",
+          "when": "view == thruntGod.huntTree && viewItem == hypothesis",
+          "group": "warroom@1"
+        },
+        {
+          "command": "thrunt-god.openTemplateViewer",
+          "when": "view == thruntGod.huntTree && (viewItem == query || viewItem == receipt || viewItem == hypothesis)",
+          "group": "navigation@1"
+        },
+        {
+          "command": "thrunt-god.showInEvidenceBoard",
+          "when": "view == thruntGod.huntTree && (viewItem == query || viewItem == receipt || viewItem == hypothesis)",
+          "group": "navigation@1"
+        },
+        {
+          "command": "thrunt-god.openArtifact",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.revealInExplorer",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.copyPath",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.showStateJson",
+          "when": "view == thruntGod.huntTree && viewItem == mission",
+          "group": "navigation@2"
+        },
+        {
+          "command": "thrunt-god.analyzeHuntmap",
+          "when": "view == thruntGod.huntTree && viewItem == phases-group",
+          "group": "navigation@2"
+        },
+        {
+          "command": "thrunt-god.openHuntOverview",
+          "when": "view == thruntGod.huntTree && viewItem == mission",
+          "group": "navigation@3"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "thrunt-god.showInEvidenceBoard",
+          "when": "thruntGod.huntDetected && resourceExtname == .md",
+          "group": "thrunt@1"
+        },
+        {
+          "command": "thrunt-god.openTemplateViewer",
+          "when": "thruntGod.huntDetected && resourceExtname == .md",
+          "group": "thrunt@2"
+        },
+        {
+          "command": "thrunt-god.addIoc",
+          "when": "editorHasSelection",
+          "group": "thrunt@3"
+        },
+        {
+          "command": "thrunt-god.copyFindingSummary",
+          "when": "resourceFilename =~ /^RCT-/",
+          "group": "thrunt@4"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "thrunt-god.refreshSidebar",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.showStateJson",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "thrunt-god.analyzeHuntmap",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@2"
+        },
+        {
+          "command": "thrunt-god.runThruntCli",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@3"
+        },
+        {
+          "command": "thrunt-god.addIoc",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@4"
+        },
+        {
+          "command": "thrunt-god.openHuntOverview",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.openEvidenceBoard",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.openQueryAnalysis",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.copyWarRoomSummary",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@5"
+        },
+        {
+          "command": "thrunt-god.startSlaTimer",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@6"
+        },
+        {
+          "command": "thrunt-god.runHuntPhase",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@7"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "THRUNT God",
+      "properties": {
+        "thruntGod.warRoom.defaultFormat": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "plainText",
+            "attack"
+          ],
+          "default": "markdown",
+          "description": "Default clipboard format for War Room copy commands."
+        },
+        "thruntGod.sla.defaults": {
+          "type": "object",
+          "default": {
+            "ttd": 1800000,
+            "ttc": 14400000,
+            "ttr": 86400000
+          },
+          "description": "Default SLA durations in milliseconds for TTD, TTC, and TTR."
+        },
+        "thruntGod.sla.warningThresholdPercent": {
+          "type": "number",
+          "default": 25,
+          "description": "Percent remaining at which the SLA timer switches into warning state."
+        },
+        "thruntGod.sla.criticalThresholdPercent": {
+          "type": "number",
+          "default": 10,
+          "description": "Percent remaining at which the SLA timer switches into critical state."
+        },
+        "thruntGod.cli.timeout": {
+          "type": "number",
+          "default": 600000,
+          "description": "CLI execution timeout in milliseconds."
+        },
+        "thruntGod.cli.defaultPackId": {
+          "type": "string",
+          "default": "",
+          "description": "Default THRUNT pack ID used to build phase execution commands."
+        },
+        "thruntGod.cli.phaseCommandTemplate": {
+          "type": "string",
+          "default": "runtime execute --pack {packId} --phase {phase}",
+          "description": "Template used by Run Hunt Phase. Supported placeholders: {phase}, {phaseName}, {phaseNameSlug}, {packId}."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "build:production": "NODE_ENV=production node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "package": "vsce package --no-dependencies",
+    "lint": "tsc --noEmit",
+    "prepackage": "npm run build:production",
+    "test": "npm run test:unit && npm run test:smoke",
+    "test:unit": "node --require ./test/_setup/vscode-mock.cjs --test test/unit/**/*.test.cjs",
+    "test:smoke": "node test/smoke.cjs",
+    "test:integration": "vscode-test",
+    "test:dogfood": "node ./test/integration/run-dogfood.cjs",
+    "pretest:unit": "npm run build",
+    "pretest:smoke": "npm run build",
+    "pretest:integration": "npm run build",
+    "pretest:dogfood": "npm run build"
+  },
+  "devDependencies": {
+    "@types/d3-force": "^3.0.10",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^24.10.1",
+    "@types/vscode": "^1.85.0",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.24.0",
+    "esbuild-register": "^3.6.0",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "@observablehq/plot": "^0.6.17",
+    "js-yaml": "^4.1.1",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-frontmatter": "^2.0.1",
+    "mdast-util-gfm-table": "^2.0.0",
+    "micromark-extension-frontmatter": "^2.0.0",
+    "micromark-extension-gfm-table": "^2.1.1",
+    "preact": "^10.26.9"
+  }
+}

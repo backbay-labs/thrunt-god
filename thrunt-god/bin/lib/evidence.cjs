@@ -435,7 +435,7 @@ ${spec.query.statement}
 
 ## Result Summary
 
-${options.resultSummary || `events=${envelope.counts.events}, entities=${envelope.counts.entities}, evidence=${envelope.counts.evidence}, status=${envelope.status}`}
+${options.resultSummary || `events=${envelope.counts.events}, templates=${envelope.metadata?.templates?.cluster_count ?? 'N/A'}, entities=${envelope.counts.entities}, evidence=${envelope.counts.evidence}, status=${envelope.status}`}
 
 ## Related Receipts
 
@@ -485,6 +485,7 @@ ${claim}
 ## Evidence
 
 - events=${envelope.counts.events}
+- templates=${envelope.metadata?.templates?.cluster_count ?? 0}
 - entities=${envelope.counts.entities}
 - warnings=${envelope.counts.warnings}
 - errors=${envelope.counts.errors}

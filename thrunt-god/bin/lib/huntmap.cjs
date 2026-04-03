@@ -226,7 +226,12 @@ function cmdHuntmapAnalyze(cwd, raw) {
     completed_phases: completedPhases,
     total_plans: totalPlans,
     total_summaries: totalSummaries,
-    progress_percent: totalPlans > 0 ? Math.min(100, Math.round((totalSummaries / totalPlans) * 100)) : 0,
+    progress_percent:
+      totalPlans > 0
+        ? Math.min(100, Math.round((totalSummaries / totalPlans) * 100))
+        : phases.length > 0
+          ? Math.min(100, Math.round((completedPhases / phases.length) * 100))
+          : 0,
     current_phase: currentPhase ? currentPhase.number : null,
     next_phase: nextPhase ? nextPhase.number : null,
     missing_phase_details: missingDetails.length > 0 ? missingDetails : null,

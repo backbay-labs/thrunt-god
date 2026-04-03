@@ -1,0 +1,1258 @@
+/* ==========================================================================
+   Hunt Design System -- Semantic Token Layer
+   Maps --hunt-* custom properties over VS Code's --vscode-* theme variables.
+   Import once per webview entry point.
+   ========================================================================== */
+
+:root {
+  /* --- Surfaces --- */
+  --hunt-bg: var(--vscode-editor-background);
+  --hunt-surface: color-mix(in srgb, var(--vscode-editor-background) 88%, var(--vscode-editor-foreground) 12%);
+  --hunt-surface-strong: color-mix(in srgb, var(--vscode-editor-background) 78%, var(--vscode-editor-foreground) 22%);
+  --hunt-panel-border: color-mix(in srgb, var(--vscode-editor-foreground) 18%, transparent);
+
+  /* --- Text --- */
+  --hunt-text: var(--vscode-editor-foreground);
+  --hunt-text-muted: color-mix(in srgb, var(--vscode-editor-foreground) 68%, transparent);
+
+  /* --- Accent --- */
+  --hunt-accent: var(--vscode-textLink-foreground);
+  --hunt-accent-strong: color-mix(in srgb, var(--vscode-textLink-foreground) 74%, white);
+
+  /* --- Semantic status --- */
+  --hunt-danger: var(--vscode-charts-red, #d16969);
+  --hunt-success: var(--vscode-charts-green, #89d185);
+  --hunt-warning: var(--vscode-charts-yellow, #d7ba7d);
+
+  /* --- Derived / alias --- */
+  --hunt-panel-bg: var(--hunt-surface);
+  --hunt-surface-raised: var(--hunt-surface-strong);
+  --hunt-text-on-accent: #fff;
+
+  /* --- Semantic colours (receipt inspector) --- */
+  --hunt-semantic-supported: #4ec9b0;
+  --hunt-semantic-disproved: #f44747;
+  --hunt-accent-subtle: rgba(78, 201, 176, 0.12);
+
+  /* --- Elevation --- */
+  --hunt-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+}
+
+/* --- Light theme overrides --- */
+body[data-theme='light'] {
+  --hunt-surface: color-mix(in srgb, var(--vscode-editor-background) 92%, #0f172a 8%);
+  --hunt-surface-strong: color-mix(in srgb, var(--vscode-editor-background) 82%, #0f172a 18%);
+  --hunt-shadow: 0 28px 70px rgba(15, 23, 42, 0.12);
+}
+
+/* --- Dark theme overrides --- */
+body[data-theme='dark'] {
+  --hunt-surface: color-mix(in srgb, var(--vscode-editor-background) 84%, white 16%);
+  --hunt-surface-strong: color-mix(in srgb, var(--vscode-editor-background) 72%, white 28%);
+}
+
+/* ==========================================================================
+   Base Reset
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+button {
+  font: inherit;
+}
+
+/* ==========================================================================
+   Component Styles -- StatCard
+   ========================================================================== */
+
+.hunt-stat-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--hunt-bg) 86%, var(--hunt-accent) 14%);
+  border: 1px solid color-mix(in srgb, var(--hunt-panel-border) 80%, var(--hunt-accent) 20%);
+}
+
+.hunt-stat-card__label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-stat-card strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   Component Styles -- Panel
+   ========================================================================== */
+
+.hunt-panel {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hunt-surface) 92%, white 8%),
+    var(--hunt-surface)
+  );
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 22px;
+  box-shadow: var(--hunt-shadow);
+  padding: 22px;
+}
+
+/* ==========================================================================
+   Component Styles -- Badge
+   ========================================================================== */
+
+.hunt-badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hunt-badge--default {
+  background: color-mix(in srgb, var(--hunt-accent) 18%, transparent);
+  color: var(--hunt-text);
+}
+
+.hunt-badge--success {
+  background: color-mix(in srgb, var(--hunt-success) 18%, transparent);
+  color: var(--hunt-text);
+}
+
+.hunt-badge--danger {
+  background: color-mix(in srgb, var(--hunt-danger) 18%, transparent);
+  color: var(--hunt-text);
+}
+
+.hunt-badge--warning {
+  background: color-mix(in srgb, var(--hunt-warning) 18%, transparent);
+  color: var(--hunt-text);
+}
+
+/* ==========================================================================
+   Component Styles -- GhostButton
+   ========================================================================== */
+
+.hunt-ghost-button {
+  border-radius: 999px;
+  padding: 10px 14px;
+  border: 1px solid var(--hunt-panel-border);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.hunt-ghost-button:hover {
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Component Styles -- Phase Rail (Hunt Overview)
+   ========================================================================== */
+
+.hunt-phase-rail {
+  display: flex;
+  gap: 2px;
+  align-items: stretch;
+  height: 28px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.hunt-phase-rail__segment {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+  border: none;
+  padding: 0 4px;
+  font-family: inherit;
+  color: var(--hunt-text);
+  background: none;
+}
+
+.hunt-phase-rail__segment:hover {
+  opacity: 0.8;
+}
+
+.hunt-phase-rail__segment:focus-visible {
+  outline: 2px solid var(--hunt-accent);
+  outline-offset: -2px;
+}
+
+.hunt-phase-rail__segment--complete {
+  background: color-mix(in srgb, var(--hunt-success) 28%, var(--hunt-surface));
+}
+
+.hunt-phase-rail__segment--running {
+  background: color-mix(in srgb, var(--hunt-accent) 32%, var(--hunt-surface));
+  font-weight: 600;
+}
+
+.hunt-phase-rail__segment--planned {
+  background: var(--hunt-surface);
+  color: var(--hunt-text-muted);
+}
+
+/* ==========================================================================
+   Component Styles -- Confidence Meter (Hunt Overview)
+   ========================================================================== */
+
+.hunt-confidence-meter {
+  position: relative;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--hunt-surface);
+  overflow: hidden;
+}
+
+.hunt-confidence-meter__fill {
+  height: 100%;
+  border-radius: 10px;
+  background: var(--hunt-accent);
+  transition: width 300ms ease;
+}
+
+.hunt-confidence-meter__ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+/* ==========================================================================
+   Component Styles -- Blocker Stack (Hunt Overview)
+   ========================================================================== */
+
+.hunt-blocker-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hunt-blocker-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-blocker-toggle:hover {
+  color: var(--hunt-text);
+}
+
+.hunt-blocker-toggle__chevron {
+  display: inline-block;
+  transition: transform 150ms ease;
+  font-size: 12px;
+}
+
+.hunt-blocker-toggle__chevron--open {
+  transform: rotate(90deg);
+}
+
+.hunt-blocker-card {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 3px solid var(--hunt-danger);
+  background: color-mix(in srgb, var(--hunt-danger) 8%, var(--hunt-surface));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hunt-blocker-card__timestamp {
+  font-size: 11px;
+  color: var(--hunt-text-muted);
+  margin-top: 4px;
+}
+
+/* ==========================================================================
+   Component Styles -- Activity Feed (Hunt Overview)
+   ========================================================================== */
+
+.hunt-activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.hunt-activity-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--hunt-surface);
+  font-size: 13px;
+}
+
+.hunt-diff-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.hunt-diff-badge--added {
+  background: color-mix(in srgb, var(--hunt-success) 22%, transparent);
+  color: var(--hunt-success);
+}
+
+.hunt-diff-badge--modified {
+  background: color-mix(in srgb, var(--hunt-accent) 22%, transparent);
+  color: var(--hunt-accent);
+}
+
+.hunt-diff-badge--removed {
+  background: color-mix(in srgb, var(--hunt-danger) 22%, transparent);
+  color: var(--hunt-danger);
+}
+
+/* ==========================================================================
+   Component Styles -- Health Card (Hunt Overview)
+   ========================================================================== */
+
+.hunt-health-card {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: transform 120ms ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hunt-health-card:hover {
+  transform: translateY(-1px);
+}
+
+.hunt-health-card--clean {
+  border-color: color-mix(in srgb, var(--hunt-success) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-success) 6%, var(--hunt-surface));
+}
+
+.hunt-health-card--warnings {
+  border-color: color-mix(in srgb, var(--hunt-warning) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-warning) 6%, var(--hunt-surface));
+}
+
+.hunt-health-card--errors {
+  border-color: color-mix(in srgb, var(--hunt-danger) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-danger) 6%, var(--hunt-surface));
+}
+
+.hunt-health-card__label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-health-card__stats {
+  display: flex;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   Component Styles -- Verdict StatCards Clickable (Hunt Overview)
+   ========================================================================== */
+
+.hunt-verdict-card {
+  cursor: pointer;
+  transition: transform 120ms ease;
+}
+
+.hunt-verdict-card:hover {
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Utility -- Section Heading (Hunt Overview)
+   ========================================================================== */
+
+.hunt-section-heading {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+  margin: 0 0 10px;
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Graph
+   ========================================================================== */
+
+.hunt-eb-graph {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hunt-eb-graph svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Nodes
+   ========================================================================== */
+
+.hunt-eb-node { cursor: pointer; transition: opacity 200ms ease; }
+.hunt-eb-node--dimmed { opacity: 0.15; }
+.hunt-eb-node__circle { stroke: var(--hunt-panel-border); stroke-width: 1.5; }
+.hunt-eb-node__circle--supported { fill: var(--hunt-success); }
+.hunt-eb-node__circle--disproved { fill: var(--hunt-danger); }
+.hunt-eb-node__circle--contradicts { fill: var(--hunt-danger); }
+.hunt-eb-node__circle--inconclusive { fill: var(--hunt-warning); }
+.hunt-eb-node__circle--open { fill: color-mix(in srgb, var(--hunt-text-muted) 40%, transparent); }
+.hunt-eb-node__circle--absent { fill: color-mix(in srgb, var(--hunt-text-muted) 40%, transparent); }
+.hunt-eb-node__label {
+  font-size: 11px;
+  fill: var(--hunt-text);
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Edges
+   ========================================================================== */
+
+.hunt-eb-edge { fill: none; stroke: var(--hunt-text-muted); stroke-width: 1.5; transition: opacity 200ms ease; }
+.hunt-eb-edge--dimmed { opacity: 0.15; }
+.hunt-eb-edge--supports { stroke: var(--hunt-success); }
+.hunt-eb-edge--contradicts { stroke: var(--hunt-danger); stroke-dasharray: 6 4; }
+.hunt-eb-edge--context { stroke: var(--hunt-text-muted); stroke-dasharray: 2 3; }
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Trace Animation
+   ========================================================================== */
+
+.hunt-eb-edge--traced {
+  stroke-width: 3;
+  stroke-dasharray: 12 6;
+  animation: hunt-eb-trace-flow 1.2s linear infinite;
+}
+
+@keyframes hunt-eb-trace-flow {
+  from { stroke-dashoffset: 18; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Tooltip
+   ========================================================================== */
+
+.hunt-eb-tooltip {
+  position: absolute;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--hunt-surface-strong);
+  border: 1px solid var(--hunt-panel-border);
+  box-shadow: var(--hunt-shadow);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--hunt-text);
+  pointer-events: none;
+  z-index: 100;
+  max-width: 280px;
+  white-space: pre-line;
+}
+.hunt-eb-tooltip__id { font-weight: 600; margin-bottom: 4px; }
+.hunt-eb-tooltip__row { display: flex; gap: 8px; }
+.hunt-eb-tooltip__label { color: var(--hunt-text-muted); text-transform: uppercase; font-size: 10px; letter-spacing: 0.08em; }
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Mode Toggle
+   ========================================================================== */
+
+.hunt-eb-mode-toggle {
+  display: inline-flex;
+  gap: 2px;
+  background: var(--hunt-surface);
+  border-radius: 999px;
+  padding: 2px;
+  border: 1px solid var(--hunt-panel-border);
+}
+.hunt-eb-mode-toggle__btn {
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--hunt-text-muted);
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.hunt-eb-mode-toggle__btn--active {
+  background: var(--hunt-accent);
+  color: var(--hunt-bg);
+}
+.hunt-eb-mode-toggle__btn:focus-visible {
+  outline: 2px solid var(--hunt-accent);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Tier Labels
+   ========================================================================== */
+
+.hunt-eb-tier-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  fill: var(--hunt-text-muted);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Matrix
+   ========================================================================== */
+
+.hunt-eb-matrix {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.hunt-eb-matrix table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  width: 100%;
+  min-width: 400px;
+}
+
+.hunt-eb-matrix th {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+  padding: 8px 6px;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hunt-eb-matrix th.hunt-eb-matrix__row-header {
+  text-align: left;
+  font-weight: 600;
+  color: var(--hunt-text);
+  max-width: 140px;
+}
+
+.hunt-eb-matrix td {
+  text-align: center;
+  padding: 0;
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Matrix Cells
+   ========================================================================== */
+
+.hunt-eb-matrix__cell {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: default;
+  transition: transform 120ms ease;
+  position: relative;
+}
+
+.hunt-eb-matrix__cell:hover {
+  transform: scale(1.15);
+  z-index: 10;
+}
+
+.hunt-eb-matrix__cell--supports {
+  background: color-mix(in srgb, var(--hunt-success) 50%, var(--hunt-surface));
+  color: var(--hunt-text);
+}
+
+.hunt-eb-matrix__cell--contradicts {
+  background: color-mix(in srgb, var(--hunt-danger) 50%, var(--hunt-surface));
+  color: var(--hunt-text);
+}
+
+.hunt-eb-matrix__cell--context {
+  background: color-mix(in srgb, var(--hunt-accent) 35%, var(--hunt-surface));
+  color: var(--hunt-text);
+}
+
+.hunt-eb-matrix__cell--absent {
+  background: color-mix(in srgb, var(--hunt-text-muted) 10%, var(--hunt-surface));
+  color: var(--hunt-text-muted);
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Gap Highlighting
+   ========================================================================== */
+
+.hunt-eb-matrix__gap-row td,
+.hunt-eb-matrix__gap-row th {
+  position: relative;
+}
+
+.hunt-eb-matrix__gap-row::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--hunt-warning);
+  border-radius: 8px;
+  pointer-events: none;
+  animation: hunt-eb-gap-pulse 2s ease-in-out infinite;
+}
+
+.hunt-eb-matrix__gap-col-header {
+  position: relative;
+}
+
+.hunt-eb-matrix__gap-col-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hunt-warning);
+  animation: hunt-eb-gap-pulse 2s ease-in-out infinite;
+}
+
+.hunt-eb-matrix__no-coverage {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hunt-warning);
+}
+
+@keyframes hunt-eb-gap-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+/* ==========================================================================
+   Component Styles -- Evidence Board Blind Spot Callout Row
+   ========================================================================== */
+
+.hunt-eb-matrix__blind-spots {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, var(--hunt-warning) 40%, var(--hunt-panel-border));
+  background: color-mix(in srgb, var(--hunt-warning) 6%, var(--hunt-surface));
+}
+
+.hunt-eb-matrix__blind-spots-heading {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hunt-warning);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.hunt-eb-matrix__blind-spot-item {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--hunt-text);
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--hunt-panel-border) 50%, transparent);
+}
+
+.hunt-eb-matrix__blind-spot-item:last-child {
+  border-bottom: none;
+}
+
+/* ==========================================================================
+   Component Styles -- Query Analysis
+   ========================================================================== */
+
+.hunt-qa-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+  margin: 0 0 8px;
+}
+
+.hunt-qa-selector {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.hunt-qa-selector select {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 4px;
+  background: var(--hunt-panel-bg);
+  color: var(--hunt-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.hunt-qa-sort-pills {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 20px;
+}
+
+.hunt-qa-sort-pill {
+  padding: 4px 14px;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hunt-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.hunt-qa-sort-pill:hover:not(:disabled) {
+  border-color: var(--hunt-accent);
+  color: var(--hunt-text);
+}
+
+.hunt-qa-sort-pill--active {
+  background: var(--hunt-accent);
+  color: var(--hunt-text-on-accent, #fff);
+  border-color: var(--hunt-accent);
+}
+
+.hunt-qa-sort-pill--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hunt-qa-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.hunt-qa-comparison-header {
+  padding: 12px 16px;
+  background: var(--hunt-panel-bg);
+  border-bottom: 1px solid var(--hunt-panel-border);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.hunt-qa-comparison-header + .hunt-qa-comparison-header {
+  border-left: 1px solid var(--hunt-panel-border);
+}
+
+.hunt-qa-comparison-row {
+  display: contents;
+}
+
+.hunt-qa-comparison-cell {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--hunt-panel-border);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.hunt-qa-comparison-cell + .hunt-qa-comparison-cell {
+  border-left: 1px solid var(--hunt-panel-border);
+}
+
+.hunt-qa-comparison-cell--a-only {
+  border-left: 4px solid var(--hunt-accent);
+}
+
+.hunt-qa-comparison-cell--b-only {
+  border-left: 4px solid var(--hunt-warning, #d7ba7d);
+}
+
+.hunt-qa-comparison-label {
+  grid-column: 1 / -1;
+  padding: 6px 16px;
+  background: var(--hunt-surface-raised, var(--hunt-panel-bg));
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--hunt-text-muted);
+  border-bottom: 1px solid var(--hunt-panel-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hunt-qa-count-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hunt-accent);
+  flex-shrink: 0;
+  transition: width 0.2s;
+}
+
+.hunt-qa-heatmap {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 12px;
+}
+
+.hunt-qa-heatmap th {
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid var(--hunt-panel-border);
+  background: var(--hunt-panel-bg);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.hunt-qa-heatmap td {
+  padding: 6px 10px;
+  text-align: center;
+  border: 1px solid var(--hunt-panel-border);
+  position: relative;
+}
+
+.hunt-qa-heatmap-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hunt-qa-heatmap-cell--zero {
+  color: var(--hunt-text-muted);
+  opacity: 0.3;
+}
+
+.hunt-qa-heatmap-row-label {
+  text-align: left;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hunt-qa-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: 12px;
+}
+
+.hunt-qa-mode-toggle button {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--hunt-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hunt-qa-mode-toggle button.active {
+  background: var(--hunt-accent);
+  color: var(--hunt-text-on-accent, #fff);
+}
+
+/* ==========================================================================
+   Component Styles -- Query Analysis: Receipt Inspector
+   ========================================================================== */
+
+.hunt-qa-inspector {
+  margin: 16px 0;
+}
+
+.hunt-qa-inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.hunt-qa-inspector-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.hunt-qa-inspector-split {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 6px;
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.hunt-qa-inspector-list {
+  border-right: 1px solid var(--hunt-panel-border);
+  overflow-y: auto;
+  max-height: 600px;
+  background: var(--hunt-panel-bg);
+}
+
+.hunt-qa-inspector-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--hunt-panel-border);
+  background: transparent;
+  color: var(--hunt-text);
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font-size: 12px;
+  transition: background 0.1s;
+}
+
+.hunt-qa-inspector-item:hover {
+  background: var(--hunt-surface-raised, rgba(128, 128, 128, 0.08));
+}
+
+.hunt-qa-inspector-item--selected {
+  background: var(--hunt-accent-subtle, rgba(78, 201, 176, 0.12));
+  border-left: 3px solid var(--hunt-accent);
+}
+
+.hunt-qa-inspector-item__id {
+  font-weight: 600;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.hunt-qa-inspector-item__claim {
+  color: var(--hunt-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.hunt-qa-inspector-item__score {
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hunt-qa-inspector-detail {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: 600px;
+}
+
+.hunt-qa-inspector-empty {
+  padding: 24px;
+  color: var(--hunt-text-muted);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Verdict badges */
+.hunt-qa-verdict-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hunt-qa-verdict-badge--supports {
+  background: rgba(78, 201, 176, 0.18);
+  color: var(--hunt-semantic-supported, #4ec9b0);
+}
+
+.hunt-qa-verdict-badge--contradicts {
+  background: rgba(244, 71, 71, 0.18);
+  color: var(--hunt-semantic-disproved, #f44747);
+}
+
+.hunt-qa-verdict-badge--inconclusive {
+  background: rgba(215, 186, 125, 0.18);
+  color: var(--hunt-warning, #d7ba7d);
+}
+
+/* Receipt detail */
+.hunt-qa-receipt-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.hunt-qa-receipt-detail__header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.hunt-qa-receipt-detail__confidence {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-qa-receipt-detail__claim {
+  margin-bottom: 16px;
+}
+
+.hunt-qa-receipt-detail__claim p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.hunt-qa-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--hunt-text-muted);
+  margin-bottom: 4px;
+}
+
+/* Score card */
+.hunt-qa-score-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 6px;
+  background: var(--hunt-panel-bg);
+}
+
+.hunt-qa-score-card__value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.hunt-qa-score-number {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.hunt-qa-score-number--low {
+  color: var(--hunt-semantic-supported, #4ec9b0);
+}
+
+.hunt-qa-score-number--medium {
+  color: var(--hunt-warning, #d7ba7d);
+}
+
+.hunt-qa-score-number--high {
+  color: var(--hunt-semantic-disproved, #f44747);
+}
+
+.hunt-qa-score-badge {
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.hunt-qa-score-badge--low {
+  background: rgba(78, 201, 176, 0.18);
+  color: var(--hunt-semantic-supported, #4ec9b0);
+}
+
+.hunt-qa-score-badge--medium {
+  background: rgba(215, 186, 125, 0.18);
+  color: var(--hunt-warning, #d7ba7d);
+}
+
+.hunt-qa-score-badge--high {
+  background: rgba(244, 71, 71, 0.18);
+  color: var(--hunt-semantic-disproved, #f44747);
+}
+
+.hunt-qa-score-card__category {
+  font-size: 12px;
+  color: var(--hunt-text-muted);
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+/* Factor table */
+.hunt-qa-factor-table-wrapper {
+  margin: 16px 0;
+}
+
+.hunt-qa-factor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+.hunt-qa-factor-table th {
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 2px solid var(--hunt-panel-border);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--hunt-text-muted);
+}
+
+.hunt-qa-factor-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--hunt-panel-border);
+}
+
+.hunt-qa-factor-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+
+.hunt-qa-factor-table__total td {
+  font-weight: 700;
+  border-top: 2px solid var(--hunt-panel-border);
+  border-bottom: none;
+}
+
+/* Framing sections */
+.hunt-qa-framing-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.hunt-qa-framing-block {
+  padding: 12px;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 4px;
+}
+
+.hunt-qa-framing-block p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.hunt-qa-no-framing {
+  padding: 24px;
+  text-align: center;
+  border: 1px dashed var(--hunt-panel-border);
+  border-radius: 6px;
+  margin: 16px 0;
+}
+
+.hunt-qa-no-framing p {
+  margin: 4px 0;
+}
+
+.hunt-qa-text-muted {
+  color: var(--hunt-text-muted);
+  font-size: 12px;
+}
+
+/* ATT&CK mapping tags */
+.hunt-qa-attack-mapping {
+  margin: 16px 0;
+}
+
+.hunt-qa-attack-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.hunt-qa-attack-tag {
+  padding: 3px 10px;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--hunt-text);
+  background: var(--hunt-panel-bg);
+}
+
+/* ==========================================================================
+   Cross-Surface Selection Highlighting
+   ========================================================================== */
+
+.hunt-selection-highlight {
+  outline: 2px solid var(--hunt-accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.hunt-selection-pulse {
+  animation: hunt-selection-pulse 200ms ease-out;
+}
+
+@keyframes hunt-selection-pulse {
+  from {
+    box-shadow: 0 0 0 3px var(--hunt-accent);
+  }
+  to {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}

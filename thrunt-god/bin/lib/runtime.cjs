@@ -33,6 +33,7 @@ module.exports = {
   // Aggregation (Phase 44):
   tagEventsWithTenant: require('./aggregation.cjs').tagEventsWithTenant,
   deduplicateEntities: require('./aggregation.cjs').deduplicateEntities,
+  deduplicateEvents: require('./aggregation.cjs').deduplicateEvents,
   correlateFindings: require('./aggregation.cjs').correlateFindings,
   aggregateResults: require('./aggregation.cjs').aggregateResults,
 
@@ -47,4 +48,7 @@ module.exports = {
   createTestQuerySpec: require('./contract-tests.cjs').createTestQuerySpec,
   createTestProfile: require('./contract-tests.cjs').createTestProfile,
   createTestSecrets: require('./contract-tests.cjs').createTestSecrets,
+
+  // Drain / reduce (Phase 4):
+  reduceEvents: require('./drain.cjs').reduceEvents,
 };

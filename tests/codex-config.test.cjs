@@ -746,6 +746,36 @@ describe('Codex install hook configuration (e2e)', () => {
     assertUsesOnlyEol(content, '\n');
   });
 
+  test('install ignores transient generated connector fixtures in the source tree', () => {
+    const fixturePath = path.join(
+      __dirname,
+      '..',
+      'thrunt-god',
+      'bin',
+      'lib',
+      'connectors',
+      'test_gen_install_skip.cjs'
+    );
+
+    fs.writeFileSync(fixturePath, 'module.exports = {};', 'utf8');
+
+    try {
+      runCodexInstall(codexHome);
+
+      const installedPath = path.join(
+        codexHome,
+        'thrunt-god',
+        'bin',
+        'lib',
+        'connectors',
+        'test_gen_install_skip.cjs'
+      );
+      assert.ok(!fs.existsSync(installedPath), 'skips transient generator fixtures during install');
+    } finally {
+      fs.rmSync(fixturePath, { force: true });
+    }
+  });
+
   test('config_file paths are absolute using CODEX_HOME', () => {
     runCodexInstall(codexHome);
 

@@ -56,10 +56,21 @@ function readHypothesisIds(cwd) {
 
   const content = fs.readFileSync(hypPath, 'utf-8');
   const ids = [];
-  const pattern = /^-\s*\[[ x]\]\s*\*\*([A-Z]+-\d+)\*\*/gm;
-  let match;
-  while ((match = pattern.exec(content)) !== null) {
-    ids.push(match[1]);
+  const seen = new Set();
+  const patterns = [
+    /^-\s*\[[ x]\]\s*\*\*([A-Z]+-\d+)\*\*/gm,
+    /^#{2,6}\s*([A-Z]+-\d+)\b/gm,
+  ];
+
+  for (const pattern of patterns) {
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const id = match[1];
+      if (!seen.has(id)) {
+        seen.add(id);
+        ids.push(id);
+      }
+    }
   }
   return ids;
 }
