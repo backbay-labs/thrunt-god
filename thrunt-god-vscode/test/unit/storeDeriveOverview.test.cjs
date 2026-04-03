@@ -329,4 +329,61 @@ describe('deriveHuntOverview', () => {
       assert.deepEqual(vm.activityFeed, []);
     });
   });
+
+  describe('session continuity summary', () => {
+    it('derives where-left-off, recent-changes, and next-step text from state plus sessionDiff', () => {
+      const store = createMockStore({
+        hunt: {
+          mission: {
+            status: 'loaded',
+            data: { signal: 's', owner: 'o', opened: 'd', mode: 'case', scope: 'sc' },
+          },
+          hypotheses: {
+            status: 'loaded',
+            data: { active: [], parked: [], disproved: [] },
+          },
+          huntMap: {
+            status: 'loaded',
+            data: { overview: '', phases: [] },
+          },
+          state: {
+            status: 'loaded',
+            data: {
+              activeSignal: '',
+              currentFocus: '',
+              phase: 4,
+              totalPhases: 5,
+              planInPhase: 2,
+              totalPlansInPhase: 3,
+              status: 'In Progress',
+              lastActivity: '2026-04-03 -- Completed 16-01 host wiring',
+              scope: '',
+              confidence: 'Medium',
+              blockers: '',
+            },
+          },
+        },
+      });
+
+      const sessionDiff = {
+        entries: [],
+        summary: '2 modified since last session',
+      };
+
+      const vm = callDerive(store, CLEAN_HEALTH, sessionDiff);
+
+      assert.equal(
+        vm.sessionContinuity.whereLeftOff,
+        'Phase 4 of 5 · Plan 2 of 3 · In Progress',
+      );
+      assert.equal(
+        vm.sessionContinuity.recentChanges,
+        '2 modified since last session',
+      );
+      assert.equal(
+        vm.sessionContinuity.nextStep,
+        'Continue with plan 3 of 3 in the current phase.',
+      );
+    });
+  });
 });

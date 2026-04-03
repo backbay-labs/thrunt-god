@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import type { HuntDataStore } from './store';
+import type { ArtifactSelectionCoordinator } from './selectionSync';
+import { inferSelectableArtifactType } from './selectionSync';
 import type {
   HuntOverviewBootData,
   HuntOverviewViewModel,
@@ -224,15 +226,21 @@ export class HuntOverviewPanel implements vscode.Disposable {
   private isDisposed = false;
   private ready = false;
   private readonly sessionDiff: SessionDiff | null;
+  private selectedArtifactId: string | null = null;
 
   private constructor(
     context: vscode.ExtensionContext,
     private readonly store: HuntDataStore,
     private readonly panel: vscode.WebviewPanel,
-    sessionDiff: SessionDiff | null
+    sessionDiff: SessionDiff | null,
+    private readonly selectionCoordinator: ArtifactSelectionCoordinator
   ) {
     this.sessionDiff = sessionDiff;
 
+    this.panel.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist')],
+    };
     this.panel.webview.html = createHuntOverviewHtml(
       this.panel.webview,
       context.extensionUri,
@@ -289,7 +297,8 @@ export class HuntOverviewPanel implements vscode.Disposable {
   static createOrShow(
     context: vscode.ExtensionContext,
     store: HuntDataStore,
-    sessionDiff: SessionDiff | null
+    sessionDiff: SessionDiff | null,
+    selectionCoordinator: ArtifactSelectionCoordinator
   ): HuntOverviewPanel {
     const existing = HuntOverviewPanel.currentPanel;
     if (existing && !existing.isDisposed) {
@@ -309,9 +318,33 @@ export class HuntOverviewPanel implements vscode.Disposable {
       }
     );
 
-    const created = new HuntOverviewPanel(context, store, panel, sessionDiff);
+    const created = new HuntOverviewPanel(
+      context,
+      store,
+      panel,
+      sessionDiff,
+      selectionCoordinator
+    );
     HuntOverviewPanel.currentPanel = created;
     return created;
+  }
+
+  static revive(
+    context: vscode.ExtensionContext,
+    store: HuntDataStore,
+    panel: vscode.WebviewPanel,
+    sessionDiff: SessionDiff | null,
+    selectionCoordinator: ArtifactSelectionCoordinator
+  ): HuntOverviewPanel {
+    const revived = new HuntOverviewPanel(
+      context,
+      store,
+      panel,
+      sessionDiff,
+      selectionCoordinator
+    );
+    HuntOverviewPanel.currentPanel = revived;
+    return revived;
   }
 
   dispose(): void {
@@ -326,6 +359,13 @@ export class HuntOverviewPanel implements vscode.Disposable {
   private postMessage(message: HostToHuntOverviewMessage): void {
     if (!this.isDisposed) {
       void this.panel.webview.postMessage(message);
+    }
+  }
+
+  focusArtifact(artifactId: string): void {
+    this.selectedArtifactId = artifactId;
+    if (this.ready) {
+      this.postMessage({ type: 'focus', artifactId });
     }
   }
 
@@ -357,6 +397,9 @@ export class HuntOverviewPanel implements vscode.Disposable {
           viewModel: this.buildViewModel(),
           isDark: isDarkTheme(vscode.window.activeColorTheme.kind),
         });
+        if (this.selectedArtifactId) {
+          this.postMessage({ type: 'focus', artifactId: this.selectedArtifactId });
+        }
         return;
       case 'navigate':
         if (msg.target === 'problems') {
@@ -373,6 +416,18 @@ export class HuntOverviewPanel implements vscode.Disposable {
           );
         }
         return;
+      case 'artifact:select': {
+        const artifactType = inferSelectableArtifactType(msg.artifactId);
+        if (artifactType) {
+          this.selectedArtifactId = msg.artifactId;
+          this.selectionCoordinator.select({
+            artifactId: msg.artifactId,
+            artifactType,
+            source: 'hunt-overview',
+          });
+        }
+        return;
+      }
       case 'blur':
         void vscode.commands.executeCommand(
           'workbench.action.focusActiveEditorGroup'

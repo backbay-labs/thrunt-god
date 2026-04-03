@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import type { HuntDataStore } from './store';
+import type { ArtifactSelectionCoordinator } from './selectionSync';
+import { inferSelectableArtifactType } from './selectionSync';
 import type {
   EvidenceBoardBootData,
   EvidenceBoardViewModel,
@@ -8,6 +10,12 @@ import type {
 } from '../shared/evidence-board';
 
 export const EVIDENCE_BOARD_VIEW_TYPE = 'thruntGod.evidenceBoard';
+const EVIDENCE_BOARD_STATE_KEY = 'thruntGod.panelState.evidenceBoard';
+
+interface EvidenceBoardPanelState {
+  mode: 'graph' | 'matrix';
+  focusedHypothesis: string | null;
+}
 
 const BASE_WEBVIEW_STYLES = `
   :root {
@@ -86,16 +94,27 @@ export class EvidenceBoardPanel implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
   private isDisposed = false;
   private ready = false;
+  private mode: 'graph' | 'matrix' = 'graph';
+  private focusedHypothesis: string | null = null;
+  private selectedArtifactId: string | null = null;
 
   private constructor(
-    context: vscode.ExtensionContext,
+    private readonly context: vscode.ExtensionContext,
     private readonly store: HuntDataStore,
-    private readonly panel: vscode.WebviewPanel
+    private readonly panel: vscode.WebviewPanel,
+    private readonly selectionCoordinator: ArtifactSelectionCoordinator,
+    initialState?: EvidenceBoardPanelState
   ) {
+    this.mode = initialState?.mode ?? this.mode;
+    this.focusedHypothesis = initialState?.focusedHypothesis ?? this.focusedHypothesis;
+    this.panel.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'dist')],
+    };
     this.panel.webview.html = createEvidenceBoardHtml(
       this.panel.webview,
       context.extensionUri,
-      { surfaceId: 'evidence-board' }
+      { surfaceId: 'evidence-board', mode: this.mode }
     );
 
     this.panel.onDidDispose(
@@ -136,7 +155,8 @@ export class EvidenceBoardPanel implements vscode.Disposable {
 
   static createOrShow(
     context: vscode.ExtensionContext,
-    store: HuntDataStore
+    store: HuntDataStore,
+    selectionCoordinator: ArtifactSelectionCoordinator
   ): EvidenceBoardPanel {
     const existing = EvidenceBoardPanel.currentPanel;
     if (existing && !existing.isDisposed) {
@@ -156,9 +176,40 @@ export class EvidenceBoardPanel implements vscode.Disposable {
       }
     );
 
-    const created = new EvidenceBoardPanel(context, store, panel);
+    const initialState =
+      context.workspaceState.get<EvidenceBoardPanelState>(
+        EVIDENCE_BOARD_STATE_KEY
+      ) ?? undefined;
+    const created = new EvidenceBoardPanel(
+      context,
+      store,
+      panel,
+      selectionCoordinator,
+      initialState
+    );
     EvidenceBoardPanel.currentPanel = created;
     return created;
+  }
+
+  static revive(
+    context: vscode.ExtensionContext,
+    store: HuntDataStore,
+    panel: vscode.WebviewPanel,
+    selectionCoordinator: ArtifactSelectionCoordinator
+  ): EvidenceBoardPanel {
+    const initialState =
+      context.workspaceState.get<EvidenceBoardPanelState>(
+        EVIDENCE_BOARD_STATE_KEY
+      ) ?? undefined;
+    const revived = new EvidenceBoardPanel(
+      context,
+      store,
+      panel,
+      selectionCoordinator,
+      initialState
+    );
+    EvidenceBoardPanel.currentPanel = revived;
+    return revived;
   }
 
   dispose(): void {
@@ -176,6 +227,18 @@ export class EvidenceBoardPanel implements vscode.Disposable {
     }
   }
 
+  focusArtifact(artifactId: string): void {
+    this.selectedArtifactId = artifactId;
+    if (artifactId.startsWith('HYP-')) {
+      this.focusedHypothesis = artifactId;
+      this.persistState();
+    }
+
+    if (this.ready) {
+      this.postMessage({ type: 'focus', artifactId });
+    }
+  }
+
   private disposeResources(): void {
     if (this.isDisposed) {
       return;
@@ -188,6 +251,13 @@ export class EvidenceBoardPanel implements vscode.Disposable {
       const disposable = this.disposables.pop();
       disposable?.dispose();
     }
+  }
+
+  private persistState(): void {
+    void this.context.workspaceState.update(EVIDENCE_BOARD_STATE_KEY, {
+      mode: this.mode,
+      focusedHypothesis: this.focusedHypothesis,
+    } satisfies EvidenceBoardPanelState);
   }
 
   private buildViewModel(): EvidenceBoardViewModel {
@@ -203,6 +273,9 @@ export class EvidenceBoardPanel implements vscode.Disposable {
           viewModel: this.buildViewModel(),
           isDark: isDarkTheme(vscode.window.activeColorTheme.kind),
         });
+        if (this.selectedArtifactId) {
+          this.postMessage({ type: 'focus', artifactId: this.selectedArtifactId });
+        }
         return;
       case 'node:open': {
         const artifactPath = this.store.getArtifactPath(msg.nodeId);
@@ -213,14 +286,25 @@ export class EvidenceBoardPanel implements vscode.Disposable {
         }
         return;
       }
-      case 'node:select':
-        // No-op for now -- future cross-surface sync
+      case 'node:select': {
+        const artifactType = inferSelectableArtifactType(msg.nodeId);
+        if (artifactType) {
+          this.selectedArtifactId = msg.nodeId;
+          this.selectionCoordinator.select({
+            artifactId: msg.nodeId,
+            artifactType,
+            source: 'evidence-board',
+          });
+        }
         return;
+      }
       case 'mode:toggle':
-        // No-op on host side -- webview handles mode internally
+        this.mode = msg.mode;
+        this.persistState();
         return;
       case 'hypothesis:focus':
-        // No-op on host side
+        this.focusedHypothesis = msg.hypothesisId;
+        this.persistState();
         return;
       case 'blur':
         void vscode.commands.executeCommand(

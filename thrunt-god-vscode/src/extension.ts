@@ -10,20 +10,44 @@ import { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
 import { HuntStatusBar } from './statusBar';
 import { HuntCodeLensProvider } from './codeLens';
 import { EvidenceIntegrityDiagnostics } from './diagnostics';
-import { DrainTemplatePanel } from './drainViewer';
+import { DRAIN_VIEWER_VIEW_TYPE, DrainTemplatePanel } from './drainViewer';
+import { CLIBridge } from './cliBridge';
+import {
+  IOCRegistry,
+  classifyIOC,
+  formatIOCTypeLabel,
+  validateIOC,
+} from './iocRegistry';
+import { IOCDecorationManager } from './iocDecorations';
+import { SLATimerManager } from './slaTimer';
+import {
+  WarRoomFormatter,
+  getClipboardText,
+  type WarRoomFormat,
+} from './warRoomCopy';
 import {
   HuntOverviewPanel,
+  HUNT_OVERVIEW_VIEW_TYPE,
   SESSION_HASH_KEY,
   computeArtifactHashes,
   computeSessionDiff,
 } from './huntOverviewPanel';
-import { EvidenceBoardPanel } from './evidenceBoardPanel';
+import {
+  EVIDENCE_BOARD_VIEW_TYPE,
+  EvidenceBoardPanel,
+} from './evidenceBoardPanel';
 import { QueryAnalysisPanel, QUERY_ANALYSIS_VIEW_TYPE } from './queryAnalysisPanel';
 import type { SessionDiff } from '../shared/hunt-overview';
 import { resolveArtifactType } from './watcher';
+import {
+  ArtifactSelectionCoordinator,
+  inferSelectableArtifactType,
+} from './selectionSync';
 
 const CLI_OUTPUT_CHANNEL_NAME = `${OUTPUT_CHANNEL_NAME} CLI`;
 const LAST_CLI_COMMAND_KEY = 'thruntGod.lastCliCommand';
+const LAST_PHASE_COMMAND_KEY = 'thruntGod.lastPhaseCommand';
+const DEFAULT_PHASE_COMMAND_TEMPLATE = 'runtime execute --pack {packId} --phase {phase}';
 
 interface RenderedMarkdownResult {
   rendered: string;
@@ -110,6 +134,65 @@ function extractQueryIdFromTarget(target: unknown): string | undefined {
   return undefined;
 }
 
+function extractReceiptIdFromTarget(target: unknown): string | undefined {
+  if (typeof target === 'string' && /^RCT-/.test(target)) {
+    return target;
+  }
+
+  if (!target || typeof target !== 'object') {
+    return undefined;
+  }
+
+  const candidate = target as Partial<HuntTreeItem> & {
+    receiptId?: unknown;
+    uri?: vscode.Uri;
+  };
+
+  if (candidate.nodeType === 'receipt' && typeof candidate.dataId === 'string') {
+    return candidate.dataId;
+  }
+
+  if (typeof candidate.receiptId === 'string' && candidate.receiptId.length > 0) {
+    return candidate.receiptId;
+  }
+
+  if (candidate.uri?.fsPath) {
+    const resolved = resolveArtifactType(candidate.uri.fsPath);
+    if (resolved?.type === 'receipt') {
+      return resolved.id;
+    }
+  }
+
+  return undefined;
+}
+
+function extractHypothesisIdFromTarget(target: unknown): string | undefined {
+  if (typeof target === 'string' && /^HYP-/.test(target)) {
+    return target;
+  }
+
+  if (!target || typeof target !== 'object') {
+    return undefined;
+  }
+
+  const candidate = target as Partial<HuntTreeItem> & {
+    hypothesisId?: unknown;
+  };
+
+  if (candidate.nodeType === 'hypothesis' && typeof candidate.dataId === 'string') {
+    return candidate.dataId;
+  }
+
+  if (
+    typeof candidate.hypothesisId === 'string' &&
+    candidate.hypothesisId.length > 0
+  ) {
+    return candidate.hypothesisId;
+  }
+
+  return undefined;
+}
+
 function getActiveEditorQueryId(): string | undefined {
   const activeDocument = vscode.window.activeTextEditor?.document;
   if (!activeDocument) {
@@ -122,6 +205,64 @@ function getActiveEditorQueryId(): string | undefined {
 
 function isE2EMode(): boolean {
   return process.env.THRUNT_E2E === '1';
+}
+
+function getActiveEditorReceiptId(): string | undefined {
+  const activeDocument = vscode.window.activeTextEditor?.document;
+  if (!activeDocument) {
+    return undefined;
+  }
+
+  const resolved = resolveArtifactType(activeDocument.uri.fsPath);
+  return resolved?.type === 'receipt' ? resolved.id : undefined;
+}
+
+function isWarRoomFormat(value: string): value is WarRoomFormat {
+  return value === 'markdown' || value === 'plainText' || value === 'attack';
+}
+
+function getDefaultWarRoomFormat(): WarRoomFormat {
+  const configured = vscode.workspace
+    .getConfiguration('thruntGod')
+    .get<string>('warRoom.defaultFormat', 'markdown');
+
+  return isWarRoomFormat(configured) ? configured : 'markdown';
+}
+
+function extractPhaseNumberFromTarget(target: unknown): number | undefined {
+  if (typeof target === 'number' && Number.isFinite(target)) {
+    return target;
+  }
+
+  if (typeof target === 'string' && /^\d+$/.test(target)) {
+    return Number(target);
+  }
+
+  if (!target || typeof target !== 'object') {
+    return undefined;
+  }
+
+  const candidate = target as Partial<HuntTreeItem>;
+  if (candidate.nodeType === 'phase' && typeof candidate.dataId === 'string') {
+    return /^\d+$/.test(candidate.dataId) ? Number(candidate.dataId) : undefined;
+  }
+
+  return undefined;
+}
+
+function slugifyPhaseName(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function fillPhaseCommandTemplate(
+  template: string,
+  values: Record<string, string>
+): string {
+  return template.replace(/\{([a-zA-Z0-9]+)\}/g, (_, key) => values[key] ?? '');
 }
 
 const execFileAsync = promisify(execFile);
@@ -596,10 +737,71 @@ function buildDiagnosticsSnapshot(huntRoot: vscode.Uri): Record<string, unknown>
 export function activate(context: vscode.ExtensionContext): void {
   const outputChannel = vscode.window.createOutputChannel(OUTPUT_CHANNEL_NAME);
   const cliOutputChannel = vscode.window.createOutputChannel(CLI_OUTPUT_CHANNEL_NAME);
+  const cliBridge = new CLIBridge(cliOutputChannel);
+  const slaTimer = new SLATimerManager(context);
   let activeHuntRoot: vscode.Uri | undefined;
   let activeStore: HuntDataStore | undefined;
   context.subscriptions.push(outputChannel);
   context.subscriptions.push(cliOutputChannel);
+  context.subscriptions.push(cliBridge);
+  context.subscriptions.push(slaTimer);
+
+  async function requireActiveStore(
+    message: string
+  ): Promise<HuntDataStore | undefined> {
+    if (activeStore) {
+      return activeStore;
+    }
+
+    await vscode.window.showWarningMessage(message);
+    return undefined;
+  }
+
+  async function copyWarRoomText(text: string, confirmation: string): Promise<void> {
+    await vscode.env.clipboard.writeText(text);
+    await vscode.window.showInformationMessage(confirmation);
+  }
+
+  async function runStreamingCliCommand(
+    args: string[],
+    workspaceRoot: string,
+    options?: {
+      huntRoot?: vscode.Uri;
+      phase?: number;
+    }
+  ): Promise<{ exitCode: number | null } | undefined> {
+    let result: { exitCode: number | null };
+    try {
+      const cliPath = resolveThruntCliPath(context);
+      result = await cliBridge.run({
+        cliPath,
+        command: args,
+        cwd: workspaceRoot,
+        huntRoot: options?.huntRoot,
+        phase: options?.phase,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'THRUNT CLI execution failed.';
+      const choice = await vscode.window.showErrorMessage(message, 'Show Output');
+      if (choice === 'Show Output') {
+        cliOutputChannel.show(true);
+      }
+      return undefined;
+    }
+
+    if (result.exitCode !== 0) {
+      const choice = await vscode.window.showErrorMessage(
+        `THRUNT CLI command failed${typeof result.exitCode === 'number' ? ` (exit ${result.exitCode})` : ''}. See ${CLI_OUTPUT_CHANNEL_NAME}.`,
+        'Show Output'
+      );
+      if (choice === 'Show Output') {
+        cliOutputChannel.show(true);
+      }
+      return result;
+    }
+
+    return result;
+  }
 
   // Register the info command immediately (available even before hunt root detection)
   context.subscriptions.push(
@@ -621,6 +823,157 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.copyWarRoomSummary', async () => {
+      const store = await requireActiveStore(
+        'Open a THRUNT hunt workspace before copying war room summaries.'
+      );
+      if (!store) {
+        return undefined;
+      }
+
+      const formatter = new WarRoomFormatter(store);
+      const defaultFormat = getDefaultWarRoomFormat();
+      const options = [
+        { label: 'Slack/Teams (Markdown)', format: 'markdown' as const },
+        { label: 'Plain Text', format: 'plainText' as const },
+        { label: 'MITRE ATT&CK Summary', format: 'attack' as const },
+      ].sort((left, right) => {
+        if (left.format === defaultFormat) return -1;
+        if (right.format === defaultFormat) return 1;
+        return left.label.localeCompare(right.label);
+      });
+
+      const selected = await vscode.window.showQuickPick(options, {
+        title: 'Copy War Room Summary',
+        placeHolder: 'Choose the output format',
+        ignoreFocusOut: true,
+      });
+      if (!selected) {
+        return undefined;
+      }
+
+      const output =
+        selected.format === 'attack'
+          ? formatter.formatAttackSummary()
+          : formatter.formatHuntOverview();
+      await copyWarRoomText(
+        getClipboardText(output, selected.format),
+        selected.format === 'attack'
+          ? 'ATT&CK summary copied to clipboard.'
+          : 'War room summary copied to clipboard.'
+      );
+      return output;
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.copyAttackSummary', async () => {
+      const store = await requireActiveStore(
+        'Open a THRUNT hunt workspace before copying ATT&CK summaries.'
+      );
+      if (!store) {
+        return undefined;
+      }
+
+      const output = new WarRoomFormatter(store).formatAttackSummary();
+      await copyWarRoomText(
+        getClipboardText(output, 'attack'),
+        'ATT&CK summary copied to clipboard.'
+      );
+      return output;
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.copyFindingSummary', async (target?: unknown) => {
+      const store = await requireActiveStore(
+        'Open a THRUNT hunt workspace before copying finding summaries.'
+      );
+      if (!store) {
+        return undefined;
+      }
+
+      const receiptId = extractReceiptIdFromTarget(target) ?? getActiveEditorReceiptId();
+      if (!receiptId) {
+        await vscode.window.showWarningMessage(
+          'Open a receipt artifact or select a receipt in the THRUNT sidebar to copy a finding summary.'
+        );
+        return undefined;
+      }
+
+      const receipt = store.getReceipt(receiptId);
+      if (!receipt || receipt.status !== 'loaded') {
+        await vscode.window.showWarningMessage(`Receipt ${receiptId} is not available in the current hunt store.`);
+        return undefined;
+      }
+
+      const format = getDefaultWarRoomFormat() === 'attack' ? 'markdown' : getDefaultWarRoomFormat();
+      const output = new WarRoomFormatter(store).formatFinding(receipt.data);
+      await copyWarRoomText(
+        getClipboardText(output, format),
+        'Finding summary copied to clipboard.'
+      );
+      return output;
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.copyHypothesisSummary', async (target?: unknown) => {
+      const store = await requireActiveStore(
+        'Open a THRUNT hunt workspace before copying hypothesis summaries.'
+      );
+      if (!store) {
+        return undefined;
+      }
+
+      const hypothesisId = extractHypothesisIdFromTarget(target);
+      if (!hypothesisId) {
+        await vscode.window.showWarningMessage(
+          'Select a hypothesis in the THRUNT sidebar to copy its summary.'
+        );
+        return undefined;
+      }
+
+      const formatter = new WarRoomFormatter(store);
+      const hypothesis = formatter.getHypothesisById(hypothesisId);
+      if (!hypothesis) {
+        await vscode.window.showWarningMessage(`Hypothesis ${hypothesisId} is not available in the current hunt store.`);
+        return undefined;
+      }
+
+      const format = getDefaultWarRoomFormat() === 'attack' ? 'markdown' : getDefaultWarRoomFormat();
+      const output = formatter.formatHypothesis(hypothesis);
+      await copyWarRoomText(
+        getClipboardText(output, format),
+        'Hypothesis summary copied to clipboard.'
+      );
+      return output;
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.startSlaTimer', () => slaTimer.pickAndStart())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.pauseSlaTimer', () => slaTimer.pause())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.resumeSlaTimer', () => slaTimer.resume())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.stopSlaTimer', () => slaTimer.stop())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.advanceSlaPhase', () => slaTimer.advance())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.showSlaStatus', () => slaTimer.showStatus())
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('thrunt-god.copySlaStatus', () => slaTimer.copyStatus())
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand('thrunt-god.runThruntCli', async (input?: unknown) => {
       const workspaceRoot = resolveWorkspaceRoot(activeHuntRoot);
       if (!workspaceRoot) {
@@ -630,7 +983,16 @@ export function activate(context: vscode.ExtensionContext): void {
         return undefined;
       }
 
-      return runThruntCliCommand(context, cliOutputChannel, workspaceRoot, input);
+      const args = await resolveCliArgs(context, input);
+      if (!args || args.length === 0) {
+        await vscode.window.showWarningMessage('Enter a THRUNT CLI command to run.');
+        return undefined;
+      }
+
+      await context.workspaceState.update(LAST_CLI_COMMAND_KEY, formatCliArgs(args));
+      return runStreamingCliCommand(args, workspaceRoot, {
+        huntRoot: activeHuntRoot,
+      });
     })
   );
 
@@ -766,6 +1128,10 @@ export function activate(context: vscode.ExtensionContext): void {
     activeHuntRoot = huntRoot;
     activeStore = store;
     context.subscriptions.push(store);
+    const iocRegistry = new IOCRegistry(store);
+    const iocDecorations = new IOCDecorationManager(iocRegistry);
+    context.subscriptions.push(iocRegistry);
+    context.subscriptions.push(iocDecorations);
 
     // 3. Log store events for debugging
     context.subscriptions.push(
@@ -776,18 +1142,442 @@ export function activate(context: vscode.ExtensionContext): void {
       })
     );
 
+    const selectionCoordinator = new ArtifactSelectionCoordinator();
+    context.subscriptions.push(selectionCoordinator);
+
+    function resolveArtifactSelectionFromTarget(target: unknown):
+      | { artifactId: string; artifactType: 'mission' | 'hypothesis' | 'query' | 'receipt' }
+      | undefined {
+      if (typeof target === 'string') {
+        const artifactType = inferSelectableArtifactType(target);
+        if (artifactType) {
+          return { artifactId: target, artifactType };
+        }
+      }
+
+      if (!target || typeof target !== 'object') {
+        return undefined;
+      }
+
+      const candidate = target as Partial<HuntTreeItem> & {
+        uri?: vscode.Uri;
+      };
+
+      if (candidate.nodeType === 'mission') {
+        return { artifactId: 'MISSION', artifactType: 'mission' };
+      }
+
+      if (
+        (candidate.nodeType === 'hypothesis' ||
+          candidate.nodeType === 'query' ||
+          candidate.nodeType === 'receipt') &&
+        typeof candidate.dataId === 'string'
+      ) {
+        return {
+          artifactId: candidate.dataId,
+          artifactType: candidate.nodeType,
+        };
+      }
+
+      if (candidate.uri?.fsPath) {
+        const resolved = resolveArtifactType(candidate.uri.fsPath);
+        const artifactType =
+          resolved?.type === 'query' || resolved?.type === 'receipt'
+            ? resolved.type
+            : null;
+        if (resolved && artifactType) {
+          return {
+            artifactId: resolved.id,
+            artifactType,
+          };
+        }
+      }
+
+      return undefined;
+    }
+
+    function resolveQueryIdForTemplateViewer(target?: unknown): string | undefined {
+      const selection = resolveArtifactSelectionFromTarget(target);
+      if (!selection) {
+        return extractQueryIdFromTarget(target) ?? getActiveEditorQueryId();
+      }
+
+      if (selection.artifactType === 'query') {
+        return selection.artifactId;
+      }
+
+      if (selection.artifactType === 'receipt') {
+        const receipt = store.getReceipt(selection.artifactId);
+        return receipt?.status === 'loaded'
+          ? receipt.data.relatedQueries[0]
+          : undefined;
+      }
+
+      if (selection.artifactType === 'hypothesis') {
+        const receipts = store.getReceiptsForHypothesis(selection.artifactId);
+        for (const receipt of receipts) {
+          if (receipt.status === 'loaded' && receipt.data.relatedQueries.length > 0) {
+            return receipt.data.relatedQueries[0];
+          }
+        }
+      }
+
+      return getActiveEditorQueryId();
+    }
+
+    async function openArtifactById(artifactId: string): Promise<void> {
+      const artifactPath = store.getArtifactPath(artifactId);
+      if (!artifactPath) {
+        return;
+      }
+
+      const document = await vscode.workspace.openTextDocument(vscode.Uri.file(artifactPath));
+      await vscode.window.showTextDocument(document);
+    }
+
+    async function showIocMatches(iocId: string): Promise<void> {
+      const entry = iocRegistry.getEntry(iocId);
+      if (!entry) {
+        return;
+      }
+
+      if (entry.matchResults.length === 0) {
+        await vscode.window.showInformationMessage(
+          `IOC ${entry.value} has no matches in currently loaded artifacts.`
+        );
+        return;
+      }
+
+      const items = entry.matchResults.map((match) => ({
+        label: `${match.artifactType === 'query' ? 'Query' : 'Receipt'} ${match.artifactId}`,
+        description: match.templateId ? `Template ${match.templateId}` : undefined,
+        detail: match.matchContext,
+        match,
+      }));
+
+      const selected = await vscode.window.showQuickPick(items, {
+        title: `IOC Matches: ${entry.value}`,
+        placeHolder: 'Choose an artifact to open',
+        ignoreFocusOut: true,
+      });
+      if (!selected) {
+        return;
+      }
+
+      const selection = {
+        artifactId: selected.match.artifactId,
+        artifactType: selected.match.artifactType,
+        source: 'command' as const,
+      };
+      selectionCoordinator.select(selection);
+      await openArtifactById(selected.match.artifactId);
+
+      if (selected.match.artifactType === 'query' && selected.match.templateId) {
+        DrainTemplatePanel.currentPanel?.reveal(selected.match.artifactId, false);
+      }
+    }
+
+    async function promptForIoc(initialValue?: string): Promise<string | undefined> {
+      const entered = await vscode.window.showInputBox({
+        title: 'Add IOC to Investigation',
+        prompt: 'Paste an IP address, domain, hash, email, or URL',
+        placeHolder: '185.220.101.42 or evil.example.com or d41d8cd98f00...',
+        value: initialValue,
+        ignoreFocusOut: true,
+        validateInput: validateIOC,
+      });
+
+      return entered?.trim() || undefined;
+    }
+
+    async function resolvePhaseCommandArgs(
+      phaseNumber: number,
+      phaseName: string
+    ): Promise<string[] | undefined> {
+      const configuration = vscode.workspace.getConfiguration('thruntGod');
+      const template = configuration.get<string>(
+        'cli.phaseCommandTemplate',
+        DEFAULT_PHASE_COMMAND_TEMPLATE
+      );
+      let packId = configuration.get<string>('cli.defaultPackId', '').trim();
+
+      if (template.includes('{packId}') && !packId) {
+        packId =
+          (await vscode.window.showInputBox({
+            title: `Pack ID for Phase ${phaseNumber}`,
+            prompt: 'Provide the THRUNT pack ID used to execute this hunt phase',
+            placeHolder: 'domain.identity-abuse',
+            ignoreFocusOut: true,
+          }))?.trim() ?? '';
+      }
+
+      const suggested = fillPhaseCommandTemplate(template, {
+        phase: String(phaseNumber),
+        phaseName,
+        phaseNameSlug: slugifyPhaseName(phaseName),
+        packId,
+      }).trim();
+
+      const entered = await vscode.window.showInputBox({
+        title: `Run Phase ${phaseNumber}: ${phaseName}`,
+        prompt: 'Review or edit the THRUNT CLI arguments before execution',
+        placeHolder: suggested || DEFAULT_PHASE_COMMAND_TEMPLATE,
+        value: context.workspaceState.get<string>(LAST_PHASE_COMMAND_KEY, suggested),
+        ignoreFocusOut: true,
+      });
+
+      if (entered === undefined) {
+        return undefined;
+      }
+
+      const args = parseCliInput(entered);
+      if (args.length > 0) {
+        await context.workspaceState.update(LAST_PHASE_COMMAND_KEY, entered);
+      }
+      return args;
+    }
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.addIoc', async () => {
+        const value = await promptForIoc();
+        if (!value) {
+          return undefined;
+        }
+
+        const { entry, duplicate } = iocRegistry.add(value);
+        const queryMatches = new Set(
+          entry.matchResults
+            .filter((match) => match.artifactType === 'query')
+            .map((match) => match.artifactId)
+        ).size;
+        const receiptMatches = new Set(
+          entry.matchResults
+            .filter((match) => match.artifactType === 'receipt')
+            .map((match) => match.artifactId)
+        ).size;
+
+        const label = `${entry.value} (${formatIOCTypeLabel(entry.type)})`;
+        const action = entry.matchResults.length > 0 ? 'Show Matches' : undefined;
+        const choice = await vscode.window.showInformationMessage(
+          duplicate
+            ? `IOC already tracked: ${label}.`
+            : queryMatches + receiptMatches > 0
+              ? `IOC added: ${label} -- found in ${queryMatches} queries, ${receiptMatches} receipts.`
+              : `IOC added: ${label}. No matches found in loaded artifacts.`,
+          ...(action ? [action] : [])
+        );
+
+        if (choice === 'Show Matches') {
+          await showIocMatches(entry.id);
+        }
+        return entry;
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.listIocs', async () => {
+        const items = iocRegistry.list().map((entry) => ({
+          label: entry.value,
+          description: formatIOCTypeLabel(entry.type),
+          detail: `${entry.matchResults.length} match groups`,
+          entryId: entry.id,
+        }));
+
+        if (items.length === 0) {
+          await vscode.window.showInformationMessage('No active IOCs in this session.');
+          return undefined;
+        }
+
+        const selected = await vscode.window.showQuickPick(items, {
+          title: 'Active IOCs',
+          placeHolder: 'Choose an IOC to inspect its matches',
+          ignoreFocusOut: true,
+        });
+        if (!selected) {
+          return undefined;
+        }
+
+        await showIocMatches(selected.entryId);
+        return selected.entryId;
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.removeIoc', async () => {
+        const items = iocRegistry.list().map((entry) => ({
+          label: entry.value,
+          description: formatIOCTypeLabel(entry.type),
+          entryId: entry.id,
+        }));
+
+        if (items.length === 0) {
+          await vscode.window.showInformationMessage('No active IOCs to remove.');
+          return undefined;
+        }
+
+        const selected = await vscode.window.showQuickPick(items, {
+          title: 'Remove IOC',
+          placeHolder: 'Choose the IOC to remove',
+          ignoreFocusOut: true,
+        });
+        if (!selected) {
+          return undefined;
+        }
+
+        iocRegistry.remove(selected.entryId);
+        await vscode.window.showInformationMessage(`Removed IOC: ${selected.label}`);
+        return selected.entryId;
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.clearIocs', async () => {
+        iocRegistry.clear();
+        await vscode.window.showInformationMessage('Cleared all active IOCs.');
+        return true;
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.runHuntPhase', async (target?: unknown) => {
+        const workspaceRoot = resolveWorkspaceRoot(huntRoot);
+        const hunt = store.getHunt();
+        if (!workspaceRoot || !hunt || hunt.huntMap.status !== 'loaded') {
+          await vscode.window.showWarningMessage(
+            'Open a THRUNT hunt workspace with a parsed HUNTMAP.md before running phases.'
+          );
+          return undefined;
+        }
+
+        const requestedPhase = extractPhaseNumberFromTarget(target);
+        const selectablePhases = hunt.huntMap.data.phases.filter(
+          (phase) => phase.status !== 'complete'
+        );
+
+        let selectedPhase = selectablePhases.find((phase) => phase.number === requestedPhase);
+        if (!selectedPhase) {
+          const picked = await vscode.window.showQuickPick(
+            hunt.huntMap.data.phases.map((phase) => ({
+              label: `Phase ${phase.number}: ${phase.name}`,
+              description: `[${phase.status}]`,
+              phase,
+            })),
+            {
+              title: 'Run Hunt Phase',
+              placeHolder: 'Choose a phase to execute',
+              ignoreFocusOut: true,
+            }
+          );
+          selectedPhase = picked?.phase;
+        }
+
+        if (!selectedPhase) {
+          return undefined;
+        }
+
+        const args = await resolvePhaseCommandArgs(selectedPhase.number, selectedPhase.name);
+        if (!args || args.length === 0) {
+          return undefined;
+        }
+
+        const confirmation = await vscode.window.showWarningMessage(
+          `Run Phase ${selectedPhase.number}: ${selectedPhase.name}?`,
+          { modal: true },
+          'Run'
+        );
+        if (confirmation !== 'Run') {
+          return undefined;
+        }
+
+        const result = await runStreamingCliCommand(args, workspaceRoot, {
+          huntRoot,
+          phase: selectedPhase.number,
+        });
+        if (result?.exitCode === 0) {
+          const choice = await vscode.window.showInformationMessage(
+            `Phase ${selectedPhase.number} execution finished.`,
+            'Show Output'
+          );
+          if (choice === 'Show Output') {
+            cliOutputChannel.show(true);
+          }
+        }
+        return result;
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.rerunLastPhase', async () => {
+        const workspaceRoot = resolveWorkspaceRoot(huntRoot);
+        if (!workspaceRoot) {
+          await vscode.window.showWarningMessage(
+            'Open a THRUNT hunt workspace before re-running a phase.'
+          );
+          return undefined;
+        }
+
+        const stored = context.workspaceState.get<string>(LAST_PHASE_COMMAND_KEY);
+        if (!stored) {
+          await vscode.window.showInformationMessage('No hunt phase command has been run yet.');
+          return undefined;
+        }
+
+        return runStreamingCliCommand(parseCliInput(stored), workspaceRoot, {
+          huntRoot,
+        });
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.cancelCliCommand', () => {
+        cliBridge.cancel();
+      })
+    );
+
+    context.subscriptions.push(
+      selectionCoordinator.onDidChange((selection) => {
+        HuntOverviewPanel.currentPanel?.focusArtifact(selection.artifactId);
+        EvidenceBoardPanel.currentPanel?.focusArtifact(selection.artifactId);
+        QueryAnalysisPanel.currentPanel?.focusArtifact(selection.artifactId);
+        DrainTemplatePanel.currentPanel?.focusArtifact(selection.artifactId);
+      })
+    );
+
     // --- Phase 9: Sidebar tree view ---
     vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', true);
 
-    const treeProvider = new HuntTreeDataProvider(store, huntRoot);
+    const treeProvider = new HuntTreeDataProvider(store, huntRoot, {
+      iocRegistry,
+      cliBridge,
+    });
     context.subscriptions.push(treeProvider);
+    const treeView = vscode.window.createTreeView('thruntGod.huntTree', {
+      treeDataProvider: treeProvider,
+    });
+    context.subscriptions.push(treeView);
     context.subscriptions.push(
-      vscode.window.registerTreeDataProvider('thruntGod.huntTree', treeProvider)
+      treeView.onDidChangeSelection((event) => {
+        const item = event.selection[0];
+        const selection = resolveArtifactSelectionFromTarget(item);
+        if (selection) {
+          selectionCoordinator.select({
+            ...selection,
+            source: 'sidebar',
+          });
+        }
+      })
     );
 
     // Sidebar commands
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openArtifact', (item: HuntTreeItem) => {
+        const selection = resolveArtifactSelectionFromTarget(item);
+        if (selection) {
+          selectionCoordinator.select({
+            ...selection,
+            source: 'sidebar',
+          });
+        }
         if (item?.artifactPath) {
           vscode.window.showTextDocument(vscode.Uri.file(item.artifactPath));
         }
@@ -812,7 +1602,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openTemplateViewer', async (target?: unknown) => {
-        const queryId = extractQueryIdFromTarget(target) ?? getActiveEditorQueryId();
+        const queryId = resolveQueryIdForTemplateViewer(target);
         if (!queryId) {
           await vscode.window.showWarningMessage(
             'Open a query artifact or select a query in the THRUNT God sidebar to use the Drain Template Viewer.'
@@ -820,7 +1610,44 @@ export function activate(context: vscode.ExtensionContext): void {
           return;
         }
 
-        DrainTemplatePanel.createOrShow(context, store, queryId);
+        DrainTemplatePanel.createOrShow(
+          context,
+          store,
+          selectionCoordinator,
+          iocRegistry,
+          queryId
+        );
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.showInEvidenceBoard', (target?: unknown) => {
+        const panel = EvidenceBoardPanel.createOrShow(
+          context,
+          store,
+          selectionCoordinator
+        );
+        const selection =
+          resolveArtifactSelectionFromTarget(target) ??
+          (() => {
+            const activeQueryId = extractQueryIdFromTarget(target) ?? getActiveEditorQueryId();
+            if (!activeQueryId) {
+              return undefined;
+            }
+
+            return {
+              artifactId: activeQueryId,
+              artifactType: 'query' as const,
+            };
+          })();
+
+        if (selection) {
+          panel.focusArtifact(selection.artifactId);
+          selectionCoordinator.select({
+            ...selection,
+            source: 'command',
+          });
+        }
       })
     );
 
@@ -858,7 +1685,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openHuntOverview', () => {
-        HuntOverviewPanel.createOrShow(context, store, sessionDiff);
+        HuntOverviewPanel.createOrShow(
+          context,
+          store,
+          sessionDiff,
+          selectionCoordinator
+        );
       })
     );
 
@@ -875,7 +1707,12 @@ export function activate(context: vscode.ExtensionContext): void {
           'Open Dashboard'
         ).then((choice) => {
           if (choice === 'Open Dashboard') {
-            HuntOverviewPanel.createOrShow(context, store, sessionDiff);
+            HuntOverviewPanel.createOrShow(
+              context,
+              store,
+              sessionDiff,
+              selectionCoordinator
+            );
           }
         });
       }
@@ -892,20 +1729,106 @@ export function activate(context: vscode.ExtensionContext): void {
     // --- Phase 14: Evidence Board ---
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openEvidenceBoard', () => {
-        EvidenceBoardPanel.createOrShow(context, store);
+        EvidenceBoardPanel.createOrShow(
+          context,
+          store,
+          selectionCoordinator
+        );
       })
     );
 
     // --- Phase 15: Query Analysis ---
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openQueryAnalysis', () => {
-        QueryAnalysisPanel.createOrShow(context, store);
+        QueryAnalysisPanel.createOrShow(
+          context,
+          store,
+          selectionCoordinator
+        );
       })
     );
 
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openReceiptInspector', (receiptId?: string) => {
-        QueryAnalysisPanel.createOrShow(context, store, typeof receiptId === 'string' ? receiptId : undefined);
+        if (typeof receiptId === 'string') {
+          selectionCoordinator.select({
+            artifactId: receiptId,
+            artifactType: 'receipt',
+            source: 'command',
+          });
+        }
+        QueryAnalysisPanel.createOrShow(
+          context,
+          store,
+          selectionCoordinator,
+          typeof receiptId === 'string' ? receiptId : undefined
+        );
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(DRAIN_VIEWER_VIEW_TYPE, {
+        async deserializeWebviewPanel(panel, state) {
+          const revivedState = state as { queryId?: unknown } | undefined;
+          const queryId =
+            typeof revivedState?.queryId === 'string'
+              ? revivedState.queryId
+              : [...store.getQueries().keys()].sort((left, right) =>
+                  left.localeCompare(right)
+                )[0];
+          if (!queryId) {
+            return;
+          }
+
+          DrainTemplatePanel.revive(
+            context,
+            store,
+            panel,
+            selectionCoordinator,
+            iocRegistry,
+            queryId
+          );
+        },
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(HUNT_OVERVIEW_VIEW_TYPE, {
+        async deserializeWebviewPanel(panel) {
+          HuntOverviewPanel.revive(
+            context,
+            store,
+            panel,
+            sessionDiff,
+            selectionCoordinator
+          );
+        },
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(EVIDENCE_BOARD_VIEW_TYPE, {
+        async deserializeWebviewPanel(panel) {
+          EvidenceBoardPanel.revive(
+            context,
+            store,
+            panel,
+            selectionCoordinator
+          );
+        },
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(QUERY_ANALYSIS_VIEW_TYPE, {
+        async deserializeWebviewPanel(panel) {
+          QueryAnalysisPanel.revive(
+            context,
+            store,
+            panel,
+            selectionCoordinator
+          );
+        },
       })
     );
 
@@ -992,6 +1915,33 @@ export { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
 export { HuntStatusBar } from './statusBar';
 export { HuntCodeLensProvider } from './codeLens';
 export { EvidenceIntegrityDiagnostics } from './diagnostics';
+export {
+  CLIBridge,
+  parseStructuredCliLine,
+  mapCliDiagnostics,
+} from './cliBridge';
+export {
+  IOCRegistry,
+  classifyIOC,
+  buildIOCRegExp,
+  findIOCMatchesInText,
+  formatIOCTypeLabel,
+  normalizeIOCValue,
+  validateIOC,
+} from './iocRegistry';
+export { IOCDecorationManager } from './iocDecorations';
+export {
+  SLATimerManager,
+  SLA_TIMER_STATE_KEY,
+  formatSlaDuration,
+  getRemainingMs,
+  resolveSlaVisualState,
+  summarizeSlaStatus,
+} from './slaTimer';
+export {
+  WarRoomFormatter,
+  getClipboardText,
+} from './warRoomCopy';
 export {
   DRAIN_VIEWER_PIN_KEY,
   DRAIN_VIEWER_VIEW_TYPE,

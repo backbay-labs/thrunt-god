@@ -14,6 +14,13 @@ export interface SessionDiff {
   summary: string;         // e.g. "2 added, 1 modified since last session"
 }
 
+export interface SessionContinuitySummary {
+  whereLeftOff: string;
+  lastActivity: string;
+  recentChanges: string;
+  nextStep: string;
+}
+
 // View model: data the host sends to the Hunt Overview webview
 export interface HuntOverviewViewModel {
   // Mission identity
@@ -65,6 +72,9 @@ export interface HuntOverviewViewModel {
 
   // Session diff (DASH-07)
   sessionDiff: SessionDiff | null;
+
+  // Session continuity summary (XNAV-05)
+  sessionContinuity: SessionContinuitySummary | null;
 }
 
 export interface HuntOverviewBootData {
@@ -74,9 +84,11 @@ export interface HuntOverviewBootData {
 export type HostToHuntOverviewMessage =
   | { type: 'init'; viewModel: HuntOverviewViewModel; isDark: boolean }
   | { type: 'update'; viewModel: HuntOverviewViewModel }
-  | { type: 'theme'; isDark: boolean };
+  | { type: 'theme'; isDark: boolean }
+  | { type: 'focus'; artifactId: string };
 
 export type HuntOverviewToHostMessage =
   | { type: 'webview:ready' }
   | { type: 'navigate'; target: string }
+  | { type: 'artifact:select'; artifactId: string }
   | { type: 'blur' };

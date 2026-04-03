@@ -10,7 +10,16 @@ import { Panel, StatCard, GhostButton } from '../shared/components';
 import { useTheme, useHostMessage, createVsCodeApi } from '../shared/hooks';
 import '../shared/tokens.css';
 
-const vscode = createVsCodeApi<unknown, HuntOverviewToHostMessage>();
+interface PersistedHuntOverviewState {
+  showAllActivity: boolean;
+  scrollY: number;
+  focusedArtifactId: string | null;
+}
+
+const vscode = createVsCodeApi<
+  PersistedHuntOverviewState,
+  HuntOverviewToHostMessage
+>();
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -321,12 +330,18 @@ function HealthCard({
 function ActivityFeed({
   entries,
   sessionDiff,
+  showAll,
+  focusedArtifactId,
+  onToggleShowAll,
+  onArtifactSelect,
 }: {
   entries: ActivityFeedEntry[];
   sessionDiff: HuntOverviewViewModel['sessionDiff'];
+  showAll: boolean;
+  focusedArtifactId: string | null;
+  onToggleShowAll: () => void;
+  onArtifactSelect: (artifactId: string) => void;
 }) {
-  const [showAll, setShowAll] = useState(false);
-
   if (entries.length === 0) {
     return (
       <p style={{ color: 'var(--hunt-text-muted)', fontSize: '13px' }}>
@@ -364,24 +379,74 @@ function ActivityFeed({
         </p>
       )}
       <GhostButton
-        onClick={() => setShowAll(!showAll)}
+        onClick={onToggleShowAll}
         ariaLabel={showAll ? 'Show session changes only' : 'Show all activity'}
       >
         {showAll ? 'Since Last Session' : 'Show All'}
       </GhostButton>
       <div class="hunt-activity-feed" style={{ marginTop: '10px' }}>
         {displayEntries.map((entry, index) => (
-          <div class="hunt-activity-entry" key={index}>
+          <button
+            type="button"
+            class={`hunt-activity-entry${
+              focusedArtifactId === entry.artifactId
+                ? ' hunt-activity-entry--selected'
+                : ''
+            }`}
+            key={index}
+            data-artifact-id={entry.artifactId}
+            onClick={() => onArtifactSelect(entry.artifactId)}
+          >
             <span class={`hunt-diff-badge hunt-diff-badge--${entry.diffKind}`}>
               {entry.diffKind}
             </span>
             <span>
               {entry.artifactType}: {entry.artifactId}
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
+  );
+}
+
+function SessionContinuityCard({
+  sessionContinuity,
+}: {
+  sessionContinuity: HuntOverviewViewModel['sessionContinuity'];
+}) {
+  if (!sessionContinuity) {
+    return null;
+  }
+
+  return (
+    <Panel>
+      <p class="hunt-section-heading">Session Continuity</p>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '14px',
+        }}
+      >
+        <div>
+          <div class="hunt-qa-meta">Where You Left Off</div>
+          <strong>{sessionContinuity.whereLeftOff}</strong>
+        </div>
+        <div>
+          <div class="hunt-qa-meta">Last Activity</div>
+          <strong>{sessionContinuity.lastActivity}</strong>
+        </div>
+        <div>
+          <div class="hunt-qa-meta">Recent Changes</div>
+          <strong>{sessionContinuity.recentChanges}</strong>
+        </div>
+        <div>
+          <div class="hunt-qa-meta">Next Step</div>
+          <strong>{sessionContinuity.nextStep}</strong>
+        </div>
+      </div>
+    </Panel>
   );
 }
 
@@ -390,12 +455,64 @@ function ActivityFeed({
 // ---------------------------------------------------------------------------
 
 function App() {
+  const initialState = vscode.getState();
   const { setIsDark } = useTheme();
   const [viewModel, setViewModel] = useState<HuntOverviewViewModel | null>(null);
+  const [showAllActivity, setShowAllActivity] = useState(
+    initialState?.showAllActivity ?? false
+  );
+  const [focusedArtifactId, setFocusedArtifactId] = useState<string | null>(
+    initialState?.focusedArtifactId ?? null
+  );
+  const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
 
   useEffect(() => {
     vscode.postMessage({ type: 'webview:ready' });
   }, []);
+
+  useEffect(() => {
+    const persistState = () => {
+      vscode.setState({
+        showAllActivity,
+        scrollY: window.scrollY,
+        focusedArtifactId,
+      });
+    };
+
+    persistState();
+
+    const handleScroll = () => {
+      persistState();
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [focusedArtifactId, showAllActivity]);
+
+  useEffect(() => {
+    if (!viewModel || hasRestoredScroll) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: initialState?.scrollY ?? 0 });
+    });
+    setHasRestoredScroll(true);
+  }, [hasRestoredScroll, initialState?.scrollY, viewModel]);
+
+  useEffect(() => {
+    if (!focusedArtifactId) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(`[data-artifact-id="${focusedArtifactId}"]`)
+        ?.scrollIntoView({ block: 'nearest' });
+    });
+  }, [focusedArtifactId, viewModel]);
 
   useHostMessage<HostToHuntOverviewMessage>((message) => {
     switch (message.type) {
@@ -408,6 +525,9 @@ function App() {
         break;
       case 'theme':
         setIsDark(message.isDark);
+        break;
+      case 'focus':
+        setFocusedArtifactId(message.artifactId);
         break;
     }
   });
@@ -437,6 +557,9 @@ function App() {
           }}
         >
           <MissionCard mission={viewModel.mission} />
+          <SessionContinuityCard
+            sessionContinuity={viewModel.sessionContinuity}
+          />
           <PhaseRail
             phases={viewModel.phases}
             currentPhase={viewModel.currentPhase}
@@ -473,6 +596,13 @@ function App() {
           <ActivityFeed
             entries={viewModel.activityFeed}
             sessionDiff={viewModel.sessionDiff}
+            showAll={showAllActivity}
+            focusedArtifactId={focusedArtifactId}
+            onToggleShowAll={() => setShowAllActivity((value) => !value)}
+            onArtifactSelect={(artifactId) => {
+              setFocusedArtifactId(artifactId);
+              vscode.postMessage({ type: 'artifact:select', artifactId });
+            }}
           />
         </div>
       )}

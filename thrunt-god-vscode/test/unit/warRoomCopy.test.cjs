@@ -1,0 +1,129 @@
+'use strict';
+
+const { describe, it, beforeEach, afterEach } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('fs');
+const path = require('path');
+
+const BUNDLE_PATH = path.join(__dirname, '..', '..', 'dist', 'extension.js');
+const ext = require(BUNDLE_PATH);
+const vscode = require('vscode');
+
+const FIXTURES = path.join(__dirname, '..', 'fixtures', 'brute-force-hunt');
+
+function fixture(name) {
+  return fs.readFileSync(path.join(FIXTURES, name), 'utf-8');
+}
+
+function createMockWatcher() {
+  const emitter = new vscode.EventEmitter();
+  return {
+    onDidChange: emitter.event,
+    fire: (paths) => emitter.fire(paths),
+    dispose: () => emitter.dispose(),
+  };
+}
+
+function createMockOutputChannel() {
+  return {
+    appendLine: () => {},
+    dispose: () => {},
+  };
+}
+
+function populateMockFiles(huntRoot) {
+  const mockFiles = vscode.workspace._mockFiles;
+  mockFiles.clear();
+
+  const artifacts = [
+    'MISSION.md',
+    'HYPOTHESES.md',
+    'HUNTMAP.md',
+    'STATE.md',
+    'EVIDENCE_REVIEW.md',
+    'FINDINGS.md',
+    'QUERIES/QRY-20260329-001.md',
+    'QUERIES/QRY-20260329-002.md',
+    'QUERIES/QRY-20260329-003.md',
+    'RECEIPTS/RCT-20260329-001.md',
+    'RECEIPTS/RCT-20260329-002.md',
+    'RECEIPTS/RCT-20260329-003.md',
+    'RECEIPTS/RCT-20260329-004.md',
+  ];
+
+  for (const name of artifacts) {
+    const absPath = path.join(huntRoot, name);
+    const content = fixture(name);
+    mockFiles.set(absPath, {
+      content,
+      mtime: Date.now(),
+      size: Buffer.byteLength(content),
+    });
+  }
+}
+
+describe('WarRoomFormatter', () => {
+  const huntRoot = '/mock-war-room';
+  let store;
+  let watcher;
+
+  beforeEach(async () => {
+    populateMockFiles(huntRoot);
+    watcher = createMockWatcher();
+    store = new ext.HuntDataStore(
+      vscode.Uri.file(huntRoot),
+      watcher,
+      createMockOutputChannel()
+    );
+    await store.initialScanComplete();
+  });
+
+  afterEach(() => {
+    watcher.dispose();
+    store.dispose();
+    vscode.workspace._mockFiles.clear();
+  });
+
+  it('formats a finding summary with score, hypotheses, and related query context', () => {
+    const formatter = new ext.WarRoomFormatter(store);
+    const receipt = store.getReceipt('RCT-20260329-001');
+    assert.equal(receipt.status, 'loaded');
+
+    const output = formatter.formatFinding(receipt.data);
+    assert.match(output.markdown, /\*\*RCT-20260329-001\*\*/);
+    assert.match(output.markdown, /Score: 4\/6 \(MEDIUM\)/);
+    assert.match(output.markdown, /Supports HYP-01/);
+    assert.match(output.markdown, /QRY-20260329-001 \(1247 events, 3 templates\)/);
+    assert.match(output.plainText, /ATT&CK: T1078, T1110\.003|ATT&CK: T1110\.003, T1078/);
+  });
+
+  it('formats a hypothesis summary with linked receipts and status', () => {
+    const formatter = new ext.WarRoomFormatter(store);
+    const hypothesis = formatter.getHypothesisById('HYP-02');
+    assert.ok(hypothesis);
+
+    const output = formatter.formatHypothesis(hypothesis);
+    assert.match(output.markdown, /\*\*HYP-02\*\*/);
+    assert.match(output.markdown, /Supported/);
+    assert.match(output.markdown, /RCT-20260329-002/);
+  });
+
+  it('formats a hunt overview with integrity counts, techniques, and impacted entities', () => {
+    const formatter = new ext.WarRoomFormatter(store);
+    const output = formatter.formatHuntOverview();
+
+    assert.match(output.markdown, /\*\*THRUNT Hunt:/);
+    assert.match(output.markdown, /Evidence integrity: \d+ errors, \d+ warnings/);
+    assert.match(output.markdown, /ATT&CK coverage:/);
+    assert.match(output.markdown, /Impacted:/);
+  });
+
+  it('formats an ATT&CK summary grouped by technique', () => {
+    const formatter = new ext.WarRoomFormatter(store);
+    const output = formatter.formatAttackSummary();
+
+    assert.match(output.attack, /ATT&CK Techniques Observed:/);
+    assert.match(output.attack, /T1078/);
+    assert.match(output.attack, /RCT-20260329-001/);
+  });
+});

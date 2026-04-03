@@ -20,6 +20,7 @@ import type {
 } from '../shared/evidence-board';
 import type {
   QueryAnalysisViewModel,
+  QueryAnalysisMode,
   QueryAnalysisQuery,
   ComparisonData,
   ComparisonTemplate,
@@ -32,6 +33,7 @@ import type {
 import { parseArtifact } from './parsers/index';
 import { extractFrontmatter } from './parsers/base';
 import { resolveArtifactType } from './watcher';
+import { checkReceiptStructured, summarizeIntegrityCounts } from './receiptIntegrity';
 
 /** Internal type for the watcher's onDidChange event shape */
 interface WatcherLike {
@@ -290,6 +292,7 @@ export class HuntDataStore implements vscode.Disposable {
         diagnosticsHealth,
         activityFeed: sessionDiff ? sessionDiff.entries : [],
         sessionDiff,
+        sessionContinuity: null,
       };
     }
 
@@ -371,6 +374,28 @@ export class HuntDataStore implements vscode.Disposable {
         .map((text) => ({ text, timestamp: lastActivity }));
     }
 
+    const sessionContinuity =
+      hunt.state.status === 'loaded'
+        ? {
+            whereLeftOff:
+              hunt.state.data.phase > 0
+                ? `Phase ${hunt.state.data.phase} of ${hunt.state.data.totalPhases} · Plan ${hunt.state.data.planInPhase} of ${hunt.state.data.totalPlansInPhase} · ${hunt.state.data.status}`
+                : 'No active phase recorded in STATE.md',
+            lastActivity:
+              hunt.state.data.lastActivity || 'No recent activity recorded',
+            recentChanges:
+              sessionDiff?.summary ?? 'No changes since last session',
+            nextStep:
+              blockers.length > 0
+                ? `Resolve blocker: ${blockers[0].text}`
+                : hunt.state.data.status.toLowerCase().includes('complete')
+                  ? 'Advance to the next phase or capture the final milestone summary.'
+                  : hunt.state.data.planInPhase < hunt.state.data.totalPlansInPhase
+                    ? `Continue with plan ${hunt.state.data.planInPhase + 1} of ${hunt.state.data.totalPlansInPhase} in the current phase.`
+                    : `Close out Phase ${hunt.state.data.phase} and record the phase summary.`
+          }
+        : null;
+
     return {
       mission,
       phases,
@@ -382,6 +407,7 @@ export class HuntDataStore implements vscode.Disposable {
       diagnosticsHealth,
       activityFeed: sessionDiff ? sessionDiff.entries : [],
       sessionDiff,
+      sessionContinuity,
     };
   }
 
@@ -559,7 +585,8 @@ export class HuntDataStore implements vscode.Disposable {
   deriveQueryAnalysis(
     selectedQueryIds: string[],
     sortBy: string,
-    inspectorReceiptId: string | null
+    inspectorReceiptId: string | null,
+    mode?: QueryAnalysisMode
   ): QueryAnalysisViewModel {
     // 1. Build queries array from store
     const allQueries = this.getQueries();
@@ -577,8 +604,11 @@ export class HuntDataStore implements vscode.Disposable {
           percentage: t.percentage,
         })),
         eventCount: q.eventCount,
+        templateCount: q.templateCount,
+        executedAt: q.executedAt ?? '',
       });
     }
+    queries.sort((left, right) => left.queryId.localeCompare(right.queryId));
 
     // Resolve selected query data
     const selectedQueries = selectedQueryIds
@@ -588,9 +618,12 @@ export class HuntDataStore implements vscode.Disposable {
       })
       .filter((q): q is Query => q !== undefined);
 
+    const resolvedMode: QueryAnalysisMode =
+      mode ?? (inspectorReceiptId ? 'inspector' : selectedQueryIds.length >= 3 ? 'heatmap' : 'comparison');
+
     // 2. Build comparison for exactly 2 selected queries
     let comparison: ComparisonData | null = null;
-    if (selectedQueries.length === 2) {
+    if (resolvedMode === 'comparison' && selectedQueries.length === 2) {
       const [qA, qB] = selectedQueries;
       const templateMapA = new Map(qA.templates.map((t) => [t.templateId, t]));
       const templateMapB = new Map(qB.templates.map((t) => [t.templateId, t]));
@@ -642,7 +675,7 @@ export class HuntDataStore implements vscode.Disposable {
 
     // 3. Build heatmap for 3+ selected queries
     let heatmap: HeatmapData | null = null;
-    if (selectedQueries.length >= 3) {
+    if (resolvedMode === 'heatmap' && selectedQueries.length >= 3) {
       const queryIds = selectedQueries.map((q) => q.queryId);
       const queryTitles = selectedQueries.map((q) => q.title ?? q.queryId);
 
@@ -738,18 +771,20 @@ export class HuntDataStore implements vscode.Disposable {
 
     // 5. Build receipt inspector if inspectorReceiptId is set
     let receiptInspector: ReceiptInspectorData | null = null;
-    if (inspectorReceiptId !== null) {
+    if (resolvedMode === 'inspector') {
       const receipts: ReceiptInspectorItem[] = [];
       for (const [, result] of allReceipts) {
         if (result.status !== 'loaded') continue;
         const r = result.data;
         const af = r.anomalyFrame;
+        const diagnostics = checkReceiptStructured(r);
         receipts.push({
           receiptId: r.receiptId,
           claim: r.claim,
           claimStatus: r.claimStatus,
           confidence: r.confidence,
           relatedQueries: r.relatedQueries ?? [],
+          relatedHypotheses: r.relatedHypotheses ?? [],
           hasAnomalyFrame: af !== null,
           deviationScore: af?.deviationScore.totalScore ?? null,
           deviationCategory: af?.deviationScore.category ?? null,
@@ -759,18 +794,34 @@ export class HuntDataStore implements vscode.Disposable {
           prediction: af?.prediction ?? null,
           observation: af?.observation ?? null,
           attackMapping: af?.attackMapping ?? [],
+          diagnostics,
+          diagnosticCounts: summarizeIntegrityCounts(diagnostics),
         });
       }
+
+      receipts.sort((left, right) => {
+        const scoreDelta = (right.deviationScore ?? -1) - (left.deviationScore ?? -1);
+        if (scoreDelta !== 0) {
+          return scoreDelta;
+        }
+        return left.receiptId.localeCompare(right.receiptId);
+      });
+
+      const selectedReceipt =
+        inspectorReceiptId && receipts.some((receipt) => receipt.receiptId === inspectorReceiptId)
+          ? inspectorReceiptId
+          : receipts[0]?.receiptId ?? null;
+
       receiptInspector = {
         receipts,
-        selectedReceiptId: inspectorReceiptId,
+        selectedReceiptId: selectedReceipt,
       };
     }
 
     return {
       queries,
       selectedQueryIds,
-      comparisonMode: 'side-by-side',
+      mode: resolvedMode,
       sortBy: (sortBy as QueryAnalysisViewModel['sortBy']) ?? 'count',
       comparison,
       heatmap,

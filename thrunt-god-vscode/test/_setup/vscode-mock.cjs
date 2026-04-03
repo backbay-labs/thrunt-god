@@ -74,7 +74,12 @@ try {
   const _registeredCommands = new Map();
   const _executedCommands = [];
   const _createdWebviewPanels = [];
+  const _registeredWebviewSerializers = new Map();
   const _themeEmitter = new MockEventEmitter();
+  const _visibleEditorsEmitter = new MockEventEmitter();
+  const _textDocumentEmitter = new MockEventEmitter();
+  const _clipboardState = { text: '' };
+  const _configurationValues = new Map();
 
   function createMemento(initialState = {}) {
     const values = new Map(Object.entries(initialState));
@@ -114,6 +119,13 @@ try {
       lineAt: (line) => ({ text: lines[line] ?? '' }),
       getText: () => text,
     };
+  }
+
+  function getConfigurationValue(sectionPath, fallback) {
+    if (_configurationValues.has(sectionPath)) {
+      return _configurationValues.get(sectionPath);
+    }
+    return fallback;
   }
 
   function createWebviewPanel(viewType, title, showOptions, options) {
@@ -166,6 +178,24 @@ try {
     return panel;
   }
 
+  function createTreeView(id, options) {
+    const selectionEmitter = new MockEventEmitter();
+    return {
+      id,
+      options,
+      selection: [],
+      onDidChangeSelection: selectionEmitter.event,
+      reveal: () => Promise.resolve(),
+      dispose() {
+        selectionEmitter.dispose();
+      },
+      _fireSelection(selection) {
+        this.selection = selection;
+        selectionEmitter.fire({ selection });
+      },
+    };
+  }
+
   /**
    * Mock ThemeColor -- stores ID for assertion.
    */
@@ -209,6 +239,9 @@ try {
     ThemeColor: MockThemeColor,
     ThemeIcon: MockThemeIcon,
     TreeItem: MockTreeItem,
+    MarkdownString: function MarkdownString(value) {
+      this.value = value;
+    },
 
     // TreeItemCollapsibleState enum
     TreeItemCollapsibleState: {
@@ -298,6 +331,15 @@ try {
 
     workspace: {
       workspaceFolders: undefined,
+      getConfiguration: (section) => ({
+        get: (key, defaultValue) => {
+          if (!section) {
+            return getConfigurationValue(key, defaultValue);
+          }
+          const pathKey = key ? `${section}.${key}` : section;
+          return getConfigurationValue(pathKey, defaultValue);
+        },
+      }),
       createFileSystemWatcher: (_pattern, _ignoreCreate, _ignoreChange, _ignoreDelete) => {
         return new MockFileSystemWatcher();
       },
@@ -331,15 +373,19 @@ try {
         },
       },
       openTextDocument: (uri) => Promise.resolve(createMockTextDocument(uri)),
+      onDidChangeTextDocument: _textDocumentEmitter.event,
       // Expose mock file store for test setup
       _mockFiles,
+      _configurationValues,
       createMemento,
     },
     window: {
       _createdWebviewPanels,
       _themeEmitter,
+      _visibleEditorsEmitter,
       activeColorTheme: { kind: 1 },
       activeTextEditor: undefined,
+      visibleTextEditors: [],
       createOutputChannel: () => ({
         appendLine: () => {},
         show: () => {},
@@ -350,18 +396,35 @@ try {
       showWarningMessage: () => Promise.resolve(undefined),
       showErrorMessage: () => Promise.resolve(undefined),
       showInputBox: () => Promise.resolve(undefined),
+      showQuickPick: () => Promise.resolve(undefined),
       showTextDocument: (doc) => {
         const editor = {
           revealRange: () => {},
           selection: null,
           document: doc,
+          setDecorations: () => {},
         };
         mock.window.activeTextEditor = editor;
+        mock.window.visibleTextEditors = [editor];
         return Promise.resolve(editor);
       },
       createWebviewPanel,
+      createTreeView,
       onDidChangeActiveColorTheme: _themeEmitter.event,
+      onDidChangeVisibleTextEditors: _visibleEditorsEmitter.event,
       registerTreeDataProvider: () => ({ dispose: () => {} }),
+      createTextEditorDecorationType: (options = {}) => ({
+        options,
+        dispose: () => {},
+      }),
+      registerWebviewPanelSerializer: (viewType, serializer) => {
+        _registeredWebviewSerializers.set(viewType, serializer);
+        return {
+          dispose: () => {
+            _registeredWebviewSerializers.delete(viewType);
+          },
+        };
+      },
       createStatusBarItem: (alignment, priority) => ({
         alignment,
         priority,
@@ -369,6 +432,7 @@ try {
         tooltip: '',
         command: '',
         backgroundColor: undefined,
+        color: undefined,
         show: function() { this._visible = true; },
         hide: function() { this._visible = false; },
         dispose: function() { this._disposed = true; },
@@ -420,8 +484,11 @@ try {
     },
     env: {
       clipboard: {
-        writeText: () => Promise.resolve(),
-        readText: () => Promise.resolve(''),
+        writeText: (value) => {
+          _clipboardState.text = value;
+          return Promise.resolve();
+        },
+        readText: () => Promise.resolve(_clipboardState.text),
       },
     },
     Uri: {
@@ -435,6 +502,7 @@ try {
     extensions: {
       getExtension: () => undefined,
     },
+    _registeredWebviewSerializers,
     // File type enum stub
     FileType: {
       Unknown: 0,

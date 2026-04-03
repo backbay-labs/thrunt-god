@@ -28,7 +28,30 @@
     "onCommand:thrunt-god.openHuntOverview",
     "onCommand:thrunt-god.openEvidenceBoard",
     "onCommand:thrunt-god.openQueryAnalysis",
-    "onCommand:thrunt-god.openReceiptInspector"
+    "onCommand:thrunt-god.openReceiptInspector",
+    "onCommand:thrunt-god.showInEvidenceBoard",
+    "onCommand:thrunt-god.copyWarRoomSummary",
+    "onCommand:thrunt-god.copyFindingSummary",
+    "onCommand:thrunt-god.copyHypothesisSummary",
+    "onCommand:thrunt-god.copyAttackSummary",
+    "onCommand:thrunt-god.startSlaTimer",
+    "onCommand:thrunt-god.pauseSlaTimer",
+    "onCommand:thrunt-god.resumeSlaTimer",
+    "onCommand:thrunt-god.stopSlaTimer",
+    "onCommand:thrunt-god.advanceSlaPhase",
+    "onCommand:thrunt-god.showSlaStatus",
+    "onCommand:thrunt-god.copySlaStatus",
+    "onCommand:thrunt-god.addIoc",
+    "onCommand:thrunt-god.listIocs",
+    "onCommand:thrunt-god.removeIoc",
+    "onCommand:thrunt-god.clearIocs",
+    "onCommand:thrunt-god.runHuntPhase",
+    "onCommand:thrunt-god.rerunLastPhase",
+    "onCommand:thrunt-god.cancelCliCommand",
+    "onWebviewPanel:thruntGod.drainViewer",
+    "onWebviewPanel:thruntGod.huntOverview",
+    "onWebviewPanel:thruntGod.evidenceBoard",
+    "onWebviewPanel:thruntGod.queryAnalysis"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -131,13 +154,117 @@
         "command": "thrunt-god.openReceiptInspector",
         "title": "THRUNT God: Open Receipt QA Inspector",
         "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.showInEvidenceBoard",
+        "title": "THRUNT: Show in Evidence Board",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "thrunt-god.copyWarRoomSummary",
+        "title": "THRUNT: Copy War Room Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.copyFindingSummary",
+        "title": "THRUNT: Copy Finding Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.copyHypothesisSummary",
+        "title": "THRUNT: Copy Hypothesis Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.copyAttackSummary",
+        "title": "THRUNT: Copy ATT&CK Summary",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "thrunt-god.startSlaTimer",
+        "title": "THRUNT: Start SLA Timer",
+        "icon": "$(clock)"
+      },
+      {
+        "command": "thrunt-god.pauseSlaTimer",
+        "title": "THRUNT: Pause SLA Timer"
+      },
+      {
+        "command": "thrunt-god.resumeSlaTimer",
+        "title": "THRUNT: Resume SLA Timer"
+      },
+      {
+        "command": "thrunt-god.stopSlaTimer",
+        "title": "THRUNT: Stop SLA Timer"
+      },
+      {
+        "command": "thrunt-god.advanceSlaPhase",
+        "title": "THRUNT: Advance SLA Phase"
+      },
+      {
+        "command": "thrunt-god.showSlaStatus",
+        "title": "THRUNT: Show SLA Status"
+      },
+      {
+        "command": "thrunt-god.copySlaStatus",
+        "title": "THRUNT: Copy SLA Status"
+      },
+      {
+        "command": "thrunt-god.addIoc",
+        "title": "THRUNT: Add IOC",
+        "icon": "$(search)"
+      },
+      {
+        "command": "thrunt-god.listIocs",
+        "title": "THRUNT: List IOCs"
+      },
+      {
+        "command": "thrunt-god.removeIoc",
+        "title": "THRUNT: Remove IOC"
+      },
+      {
+        "command": "thrunt-god.clearIocs",
+        "title": "THRUNT: Clear All IOCs"
+      },
+      {
+        "command": "thrunt-god.runHuntPhase",
+        "title": "THRUNT: Run Hunt Phase",
+        "icon": "$(play)"
+      },
+      {
+        "command": "thrunt-god.rerunLastPhase",
+        "title": "THRUNT: Re-run Last Phase"
+      },
+      {
+        "command": "thrunt-god.cancelCliCommand",
+        "title": "THRUNT: Cancel Running Command"
       }
     ],
     "menus": {
       "view/item/context": [
         {
+          "command": "thrunt-god.runHuntPhase",
+          "when": "view == thruntGod.huntTree && viewItem == phase",
+          "group": "execution@1"
+        },
+        {
+          "command": "thrunt-god.copyFindingSummary",
+          "when": "view == thruntGod.huntTree && viewItem == receipt",
+          "group": "warroom@1"
+        },
+        {
+          "command": "thrunt-god.copyHypothesisSummary",
+          "when": "view == thruntGod.huntTree && viewItem == hypothesis",
+          "group": "warroom@1"
+        },
+        {
           "command": "thrunt-god.openTemplateViewer",
-          "when": "view == thruntGod.huntTree && viewItem == query",
+          "when": "view == thruntGod.huntTree && (viewItem == query || viewItem == receipt || viewItem == hypothesis)",
+          "group": "navigation@1"
+        },
+        {
+          "command": "thrunt-god.showInEvidenceBoard",
+          "when": "view == thruntGod.huntTree && (viewItem == query || viewItem == receipt || viewItem == hypothesis)",
           "group": "navigation@1"
         },
         {
@@ -193,6 +320,11 @@
           "group": "navigation@3"
         },
         {
+          "command": "thrunt-god.addIoc",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@4"
+        },
+        {
           "command": "thrunt-god.openHuntOverview",
           "when": "view == thruntGod.huntTree",
           "group": "navigation"
@@ -206,8 +338,90 @@
           "command": "thrunt-god.openQueryAnalysis",
           "when": "view == thruntGod.huntTree",
           "group": "navigation"
+        },
+        {
+          "command": "thrunt-god.copyWarRoomSummary",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@5"
+        },
+        {
+          "command": "thrunt-god.startSlaTimer",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@6"
+        },
+        {
+          "command": "thrunt-god.runHuntPhase",
+          "when": "view == thruntGod.huntTree",
+          "group": "navigation@7"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "thrunt-god.addIoc",
+          "when": "editorHasSelection",
+          "group": "thrunt@2"
+        },
+        {
+          "command": "thrunt-god.copyFindingSummary",
+          "when": "resourceFilename =~ /^RCT-/",
+          "group": "thrunt@1"
         }
       ]
+    }
+    ,
+    "configuration": {
+      "title": "THRUNT God",
+      "properties": {
+        "thruntGod.warRoom.defaultFormat": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "plainText",
+            "attack"
+          ],
+          "default": "markdown",
+          "description": "Default clipboard format for War Room copy commands."
+        },
+        "thruntGod.sla.defaults": {
+          "type": "object",
+          "default": {
+            "ttd": 1800000,
+            "ttc": 14400000,
+            "ttr": 86400000
+          },
+          "description": "Default SLA durations in milliseconds for TTD, TTC, and TTR."
+        },
+        "thruntGod.sla.autoStartFromMission": {
+          "type": "boolean",
+          "default": false,
+          "description": "Auto-start the SLA timer when a mission artifact provides structured SLA metadata."
+        },
+        "thruntGod.sla.warningThresholdPercent": {
+          "type": "number",
+          "default": 25,
+          "description": "Percent remaining at which the SLA timer switches into warning state."
+        },
+        "thruntGod.sla.criticalThresholdPercent": {
+          "type": "number",
+          "default": 10,
+          "description": "Percent remaining at which the SLA timer switches into critical state."
+        },
+        "thruntGod.cli.timeout": {
+          "type": "number",
+          "default": 600000,
+          "description": "CLI execution timeout in milliseconds."
+        },
+        "thruntGod.cli.defaultPackId": {
+          "type": "string",
+          "default": "",
+          "description": "Default THRUNT pack ID used to build phase execution commands."
+        },
+        "thruntGod.cli.phaseCommandTemplate": {
+          "type": "string",
+          "default": "runtime execute --pack {packId} --phase {phase}",
+          "description": "Template used by Run Hunt Phase. Supported placeholders: {phase}, {phaseName}, {phaseNameSlug}, {packId}."
+        }
+      }
     }
   },
   "scripts": {

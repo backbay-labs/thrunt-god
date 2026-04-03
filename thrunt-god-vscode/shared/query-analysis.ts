@@ -10,7 +10,11 @@ export interface QueryAnalysisQuery {
   title: string;
   templates: QueryAnalysisTemplate[];
   eventCount: number;
+  templateCount: number;
+  executedAt: string;
 }
+
+export type QueryAnalysisMode = 'comparison' | 'heatmap' | 'inspector';
 
 // --- Comparison types (2-query selection) ---
 
@@ -58,6 +62,7 @@ export interface ReceiptInspectorItem {
   claimStatus: string;
   confidence: string;
   relatedQueries: string[];
+  relatedHypotheses: string[];
   hasAnomalyFrame: boolean;
   deviationScore: number | null;
   deviationCategory: string | null;
@@ -67,6 +72,18 @@ export interface ReceiptInspectorItem {
   prediction: string | null;
   observation: string | null;
   attackMapping: string[];
+  diagnostics: Array<{
+    id: string;
+    label: string;
+    severity: 'error' | 'warning' | 'info';
+    status: 'pass' | 'flagged';
+    message: string;
+  }>;
+  diagnosticCounts: {
+    errors: number;
+    warnings: number;
+    infos: number;
+  };
 }
 
 export interface ReceiptInspectorData {
@@ -79,7 +96,7 @@ export interface ReceiptInspectorData {
 export interface QueryAnalysisViewModel {
   queries: QueryAnalysisQuery[];
   selectedQueryIds: string[];
-  comparisonMode: 'side-by-side' | 'matrix';
+  mode: QueryAnalysisMode;
   sortBy: 'count' | 'deviation' | 'novelty' | 'recency';
   comparison: ComparisonData | null;
   heatmap: HeatmapData | null;
@@ -98,10 +115,11 @@ export type HostToQueryAnalysisMessage =
 
 export type QueryAnalysisToHostMessage =
   | { type: 'webview:ready' }
-  | { type: 'query:select'; queryId: string }
+  | { type: 'query:set'; slot: 'left' | 'right'; queryId: string }
   | { type: 'sort:change'; sortBy: 'count' | 'deviation' | 'novelty' | 'recency' }
-  | { type: 'mode:change'; mode: 'side-by-side' | 'matrix' }
+  | { type: 'mode:change'; mode: QueryAnalysisMode }
   | { type: 'receipt:select'; receiptId: string }
   | { type: 'inspector:open'; receiptId?: string }
   | { type: 'inspector:close' }
+  | { type: 'navigate'; target: 'query' | 'receipt'; artifactId: string }
   | { type: 'blur' };

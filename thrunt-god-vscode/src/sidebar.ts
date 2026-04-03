@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import type { ArtifactType, Hypothesis, Receipt, Query } from './types';
 import type { HuntDataStore } from './store';
+import type { IOCRegistry } from './iocRegistry';
+import type { CLIBridge } from './cliBridge';
 
 // ---------------------------------------------------------------------------
 // Node types for dispatch in getChildren
@@ -90,7 +92,11 @@ function resolveArtifactPath(huntRoot: vscode.Uri, type: string, id: string): st
 /**
  * Build a receipt tree item with deviation score badge.
  */
-function buildReceiptNode(receipt: Receipt, huntRoot: vscode.Uri): HuntTreeItem {
+function buildReceiptNode(
+  receipt: Receipt,
+  huntRoot: vscode.Uri,
+  matchedIocCount = 0
+): HuntTreeItem {
   let description: string;
   let icon: vscode.ThemeIcon;
 
@@ -107,6 +113,10 @@ function buildReceiptNode(receipt: Receipt, huntRoot: vscode.Uri): HuntTreeItem 
     } else {
       icon = new vscode.ThemeIcon('error', new vscode.ThemeColor('charts.red'));
     }
+  }
+
+  if (matchedIocCount > 0) {
+    description = `${description} · IOC ${matchedIocCount}`;
   }
 
   const tooltip = receipt.claim ? receipt.claim.slice(0, 200) : '';
@@ -131,13 +141,27 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
   readonly onDidChangeTreeData: vscode.Event<HuntTreeItem | undefined | void> = this._onDidChangeTreeData.event;
 
   private readonly storeSubscription: vscode.Disposable;
+  private readonly iocSubscription?: vscode.Disposable;
+  private readonly cliSubscription?: vscode.Disposable;
 
   constructor(
     private readonly store: HuntDataStore,
-    private readonly huntRoot: vscode.Uri
+    private readonly huntRoot: vscode.Uri,
+    private readonly options?: {
+      iocRegistry?: IOCRegistry;
+      cliBridge?: CLIBridge;
+    }
   ) {
     // Refresh entire tree whenever the store emits a change
     this.storeSubscription = this.store.onDidChange(() => {
+      this._onDidChangeTreeData.fire(undefined);
+    });
+
+    this.iocSubscription = this.options?.iocRegistry?.onDidChange(() => {
+      this._onDidChangeTreeData.fire(undefined);
+    });
+
+    this.cliSubscription = this.options?.cliBridge?.onDidChange(() => {
       this._onDidChangeTreeData.fire(undefined);
     });
   }
@@ -266,7 +290,13 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
     const results = this.store.getReceiptsForHypothesis(hypothesisId);
     return results
       .filter((r) => r.status === 'loaded')
-      .map((r) => buildReceiptNode(r.data as Receipt, this.huntRoot));
+      .map((r) =>
+        buildReceiptNode(
+          r.data as Receipt,
+          this.huntRoot,
+          this.options?.iocRegistry?.getMatchedValuesForArtifact(r.data.receiptId).length ?? 0
+        )
+      );
   }
 
   // --- Phase nodes ---
@@ -277,7 +307,7 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
 
     const phases = hunt.huntMap.data.phases;
     return phases.map((p) => {
-      const { description, icon } = this.phaseStatusBadge(p.status);
+      const { description, icon } = this.phaseStatusBadge(p.status, p.number);
 
       return new HuntTreeItem(`Phase ${p.number}: ${p.name}`, vscode.TreeItemCollapsibleState.Collapsed, {
         description,
@@ -288,7 +318,20 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
     });
   }
 
-  private phaseStatusBadge(status: string): { description: string; icon: vscode.ThemeIcon } {
+  private phaseStatusBadge(
+    status: string,
+    phaseNumber: number
+  ): { description: string; icon: vscode.ThemeIcon } {
+    const activeRun = this.options?.cliBridge?.getActiveRun();
+    if (activeRun?.phase === phaseNumber && activeRun.status === 'running') {
+      return {
+        description: activeRun.progress
+          ? `running · ${activeRun.progress.queriesComplete}/${activeRun.progress.queriesTotal || '?'}`
+          : 'running',
+        icon: new vscode.ThemeIcon('sync~spin', new vscode.ThemeColor('charts.blue')),
+      };
+    }
+
     switch (status) {
       case 'complete':
         return {
@@ -316,8 +359,14 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
       .filter((q) => q.status === 'loaded')
       .map((q) => {
         const query = q.data as Query;
+        const matchedIocCount =
+          this.options?.iocRegistry?.getMatchedValuesForArtifact(query.queryId).length ?? 0;
+        const description =
+          matchedIocCount > 0
+            ? `${query.templateCount} templates · IOC ${matchedIocCount}`
+            : `${query.templateCount} templates`;
         return new HuntTreeItem(query.queryId, vscode.TreeItemCollapsibleState.Collapsed, {
-          description: `${query.templateCount} templates`,
+          description,
           iconPath: new vscode.ThemeIcon('beaker'),
           contextValue: 'query',
           nodeType: 'query',
@@ -334,13 +383,21 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
     const results = this.store.getReceiptsForQuery(queryId);
     return results
       .filter((r) => r.status === 'loaded')
-      .map((r) => buildReceiptNode(r.data as Receipt, this.huntRoot));
+      .map((r) =>
+        buildReceiptNode(
+          r.data as Receipt,
+          this.huntRoot,
+          this.options?.iocRegistry?.getMatchedValuesForArtifact(r.data.receiptId).length ?? 0
+        )
+      );
   }
 
   // --- Disposal ---
 
   dispose(): void {
     this.storeSubscription.dispose();
+    this.iocSubscription?.dispose();
+    this.cliSubscription?.dispose();
     this._onDidChangeTreeData.dispose();
   }
 }

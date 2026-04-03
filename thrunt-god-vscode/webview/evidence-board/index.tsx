@@ -14,6 +14,7 @@ import type {
   SimulationLinkDatum,
 } from 'd3-force';
 import type {
+  EvidenceBoardBootData,
   HostToEvidenceBoardMessage,
   EvidenceBoardToHostMessage,
   EvidenceBoardViewModel,
@@ -29,7 +30,26 @@ import '../shared/tokens.css';
 // VS Code API
 // ---------------------------------------------------------------------------
 
-const vscode = createVsCodeApi<unknown, EvidenceBoardToHostMessage>();
+interface PersistedEvidenceBoardState {
+  mode: 'graph' | 'matrix';
+  focusedHypothesis: string | null;
+  selectedArtifactId: string | null;
+  scrollY: number;
+}
+
+declare global {
+  interface Window {
+    __THRUNT_EVIDENCE_BOARD_BOOT__?: EvidenceBoardBootData;
+  }
+}
+
+const bootData = window.__THRUNT_EVIDENCE_BOARD_BOOT__ ?? {
+  surfaceId: 'evidence-board' as const,
+};
+const vscode = createVsCodeApi<
+  PersistedEvidenceBoardState,
+  EvidenceBoardToHostMessage
+>();
 
 // ---------------------------------------------------------------------------
 // Internal types
@@ -315,6 +335,7 @@ function computeTraceChain(
 function GraphView({
   viewModel,
   focusedHypothesis,
+  selectedArtifactId,
   tracedChain,
   onNodeClick,
   onNodeHover,
@@ -324,6 +345,7 @@ function GraphView({
 }: {
   viewModel: EvidenceBoardViewModel;
   focusedHypothesis: string | null;
+  selectedArtifactId: string | null;
   tracedChain: Set<string>;
   onNodeClick: (nodeId: string) => void;
   onNodeHover: (node: EvidenceBoardNode, x: number, y: number) => void;
@@ -440,9 +462,11 @@ function GraphView({
 
           const r = nodeRadius(node.deviationScore);
           const isDimmed = connectedNodes != null && !connectedNodes.has(node.id);
+          const isSelected = node.id === selectedArtifactId;
 
           let groupClass = 'hunt-eb-node';
           if (isDimmed) groupClass += ' hunt-eb-node--dimmed';
+          if (isSelected) groupClass += ' hunt-eb-node--selected';
 
           return (
             <g
@@ -476,11 +500,15 @@ function GraphView({
 function MatrixView({
   viewModel,
   focusedHypothesis,
+  selectedArtifactId,
   onHypothesisFocus,
+  onArtifactSelect,
 }: {
   viewModel: EvidenceBoardViewModel;
   focusedHypothesis: string | null;
+  selectedArtifactId: string | null;
   onHypothesisFocus: (id: string | null) => void;
+  onArtifactSelect: (artifactId: string) => void;
 }) {
   // Empty state
   if (viewModel.hypothesisIds.length === 0 && viewModel.receiptIds.length === 0) {
@@ -544,13 +572,20 @@ function MatrixView({
             {viewModel.hypothesisIds.map((hId) => (
               <th
                 key={hId}
-                class={gapCols.has(hId) ? 'hunt-eb-matrix__gap-col-header' : undefined}
+                class={`${gapCols.has(hId) ? 'hunt-eb-matrix__gap-col-header ' : ''}${
+                  selectedArtifactId === hId
+                    ? 'hunt-eb-matrix__col-header--selected'
+                    : ''
+                }`.trim()}
                 title={hId}
                 style={{
                   cursor: 'pointer',
                   opacity: focusedHypothesis && hId !== focusedHypothesis ? 0.15 : 1,
                 }}
-                onClick={() => handleColumnClick(hId)}
+                onClick={() => {
+                  handleColumnClick(hId);
+                  onArtifactSelect(hId);
+                }}
               >
                 {hId.length > 8 ? hId.slice(0, 8) + '...' : hId}
               </th>
@@ -562,7 +597,15 @@ function MatrixView({
             const isGapRow = gapRows.has(rId);
             return (
               <tr key={rId} class={isGapRow ? 'hunt-eb-matrix__gap-row' : undefined}>
-                <th class="hunt-eb-matrix__row-header" title={rId}>
+                <th
+                  class={`hunt-eb-matrix__row-header${
+                    selectedArtifactId === rId
+                      ? ' hunt-eb-matrix__row-header--selected'
+                      : ''
+                  }`}
+                  title={rId}
+                  onClick={() => onArtifactSelect(rId)}
+                >
                   {rId.length > 12 ? rId.slice(0, 12) + '...' : rId}
                   {isGapRow && (
                     <>
@@ -620,10 +663,19 @@ function MatrixView({
 // ---------------------------------------------------------------------------
 
 function App() {
+  const initialState = vscode.getState();
   const { setIsDark } = useTheme();
-  const [mode, setMode] = useState<'graph' | 'matrix'>('graph');
+  const [mode, setMode] = useState<'graph' | 'matrix'>(
+    initialState?.mode ?? bootData.mode ?? 'graph'
+  );
   const [viewModel, setViewModel] = useState<EvidenceBoardViewModel | null>(null);
-  const [focusedHypothesis, setFocusedHypothesis] = useState<string | null>(null);
+  const [focusedHypothesis, setFocusedHypothesis] = useState<string | null>(
+    initialState?.focusedHypothesis ?? null
+  );
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(
+    initialState?.selectedArtifactId ?? null
+  );
+  const [hasRestoredScroll, setHasRestoredScroll] = useState(false);
   const [tracedChain, setTracedChain] = useState<Set<string>>(new Set());
   const [tooltipNode, setTooltipNode] = useState<EvidenceBoardNode | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -631,6 +683,39 @@ function App() {
   useEffect(() => {
     vscode.postMessage({ type: 'webview:ready' });
   }, []);
+
+  useEffect(() => {
+    const persistState = () => {
+      vscode.setState({
+        mode,
+        focusedHypothesis,
+        selectedArtifactId,
+        scrollY: window.scrollY,
+      });
+    };
+
+    persistState();
+
+    const handleScroll = () => {
+      persistState();
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [focusedHypothesis, mode, selectedArtifactId]);
+
+  useEffect(() => {
+    if (!viewModel || hasRestoredScroll) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: initialState?.scrollY ?? 0 });
+    });
+    setHasRestoredScroll(true);
+  }, [hasRestoredScroll, initialState?.scrollY, viewModel]);
 
   useHostMessage<HostToEvidenceBoardMessage>((message) => {
     switch (message.type) {
@@ -644,6 +729,15 @@ function App() {
       case 'theme':
         setIsDark(message.isDark);
         break;
+      case 'focus':
+        setSelectedArtifactId(message.artifactId);
+        if (message.artifactId.startsWith('HYP-')) {
+          setFocusedHypothesis(message.artifactId);
+        }
+        if (message.artifactId.startsWith('QRY-')) {
+          setMode('graph');
+        }
+        break;
     }
   });
 
@@ -656,6 +750,8 @@ function App() {
   );
 
   const handleNodeClick = useCallback((nodeId: string) => {
+    setSelectedArtifactId(nodeId);
+    vscode.postMessage({ type: 'node:select', nodeId });
     vscode.postMessage({ type: 'node:open', nodeId });
   }, []);
 
@@ -671,6 +767,11 @@ function App() {
   const handleHypothesisFocus = useCallback((hypothesisId: string | null) => {
     setFocusedHypothesis(hypothesisId);
     vscode.postMessage({ type: 'hypothesis:focus', hypothesisId });
+  }, []);
+
+  const handleArtifactSelect = useCallback((artifactId: string) => {
+    setSelectedArtifactId(artifactId);
+    vscode.postMessage({ type: 'node:select', nodeId: artifactId });
   }, []);
 
   const handleTraceToggle = useCallback(
@@ -757,6 +858,7 @@ function App() {
                 <GraphView
                   viewModel={viewModel}
                   focusedHypothesis={focusedHypothesis}
+                  selectedArtifactId={selectedArtifactId}
                   tracedChain={tracedChain}
                   onNodeClick={handleNodeClick}
                   onNodeHover={handleNodeHover}
@@ -771,7 +873,9 @@ function App() {
             <MatrixView
               viewModel={viewModel}
               focusedHypothesis={focusedHypothesis}
+              selectedArtifactId={selectedArtifactId}
               onHypothesisFocus={handleHypothesisFocus}
+              onArtifactSelect={handleArtifactSelect}
             />
           )}
         </div>

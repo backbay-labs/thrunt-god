@@ -38,7 +38,8 @@ export interface EvidenceBoardBootData {
 export type HostToEvidenceBoardMessage =
   | { type: 'init'; viewModel: EvidenceBoardViewModel; isDark: boolean }
   | { type: 'update'; viewModel: EvidenceBoardViewModel }
-  | { type: 'theme'; isDark: boolean };
+  | { type: 'theme'; isDark: boolean }
+  | { type: 'focus'; artifactId: string };
 
 export type EvidenceBoardToHostMessage =
   | { type: 'webview:ready' }
