@@ -24,6 +24,11 @@
   --hunt-success: var(--vscode-charts-green, #89d185);
   --hunt-warning: var(--vscode-charts-yellow, #d7ba7d);
 
+  /* --- Derived / alias --- */
+  --hunt-panel-bg: var(--hunt-surface);
+  --hunt-surface-raised: var(--hunt-surface-strong);
+  --hunt-text-on-accent: #fff;
+
   /* --- Elevation --- */
   --hunt-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
 }
@@ -695,4 +700,209 @@ button {
 
 .hunt-eb-matrix__blind-spot-item:last-child {
   border-bottom: none;
+}
+
+/* ==========================================================================
+   Component Styles -- Query Analysis
+   ========================================================================== */
+
+.hunt-qa-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hunt-text-muted);
+  margin: 0 0 8px;
+}
+
+.hunt-qa-selector {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+
+.hunt-qa-selector select {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 4px;
+  background: var(--hunt-panel-bg);
+  color: var(--hunt-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.hunt-qa-sort-pills {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0 20px;
+}
+
+.hunt-qa-sort-pill {
+  padding: 4px 14px;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hunt-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.hunt-qa-sort-pill:hover:not(:disabled) {
+  border-color: var(--hunt-accent);
+  color: var(--hunt-text);
+}
+
+.hunt-qa-sort-pill--active {
+  background: var(--hunt-accent);
+  color: var(--hunt-text-on-accent, #fff);
+  border-color: var(--hunt-accent);
+}
+
+.hunt-qa-sort-pill--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hunt-qa-comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.hunt-qa-comparison-header {
+  padding: 12px 16px;
+  background: var(--hunt-panel-bg);
+  border-bottom: 1px solid var(--hunt-panel-border);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.hunt-qa-comparison-header + .hunt-qa-comparison-header {
+  border-left: 1px solid var(--hunt-panel-border);
+}
+
+.hunt-qa-comparison-row {
+  display: contents;
+}
+
+.hunt-qa-comparison-cell {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--hunt-panel-border);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.hunt-qa-comparison-cell + .hunt-qa-comparison-cell {
+  border-left: 1px solid var(--hunt-panel-border);
+}
+
+.hunt-qa-comparison-cell--a-only {
+  border-left: 4px solid var(--hunt-accent);
+}
+
+.hunt-qa-comparison-cell--b-only {
+  border-left: 4px solid var(--hunt-warning, #d7ba7d);
+}
+
+.hunt-qa-comparison-label {
+  grid-column: 1 / -1;
+  padding: 6px 16px;
+  background: var(--hunt-surface-raised, var(--hunt-panel-bg));
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family, monospace);
+  color: var(--hunt-text-muted);
+  border-bottom: 1px solid var(--hunt-panel-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hunt-qa-count-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--hunt-accent);
+  flex-shrink: 0;
+  transition: width 0.2s;
+}
+
+.hunt-qa-heatmap {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 12px;
+}
+
+.hunt-qa-heatmap th {
+  padding: 8px 10px;
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid var(--hunt-panel-border);
+  background: var(--hunt-panel-bg);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.hunt-qa-heatmap td {
+  padding: 6px 10px;
+  text-align: center;
+  border: 1px solid var(--hunt-panel-border);
+  position: relative;
+}
+
+.hunt-qa-heatmap-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hunt-qa-heatmap-cell--zero {
+  color: var(--hunt-text-muted);
+  opacity: 0.3;
+}
+
+.hunt-qa-heatmap-row-label {
+  text-align: left;
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 11px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hunt-qa-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--hunt-panel-border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: 12px;
+}
+
+.hunt-qa-mode-toggle button {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: var(--hunt-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hunt-qa-mode-toggle button.active {
+  background: var(--hunt-accent);
+  color: var(--hunt-text-on-accent, #fff);
 }
