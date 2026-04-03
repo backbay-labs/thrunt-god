@@ -72,6 +72,7 @@ ALLOWLIST=(
   'tests/security-scan.test.cjs'
   'tests/security.test.cjs'
   'tests/prompt-injection-scan.test.cjs'
+  'tests/validate.test.cjs'
   'thrunt-god/bin/lib/security.cjs'
   'hooks/thrunt-prompt-guard.js'
   'SECURITY.md'
