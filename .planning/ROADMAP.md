@@ -21,6 +21,7 @@
 - [x] **Phase 14: Evidence Board** - Force-directed lineage graph with tier constraints, coverage matrix with gap detection, mode toggle in single panel (completed 2026-04-02)
 - [x] **Phase 15: Query Analysis Upgrades** - Template comparison, presence matrix heatmap, sort controls, receipt QA inspector with anomaly framing (completed 2026-04-03)
 - [x] **Phase 16: Cross-Surface Navigation & Session Continuity** - WebviewPanelSerializer, cross-surface artifact highlighting, contextual actions, session continuity summary (completed 2026-04-03)
+- [ ] **Phase 16.1: Cross-Surface Selection Rendering & Keyboard Navigation** - INSERTED gap closure: webview selection:highlight handlers, EB/QA selection emission, useRovingTabindex across all surfaces, ARIA attributes, tech debt fixes
 
 ## Phase Details
 
@@ -107,6 +108,23 @@ Plans:
 - [x] 16-01-PLAN.md -- Cross-surface selection API, context menu commands, highlight wiring
 - [x] 16-02-PLAN.md -- WebviewPanelSerializer registration and workspaceState persistence
 - [x] 16-03-PLAN.md -- Session continuity Resume card in Hunt Overview
+
+### Phase 16.1: Cross-Surface Selection Rendering & Keyboard Navigation
+**Goal**: Close the two partial requirements from v3.0 audit — make cross-surface selection highlighting visible in all webview surfaces and wire keyboard-first navigation (roving tabindex + ARIA) into the 3 surfaces that lack it
+**Depends on**: Phase 16
+**Requirements**: XNAV-03, DSYS-06
+**Gap Closure**: Closes gaps from v3.0 milestone audit
+**Success Criteria** (what must be TRUE):
+  1. User selects an artifact in any surface and all other open surfaces visually highlight that artifact with a brief pulse and persistent subtle highlight
+  2. Clicking a node in the Evidence Board graph propagates selection to other surfaces (not just opens the file)
+  3. Selecting a query or receipt in Query Analysis propagates selection to other surfaces
+  4. All 4 webview surfaces support keyboard navigation of interactive lists via Arrow/Home/End keys with proper ARIA roles
+  5. TypeScript compiles cleanly with `npm run lint` (no TS2339 errors)
+**Plans**: 2 plans
+
+Plans:
+- [ ] 16.1-01-PLAN.md -- Cross-surface selection:highlight rendering in all 4 webviews, EB node:select emission, QA store.select() wiring, store.ts TS fix
+- [ ] 16.1-02-PLAN.md -- useRovingTabindex wiring + ARIA attributes in Hunt Overview, Evidence Board, and Query Analysis
 
 ### v4.0 Active Incident Workflow
 
@@ -263,7 +281,8 @@ Plans:
 | 13. Hunt Overview Dashboard | 3/3 | Complete    | 2026-04-02 | 2026-04-02 |
 | 14. Evidence Board | v3.0 | 3/3 | Complete | 2026-04-02 |
 | 15. Query Analysis Upgrades | v3.0 | Complete    | 2026-04-03 | 2026-04-03 |
-| 16. Cross-Surface Navigation | 3/3 | Complete   | 2026-04-03 | - |
+| 16. Cross-Surface Navigation | 3/3 | Complete    | 2026-04-03 | - |
+| 16.1. Selection Rendering & Keyboard Nav | v3.0 | 0/2 | In progress | - |
 | 17. War Room Copy | v4.0 | 0/1 | Not started | - |
 | 18. SLA Countdown Timer | v4.0 | 0/1 | Not started | - |
 | 19. IOC Quick-Entry | v4.0 | 0/1 | Not started | - |
