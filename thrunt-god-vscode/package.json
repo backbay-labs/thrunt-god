@@ -25,6 +25,7 @@
     "onCommand:thrunt-god.showProgressReport",
     "onCommand:thrunt-god.analyzeHuntmap",
     "onCommand:thrunt-god.showRuntimeDoctor",
+    "onCommand:thrunt-god.showInEvidenceBoard",
     "onCommand:thrunt-god.openHuntOverview",
     "onCommand:thrunt-god.openEvidenceBoard",
     "onCommand:thrunt-god.openQueryAnalysis",
@@ -123,6 +124,11 @@
         "icon": "$(graph)"
       },
       {
+        "command": "thrunt-god.showInEvidenceBoard",
+        "title": "THRUNT: Show in Evidence Board",
+        "icon": "$(graph)"
+      },
+      {
         "command": "thrunt-god.openQueryAnalysis",
         "title": "THRUNT God: Open Query Analysis",
         "category": "THRUNT"
@@ -139,6 +145,16 @@
           "command": "thrunt-god.openTemplateViewer",
           "when": "view == thruntGod.huntTree && viewItem == query",
           "group": "navigation@1"
+        },
+        {
+          "command": "thrunt-god.openTemplateViewer",
+          "when": "view == thruntGod.huntTree && viewItem == receipt",
+          "group": "navigation@1"
+        },
+        {
+          "command": "thrunt-god.showInEvidenceBoard",
+          "when": "view == thruntGod.huntTree && viewItem =~ /^(hypothesis|receipt|query)$/",
+          "group": "navigation@2"
         },
         {
           "command": "thrunt-god.openArtifact",
@@ -169,6 +185,18 @@
           "command": "thrunt-god.openHuntOverview",
           "when": "view == thruntGod.huntTree && viewItem == mission",
           "group": "navigation@3"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "thrunt-god.showInEvidenceBoard",
+          "when": "thruntGod.huntDetected && resourceExtname == .md",
+          "group": "thrunt@1"
+        },
+        {
+          "command": "thrunt-god.openTemplateViewer",
+          "when": "thruntGod.huntDetected && resourceExtname == .md",
+          "group": "thrunt@2"
         }
       ],
       "view/title": [

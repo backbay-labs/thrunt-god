@@ -812,7 +812,23 @@ export function activate(context: vscode.ExtensionContext): void {
 
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openTemplateViewer', async (target?: unknown) => {
-        const queryId = extractQueryIdFromTarget(target) ?? getActiveEditorQueryId();
+        let queryId = extractQueryIdFromTarget(target);
+
+        // Fallback: if target is a receipt tree item, resolve its first related query
+        if (!queryId && target && typeof target === 'object') {
+          const item = target as Partial<HuntTreeItem>;
+          if (item.nodeType === 'receipt' && typeof item.dataId === 'string') {
+            const receiptResult = store.getReceipt(item.dataId);
+            if (receiptResult?.status === 'loaded' && receiptResult.data.relatedQueries.length > 0) {
+              queryId = receiptResult.data.relatedQueries[0];
+            }
+          }
+        }
+
+        if (!queryId) {
+          queryId = getActiveEditorQueryId();
+        }
+
         if (!queryId) {
           await vscode.window.showWarningMessage(
             'Open a query artifact or select a query in the THRUNT God sidebar to use the Drain Template Viewer.'
@@ -821,6 +837,36 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         DrainTemplatePanel.createOrShow(context, store, queryId);
+      })
+    );
+
+    // --- Phase 16: Cross-surface navigation ---
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.showInEvidenceBoard', (target?: unknown) => {
+        // Extract artifact ID from tree item or active editor
+        let artifactId: string | undefined;
+        if (target && typeof target === 'object') {
+          const item = target as Partial<HuntTreeItem>;
+          artifactId = item.dataId;
+        }
+        if (!artifactId) {
+          const activeDoc = vscode.window.activeTextEditor?.document;
+          if (activeDoc) {
+            const resolved = resolveArtifactType(activeDoc.uri.fsPath);
+            artifactId = resolved?.id;
+          }
+        }
+        EvidenceBoardPanel.createOrShow(context, store);
+        if (artifactId) {
+          store.select(artifactId);
+        }
+      })
+    );
+
+    // Log selection changes for debugging
+    context.subscriptions.push(
+      store.onDidSelect((id) => {
+        outputChannel.appendLine(`[Store] Selection: ${id ?? 'cleared'}`);
       })
     );
 
