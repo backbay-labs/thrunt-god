@@ -8,6 +8,13 @@ import type {
 } from '../shared/query-analysis';
 
 export const QUERY_ANALYSIS_VIEW_TYPE = 'thruntGod.queryAnalysis';
+export const QA_STATE_KEY = 'thruntGod.queryAnalysisState';
+
+interface QueryAnalysisPersistedState {
+  selectedQueryIds: string[];
+  sortBy: string;
+  comparisonMode: string;
+}
 
 const BASE_WEBVIEW_STYLES = `
   :root {
@@ -94,15 +101,34 @@ export class QueryAnalysisPanel implements vscode.Disposable {
   private comparisonMode: 'side-by-side' | 'matrix' = 'side-by-side';
 
   private constructor(
-    context: vscode.ExtensionContext,
+    private readonly context: vscode.ExtensionContext,
     private readonly store: HuntDataStore,
     private readonly panel: vscode.WebviewPanel,
     initialReceiptId?: string
   ) {
-    // Default selectedQueryIds to first 2 queries from store
-    const queries = this.store.getQueries();
-    const queryIds = [...queries.keys()];
-    this.selectedQueryIds = queryIds.slice(0, Math.min(2, queryIds.length));
+    // Restore persisted preferences or default to first 2 queries
+    const persisted = context.workspaceState.get<QueryAnalysisPersistedState>(QA_STATE_KEY);
+    if (persisted) {
+      // Validate persisted query IDs still exist in store
+      const queries = this.store.getQueries();
+      const validIds = persisted.selectedQueryIds.filter((id) => queries.has(id));
+      if (validIds.length > 0) {
+        this.selectedQueryIds = validIds;
+      } else {
+        const queryIds = [...queries.keys()];
+        this.selectedQueryIds = queryIds.slice(0, Math.min(2, queryIds.length));
+      }
+      if (persisted.sortBy === 'count' || persisted.sortBy === 'deviation' || persisted.sortBy === 'novelty' || persisted.sortBy === 'recency') {
+        this.sortBy = persisted.sortBy;
+      }
+      if (persisted.comparisonMode === 'side-by-side' || persisted.comparisonMode === 'matrix') {
+        this.comparisonMode = persisted.comparisonMode;
+      }
+    } else {
+      const queries = this.store.getQueries();
+      const queryIds = [...queries.keys()];
+      this.selectedQueryIds = queryIds.slice(0, Math.min(2, queryIds.length));
+    }
 
     // Set initial inspector receipt if provided
     if (initialReceiptId) {
@@ -212,10 +238,21 @@ export class QueryAnalysisPanel implements vscode.Disposable {
     }
   }
 
+  private persistState(): void {
+    void this.context.workspaceState.update(QA_STATE_KEY, {
+      selectedQueryIds: this.selectedQueryIds,
+      sortBy: this.sortBy,
+      comparisonMode: this.comparisonMode,
+    } satisfies QueryAnalysisPersistedState);
+  }
+
   private disposeResources(): void {
     if (this.isDisposed) {
       return;
     }
+
+    // Persist view preferences before disposing
+    this.persistState();
 
     this.isDisposed = true;
     QueryAnalysisPanel.currentPanel = undefined;
@@ -252,6 +289,7 @@ export class QueryAnalysisPanel implements vscode.Disposable {
         } else {
           this.selectedQueryIds.push(msg.queryId);
         }
+        this.persistState();
         this.postMessage({
           type: 'update',
           viewModel: this.buildViewModel(),
@@ -260,6 +298,7 @@ export class QueryAnalysisPanel implements vscode.Disposable {
       }
       case 'sort:change':
         this.sortBy = msg.sortBy;
+        this.persistState();
         this.postMessage({
           type: 'update',
           viewModel: this.buildViewModel(),
@@ -267,6 +306,7 @@ export class QueryAnalysisPanel implements vscode.Disposable {
         return;
       case 'mode:change':
         this.comparisonMode = msg.mode;
+        this.persistState();
         this.postMessage({
           type: 'update',
           viewModel: this.buildViewModel(),

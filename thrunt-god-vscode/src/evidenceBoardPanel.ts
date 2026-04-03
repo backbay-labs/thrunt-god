@@ -8,6 +8,12 @@ import type {
 } from '../shared/evidence-board';
 
 export const EVIDENCE_BOARD_VIEW_TYPE = 'thruntGod.evidenceBoard';
+export const EB_STATE_KEY = 'thruntGod.evidenceBoardState';
+
+interface EvidenceBoardPersistedState {
+  mode: 'graph' | 'matrix';
+  selectedArtifactId: string | null;
+}
 
 const BASE_WEBVIEW_STYLES = `
   :root {
@@ -86,16 +92,23 @@ export class EvidenceBoardPanel implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
   private isDisposed = false;
   private ready = false;
+  private mode: 'graph' | 'matrix' = 'graph';
 
   private constructor(
-    context: vscode.ExtensionContext,
+    private readonly context: vscode.ExtensionContext,
     private readonly store: HuntDataStore,
     private readonly panel: vscode.WebviewPanel
   ) {
+    // Restore persisted mode preference
+    const persisted = context.workspaceState.get<EvidenceBoardPersistedState>(EB_STATE_KEY);
+    if (persisted?.mode) {
+      this.mode = persisted.mode;
+    }
+
     this.panel.webview.html = createEvidenceBoardHtml(
       this.panel.webview,
       context.extensionUri,
-      { surfaceId: 'evidence-board' }
+      { surfaceId: 'evidence-board', mode: this.mode }
     );
 
     this.panel.onDidDispose(
@@ -189,6 +202,12 @@ export class EvidenceBoardPanel implements vscode.Disposable {
       return;
     }
 
+    // Persist view preferences before disposing
+    void this.context.workspaceState.update(EB_STATE_KEY, {
+      mode: this.mode,
+      selectedArtifactId: this.store.getSelectedArtifactId(),
+    } satisfies EvidenceBoardPersistedState);
+
     this.isDisposed = true;
     EvidenceBoardPanel.currentPanel = undefined;
 
@@ -225,7 +244,11 @@ export class EvidenceBoardPanel implements vscode.Disposable {
         this.store.select(msg.nodeId);
         return;
       case 'mode:toggle':
-        // No-op on host side -- webview handles mode internally
+        this.mode = msg.mode;
+        void this.context.workspaceState.update(EB_STATE_KEY, {
+          mode: this.mode,
+          selectedArtifactId: null,
+        } satisfies EvidenceBoardPersistedState);
         return;
       case 'hypothesis:focus':
         // No-op on host side

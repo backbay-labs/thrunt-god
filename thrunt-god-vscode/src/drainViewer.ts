@@ -11,6 +11,11 @@ import type {
 
 export const DRAIN_VIEWER_VIEW_TYPE = 'thruntGod.drainViewer';
 export const DRAIN_VIEWER_PIN_KEY = 'thruntGod.templatePins';
+export const DTV_STATE_KEY = 'thruntGod.drainViewerState';
+
+interface DrainViewerPersistedState {
+  queryId: string;
+}
 
 export type DrainViewerPinState = Record<string, DrainViewerPinnedTemplate[]>;
 
@@ -339,6 +344,11 @@ export class DrainTemplatePanel implements vscode.Disposable {
     if (this.isDisposed) {
       return;
     }
+
+    // Persist current queryId for session restore
+    void this.context.workspaceState.update(DTV_STATE_KEY, {
+      queryId: this.currentQueryId,
+    } satisfies DrainViewerPersistedState);
 
     this.isDisposed = true;
     DrainTemplatePanel.currentPanel = undefined;
