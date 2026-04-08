@@ -2190,3 +2190,196 @@ describe('cmdCaseClose indexing + cmdCaseNew auto-search', () => {
     assert.strictEqual(output.success, true, 'case close should succeed even with indexing edge cases');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cmdCaseSearch (Phase 52 Plan 02 Task 2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('cmdCaseSearch', () => {
+  const Database = require('better-sqlite3');
+  let tmpDir;
+
+  function setupProgramState(cwd, rosterEntries = []) {
+    const planDir = path.join(cwd, '.planning');
+    fs.mkdirSync(planDir, { recursive: true });
+    const rosterYaml = rosterEntries.length === 0
+      ? 'case_roster: []'
+      : 'case_roster:\n' + rosterEntries.map(e => {
+          let yaml = `  - slug: ${e.slug}\n    name: ${e.name}\n    status: ${e.status}\n    opened_at: "${e.opened_at}"`;
+          if (e.closed_at) yaml += `\n    closed_at: "${e.closed_at}"`;
+          if (e.technique_count) yaml += `\n    technique_count: "${e.technique_count}"`;
+          return yaml;
+        }).join('\n');
+    fs.writeFileSync(path.join(planDir, 'STATE.md'),
+      `---\nthrunt_state_version: 1.0\nstatus: active\n${rosterYaml}\n---\n\n# Program State\n`);
+    fs.writeFileSync(path.join(planDir, 'MISSION.md'), '# Mission\n');
+    fs.writeFileSync(path.join(planDir, 'config.json'), '{}');
+  }
+
+  function createAndCloseCase(cwd, slug, name, opts = {}) {
+    // Create case via CLI
+    runThruntTools(['case', 'new', name], cwd);
+
+    // Add FINDINGS.md if provided
+    const caseDir = path.join(cwd, '.planning', 'cases', slug);
+    if (opts.findings) {
+      fs.writeFileSync(path.join(caseDir, 'FINDINGS.md'), opts.findings);
+    }
+    if (opts.hypotheses) {
+      fs.writeFileSync(path.join(caseDir, 'HYPOTHESES.md'), opts.hypotheses);
+    }
+    // Update case STATE.md with outcome_summary if provided
+    if (opts.outcome_summary) {
+      const statePath = path.join(caseDir, 'STATE.md');
+      const content = fs.readFileSync(statePath, 'utf-8');
+      fs.writeFileSync(statePath, content.replace('---\n\n', `outcome_summary: "${opts.outcome_summary}"\n---\n\n`));
+    }
+
+    // Close the case (triggers indexing)
+    runThruntTools(['case', 'close', slug], cwd);
+  }
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    setupProgramState(tmpDir, []);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('case-search returns matching results', () => {
+    createAndCloseCase(tmpDir, 'apt-recon', 'APT Recon', {
+      findings: '# Findings\n\nAdversary performed network reconnaissance using T1018 Remote System Discovery.\n' +
+        'Scanned internal subnets 10.0.0.0/24 for open SMB shares.\n',
+      outcome_summary: 'Recon activity contained',
+    });
+
+    const result = runThruntTools(['case-search', 'reconnaissance'], tmpDir);
+    assert.ok(result.success, `case-search failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.ok(Array.isArray(output.results), 'results should be array');
+    assert.ok(output.results.length > 0, 'should have at least 1 match for "reconnaissance"');
+    assert.strictEqual(output.query, 'reconnaissance');
+
+    // Verify result shape has required INTEL-04 fields
+    const r = output.results[0];
+    assert.ok('slug' in r, 'result should have slug');
+    assert.ok('name' in r, 'result should have name');
+    assert.ok('match_snippet' in r, 'result should have match_snippet');
+    assert.ok('technique_overlap' in r, 'result should have technique_overlap');
+    assert.ok('outcome_summary' in r, 'result should have outcome_summary');
+    assert.ok('relevance_score' in r, 'result should have relevance_score');
+  });
+
+  test('case-search --technique filters by technique ID', () => {
+    createAndCloseCase(tmpDir, 'phishing-case', 'Phishing Campaign', {
+      findings: '# Findings\n\nT1566.001 spearphishing attachment delivered malware via email.\n',
+    });
+    createAndCloseCase(tmpDir, 'brute-force', 'Brute Force Attack', {
+      findings: '# Findings\n\nT1110.001 password spraying against VPN gateway.\n',
+    });
+
+    // Search for technique that only exists in phishing case
+    const result = runThruntTools(['case-search', 'malware', '--technique', 'T1566.001'], tmpDir);
+    assert.ok(result.success, `case-search failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    // Results should only include cases with T1566.001
+    for (const r of output.results) {
+      assert.ok(
+        r.slug === 'phishing-case' || r.technique_overlap?.includes('T1566.001'),
+        `result ${r.slug} should have technique T1566.001`
+      );
+    }
+  });
+
+  test('case-search --limit caps results', () => {
+    // Create 3 cases with similar content
+    createAndCloseCase(tmpDir, 'lateral-1', 'Lateral Move Alpha', {
+      findings: '# Findings\n\nLateral movement via SMB T1021.002 detected in alpha subnet.\n',
+    });
+    createAndCloseCase(tmpDir, 'lateral-2', 'Lateral Move Beta', {
+      findings: '# Findings\n\nLateral movement via RDP T1021.001 detected in beta subnet.\n',
+    });
+    createAndCloseCase(tmpDir, 'lateral-3', 'Lateral Move Gamma', {
+      findings: '# Findings\n\nLateral movement via WinRM T1021.006 detected in gamma subnet.\n',
+    });
+
+    const result = runThruntTools(['case-search', 'lateral', '--limit', '1'], tmpDir);
+    assert.ok(result.success, `case-search failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.ok(output.results.length <= 1, 'should have at most 1 result with --limit 1');
+  });
+
+  test('case-search returns empty for no matches', () => {
+    createAndCloseCase(tmpDir, 'some-case', 'Some Case', {
+      findings: '# Findings\n\nSome finding about malware.\n',
+    });
+
+    const result = runThruntTools(['case-search', 'zzzyyyxxx_nomatch'], tmpDir);
+    assert.ok(result.success, `case-search failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.strictEqual(output.results.length, 0, 'should have 0 results for non-matching query');
+  });
+
+  test('case-search with missing query returns error', () => {
+    const result = runThruntTools(['case-search'], tmpDir);
+    // Should either fail or return success:false
+    if (result.success) {
+      const output = JSON.parse(result.output);
+      assert.strictEqual(output.success, false, 'should return success:false for missing query');
+      assert.ok(output.error, 'should have error message');
+    } else {
+      assert.ok(result.error, 'should have error output');
+    }
+  });
+
+  test('case-search on empty DB returns empty results', () => {
+    // Don't create or close any cases — DB should be empty or non-existent
+    const result = runThruntTools(['case-search', 'anything'], tmpDir);
+    assert.ok(result.success, `case-search failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.strictEqual(output.results.length, 0, 'empty DB should return 0 results');
+  });
+
+  test('case-search results include required INTEL-04 fields', () => {
+    createAndCloseCase(tmpDir, 'intel-fields-case', 'Intel Fields Test', {
+      findings: '# Findings\n\nDetected T1059.001 PowerShell execution with IOC 10.0.0.42.\n' +
+        'Adversary used encoded commands for persistence.\n',
+      outcome_summary: 'PowerShell abuse contained and remediated',
+    });
+
+    const result = runThruntTools(['case-search', 'powershell'], tmpDir);
+    assert.ok(result.success, `case-search failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.ok(output.results.length > 0, 'should have results for powershell search');
+
+    const r = output.results[0];
+    // Required fields per INTEL-04
+    assert.ok(typeof r.slug === 'string', 'slug should be string');
+    assert.ok(typeof r.name === 'string', 'name should be string');
+    assert.ok(typeof r.match_snippet === 'string', 'match_snippet should be string');
+    assert.ok(Array.isArray(r.technique_overlap), 'technique_overlap should be array');
+    assert.ok(typeof r.relevance_score === 'number', 'relevance_score should be number');
+    // outcome_summary may be null or string
+    assert.ok(r.outcome_summary === null || typeof r.outcome_summary === 'string', 'outcome_summary should be string or null');
+  });
+
+  test('case-search CLI routing dispatches correctly via thrunt-tools', () => {
+    createAndCloseCase(tmpDir, 'cli-route-test', 'CLI Route Test', {
+      findings: '# Findings\n\nRouting test content with unique marker xyzRouteTest.\n',
+    });
+
+    // This tests the full CLI path through thrunt-tools.cjs
+    const result = runThruntTools('case-search xyzRouteTest', tmpDir);
+    assert.ok(result.success, `CLI routing failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.ok(output.results.length > 0, 'should find the routing test case via CLI');
+  });
+});
