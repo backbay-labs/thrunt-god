@@ -1,0 +1,16 @@
+{
+  "name": "@thrunt/mcp-hunt-intel",
+  "version": "0.1.0",
+  "description": "MCP server for ATT&CK technique lookup, threat group intelligence, Navigator layer generation, and coverage analysis",
+  "bin": {
+    "mcp-hunt-intel": "bin/server.cjs"
+  },
+  "files": ["bin", "lib"],
+  "engines": { "node": ">=20.0.0" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^11.0.0",
+    "zod": "^3.23.0"
+  },
+  "license": "MIT"
+}

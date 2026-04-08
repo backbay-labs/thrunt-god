@@ -1,0 +1,379 @@
+{
+  "version": "15.1",
+  "generated": "2026-04-08",
+  "groups": [
+    {
+      "id": "G0007",
+      "name": "APT28",
+      "aliases": "Fancy Bear, Sofacy, Sednit, STRONTIUM, Pawn Storm",
+      "description": "APT28 is a threat group attributed to Russia's General Staff Main Intelligence Directorate (GRU) 85th Main Special Service Center (GTsSS) military unit 26165. This group has been active since at least 2004.",
+      "url": "https://attack.mitre.org/groups/G0007",
+      "technique_ids": [
+        "T1583.001", "T1583.006", "T1071.001", "T1560.001", "T1547.001",
+        "T1110.001", "T1110.004", "T1059.001", "T1059.003", "T1005",
+        "T1039", "T1025", "T1001.001", "T1119", "T1189",
+        "T1114.001", "T1114.002", "T1190", "T1203", "T1133",
+        "T1008", "T1105", "T1056.001", "T1036.005", "T1003.001",
+        "T1003.003", "T1566.001", "T1566.002", "T1090.002", "T1021.001",
+        "T1053.005", "T1218.011", "T1082", "T1016", "T1049",
+        "T1033", "T1204.001", "T1204.002", "T1078", "T1102.002"
+      ],
+      "software_ids": ["S0005", "S0154"]
+    },
+    {
+      "id": "G0016",
+      "name": "APT29",
+      "aliases": "Cozy Bear, The Dukes, NOBELIUM, Midnight Blizzard",
+      "description": "APT29 is a threat group attributed to Russia's Foreign Intelligence Service (SVR). They have operated since at least 2008, often targeting government networks in Europe and NATO member countries.",
+      "url": "https://attack.mitre.org/groups/G0016",
+      "technique_ids": [
+        "T1071.001", "T1071.004", "T1547.001", "T1059.001", "T1059.003",
+        "T1059.005", "T1059.006", "T1543.003", "T1132.001", "T1005",
+        "T1001.002", "T1119", "T1573.002", "T1190", "T1203",
+        "T1008", "T1105", "T1056.001", "T1036.005", "T1027.002",
+        "T1027.005", "T1027.013", "T1003.001", "T1003.003", "T1003.004",
+        "T1566.001", "T1566.002", "T1090.003", "T1021.002", "T1053.005",
+        "T1218.011", "T1553.002", "T1550.001", "T1078.003", "T1102.002",
+        "T1204.001", "T1204.002", "T1047", "T1082", "T1016"
+      ],
+      "software_ids": ["S0154", "S0363"]
+    },
+    {
+      "id": "G0032",
+      "name": "Lazarus Group",
+      "aliases": "HIDDEN COBRA, Guardians of Peace, ZINC, Diamond Sleet",
+      "description": "Lazarus Group is a North Korean state-sponsored cyber threat group attributed to the Reconnaissance General Bureau. The group has been active since at least 2009 and has conducted operations for espionage, financial theft, and sabotage.",
+      "url": "https://attack.mitre.org/groups/G0032",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1059.005",
+        "T1059.006", "T1059.007", "T1543.003", "T1005", "T1486",
+        "T1189", "T1190", "T1203", "T1105", "T1036.005",
+        "T1027.002", "T1027.003", "T1003.001", "T1566.001", "T1566.002",
+        "T1090.001", "T1021.001", "T1053.005", "T1218.011", "T1553.002",
+        "T1204.001", "T1204.002", "T1497.001", "T1082", "T1033",
+        "T1049", "T1057", "T1012", "T1016", "T1489",
+        "T1529", "T1485", "T1561.001", "T1561.002", "T1490"
+      ],
+      "software_ids": ["S0154"]
+    },
+    {
+      "id": "G0046",
+      "name": "FIN7",
+      "aliases": "Carbanak Group, Navigator Group, Carbon Spider",
+      "description": "FIN7 is a financially-motivated threat group that has been active since at least 2013. FIN7 has primarily targeted the U.S. retail, restaurant, and hospitality sectors.",
+      "url": "https://attack.mitre.org/groups/G0046",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1059.005",
+        "T1059.007", "T1005", "T1573.002", "T1190", "T1203",
+        "T1105", "T1056.001", "T1036.005", "T1027.001", "T1027.002",
+        "T1027.010", "T1003.001", "T1566.001", "T1566.002", "T1053.005",
+        "T1218.005", "T1218.010", "T1218.011", "T1553.002", "T1204.001",
+        "T1204.002", "T1047", "T1082", "T1069.002", "T1016"
+      ],
+      "software_ids": ["S0154", "S0005"]
+    },
+    {
+      "id": "G0008",
+      "name": "Carbanak",
+      "aliases": "Anunak",
+      "description": "Carbanak is a cybercriminal group that has used the Carbanak backdoor and is known for targeting financial institutions. The group has stolen over $1 billion from banks worldwide.",
+      "url": "https://attack.mitre.org/groups/G0008",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1005",
+        "T1573.001", "T1190", "T1105", "T1056.001", "T1036.005",
+        "T1003.001", "T1003.002", "T1566.001", "T1021.001", "T1021.002",
+        "T1053.005", "T1082", "T1033", "T1016", "T1049",
+        "T1204.002", "T1078", "T1113", "T1125", "T1119"
+      ],
+      "software_ids": ["S0005", "S0029"]
+    },
+    {
+      "id": "G0010",
+      "name": "Turla",
+      "aliases": "Waterbug, Venomous Bear, KRYPTON, Secret Blizzard",
+      "description": "Turla is a Russian-based threat group that has been active since at least 2004 and is attributed to Russia's Federal Security Service (FSB). Turla is known for targeting government, military, and research organizations.",
+      "url": "https://attack.mitre.org/groups/G0010",
+      "technique_ids": [
+        "T1071.001", "T1071.004", "T1547.001", "T1059.001", "T1059.003",
+        "T1059.005", "T1543.003", "T1132.001", "T1005", "T1001.002",
+        "T1573.001", "T1190", "T1203", "T1105", "T1056.001",
+        "T1036.005", "T1027.002", "T1027.005", "T1003.001", "T1003.003",
+        "T1566.001", "T1090.003", "T1021.001", "T1053.005", "T1218.011",
+        "T1204.001", "T1204.002", "T1078", "T1082", "T1033",
+        "T1016", "T1049", "T1057", "T1012", "T1518.001"
+      ],
+      "software_ids": ["S0005", "S0029", "S0357"]
+    },
+    {
+      "id": "G0034",
+      "name": "Sandworm Team",
+      "aliases": "ELECTRUM, Telebots, IRIDIUM, VOODOO BEAR, Seashell Blizzard",
+      "description": "Sandworm Team is a destructive threat group attributed to Russia's GRU Main Center for Special Technologies (GTsST). The group has conducted attacks on critical infrastructure including the 2015 and 2016 Ukraine power grid attacks.",
+      "url": "https://attack.mitre.org/groups/G0034",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1059.005",
+        "T1543.003", "T1005", "T1486", "T1189", "T1190",
+        "T1203", "T1133", "T1105", "T1036.005", "T1027.002",
+        "T1003.001", "T1003.003", "T1566.001", "T1566.002", "T1021.001",
+        "T1021.002", "T1053.005", "T1218.011", "T1204.001", "T1204.002",
+        "T1078", "T1082", "T1016", "T1489", "T1529",
+        "T1485", "T1561.001", "T1561.002", "T1490", "T1499.001"
+      ],
+      "software_ids": ["S0005", "S0029", "S0357"]
+    },
+    {
+      "id": "G0050",
+      "name": "APT32",
+      "aliases": "OceanLotus, SeaLotus, Canvas Cyclone",
+      "description": "APT32 is a Vietnamese threat group that has been active since at least 2014. The group has targeted private sector industries as well as government, political, and journalistic entities in Southeast Asia.",
+      "url": "https://attack.mitre.org/groups/G0050",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1547.009", "T1059.001", "T1059.003",
+        "T1059.005", "T1059.007", "T1005", "T1573.002", "T1189",
+        "T1203", "T1105", "T1056.001", "T1036.005", "T1027.001",
+        "T1027.002", "T1003.001", "T1003.003", "T1566.001", "T1566.002",
+        "T1053.005", "T1218.005", "T1218.011", "T1553.002", "T1204.001",
+        "T1204.002", "T1082", "T1033", "T1016", "T1069.002"
+      ],
+      "software_ids": ["S0154"]
+    },
+    {
+      "id": "G0074",
+      "name": "Dragonfly 2.0",
+      "aliases": "DYMALLOY, Berserk Bear",
+      "description": "Dragonfly 2.0 is a threat group that has targeted energy sector and industrial control systems in North America and Europe since at least 2015.",
+      "url": "https://attack.mitre.org/groups/G0074",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1005",
+        "T1133", "T1190", "T1105", "T1056.001", "T1036.005",
+        "T1003.001", "T1003.002", "T1566.001", "T1566.002", "T1021.001",
+        "T1021.002", "T1053.005", "T1204.001", "T1204.002", "T1078",
+        "T1082", "T1033", "T1016", "T1049", "T1518.001"
+      ],
+      "software_ids": ["S0005", "S0029", "S0094"]
+    },
+    {
+      "id": "G0114",
+      "name": "Kimsuky",
+      "aliases": "Velvet Chollima, Black Banshee, Emerald Sleet",
+      "description": "Kimsuky is a North Korean threat group that has been active since at least 2012. The group focuses on intelligence gathering and has targeted South Korean government entities, think tanks, and individuals.",
+      "url": "https://attack.mitre.org/groups/G0114",
+      "technique_ids": [
+        "T1071.001", "T1071.002", "T1547.001", "T1059.001", "T1059.003",
+        "T1059.005", "T1059.007", "T1005", "T1573.001", "T1189",
+        "T1190", "T1105", "T1056.001", "T1036.005", "T1027.001",
+        "T1003.001", "T1566.001", "T1566.002", "T1053.005", "T1204.001",
+        "T1204.002", "T1078", "T1082", "T1033", "T1016",
+        "T1113", "T1114.001", "T1119", "T1567.002", "T1041"
+      ],
+      "software_ids": []
+    },
+    {
+      "id": "G0045",
+      "name": "menuPass",
+      "aliases": "APT10, Stone Panda, Red Apollo, POTASSIUM",
+      "description": "menuPass is a threat group attributed to the Chinese Ministry of State Security's (MSS) Tianjin State Security Bureau. The group has been active since at least 2006 and is known for targeting managed service providers.",
+      "url": "https://attack.mitre.org/groups/G0045",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1005",
+        "T1039", "T1573.001", "T1190", "T1133", "T1105",
+        "T1056.001", "T1036.005", "T1003.001", "T1003.002", "T1003.003",
+        "T1566.001", "T1090.002", "T1021.001", "T1021.002", "T1053.005",
+        "T1082", "T1033", "T1016", "T1049", "T1069.002",
+        "T1560.001", "T1114.001", "T1119", "T1041", "T1048.003"
+      ],
+      "software_ids": ["S0029", "S0005", "S0357"]
+    },
+    {
+      "id": "G0096",
+      "name": "APT41",
+      "aliases": "Barium, Winnti Group, Wicked Panda, Brass Typhoon",
+      "description": "APT41 is a Chinese state-sponsored espionage group that also conducts financially motivated operations. APT41 has been active since at least 2012 and has targeted healthcare, telecom, technology, and gaming sectors.",
+      "url": "https://attack.mitre.org/groups/G0096",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1059.007",
+        "T1543.003", "T1005", "T1573.001", "T1190", "T1195.002",
+        "T1133", "T1105", "T1036.005", "T1027.002", "T1027.005",
+        "T1003.001", "T1003.003", "T1566.001", "T1090.002", "T1021.001",
+        "T1021.002", "T1053.005", "T1569.002", "T1218.011", "T1553.002",
+        "T1204.001", "T1204.002", "T1078", "T1082", "T1016",
+        "T1049", "T1057", "T1012", "T1486", "T1496"
+      ],
+      "software_ids": ["S0154", "S0005"]
+    },
+    {
+      "id": "G1006",
+      "name": "Earth Lusca",
+      "aliases": "TAG-22",
+      "description": "Earth Lusca is a suspected China-based cyber espionage group that has been active since at least 2021. The group targets government institutions, media, and academic organizations.",
+      "url": "https://attack.mitre.org/groups/G1006",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1005",
+        "T1573.002", "T1190", "T1203", "T1105", "T1036.005",
+        "T1027.002", "T1003.001", "T1566.001", "T1566.002", "T1053.005",
+        "T1218.011", "T1204.001", "T1204.002", "T1082", "T1033"
+      ],
+      "software_ids": ["S0154"]
+    },
+    {
+      "id": "G0082",
+      "name": "APT38",
+      "aliases": "Stardust Chollima, BlueNoroff, Sapphire Sleet",
+      "description": "APT38 is a North Korean state-sponsored threat group that specializes in financial cyber operations. Since at least 2014, the group has targeted banks, financial institutions, casinos, cryptocurrency exchanges, and SWIFT system endpoints.",
+      "url": "https://attack.mitre.org/groups/G0082",
+      "technique_ids": [
+        "T1071.001", "T1059.001", "T1059.003", "T1005", "T1486",
+        "T1189", "T1190", "T1105", "T1036.005", "T1027.002",
+        "T1003.001", "T1566.001", "T1053.005", "T1218.011", "T1204.001",
+        "T1204.002", "T1082", "T1033", "T1016", "T1489",
+        "T1485", "T1490", "T1070.004", "T1547.001", "T1119"
+      ],
+      "software_ids": []
+    },
+    {
+      "id": "G0065",
+      "name": "Leviathan",
+      "aliases": "APT40, TEMP.Periscope, TEMP.Jumper, Kryptonite Panda, Gingham Typhoon",
+      "description": "Leviathan is a Chinese state-sponsored cyber espionage group attributed to the Ministry of State Security's (MSS) Hainan State Security Department. The group has targeted maritime industries, defense, and government entities.",
+      "url": "https://attack.mitre.org/groups/G0065",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1059.005",
+        "T1005", "T1573.001", "T1189", "T1190", "T1133",
+        "T1105", "T1036.005", "T1027.002", "T1003.001", "T1003.003",
+        "T1566.001", "T1566.002", "T1090.002", "T1021.001", "T1021.002",
+        "T1053.005", "T1218.011", "T1204.001", "T1204.002", "T1078",
+        "T1082", "T1033", "T1016", "T1049", "T1069.002"
+      ],
+      "software_ids": ["S0154", "S0029"]
+    },
+    {
+      "id": "G0027",
+      "name": "Threat Group-3390",
+      "aliases": "TG-3390, Emissary Panda, APT27, Iron Tiger",
+      "description": "Threat Group-3390 is a Chinese threat group that has targeted organizations in aerospace, government, defense, technology, energy, and manufacturing sectors. The group has been active since at least 2010.",
+      "url": "https://attack.mitre.org/groups/G0027",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1005",
+        "T1039", "T1573.001", "T1190", "T1203", "T1133",
+        "T1105", "T1036.005", "T1027.002", "T1003.001", "T1003.002",
+        "T1003.003", "T1566.001", "T1090.002", "T1021.001", "T1021.002",
+        "T1053.005", "T1569.002", "T1218.011", "T1204.001", "T1204.002",
+        "T1078", "T1082", "T1033", "T1016", "T1049"
+      ],
+      "software_ids": ["S0005", "S0029", "S0357"]
+    }
+  ],
+  "software": [
+    {
+      "id": "S0005",
+      "name": "Mimikatz",
+      "type": "tool",
+      "description": "Mimikatz is a credential dumping utility that can obtain plaintext Windows account credentials from memory, as well as perform pass-the-hash, pass-the-ticket, and Kerberos ticket attacks.",
+      "technique_ids": [
+        "T1003.001", "T1003.002", "T1003.004", "T1003.005", "T1003.006",
+        "T1558.001", "T1558.002", "T1558.003", "T1550.002", "T1550.003",
+        "T1134.001", "T1134.003", "T1098.001"
+      ]
+    },
+    {
+      "id": "S0154",
+      "name": "Cobalt Strike",
+      "type": "tool",
+      "description": "Cobalt Strike is a commercial adversary simulation tool. It has been adopted by threat actors for post-exploitation activities including lateral movement, privilege escalation, and command and control.",
+      "technique_ids": [
+        "T1071.001", "T1071.002", "T1071.004", "T1059.001", "T1059.003",
+        "T1059.005", "T1059.007", "T1547.001", "T1543.003", "T1055.001",
+        "T1055.012", "T1003.001", "T1003.003", "T1005", "T1105",
+        "T1036.005", "T1027.005", "T1218.011", "T1553.002", "T1550.002",
+        "T1021.001", "T1021.002", "T1021.006", "T1053.005", "T1569.002",
+        "T1573.001", "T1573.002", "T1090.001", "T1090.002", "T1095",
+        "T1572", "T1560.001", "T1113", "T1082", "T1016",
+        "T1033", "T1049", "T1057", "T1069.001", "T1069.002"
+      ]
+    },
+    {
+      "id": "S0029",
+      "name": "PsExec",
+      "type": "tool",
+      "description": "PsExec is a lightweight telnet-replacement from Sysinternals that allows execution of processes on remote systems using any user's credentials.",
+      "technique_ids": [
+        "T1569.002", "T1021.002", "T1543.003", "T1570"
+      ]
+    },
+    {
+      "id": "S0039",
+      "name": "Net",
+      "type": "tool",
+      "description": "Net is a built-in Windows utility used to manage network resources, user accounts, and services. Adversaries use it for discovery and lateral movement.",
+      "technique_ids": [
+        "T1087.001", "T1087.002", "T1135", "T1069.001", "T1069.002",
+        "T1021.002", "T1049", "T1018", "T1007"
+      ]
+    },
+    {
+      "id": "S0552",
+      "name": "AdFind",
+      "type": "tool",
+      "description": "AdFind is a free command-line Active Directory query tool used by threat actors for domain enumeration and discovery of domain trusts, permissions groups, and organizational units.",
+      "technique_ids": [
+        "T1087.002", "T1482", "T1069.002", "T1018", "T1016"
+      ]
+    },
+    {
+      "id": "S0357",
+      "name": "Impacket",
+      "type": "tool",
+      "description": "Impacket is a collection of Python classes for working with network protocols. Threat actors use it for credential dumping, remote execution, and lateral movement.",
+      "technique_ids": [
+        "T1003.001", "T1003.002", "T1003.003", "T1003.004", "T1003.006",
+        "T1569.002", "T1021.002", "T1021.003", "T1558.003", "T1550.002"
+      ]
+    },
+    {
+      "id": "S0363",
+      "name": "Empire",
+      "type": "tool",
+      "description": "Empire is an open-source post-exploitation framework that includes a PowerShell agent and a Python agent. It is used for a wide range of attack activities including credential harvesting and lateral movement.",
+      "technique_ids": [
+        "T1059.001", "T1059.005", "T1547.001", "T1053.005", "T1003.001",
+        "T1003.002", "T1003.003", "T1055.001", "T1055.002", "T1056.001",
+        "T1105", "T1082", "T1033", "T1069.001", "T1021.003",
+        "T1560.001", "T1113", "T1573.002", "T1071.001"
+      ]
+    },
+    {
+      "id": "S0094",
+      "name": "Trojan.Karagany",
+      "type": "malware",
+      "description": "Trojan.Karagany is a modular remote access trojan used primarily by Dragonfly/Energetic Bear and Dragonfly 2.0 in attacks against energy sector targets.",
+      "technique_ids": [
+        "T1071.001", "T1059.003", "T1005", "T1105", "T1056.001",
+        "T1082", "T1033", "T1113", "T1547.001"
+      ]
+    },
+    {
+      "id": "S0266",
+      "name": "TrickBot",
+      "type": "malware",
+      "description": "TrickBot is a banking trojan turned modular malware platform that has been used for credential theft, cryptocurrency mining, and as a delivery mechanism for ransomware including Ryuk and Conti.",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1059.007",
+        "T1005", "T1573.001", "T1105", "T1036.005", "T1027.002",
+        "T1003.001", "T1055.012", "T1082", "T1016", "T1049",
+        "T1057", "T1497.001", "T1562.001", "T1070.004", "T1218.011"
+      ]
+    },
+    {
+      "id": "S0482",
+      "name": "Emotet",
+      "type": "malware",
+      "description": "Emotet is a modular malware variant which is primarily used as a downloader for other malware. Emotet originally started as a banking trojan and has evolved to become a major botnet and distribution mechanism.",
+      "technique_ids": [
+        "T1071.001", "T1547.001", "T1059.001", "T1059.003", "T1005",
+        "T1573.001", "T1105", "T1027.002", "T1566.001", "T1204.002",
+        "T1055.001", "T1082", "T1016", "T1049", "T1057",
+        "T1497.001"
+      ]
+    }
+  ]
+}
