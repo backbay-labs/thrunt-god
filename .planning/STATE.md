@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-status: executing
-stopped_at: Completed 50-03-PLAN.md
-last_updated: "2026-04-08T06:42:06Z"
-last_activity: 2026-04-08 -- Plan 50-03 complete (migrate-case command with rollback)
+status: active
+stopped_at: Completed 51-01-PLAN.md
+last_updated: "2026-04-08T13:55:18Z"
+last_activity: 2026-04-08 -- Plan 51-01 complete (watcher case fix + program rollup CLI)
 progress:
   total_phases: 15
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  completed_phases: 8
+  total_plans: 18
+  completed_plans: 17
+  percent: 94
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.0 Hunt Program Intelligence — Phase 50: Program & Case Hierarchy
+**Current focus:** v3.0 Hunt Program Intelligence — Phase 51: Program Dashboard Extension Wiring
 
 ## Current Milestone: v3.0 Hunt Program Intelligence
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 
 ## Current Position
 
-Phase: 50 of 57 (Program & Case Hierarchy)
-Plan: 50-03 (complete)
-Status: Phase 50 Complete (3/3 plans)
-Last activity: 2026-04-08 -- Plan 50-03 complete (migrate-case command with rollback)
+Phase: 51 of 57 (Program Dashboard Extension Wiring)
+Plan: 51-01 (complete) of 2 plans in phase
+Status: In progress (1/2 plans complete)
+Last activity: 2026-04-08 -- Plan 51-01 complete (watcher case fix + program rollup CLI)
 
-Progress: [██████████] 100% (v3.0 Phase 50: 3/3 plans)
+Progress: [█████████░] 94% (v3.0 Phase 51: 1/2 plans)
 
 ## Accumulated Context
 
@@ -60,6 +60,9 @@ Progress: [██████████] 100% (v3.0 Phase 50: 3/3 plans)
 - [Phase 50]: cmdCaseNew auto-sets .active-case pointer; cmdCaseClose clears it if active
 - [Phase 50]: migrate-case is a top-level command (not under 'case' subgroup) per CONTEXT.md decision
 - [Phase 50]: Roster and active-case pointer updates are non-fatal after successful migration file moves
+- [Phase 51]: stripCasePrefix applied in toArtifactRelativePath (not resolveArtifactType) so all downstream consumers automatically work for case artifacts
+- [Phase 51]: cmdProgramRollup replaces entire body below frontmatter for idempotent re-generation
+- [Phase 51]: Stale threshold: 14 days with no activity for active cases
 
 ### Blockers/Concerns
 
@@ -67,6 +70,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T06:42:06Z
-Stopped at: Completed 50-03-PLAN.md
-Resume: Phase 50 complete (all 3 plans done). All 5 HIER requirements addressed. Ready for Phase 51+.
+Last session: 2026-04-08T13:55:18Z
+Stopped at: Completed 51-01-PLAN.md
+Resume: Phase 51 plan 01 complete. Watcher case fix and program rollup CLI done. Ready for 51-02 (webview panel).

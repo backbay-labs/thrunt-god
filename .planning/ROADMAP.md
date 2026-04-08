@@ -184,7 +184,7 @@ Plans:
   1. Program STATE.md aggregates active/closed/stale case counts, overall technique coverage gaps, and a case timeline — readable without opening individual case directories
   2. The VS Code extension webview opens a program-level case overview panel showing each case's status, opened/closed date, and technique coverage metrics
   3. The extension's artifact watcher resolves huntmaps, receipts, and findings inside .planning/cases/<slug>/ subdirectories — decorations and sidebar entries appear for case artifacts
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 51-01-PLAN.md — Watcher artifact fix for cases/ prefix + CLI cmdProgramRollup for STATE.md rollup
 - [ ] 51-02-PLAN.md — VS Code program dashboard webview panel (shared types, panel provider, store method, Preact UI)
@@ -299,7 +299,7 @@ Plans:
 | 48. Built-in Connector Migration | 2/2 | Complete | 2026-03-31 |
 | 49. Reusable CI & Ecosystem Tooling | 2/2 | Complete | 2026-03-31 |
 | 50. Program & Case Hierarchy | 3/3 | Complete    | 2026-04-08 |
-| 51. Program Dashboard & Extension Wiring | 0/2 | Planned | - |
+| 51. Program Dashboard & Extension Wiring | 1/2 | In Progress|  |
 | 52. Cross-Case Intelligence | 0/TBD | Not started | - |
 | 53. MCP Server & ATT&CK Tools | 0/TBD | Not started | - |
 | 54. Detection Rule Ingestion | 0/TBD | Not started | - |
