@@ -6,7 +6,7 @@ import type {
   ProgramDashboardViewModel,
   CaseCard as CaseCardType,
 } from '../../shared/program-dashboard';
-import { Panel, StatCard, GhostButton, Badge } from '../shared/components';
+import { Badge, GhostButton } from '../shared/components';
 import { useTheme, useHostMessage, createVsCodeApi } from '../shared/hooks';
 import '../shared/tokens.css';
 
@@ -38,96 +38,103 @@ function statusLabel(status: CaseCardType['status']): string {
   }
 }
 
+function formatDate(raw: string): string {
+  if (!raw) return '\u2014';
+  // Accept ISO dates or date strings; show compact form
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 // ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function CaseCardComponent({ card }: { card: CaseCardType }) {
+function StatStrip({ aggregates }: { aggregates: ProgramDashboardViewModel['aggregates'] }) {
   return (
-    <Panel>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'baseline',
-          gap: '8px',
-        }}
-      >
-        <strong style={{ fontSize: '15px' }}>{card.name}</strong>
+    <div class="pd-stats">
+      <article class="pd-stat">
+        <span class="pd-stat__value">{aggregates.total}</span>
+        <span class="pd-stat__label">Total Cases</span>
+      </article>
+      <article class="pd-stat pd-stat--active">
+        <span class="pd-stat__value">{aggregates.active}</span>
+        <span class="pd-stat__label">Active</span>
+      </article>
+      <article class="pd-stat pd-stat--closed">
+        <span class="pd-stat__value">{aggregates.closed}</span>
+        <span class="pd-stat__label">Closed</span>
+      </article>
+      <article class="pd-stat pd-stat--stale">
+        <span class="pd-stat__value">{aggregates.stale}</span>
+        <span class="pd-stat__label">Stale</span>
+      </article>
+      <article class="pd-stat pd-stat--techniques">
+        <span class="pd-stat__value">{aggregates.uniqueTechniques}</span>
+        <span class="pd-stat__label">Techniques</span>
+      </article>
+    </div>
+  );
+}
+
+function PhaseProgress({ card }: { card: CaseCardType }) {
+  if (card.totalPhases <= 0) return null;
+
+  const pct = Math.min(100, Math.round((card.currentPhase / card.totalPhases) * 100));
+
+  return (
+    <div class="pd-phase-bar-wrap">
+      <div class="pd-phase-label">
+        <span class="pd-phase-label__name">
+          {card.phaseName || `Phase ${card.currentPhase}`}
+        </span>
+        <span class="pd-phase-label__frac">
+          {card.currentPhase}/{card.totalPhases}
+        </span>
+      </div>
+      <div class="pd-phase-track">
+        <div class="pd-phase-fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function CaseCard({ card }: { card: CaseCardType }) {
+  return (
+    <article class={`pd-case pd-case--${card.status}`}>
+      <div class="pd-case__head">
+        <span class="pd-case__name">{card.name}</span>
         <Badge variant={statusVariant(card.status)}>{statusLabel(card.status)}</Badge>
       </div>
-      <div style={{ marginTop: '6px', fontSize: '13px', color: 'var(--hunt-text-muted)' }}>
-        {card.signal}
-      </div>
-      <div
-        style={{
-          marginTop: '10px',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '16px',
-          fontSize: '12px',
-          color: 'var(--hunt-text-muted)',
-        }}
-      >
+
+      <div class="pd-case__signal">{card.signal}</div>
+
+      <PhaseProgress card={card} />
+
+      <div class="pd-case__metrics">
         <span>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Opened
-          </span>
-          <span style={{ display: 'block', marginTop: '2px' }}>{card.openedAt}</span>
+          <span class="pd-metric__label">Opened</span>
+          <span class="pd-metric__value">{formatDate(card.openedAt)}</span>
         </span>
         <span>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Phase
-          </span>
-          <span style={{ display: 'block', marginTop: '2px' }}>
-            {card.totalPhases > 0
-              ? `${card.currentPhase}/${card.totalPhases}`
-              : 'N/A'}
-            {card.phaseName ? ` - ${card.phaseName}` : ''}
-          </span>
+          <span class="pd-metric__label">Techniques</span>
+          <span class="pd-metric__value">{card.techniqueCount}</span>
         </span>
         <span>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Techniques
-          </span>
-          <span style={{ display: 'block', marginTop: '2px' }}>{card.techniqueCount}</span>
-        </span>
-        <span>
-          <span
-            style={{
-              display: 'block',
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Last Activity
-          </span>
-          <span style={{ display: 'block', marginTop: '2px' }}>{card.lastActivity}</span>
+          <span class="pd-metric__label">Last Activity</span>
+          <span class="pd-metric__value">{formatDate(card.lastActivity)}</span>
         </span>
       </div>
-      <div style={{ marginTop: '12px' }}>
+
+      <div class="pd-case__foot">
+        <span class="pd-case__kind">
+          {card.kind}
+          {card.findingsPublished && (
+            <span class="pd-findings-chip" style={{ marginLeft: '8px' }}>
+              Published
+            </span>
+          )}
+        </span>
         <GhostButton
           onClick={() => vscode.postMessage({ type: 'case:open', slug: card.slug })}
           ariaLabel={`Open case ${card.name}`}
@@ -135,56 +142,38 @@ function CaseCardComponent({ card }: { card: CaseCardType }) {
           Open Case
         </GhostButton>
       </div>
-    </Panel>
-  );
-}
-
-function AggregateStats({ aggregates }: { aggregates: ProgramDashboardViewModel['aggregates'] }) {
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(5, 1fr)',
-        gap: '10px',
-      }}
-    >
-      <StatCard label="Total Cases" value={String(aggregates.total)} />
-      <StatCard label="Active" value={String(aggregates.active)} />
-      <StatCard label="Closed" value={String(aggregates.closed)} />
-      <StatCard label="Stale" value={String(aggregates.stale)} />
-      <StatCard label="Techniques" value={String(aggregates.uniqueTechniques)} />
-    </div>
+    </article>
   );
 }
 
 function TimelineSection({ timeline }: { timeline: ProgramDashboardViewModel['timeline'] }) {
-  if (timeline.length === 0) {
-    return null;
-  }
+  if (timeline.length === 0) return null;
 
   return (
-    <Panel>
-      <p class="hunt-section-heading">Timeline</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        {timeline.map((entry, index) => (
-          <div
-            key={index}
-            style={{
-              display: 'flex',
-              gap: '12px',
-              fontSize: '13px',
-              padding: '4px 0',
-              borderBottom: '1px solid var(--hunt-border)',
-            }}
-          >
-            <span style={{ color: 'var(--hunt-text-muted)', minWidth: '90px' }}>
-              {entry.date}
-            </span>
-            <span>{entry.event}</span>
+    <div>
+      <p class="pd-section-label">Timeline</p>
+      <div class="pd-timeline">
+        {timeline.map((entry, i) => (
+          <div key={i} class="pd-timeline__entry">
+            <div class="pd-timeline__dot" />
+            <div class="pd-timeline__date">{formatDate(entry.date)}</div>
+            <div class="pd-timeline__event">{entry.event}</div>
           </div>
         ))}
       </div>
-    </Panel>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div class="pd-empty">
+      <p class="pd-empty__heading">No cases yet</p>
+      <p class="pd-empty__sub">
+        Create your first case to begin tracking hunt activity across your program.
+      </p>
+      <code class="pd-empty__cmd">thrunt case new &lt;name&gt;</code>
+    </div>
   );
 }
 
@@ -215,83 +204,45 @@ function ProgramDashboard() {
     }
   });
 
+  if (viewModel === null) {
+    return (
+      <main class="pd-root">
+        <div class="pd-connecting">
+          <span class="pd-connecting__dot" />
+          Connecting to extension host&hellip;
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main
-      class="hunt-surface"
-      style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        padding: '24px 18px',
-        color: 'var(--hunt-text)',
-      }}
-    >
-      {viewModel === null ? (
-        <Panel>
-          <p style={{ color: 'var(--hunt-text-muted)', margin: 0 }}>
-            Connecting to extension host...
-          </p>
-        </Panel>
+    <main class="pd-root">
+      {/* Header */}
+      <header class="pd-header">
+        <p class="pd-eyebrow">Hunt Program</p>
+        <h1 class="pd-title">{viewModel.programName}</h1>
+        {viewModel.missionSnippet && (
+          <p class="pd-mission">{viewModel.missionSnippet}</p>
+        )}
+      </header>
+
+      {/* Stats strip */}
+      <StatStrip aggregates={viewModel.aggregates} />
+
+      {/* Cases */}
+      <p class="pd-section-label">Cases</p>
+      {viewModel.cases.length === 0 ? (
+        <EmptyState />
       ) : (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-          }}
-        >
-          {/* Header: program name + mission snippet */}
-          <div>
-            <h1
-              style={{
-                fontSize: 'clamp(1.3rem, 2.2vw, 2rem)',
-                lineHeight: 1.15,
-                margin: 0,
-              }}
-            >
-              {viewModel.programName}
-            </h1>
-            {viewModel.missionSnippet && (
-              <p
-                style={{
-                  marginTop: '8px',
-                  color: 'var(--hunt-text-muted)',
-                  fontSize: '14px',
-                  lineHeight: 1.5,
-                }}
-              >
-                {viewModel.missionSnippet}
-              </p>
-            )}
-          </div>
-
-          {/* Aggregate stats row */}
-          <AggregateStats aggregates={viewModel.aggregates} />
-
-          {/* Cases grid or empty state */}
-          {viewModel.cases.length === 0 ? (
-            <Panel>
-              <p style={{ color: 'var(--hunt-text-muted)', margin: 0 }}>
-                No cases yet. Create one with <code>thrunt case new &lt;name&gt;</code>.
-              </p>
-            </Panel>
-          ) : (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-                gap: '14px',
-              }}
-            >
-              {viewModel.cases.map((card) => (
-                <CaseCardComponent key={card.slug} card={card} />
-              ))}
-            </div>
-          )}
-
-          {/* Timeline section */}
-          <TimelineSection timeline={viewModel.timeline} />
+        <div class="pd-cases-grid">
+          {viewModel.cases.map((card) => (
+            <CaseCard key={card.slug} card={card} />
+          ))}
         </div>
       )}
+
+      {/* Timeline */}
+      <TimelineSection timeline={viewModel.timeline} />
     </main>
   );
 }

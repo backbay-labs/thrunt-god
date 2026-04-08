@@ -103,6 +103,7 @@ export interface ChildHuntSummary {
   lastActivity: string;
   blockerCount: number;
   findingsPublished: boolean;
+  techniqueIds: string[];
 }
 
 // Drain template metadata (extracted from Query result summary)

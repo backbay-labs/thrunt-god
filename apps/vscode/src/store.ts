@@ -1144,7 +1144,7 @@ export class HuntDataStore implements vscode.Disposable {
         status,
         openedAt: child.opened,
         closedAt: isClosed ? child.lastActivity : null,
-        techniqueCount: 0,
+        techniqueCount: child.techniqueIds.length,
         signal: child.signal,
         currentPhase: child.currentPhase,
         totalPhases: child.totalPhases,
@@ -1157,6 +1157,13 @@ export class HuntDataStore implements vscode.Disposable {
     const active = cases.filter((c) => c.status === 'active').length;
     const closed = cases.filter((c) => c.status === 'closed').length;
     const stale = cases.filter((c) => c.status === 'stale').length;
+
+    const allTechniques = new Set<string>();
+    for (const child of childHunts) {
+      for (const tid of child.techniqueIds) {
+        allTechniques.add(tid);
+      }
+    }
 
     const timeline = [...childHunts]
       .filter((child) => child.opened)
@@ -1176,7 +1183,7 @@ export class HuntDataStore implements vscode.Disposable {
         active,
         closed,
         stale,
-        uniqueTechniques: 0,
+        uniqueTechniques: allTechniques.size,
       },
       timeline,
     };
@@ -1783,6 +1790,19 @@ export class HuntDataStore implements vscode.Disposable {
         .map((line) => line.trim())
         .filter((line) => line.length > 0).length ?? 0;
 
+    // Extract technique_ids from STATE.md frontmatter (written by CLI as YAML array)
+    let techniqueIds: string[] = [];
+    try {
+      const stateUri = vscode.Uri.joinPath(huntRoot, 'STATE.md');
+      const stateRaw = new TextDecoder().decode(await vscode.workspace.fs.readFile(stateUri));
+      const fm = extractFrontmatter(stateRaw);
+      if (Array.isArray(fm.technique_ids)) {
+        techniqueIds = fm.technique_ids.filter((id): id is string => typeof id === 'string');
+      }
+    } catch {
+      // STATE.md may not exist or have no technique_ids — that's fine
+    }
+
     return {
       id: `${kind}:${name}`,
       name,
@@ -1800,6 +1820,7 @@ export class HuntDataStore implements vscode.Disposable {
       lastActivity: stateData?.lastActivity ?? mission.data.opened,
       blockerCount,
       findingsPublished,
+      techniqueIds,
     };
   }
 

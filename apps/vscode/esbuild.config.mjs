@@ -173,6 +173,7 @@ async function build() {
     reportSizes('Webview: Hunt Overview (ESM)', 'dist/webview-hunt-overview.js');
     reportSizes('Webview: Evidence Board (ESM)', 'dist/webview-evidence-board.js');
     reportSizes('Webview: Query Analysis (ESM)', 'dist/webview-query-analysis.js');
+    reportSizes('Webview: Program Dashboard (ESM)', 'dist/webview-program-dashboard.js');
     reportSizes('Bundled THRUNT CLI', 'dist/thrunt-god/bin/thrunt-tools.cjs');
 
     if (elapsed < 1000) {

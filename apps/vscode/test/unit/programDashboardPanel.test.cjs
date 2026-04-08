@@ -68,6 +68,7 @@ function createMockStore(overrides = {}) {
         lastActivity: new Date().toISOString().slice(0, 10),
         blockerCount: 0,
         findingsPublished: false,
+        techniqueIds: ['T1059.001', 'T1078'],
       },
       {
         id: 'case:beta',
@@ -86,6 +87,7 @@ function createMockStore(overrides = {}) {
         lastActivity: '2026-03-20',
         blockerCount: 0,
         findingsPublished: true,
+        techniqueIds: ['T1041', 'T1059.001'],
       },
       {
         id: 'case:gamma',
@@ -104,6 +106,7 @@ function createMockStore(overrides = {}) {
         lastActivity: '2025-01-01',
         blockerCount: 1,
         findingsPublished: false,
+        techniqueIds: ['T1053.005'],
       },
     ],
     getQueries: () => new Map(),
@@ -141,7 +144,7 @@ function createMockStore(overrides = {}) {
         status,
         openedAt: child.opened,
         closedAt: isClosed ? child.lastActivity : null,
-        techniqueCount: 0,
+        techniqueCount: (child.techniqueIds || []).length,
         signal: child.signal,
         currentPhase: child.currentPhase,
         totalPhases: child.totalPhases,
@@ -155,6 +158,13 @@ function createMockStore(overrides = {}) {
     const closed = cases.filter((c) => c.status === 'closed').length;
     const stale = cases.filter((c) => c.status === 'stale').length;
 
+    const allTechniques = new Set();
+    for (const child of childHunts) {
+      for (const tid of (child.techniqueIds || [])) {
+        allTechniques.add(tid);
+      }
+    }
+
     const timeline = [...childHunts]
       .filter((c) => c.opened)
       .sort((a, b) => new Date(a.opened).getTime() - new Date(b.opened).getTime())
@@ -164,7 +174,7 @@ function createMockStore(overrides = {}) {
       programName,
       missionSnippet,
       cases,
-      aggregates: { total: cases.length, active, closed, stale, uniqueTechniques: 0 },
+      aggregates: { total: cases.length, active, closed, stale, uniqueTechniques: allTechniques.size },
       timeline,
     };
   };
@@ -318,8 +328,8 @@ describe('deriveProgramDashboard', () => {
     // alpha is active (recent lastActivity, not closed)
     assert.equal(vm.aggregates.active, 1);
 
-    // uniqueTechniques is 0 (placeholder)
-    assert.equal(vm.aggregates.uniqueTechniques, 0);
+    // uniqueTechniques = 4 (T1059.001, T1078, T1041, T1053.005 across 3 cases)
+    assert.equal(vm.aggregates.uniqueTechniques, 4);
 
     panel.dispose();
   });
