@@ -113,14 +113,15 @@ function populateIfEmpty(db) {
       const dataSources = Array.isArray(t.data_sources) ? t.data_sources.join(', ') : (t.data_sources || '');
       const url = buildTechniqueUrl(t.id);
 
-      insertTechnique.run(t.id, t.name, t.description, t.tactic, platforms, dataSources, url);
-      insertFts.run(t.name, t.description, t.id);
+      const r = insertTechnique.run(t.id, t.name, t.description, t.tactic, platforms, dataSources, url);
+      if (r.changes > 0) insertFts.run(t.name, t.description, t.id);
 
       if (Array.isArray(t.sub_techniques)) {
         for (const sub of t.sub_techniques) {
           const subUrl = buildTechniqueUrl(sub.id);
-          insertTechnique.run(sub.id, sub.name, t.description, t.tactic, platforms, dataSources, subUrl);
-          insertFts.run(sub.name, t.description, sub.id);
+          const subDesc = sub.description || t.description;
+          const sr = insertTechnique.run(sub.id, sub.name, subDesc, t.tactic, platforms, dataSources, subUrl);
+          if (sr.changes > 0) insertFts.run(sub.name, subDesc, sub.id);
         }
       }
     }

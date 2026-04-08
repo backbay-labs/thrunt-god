@@ -37,5 +37,7 @@ server.connect(transport).then(() => {
   process.exit(1);
 });
 
-process.on('SIGINT', () => { db.close(); process.exit(0); });
-process.on('SIGTERM', () => { db.close(); process.exit(0); });
+let closed = false;
+function shutdown() { if (!closed) { closed = true; db.close(); } process.exit(0); }
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
