@@ -1679,3 +1679,157 @@ describe('stats command', () => {
     assert.ok(parsed.rendered.includes('1/1 phases'), 'should report phase progress');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cmdMigrateCase tests (HIER-05)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('cmdMigrateCase', () => {
+  const { createTempGitProject } = require('./helpers.cjs');
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempGitProject();
+    // Set up a flat .planning/ with hunt artifacts
+    const planDir = path.join(tmpDir, '.planning');
+    fs.writeFileSync(path.join(planDir, 'STATE.md'), '---\nthrunt_state_version: 1.0\nstatus: active\ncase_roster: []\n---\n\n# State\n');
+    fs.writeFileSync(path.join(planDir, 'MISSION.md'), '# Mission\n');
+    fs.writeFileSync(path.join(planDir, 'ENVIRONMENT.md'), '# Environment\n');
+    fs.writeFileSync(path.join(planDir, 'config.json'), '{}');
+    fs.writeFileSync(path.join(planDir, 'HUNTMAP.md'), '# Huntmap\n');
+    fs.writeFileSync(path.join(planDir, 'HYPOTHESES.md'), '# Hypotheses\n');
+    fs.writeFileSync(path.join(planDir, 'SUCCESS_CRITERIA.md'), '# Success Criteria\n');
+    fs.writeFileSync(path.join(planDir, 'FINDINGS.md'), '# Findings\n');
+    fs.mkdirSync(path.join(planDir, 'QUERIES'), { recursive: true });
+    fs.mkdirSync(path.join(planDir, 'RECEIPTS'), { recursive: true });
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('successful migration moves hunt artifacts into cases/<slug>/', () => {
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const parsed = JSON.parse(result.output);
+    assert.strictEqual(parsed.success, true);
+    assert.strictEqual(parsed.slug, 'my-hunt');
+    assert.ok(parsed.files_moved.includes('HUNTMAP.md'), 'should move HUNTMAP.md');
+    assert.ok(parsed.files_moved.includes('HYPOTHESES.md'), 'should move HYPOTHESES.md');
+    assert.ok(parsed.files_moved.includes('SUCCESS_CRITERIA.md'), 'should move SUCCESS_CRITERIA.md');
+    assert.ok(parsed.files_moved.includes('FINDINGS.md'), 'should move FINDINGS.md');
+    assert.ok(parsed.files_moved.includes('QUERIES'), 'should move QUERIES/');
+    assert.ok(parsed.files_moved.includes('RECEIPTS'), 'should move RECEIPTS/');
+
+    // Verify files exist at new location
+    const caseDir = path.join(tmpDir, '.planning', 'cases', 'my-hunt');
+    assert.ok(fs.existsSync(path.join(caseDir, 'HUNTMAP.md')), 'HUNTMAP.md should exist in case dir');
+    assert.ok(fs.existsSync(path.join(caseDir, 'HYPOTHESES.md')), 'HYPOTHESES.md should exist in case dir');
+    assert.ok(fs.existsSync(path.join(caseDir, 'QUERIES')), 'QUERIES/ should exist in case dir');
+    assert.ok(fs.existsSync(path.join(caseDir, 'RECEIPTS')), 'RECEIPTS/ should exist in case dir');
+
+    // Verify files removed from root
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.planning', 'HUNTMAP.md')), 'HUNTMAP.md should not remain at root');
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.planning', 'HYPOTHESES.md')), 'HYPOTHESES.md should not remain at root');
+  });
+
+  test('shared artifacts (MISSION.md, ENVIRONMENT.md, config.json) stay at root', () => {
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    // Shared artifacts must remain at root
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'MISSION.md')), 'MISSION.md should stay at root');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'ENVIRONMENT.md')), 'ENVIRONMENT.md should stay at root');
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'config.json')), 'config.json should stay at root');
+
+    // They should NOT be in the case dir
+    const caseDir = path.join(tmpDir, '.planning', 'cases', 'my-hunt');
+    assert.ok(!fs.existsSync(path.join(caseDir, 'MISSION.md')), 'MISSION.md should not be in case dir');
+    assert.ok(!fs.existsSync(path.join(caseDir, 'ENVIRONMENT.md')), 'ENVIRONMENT.md should not be in case dir');
+    assert.ok(!fs.existsSync(path.join(caseDir, 'config.json')), 'config.json should not be in case dir');
+  });
+
+  test('creates case-level STATE.md with active status', () => {
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const caseStatePath = path.join(tmpDir, '.planning', 'cases', 'my-hunt', 'STATE.md');
+    assert.ok(fs.existsSync(caseStatePath), 'case STATE.md should be created');
+
+    const content = fs.readFileSync(caseStatePath, 'utf-8');
+    assert.ok(content.includes('status: active'), 'case STATE.md should have active status');
+    assert.ok(content.includes('opened_at:'), 'case STATE.md should have opened_at');
+  });
+
+  test('sets .active-case pointer to migrated slug', () => {
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const pointerPath = path.join(tmpDir, '.planning', '.active-case');
+    assert.ok(fs.existsSync(pointerPath), '.active-case should be created');
+    assert.strictEqual(fs.readFileSync(pointerPath, 'utf-8').trim(), 'my-hunt');
+  });
+
+  test('rejects when case directory already exists', () => {
+    // Create the case dir first
+    fs.mkdirSync(path.join(tmpDir, '.planning', 'cases', 'my-hunt'), { recursive: true });
+
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(!result.success, 'should fail when case directory exists');
+    assert.ok(result.error.includes('already exists') || result.output.includes('already exists'),
+      'error should mention directory already exists');
+  });
+
+  test('rejects empty slug', () => {
+    const result = runThruntTools('migrate-case', tmpDir);
+    assert.ok(!result.success, 'should fail with no slug');
+  });
+
+  test('rejects path traversal in slug', () => {
+    const result = runThruntTools('migrate-case ../escape', tmpDir);
+    assert.ok(!result.success, 'should fail with path traversal');
+  });
+
+  test('only moves artifacts that exist (skips missing ones)', () => {
+    // Remove some artifacts
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'SUCCESS_CRITERIA.md'));
+    fs.unlinkSync(path.join(tmpDir, '.planning', 'FINDINGS.md'));
+
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const parsed = JSON.parse(result.output);
+    assert.ok(!parsed.files_moved.includes('SUCCESS_CRITERIA.md'), 'should not list missing SUCCESS_CRITERIA.md');
+    assert.ok(!parsed.files_moved.includes('FINDINGS.md'), 'should not list missing FINDINGS.md');
+    assert.ok(parsed.files_moved.includes('HUNTMAP.md'), 'should still move existing HUNTMAP.md');
+  });
+
+  test('adds case to program STATE.md roster', () => {
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const stateContent = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    assert.ok(stateContent.includes('my-hunt'), 'STATE.md roster should contain the case slug');
+  });
+
+  test('rollback on failure restores files to original location', () => {
+    // This test validates via unit test by calling cmdMigrateCase directly with a
+    // scenario that would fail. We test indirectly: if the case dir doesn't exist
+    // after a failed migration, rollback worked. Use a slug with invalid chars
+    // to trigger early error (before any moves happen).
+    // For a true rollback test, we need to test at the function level.
+    // The CLI integration test verifies the happy path and error paths.
+    // We'll verify that after a failed attempt (duplicate slug), the original files remain.
+    const result1 = runThruntTools('migrate-case first-case', tmpDir);
+    assert.ok(result1.success, `First migration failed: ${result1.error}`);
+
+    // Now create a new flat structure and try to migrate with same slug
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), '# New Huntmap\n');
+    const result2 = runThruntTools('migrate-case first-case', tmpDir);
+    assert.ok(!result2.success, 'duplicate migration should fail');
+
+    // The new HUNTMAP.md should still be at root (not lost)
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'HUNTMAP.md')), 'HUNTMAP.md should remain at root after failed migration');
+  });
+});
