@@ -55,7 +55,7 @@ function parseSigmaRule(yamlText, filePath) {
       .filter((v, i, a) => a.indexOf(v) === i); // deduplicate
 
     return {
-      id: `sigma:${doc.id || ''}`,
+      id: doc.id ? `sigma:${doc.id}` : null,
       title: (doc.title || '').trim(),
       source_format: 'sigma',
       technique_ids: techniqueIds.join(','),
@@ -361,6 +361,7 @@ function ensureDetectionsSchema(db) {
  * @returns {number} 1 if inserted, 0 if duplicate
  */
 function insertDetection(db, row) {
+  if (!row.id) return 0; // Skip rows with no ID (malformed rules)
   const stmt = db.prepare(`
     INSERT OR IGNORE INTO detections
       (id, title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path)

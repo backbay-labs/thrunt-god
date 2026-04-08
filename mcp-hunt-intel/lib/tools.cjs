@@ -121,9 +121,11 @@ async function handleLookupGroup(db, args) {
 
   // If not found and doesn't match G-pattern, try name/alias search
   if (!group && !/^G\d+$/i.test(group_id)) {
+    // Escape LIKE wildcards to prevent data exfiltration via '%' or '_' inputs
+    const escaped = group_id.replace(/%/g, '\\%').replace(/_/g, '\\_');
     const nameMatch = db.prepare(
-      'SELECT * FROM groups WHERE name LIKE ? OR aliases LIKE ? LIMIT 1'
-    ).get(`%${group_id}%`, `%${group_id}%`);
+      "SELECT * FROM groups WHERE name LIKE ? ESCAPE '\\' OR aliases LIKE ? ESCAPE '\\' LIMIT 1"
+    ).get(`%${escaped}%`, `%${escaped}%`);
     if (nameMatch) group = nameMatch;
   }
 
@@ -362,14 +364,20 @@ async function handleAnalyzeCoverage(db, args) {
     // detections table doesn't exist yet -- covered = 0
   }
 
-  // Build per-tactic breakdown
+  // Build per-tactic breakdown (batch-fetch to avoid N+1)
   const tacticBreakdown = {};
+  const tacticMap = new Map();
+  if (groupTechIds.length > 0) {
+    const ph = groupTechIds.map(() => '?').join(',');
+    const rows = db.prepare(`SELECT id, tactics FROM techniques WHERE id IN (${ph})`).all(...groupTechIds);
+    for (const r of rows) tacticMap.set(r.id, r.tactics);
+  }
 
   for (const tid of groupTechIds) {
-    const tech = db.prepare('SELECT tactics FROM techniques WHERE id = ?').get(tid);
-    if (!tech || !tech.tactics) continue;
+    const tactics_str = tacticMap.get(tid);
+    if (!tactics_str) continue;
 
-    const tactics = tech.tactics.split(',').map(s => s.trim()).filter(Boolean);
+    const tactics = tactics_str.split(',').map(s => s.trim()).filter(Boolean);
     for (const tactic of tactics) {
       if (!tacticBreakdown[tactic]) {
         tacticBreakdown[tactic] = { total: 0, covered: 0, uncovered: 0, techniques: [] };

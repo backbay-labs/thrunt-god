@@ -113,16 +113,11 @@ function addEntity(db, opts) {
   const created_at = new Date().toISOString();
 
   const doAdd = db.transaction(() => {
-    // Check if entity already exists (for FTS cleanup)
-    const existing = db.prepare('SELECT id FROM kg_entities WHERE id = ?').get(id);
+    // Check if entity already exists (for FTS cleanup via rowid)
+    const existing = db.prepare('SELECT rowid FROM kg_entities WHERE id = ?').get(id);
     if (existing) {
-      // Delete old FTS entry before replacing
-      db.prepare(
-        "DELETE FROM kg_entities_fts WHERE rowid = (SELECT rowid FROM kg_entities_fts WHERE name = ? AND description = ? LIMIT 1)"
-      ).run(
-        db.prepare('SELECT name FROM kg_entities WHERE id = ?').get(id).name,
-        db.prepare('SELECT description FROM kg_entities WHERE id = ?').get(id).description
-      );
+      // Delete old FTS entry using rowid (stable reference, not content match)
+      db.prepare('DELETE FROM kg_entities_fts WHERE rowid = ?').run(existing.rowid);
     }
 
     // Upsert entity
