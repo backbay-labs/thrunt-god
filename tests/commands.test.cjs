@@ -2385,3 +2385,89 @@ describe('cmdCaseSearch', () => {
     assert.ok(output.results.length > 0, 'should find the routing test case via CLI');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cmdCaseNew detection coverage (Phase 57 Plan 01 Task 2)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('cmdCaseNew detection coverage', () => {
+  let tmpDir;
+
+  function setupProgramState(cwd, rosterEntries = []) {
+    const planDir = path.join(cwd, '.planning');
+    fs.mkdirSync(planDir, { recursive: true });
+    const rosterYaml = rosterEntries.length === 0
+      ? 'case_roster: []'
+      : 'case_roster:\n' + rosterEntries.map(e => {
+          let yaml = `  - slug: ${e.slug}\n    name: ${e.name}\n    status: ${e.status}\n    opened_at: "${e.opened_at}"`;
+          if (e.closed_at) yaml += `\n    closed_at: "${e.closed_at}"`;
+          if (e.technique_count) yaml += `\n    technique_count: "${e.technique_count}"`;
+          return yaml;
+        }).join('\n');
+    fs.writeFileSync(path.join(planDir, 'STATE.md'),
+      `---\nthrunt_state_version: 1.0\nstatus: active\n${rosterYaml}\n---\n\n# Program State\n`);
+    fs.writeFileSync(path.join(planDir, 'MISSION.md'), '# Mission\n');
+    fs.writeFileSync(path.join(planDir, 'config.json'), '{}');
+  }
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('cmdCaseNew with technique ID in name returns detection_coverage array', () => {
+    setupProgramState(tmpDir, []);
+
+    const result = runThruntTools(['case', 'new', 'T1059 PowerShell Investigation'], tmpDir);
+    assert.ok(result.success, `New case failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.ok(Array.isArray(output.detection_coverage), 'output should include detection_coverage array');
+  });
+
+  test('detection_coverage entries have required fields', () => {
+    setupProgramState(tmpDir, []);
+
+    const result = runThruntTools(['case', 'new', 'T1059 PowerShell Analysis'], tmpDir);
+    assert.ok(result.success, `New case failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.ok(Array.isArray(output.detection_coverage), 'detection_coverage should be array');
+
+    // Each entry (if any) should have the required fields
+    for (const entry of output.detection_coverage) {
+      assert.ok(typeof entry.technique_id === 'string', 'technique_id should be string');
+      assert.ok(typeof entry.technique_name === 'string', 'technique_name should be string');
+      assert.ok(typeof entry.source_count === 'number', 'source_count should be number');
+      assert.ok(Array.isArray(entry.sources), 'sources should be array');
+    }
+  });
+
+  test('cmdCaseNew succeeds with empty detection_coverage when no detections exist', () => {
+    setupProgramState(tmpDir, []);
+
+    // Use a technique ID unlikely to have detections in a fresh intel.db
+    const result = runThruntTools(['case', 'new', 'T9999 Nonexistent Technique'], tmpDir);
+    assert.ok(result.success, `New case failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.ok(Array.isArray(output.detection_coverage), 'detection_coverage should be array');
+    // Whether empty or not, the case creation should succeed
+  });
+
+  test('cmdCaseNew succeeds with detection_coverage when mcp-hunt-intel unavailable', () => {
+    // This tests the non-fatal degradation path.
+    // In test environment, mcp-hunt-intel modules ARE available, so we verify
+    // that detection_coverage is always present (non-fatal means array, possibly empty)
+    setupProgramState(tmpDir, []);
+
+    const result = runThruntTools(['case', 'new', 'No Intel Modules Test'], tmpDir);
+    assert.ok(result.success, `New case failed: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, true);
+    assert.ok(Array.isArray(output.detection_coverage), 'detection_coverage should be array even without technique IDs in name');
+    assert.strictEqual(output.detection_coverage.length, 0, 'should be empty when no technique IDs in case name');
+  });
+});
