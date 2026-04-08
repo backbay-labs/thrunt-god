@@ -19,6 +19,16 @@ try {
 }
 const { openProgramDb, indexCase, searchCases, findTechniqueOverlap, extractTechniqueIds } = dbModule || {};
 
+// Lazy-require mcp-hunt-intel modules: may not be available in all environments
+let intelModule, coverageModule;
+try {
+  intelModule = require('../../../mcp-hunt-intel/lib/intel.cjs');
+  coverageModule = require('../../../mcp-hunt-intel/lib/coverage.cjs');
+} catch {
+  intelModule = null;
+  coverageModule = null;
+}
+
 // Lazy-require tenant module to avoid circular deps at load time
 function getTenant() { return require('./tenant.cjs'); }
 
@@ -3466,8 +3476,34 @@ function cmdCaseNew(cwd, name, options, raw) {
     past_case_matches = [];
   }
 
+  // Auto-detect coverage for technique IDs in case name (silent failure)
+  let detection_coverage = [];
+  if (intelModule && coverageModule) try {
+    const techIds = extractTechniqueIds(name);
+    if (techIds.length > 0) {
+      const intelDb = intelModule.openIntelDb();
+      try {
+        for (const tid of techIds) {
+          const result = coverageModule.compareDetections(intelDb, tid);
+          if (result && result.technique_id) {
+            detection_coverage.push({
+              technique_id: result.technique_id,
+              technique_name: result.technique_name,
+              source_count: result.source_count,
+              sources: result.sources.map(s => s.source),
+            });
+          }
+        }
+      } finally {
+        intelDb.close();
+      }
+    }
+  } catch {
+    detection_coverage = [];
+  }
+
   const caseDirRel = toPosixPath(path.relative(cwd, caseDir));
-  output({ success: true, slug, name, case_dir: caseDirRel, message: `Case created: ${slug}`, past_case_matches }, raw);
+  output({ success: true, slug, name, case_dir: caseDirRel, message: `Case created: ${slug}`, past_case_matches, detection_coverage }, raw);
 }
 
 function cmdCaseList(cwd, raw) {
