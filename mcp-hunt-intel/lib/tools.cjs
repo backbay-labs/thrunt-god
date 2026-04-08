@@ -182,8 +182,10 @@ async function handleGenerateLayer(db, args) {
       // Try to check detections table (Phase 54 graceful degradation)
       let detectedSet = new Set();
       try {
-        const detected = db.prepare('SELECT DISTINCT technique_id FROM detections').all();
-        detectedSet = new Set(detected.map(r => r.technique_id));
+        const rows = db.prepare('SELECT technique_ids FROM detections').all();
+        for (const r of rows) {
+          if (r.technique_ids) r.technique_ids.split(',').forEach(t => detectedSet.add(t.trim()));
+        }
       } catch {
         // detections table doesn't exist yet -- all scores = 0
       }
@@ -209,11 +211,14 @@ async function handleGenerateLayer(db, args) {
       let coveredSet = new Set();
       try {
         if (groupTechIds.length > 0) {
-          const placeholders = groupTechIds.map(() => '?').join(',');
-          const covered = db.prepare(
-            `SELECT DISTINCT technique_id FROM detections WHERE technique_id IN (${placeholders})`
-          ).all(...groupTechIds);
-          coveredSet = new Set(covered.map(r => r.technique_id));
+          const rows = db.prepare('SELECT technique_ids FROM detections').all();
+          const allDetected = new Set();
+          for (const r of rows) {
+            if (r.technique_ids) r.technique_ids.split(',').forEach(t => allDetected.add(t.trim()));
+          }
+          for (const id of groupTechIds) {
+            if (allDetected.has(id)) coveredSet.add(id);
+          }
         }
       } catch {
         // detections table doesn't exist yet
@@ -265,11 +270,14 @@ async function handleAnalyzeCoverage(db, args) {
   let detectedSet = new Set();
   try {
     if (groupTechIds.length > 0) {
-      const placeholders = groupTechIds.map(() => '?').join(',');
-      const detected = db.prepare(
-        `SELECT DISTINCT technique_id FROM detections WHERE technique_id IN (${placeholders})`
-      ).all(...groupTechIds);
-      detectedSet = new Set(detected.map(r => r.technique_id));
+      const rows = db.prepare('SELECT technique_ids FROM detections').all();
+      const allDetected = new Set();
+      for (const r of rows) {
+        if (r.technique_ids) r.technique_ids.split(',').forEach(t => allDetected.add(t.trim()));
+      }
+      for (const id of groupTechIds) {
+        if (allDetected.has(id)) detectedSet.add(id);
+      }
     }
   } catch {
     // detections table doesn't exist yet -- covered = 0
