@@ -621,6 +621,7 @@ describe('server smoke test', () => {
     assert.ok(result.stdout.includes('"jsonrpc"'), `stdout: "${result.stdout.slice(0, 300)}", stderr: "${result.stderr.slice(0, 300)}"`);
     assert.ok(result.stdout.includes('"result"'), `stdout: ${result.stdout.slice(0, 300)}`);
 
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    // maxRetries handles Windows EBUSY when SQLite WAL files are still locked after proc.kill()
+    fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 });
