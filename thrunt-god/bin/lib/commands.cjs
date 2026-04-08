@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
 const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningRoot, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, getActiveCase, setActiveCase, PLANNING_DIR_NAME } = require('./core.cjs');
-const { extractFrontmatter, spliceFrontmatter } = require('./frontmatter.cjs');
+const { extractFrontmatter, spliceFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
 const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('./state.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
@@ -3486,6 +3486,105 @@ function cmdCaseStatus(cwd, slug, raw) {
   }, raw);
 }
 
+// ─── Migration commands ─────────────────────────────────────────────────────
+
+function cmdMigrateCase(cwd, slug, raw) {
+  // Validation
+  if (!slug) {
+    error('Case slug required. Usage: migrate-case <slug>');
+  }
+  if (/[/\\]/.test(slug) || slug === '.' || slug === '..') {
+    error('Invalid case slug for migration');
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
+    error('Invalid case slug: must be alphanumeric, hyphens, and underscores only');
+  }
+
+  // Pre-flight checks
+  const baseDir = planningRoot(cwd);
+  const caseDir = path.join(baseDir, 'cases', slug);
+
+  if (fs.existsSync(caseDir)) {
+    error('Case directory already exists: cases/' + slug);
+  }
+  if (!fs.existsSync(path.join(baseDir, 'STATE.md'))) {
+    error('No program found. Run new-program first.');
+  }
+
+  // Artifact list (case-scoped, to be moved)
+  const toMove = [
+    { name: 'HUNTMAP.md', type: 'file' },
+    { name: 'HYPOTHESES.md', type: 'file' },
+    { name: 'SUCCESS_CRITERIA.md', type: 'file' },
+    { name: 'FINDINGS.md', type: 'file' },
+    { name: 'EVIDENCE_REVIEW.md', type: 'file' },
+    { name: 'phases', type: 'dir' },
+    { name: 'QUERIES', type: 'dir' },
+    { name: 'RECEIPTS', type: 'dir' },
+    { name: 'MANIFESTS', type: 'dir' },
+    { name: 'DETECTIONS', type: 'dir' },
+    { name: 'published', type: 'dir' },
+  ];
+
+  // Migration with rollback
+  fs.mkdirSync(caseDir, { recursive: true });
+  const filesMoved = [];
+  try {
+    for (const item of toMove) {
+      const src = path.join(baseDir, item.name);
+      if (fs.existsSync(src)) {
+        const dest = path.join(caseDir, item.name);
+        fs.renameSync(src, dest);
+        filesMoved.push(item.name);
+      }
+    }
+  } catch (err) {
+    // Rollback: move everything back
+    for (const name of filesMoved) {
+      try { fs.renameSync(path.join(caseDir, name), path.join(baseDir, name)); } catch (_e) { /* best effort */ }
+    }
+    try { fs.rmSync(caseDir, { recursive: true }); } catch (_e) { /* best effort */ }
+    error('Migration failed (rolled back): ' + err.message);
+    return;
+  }
+
+  // Create case-level STATE.md
+  const caseStatePath = path.join(caseDir, 'STATE.md');
+  if (!fs.existsSync(caseStatePath)) {
+    const caseFm = reconstructFrontmatter({
+      status: 'active',
+      opened_at: new Date().toISOString().split('T')[0],
+      technique_ids: [],
+    });
+    fs.writeFileSync(caseStatePath, '---\n' + caseFm + '\n---\n\n# Case: ' + slug + '\n\nStatus: Active\nMigrated from flat .planning/ layout.\n', 'utf-8');
+  }
+
+  // Update program roster
+  try {
+    addCaseToRoster(cwd, {
+      slug,
+      name: slug,
+      status: 'active',
+      opened_at: new Date().toISOString().split('T')[0],
+      technique_count: '0',
+    });
+  } catch (_rosterErr) {
+    // Non-fatal: migration succeeded, roster update failed
+  }
+
+  // Set active case pointer
+  try { setActiveCase(cwd, slug); } catch (_e) { /* non-fatal */ }
+
+  // Output result
+  output({
+    success: true,
+    slug,
+    case_dir: toPosixPath(path.relative(cwd, caseDir)),
+    files_moved: filesMoved,
+    message: 'Migrated to cases/' + slug + ' (' + filesMoved.length + ' artifacts moved)',
+  }, raw);
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -3540,4 +3639,5 @@ module.exports = {
   cmdCaseList,
   cmdCaseClose,
   cmdCaseStatus,
+  cmdMigrateCase,
 };

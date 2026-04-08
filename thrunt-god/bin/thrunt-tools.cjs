@@ -1201,6 +1201,11 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'migrate-case': {
+      commands.cmdMigrateCase(cwd, args[1], raw);
+      break;
+    }
+
     default:
       error(`Unknown command: ${command}`);
   }
