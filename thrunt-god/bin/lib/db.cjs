@@ -16,6 +16,19 @@ try {
 const { planningRoot } = require('./core.cjs');
 const { extractFrontmatter } = require('./frontmatter.cjs');
 
+// Lazy-load knowledge graph module (Phase 56)
+let _knowledge;
+function getKnowledge() {
+  if (!_knowledge) _knowledge = require('../../../mcp-hunt-intel/lib/knowledge.cjs');
+  return _knowledge;
+}
+
+let _intel;
+function getIntel() {
+  if (!_intel) _intel = require('../../../mcp-hunt-intel/lib/intel.cjs');
+  return _intel;
+}
+
 // ─── Regex patterns ─────────────────────────────────────────────────────────
 
 // Technique IDs: T1078, T1078.002, t1059.001 (case-insensitive)
@@ -135,6 +148,28 @@ function openProgramDb(cwd) {
   db.pragma('busy_timeout = 5000');
   db.pragma('foreign_keys = ON');
   ensureSchema(db);
+
+  // Phase 56: Knowledge graph tables
+  try {
+    const kg = getKnowledge();
+    kg.ensureKnowledgeSchema(db);
+
+    // Auto-import STIX relationships on first open (when kg_entities is empty)
+    const entityCount = db.prepare('SELECT COUNT(*) AS cnt FROM kg_entities').get().cnt;
+    if (entityCount === 0) {
+      try {
+        const intel = getIntel();
+        const intelDb = intel.openIntelDb();
+        kg.importStixFromIntel(db, intelDb);
+        intelDb.close();
+      } catch (e) {
+        // Non-fatal: intel.db may not exist yet (first run without MCP)
+      }
+    }
+  } catch (e) {
+    // Non-fatal: knowledge.cjs may not be available in minimal installs
+  }
+
   return db;
 }
 
