@@ -1,0 +1,45 @@
+[metadata]
+creation_date = "2024/01/15"
+maturity = "production"
+updated_date = "2024/06/01"
+integration = ["endpoint"]
+
+[rule]
+name = "Suspicious Syslog Service Disable"
+description = "Detects attempts to disable the syslog service"
+rule_id = "abcdef12-3456-7890-abcd-ef1234567890"
+severity = "medium"
+risk_score = 47
+type = "eql"
+language = "eql"
+query = "process where event.type == \"start\" and process.name == \"service\" and process.args == \"syslog\" and process.args == \"stop\""
+index = ["logs-endpoint.events.*"]
+tags = ["Elastic", "Linux", "Defense Evasion"]
+references = ["https://example.com/elastic-ref"]
+license = "Elastic License v2"
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+  [rule.threat.tactic]
+  id = "TA0005"
+  name = "Defense Evasion"
+
+  [[rule.threat.technique]]
+  id = "T1562"
+  name = "Impair Defenses"
+
+    [[rule.threat.technique.subtechnique]]
+    id = "T1562.001"
+    name = "Disable or Modify Tools"
+
+[[rule.threat]]
+framework = "MITRE ATT&CK"
+
+  [rule.threat.tactic]
+  id = "TA0003"
+  name = "Persistence"
+
+  [[rule.threat.technique]]
+  id = "T1543"
+  name = "Create or Modify System Process"

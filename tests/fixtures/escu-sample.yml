@@ -1,0 +1,28 @@
+name: Remote System Discovery With AdsiSearcher
+id: 87654321-abcd-ef01-2345-678901234567
+type: TTP
+description: Detects the use of ADSISearcher for remote system discovery
+search: '| tstats count from datamodel=Endpoint.Processes where Processes.process=*ADSISearcher* by Processes.dest Processes.user'
+data_source:
+  - Sysmon EventID 1
+how_to_implement: Enable Sysmon logging
+known_false_positives: Legitimate admin tools
+references:
+  - https://example.com/escu-ref
+tags:
+  mitre_attack_id:
+    - T1018
+    - T1069.002
+  analytic_story:
+    - Active Directory Discovery
+  asset_type: Endpoint
+  security_domain: endpoint
+  product:
+    - Splunk Enterprise
+  data_models:
+    - Endpoint
+rba:
+  risk_objects:
+    - field: dest
+      type: system
+      score: 40
