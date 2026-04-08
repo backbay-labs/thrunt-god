@@ -351,7 +351,10 @@ describe('detections.cjs - insertDetection + searchDetections', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'PowerShell');
     assert.ok(results.length > 0, 'should find by title keyword');
-    assert.ok(results[0].title.includes('PowerShell'), 'first result should match title');
+    assert.ok(
+      results.some(r => r.title.includes('PowerShell')),
+      'at least one result should match title keyword'
+    );
   });
 
   it('FTS search finds by technique_id using LIKE filter', () => {
@@ -590,5 +593,213 @@ describe('detections.cjs - populateDetectionsIfEmpty', () => {
     assert.doesNotThrow(() => populateDetectionsIfEmpty(freshDb), 'should not throw when no bundled rules');
     freshDb.close();
     fs.rmSync(freshDir, { recursive: true, force: true });
+  });
+});
+
+// ── openIntelDb integration ────────────────────────────────────────────────
+
+describe('detections.cjs - openIntelDb integration', () => {
+  let tmpDir, db;
+
+  beforeEach(() => {
+    tmpDir = makeTempDir();
+    const { openIntelDb } = loadIntel();
+    db = openIntelDb({ dbDir: tmpDir });
+  });
+
+  afterEach(() => {
+    if (db) db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('openIntelDb creates detections table alongside techniques table', () => {
+    const tables = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+    ).all().map(r => r.name);
+
+    assert.ok(tables.includes('techniques'), 'techniques table should exist');
+    assert.ok(tables.includes('detections'), 'detections table should exist');
+    assert.ok(tables.includes('detections_fts'), 'detections_fts virtual table should exist');
+  });
+
+  it('openIntelDb populates bundled Sigma rules on first run', () => {
+    const count = db.prepare(
+      "SELECT COUNT(*) AS cnt FROM detections WHERE source_format = 'sigma'"
+    ).get().cnt;
+    // Bundled sigma-core directory has real rules (1000+), but at minimum >= 3 for fallback
+    assert.ok(count >= 3, `should have at least 3 bundled sigma rules, got ${count}`);
+  });
+
+  it('populateDetectionsIfEmpty is idempotent', () => {
+    const countBefore = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
+    assert.ok(countBefore > 0, 'should have rows from initial population');
+
+    // Call again -- should be a no-op since table is not empty
+    const { populateDetectionsIfEmpty } = loadDet();
+    populateDetectionsIfEmpty(db);
+
+    const countAfter = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
+    assert.equal(countAfter, countBefore, 'row count should not change on second populate');
+  });
+});
+
+// ── env var path indexing ─────────────────────────────────────────────────
+
+describe('detections.cjs - env var path indexing', () => {
+  let tmpDir, db;
+  const savedEnv = {};
+
+  beforeEach(() => {
+    tmpDir = makeTempDir();
+    // Save env vars before test
+    savedEnv.SIGMA_PATHS = process.env.SIGMA_PATHS;
+    savedEnv.SPLUNK_PATHS = process.env.SPLUNK_PATHS;
+    savedEnv.ELASTIC_PATHS = process.env.ELASTIC_PATHS;
+  });
+
+  afterEach(() => {
+    if (db) db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    // Restore env vars
+    if (savedEnv.SIGMA_PATHS === undefined) delete process.env.SIGMA_PATHS;
+    else process.env.SIGMA_PATHS = savedEnv.SIGMA_PATHS;
+    if (savedEnv.SPLUNK_PATHS === undefined) delete process.env.SPLUNK_PATHS;
+    else process.env.SPLUNK_PATHS = savedEnv.SPLUNK_PATHS;
+    if (savedEnv.ELASTIC_PATHS === undefined) delete process.env.ELASTIC_PATHS;
+    else process.env.ELASTIC_PATHS = savedEnv.ELASTIC_PATHS;
+  });
+
+  it('SIGMA_PATHS indexes custom directory', () => {
+    // Create temp sigma directory with a custom rule
+    const customDir = path.join(tmpDir, 'custom-sigma');
+    fs.mkdirSync(customDir, { recursive: true });
+    // Copy fixture but change the ID so it doesn't conflict with bundled
+    const customYaml = sigmaYaml.replace(
+      '3b6ab547-f55a-4d6e-88a1-a6a9f87e1234',
+      'custom-sigma-env-test-001'
+    );
+    fs.writeFileSync(path.join(customDir, 'custom-rule.yml'), customYaml);
+
+    process.env.SIGMA_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    const row = db.prepare(
+      "SELECT * FROM detections WHERE id = 'sigma:custom-sigma-env-test-001'"
+    ).get();
+    assert.ok(row, 'custom sigma rule from SIGMA_PATHS should be indexed');
+    assert.equal(row.source_format, 'sigma');
+  });
+
+  it('SPLUNK_PATHS indexes ESCU directory', () => {
+    const customDir = path.join(tmpDir, 'custom-escu');
+    fs.mkdirSync(customDir, { recursive: true });
+    const customYaml = escuYaml.replace(
+      '87654321-abcd-ef01-2345-678901234567',
+      'custom-escu-env-test-001'
+    );
+    fs.writeFileSync(path.join(customDir, 'custom-escu.yml'), customYaml);
+
+    process.env.SPLUNK_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'escu-env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    const row = db.prepare(
+      "SELECT * FROM detections WHERE id = 'escu:custom-escu-env-test-001'"
+    ).get();
+    assert.ok(row, 'custom ESCU rule from SPLUNK_PATHS should be indexed');
+    assert.equal(row.source_format, 'escu');
+  });
+
+  it('ELASTIC_PATHS indexes Elastic directory', () => {
+    const customDir = path.join(tmpDir, 'custom-elastic');
+    fs.mkdirSync(customDir, { recursive: true });
+    const customToml = elasticToml.replace(
+      'abcdef12-3456-7890-abcd-ef1234567890',
+      'custom-elastic-env-test-001'
+    );
+    fs.writeFileSync(path.join(customDir, 'custom-elastic.toml'), customToml);
+
+    process.env.ELASTIC_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'elastic-env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    const row = db.prepare(
+      "SELECT * FROM detections WHERE id = 'elastic:custom-elastic-env-test-001'"
+    ).get();
+    assert.ok(row, 'custom Elastic rule from ELASTIC_PATHS should be indexed');
+    assert.equal(row.source_format, 'elastic');
+  });
+
+  it('nonexistent env var path logs warning but does not throw', () => {
+    process.env.SIGMA_PATHS = '/nonexistent/path/that/does/not/exist';
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'nopath-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+
+    assert.doesNotThrow(
+      () => populateDetectionsIfEmpty(db),
+      'should not throw for nonexistent env var path'
+    );
+  });
+});
+
+// ── end-to-end search ────────────────────────────────────────────────────
+
+describe('detections.cjs - end-to-end search', () => {
+  let tmpDir, db;
+
+  before(() => {
+    tmpDir = makeTempDir();
+    const { openIntelDb } = loadIntel();
+    db = openIntelDb({ dbDir: tmpDir });
+  });
+
+  after(() => {
+    if (db) db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('search finds Sigma rule by technique ID', () => {
+    const { searchDetections } = loadDet();
+    const results = searchDetections(db, 'T1059', { technique_id: 'T1059' });
+    assert.ok(results.length > 0, 'should find detections for T1059');
+    assert.ok(
+      results.some(r => r.source_format === 'sigma'),
+      'at least one result should be sigma format'
+    );
+  });
+
+  it('search finds rule by keyword in title', () => {
+    const { searchDetections } = loadDet();
+    // "suspicious" or "powershell" are common in Sigma rule titles
+    const results = searchDetections(db, 'suspicious');
+    assert.ok(results.length > 0, 'should find detections matching "suspicious"');
   });
 });

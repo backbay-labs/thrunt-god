@@ -77,6 +77,8 @@ describe('intel.cjs - openIntelDb', () => {
     assert.ok(tables.includes('group_software'), 'group_software table should exist');
     assert.ok(tables.includes('software'), 'software table should exist');
     assert.ok(tables.includes('software_techniques'), 'software_techniques table should exist');
+    assert.ok(tables.includes('detections'), 'detections table should exist');
+    assert.ok(tables.includes('detections_fts'), 'detections_fts virtual table should exist');
     db.close();
   });
 
