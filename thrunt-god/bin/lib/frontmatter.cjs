@@ -63,7 +63,11 @@ function extractFrontmatter(content) {
       }
     } else if (line.trim().startsWith('- ')) {
       // Array item
-      const itemValue = line.trim().slice(2).replace(/^["']|["']$/g, '');
+      const itemRaw = line.trim().slice(2);
+      const itemValue = itemRaw.replace(/^["']|["']$/g, '');
+
+      // Detect object items: "- key: value" pattern within an array
+      const objKeyMatch = itemRaw.match(/^([a-zA-Z0-9_-]+):\s*(.*)/);
 
       // If current context is an empty object, convert to array
       if (typeof current.obj === 'object' && !Array.isArray(current.obj) && Object.keys(current.obj).length === 0) {
@@ -72,14 +76,31 @@ function extractFrontmatter(content) {
         if (parent) {
           for (const k of Object.keys(parent.obj)) {
             if (parent.obj[k] === current.obj) {
-              parent.obj[k] = [itemValue];
-              current.obj = parent.obj[k];
+              if (objKeyMatch) {
+                // First item is an object — create array with object item
+                const itemObj = {};
+                itemObj[objKeyMatch[1]] = objKeyMatch[2].trim().replace(/^["']|["']$/g, '');
+                parent.obj[k] = [itemObj];
+                current.obj = parent.obj[k];
+                stack.push({ obj: itemObj, key: null, indent });
+              } else {
+                parent.obj[k] = [itemValue];
+                current.obj = parent.obj[k];
+              }
               break;
             }
           }
         }
       } else if (Array.isArray(current.obj)) {
-        current.obj.push(itemValue);
+        if (objKeyMatch) {
+          // Object item in an array (e.g., case_roster entries)
+          const itemObj = {};
+          itemObj[objKeyMatch[1]] = objKeyMatch[2].trim().replace(/^["']|["']$/g, '');
+          current.obj.push(itemObj);
+          stack.push({ obj: itemObj, key: null, indent });
+        } else {
+          current.obj.push(itemValue);
+        }
       }
     }
   }
@@ -94,6 +115,24 @@ function reconstructFrontmatter(obj) {
     if (Array.isArray(value)) {
       if (value.length === 0) {
         lines.push(`${key}: []`);
+      } else if (value.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
+        // Array of objects (e.g., case_roster)
+        lines.push(`${key}:`);
+        for (const item of value) {
+          let first = true;
+          for (const [k, v] of Object.entries(item)) {
+            if (v === null || v === undefined) continue;
+            const sv = String(v);
+            const needsQuote = sv.includes(':') || sv.includes('#') || sv.startsWith('[') || sv.startsWith('{');
+            const quotedVal = needsQuote ? `"${sv}"` : sv;
+            if (first) {
+              lines.push(`  - ${k}: ${quotedVal}`);
+              first = false;
+            } else {
+              lines.push(`    ${k}: ${quotedVal}`);
+            }
+          }
+        }
       } else if (value.every(v => typeof v === 'string') && value.length <= 3 && value.join(', ').length < 60) {
         lines.push(`${key}: [${value.join(', ')}]`);
       } else {

@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const { escapeRegex, loadConfig, getMilestoneInfo, getMilestonePhaseFilter, normalizeMd, planningDir, planningPaths, output, error } = require('./core.cjs');
-const { extractFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
+const { extractFrontmatter, reconstructFrontmatter, spliceFrontmatter } = require('./frontmatter.cjs');
 
 /** Shorthand — every state command needs this path */
 function getStatePath(cwd) {
@@ -736,6 +736,7 @@ function buildStateFrontmatter(bodyContent, cwd) {
   if (pausedAt) fm.paused_at = pausedAt;
   fm.last_updated = new Date().toISOString();
   if (lastActivity) fm.last_activity = lastActivity;
+  fm.case_roster = [];
 
   const progress = {};
   if (totalPhases !== null) progress.total_phases = totalPhases;
@@ -774,6 +775,12 @@ function syncStateFrontmatter(content, cwd) {
   // previously valid status (e.g., 'executing' → 'unknown').
   if (derivedFm.status === 'unknown' && existingFm.status && existingFm.status !== 'unknown') {
     derivedFm.status = existingFm.status;
+  }
+
+  // Preserve existing case_roster — buildStateFrontmatter initializes it as []
+  // but existing frontmatter may have populated entries that must not be lost.
+  if (existingFm.case_roster && Array.isArray(existingFm.case_roster) && existingFm.case_roster.length > 0) {
+    derivedFm.case_roster = existingFm.case_roster;
   }
 
   const yamlStr = reconstructFrontmatter(derivedFm);
@@ -1007,11 +1014,71 @@ function cmdSignalResume(cwd, raw) {
   output({ resumed: true, removed }, raw, removed ? 'true' : 'false');
 }
 
+// ─── Case roster functions ───────────────────────────────────────────────────
+
+/**
+ * Get the case roster from program STATE.md frontmatter.
+ * Returns an array of case entry objects, or [] if no roster exists.
+ */
+function getCaseRoster(cwd) {
+  const statePath = planningPaths(cwd).programState;
+  if (!fs.existsSync(statePath)) return [];
+  const content = fs.readFileSync(statePath, 'utf-8');
+  const fm = extractFrontmatter(content);
+  const roster = fm.case_roster;
+  if (!roster || !Array.isArray(roster)) return [];
+  return roster;
+}
+
+/**
+ * Add a case entry to the program STATE.md case_roster.
+ * caseEntry shape: { slug, name, status, opened_at, technique_count }
+ * Throws if slug already exists in roster.
+ */
+function addCaseToRoster(cwd, caseEntry) {
+  const statePath = planningPaths(cwd).programState;
+  const content = fs.readFileSync(statePath, 'utf-8');
+  const fm = extractFrontmatter(content);
+  if (!fm.case_roster || !Array.isArray(fm.case_roster)) {
+    fm.case_roster = [];
+  }
+  // Check slug uniqueness
+  if (fm.case_roster.some(c => c.slug === caseEntry.slug)) {
+    throw new Error(`Case slug "${caseEntry.slug}" already exists in roster`);
+  }
+  fm.case_roster.push(caseEntry);
+  const newContent = spliceFrontmatter(content, fm);
+  writeStateMd(statePath, newContent, cwd);
+}
+
+/**
+ * Update an existing case in the program STATE.md case_roster.
+ * updates is a partial object: { status?, closed_at?, technique_count? }
+ */
+function updateCaseInRoster(cwd, slug, updates) {
+  const statePath = planningPaths(cwd).programState;
+  const content = fs.readFileSync(statePath, 'utf-8');
+  const fm = extractFrontmatter(content);
+  if (!fm.case_roster || !Array.isArray(fm.case_roster)) {
+    throw new Error('No case_roster found in program STATE.md');
+  }
+  const entry = fm.case_roster.find(c => c.slug === slug);
+  if (!entry) {
+    throw new Error(`Case slug "${slug}" not found in roster`);
+  }
+  Object.assign(entry, updates);
+  const newContent = spliceFrontmatter(content, fm);
+  writeStateMd(statePath, newContent, cwd);
+}
+
 module.exports = {
   stateExtractField,
   stateReplaceField,
   stateReplaceFieldWithFallback,
   writeStateMd,
+  getCaseRoster,
+  addCaseToRoster,
+  updateCaseInRoster,
   cmdStateLoad,
   cmdStateGet,
   cmdStatePatch,
