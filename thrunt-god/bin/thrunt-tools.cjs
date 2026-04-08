@@ -351,7 +351,7 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>] [--case <slug>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, pack, runtime, config-ensure-section, config-new-program, init, workstream, case');
+    error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>] [--case <slug>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, pack, runtime, config-ensure-section, config-new-program, init, workstream, case, migrate-case');
   }
 
   // Multi-repo guard: resolve project root for commands that read/write .planning/.
