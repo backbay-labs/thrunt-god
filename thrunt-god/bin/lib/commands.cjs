@@ -8,6 +8,7 @@ const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, com
 const { extractFrontmatter, spliceFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
 const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('./state.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
+const { openProgramDb, indexCase, searchCases, findTechniqueOverlap, extractTechniqueIds } = require('./db.cjs');
 
 // Lazy-require tenant module to avoid circular deps at load time
 function getTenant() { return require('./tenant.cjs'); }
@@ -3415,8 +3416,49 @@ function cmdCaseNew(cwd, name, options, raw) {
   // Set active case pointer
   setActiveCase(cwd, slug);
 
+  // Auto-search past cases for similar signals (silent failure)
+  let past_case_matches = [];
+  try {
+    const db = openProgramDb(cwd);
+    if (db) {
+      try {
+        // Search using case name — OR-join words for broader FTS matching
+        const nameTokens = name.split(/\s+/).filter(w => w.length > 1);
+        const ftsQuery = nameTokens.length > 1 ? nameTokens.join(' OR ') : name;
+        const nameResults = searchCases(db, ftsQuery, { limit: 5 });
+        // Also check technique overlap from case name
+        const techIds = extractTechniqueIds(name);
+        let overlapResults = [];
+        if (techIds.length > 0) {
+          // Also include sub-technique variants (T1059 -> T1059.xxx) for broader matching
+          const expanded = new Set(techIds);
+          for (const tid of techIds) {
+            // If parent ID (no dot), find any sub-techniques in the DB
+            if (!tid.includes('.')) {
+              try {
+                const subs = db.prepare('SELECT DISTINCT technique_id FROM case_techniques WHERE technique_id LIKE ?').all(tid + '.%');
+                for (const s of subs) expanded.add(s.technique_id);
+              } catch { /* ignore */ }
+            }
+          }
+          overlapResults = findTechniqueOverlap(db, [...expanded]);
+        }
+        // Merge: name matches first, then technique overlaps not already in name results
+        const seen = new Set(nameResults.map(r => r.slug));
+        past_case_matches = [
+          ...nameResults,
+          ...overlapResults.filter(r => !seen.has(r.slug))
+        ].slice(0, 5);
+      } finally {
+        db.close();
+      }
+    }
+  } catch {
+    past_case_matches = [];
+  }
+
   const caseDirRel = toPosixPath(path.relative(cwd, caseDir));
-  output({ success: true, slug, name, case_dir: caseDirRel, message: `Case created: ${slug}` }, raw);
+  output({ success: true, slug, name, case_dir: caseDirRel, message: `Case created: ${slug}`, past_case_matches }, raw);
 }
 
 function cmdCaseList(cwd, raw) {
@@ -3453,6 +3495,23 @@ function cmdCaseClose(cwd, slug, raw) {
   const activeCase = getActiveCase(cwd);
   if (activeCase === slug) {
     setActiveCase(cwd, null);
+  }
+
+  // Index case artifacts into program.db (non-fatal)
+  try {
+    const db = openProgramDb(cwd);
+    if (db) {
+      try {
+        const root = planningRoot(cwd);
+        const caseDir = path.join(root, 'cases', slug);
+        indexCase(db, slug, caseDir);
+      } finally {
+        db.close();
+      }
+    }
+  } catch (err) {
+    // Non-fatal: case is closed even if indexing fails
+    if (!raw) console.error(`Warning: case indexing failed: ${err.message}`);
   }
 
   output({ success: true, slug, message: `Case closed: ${slug}` }, raw);
