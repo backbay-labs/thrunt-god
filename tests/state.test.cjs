@@ -1609,5 +1609,81 @@ Progress: [..........] 0%
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// case roster functions
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('case roster functions', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = createTempProject();
+    // Create a program STATE.md with case_roster in frontmatter
+    const stateContent = `---
+thrunt_state_version: 1.0
+status: executing
+case_roster: []
+---
+
+# Hunt State
+
+**Status:** Executing
+`;
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateContent);
+  });
+
+  afterEach(() => {
+    cleanup(tmpDir);
+  });
+
+  test('getCaseRoster returns empty array when no roster exists', () => {
+    // Write a STATE.md without case_roster
+    const stateContent = `---
+thrunt_state_version: 1.0
+status: executing
+---
+
+# Hunt State
+
+**Status:** Executing
+`;
+    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateContent);
+
+    const { getCaseRoster } = require('../thrunt-god/bin/lib/state.cjs');
+    const roster = getCaseRoster(tmpDir);
+    assert.ok(Array.isArray(roster), 'should return array');
+    assert.strictEqual(roster.length, 0, 'should be empty');
+  });
+
+  test('addCaseToRoster appends entry to STATE.md frontmatter', () => {
+    const { addCaseToRoster, getCaseRoster } = require('../thrunt-god/bin/lib/state.cjs');
+    addCaseToRoster(tmpDir, { slug: 'alpha', name: 'Alpha Case', status: 'active', opened_at: '2026-04-07', technique_count: 0 });
+    const roster = getCaseRoster(tmpDir);
+    assert.strictEqual(roster.length, 1, 'should have 1 entry');
+    assert.strictEqual(roster[0].slug, 'alpha');
+    assert.strictEqual(roster[0].name, 'Alpha Case');
+    assert.strictEqual(roster[0].status, 'active');
+  });
+
+  test('addCaseToRoster throws on duplicate slug', () => {
+    const { addCaseToRoster } = require('../thrunt-god/bin/lib/state.cjs');
+    addCaseToRoster(tmpDir, { slug: 'alpha', name: 'Alpha', status: 'active', opened_at: '2026-04-07', technique_count: 0 });
+    assert.throws(() => {
+      addCaseToRoster(tmpDir, { slug: 'alpha', name: 'Alpha Again', status: 'active', opened_at: '2026-04-08', technique_count: 0 });
+    }, /already exists/i, 'should throw on duplicate slug');
+  });
+
+  test('updateCaseInRoster changes status and closed_at', () => {
+    const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('../thrunt-god/bin/lib/state.cjs');
+    addCaseToRoster(tmpDir, { slug: 'beta', name: 'Beta', status: 'active', opened_at: '2026-04-06', technique_count: 0 });
+    updateCaseInRoster(tmpDir, 'beta', { status: 'closed', closed_at: '2026-04-07' });
+    const roster = getCaseRoster(tmpDir);
+    const beta = roster.find(c => c.slug === 'beta');
+    assert.ok(beta, 'beta should exist in roster');
+    assert.strictEqual(beta.status, 'closed');
+    assert.strictEqual(beta.closed_at, '2026-04-07');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // summary-extract command
 // ─────────────────────────────────────────────────────────────────────────────

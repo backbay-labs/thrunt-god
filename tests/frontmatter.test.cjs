@@ -434,3 +434,89 @@ must_haves:
   });
 });
 
+// ─── array-of-objects round-trip ───────────────────────────────────────────
+
+describe('array-of-objects round-trip', () => {
+  test('extractFrontmatter parses case_roster with multiple objects', () => {
+    const content = `---
+name: test
+case_roster:
+  - slug: alpha
+    name: Alpha Case
+    status: active
+    opened_at: 2026-04-07
+  - slug: beta
+    name: Beta Case
+    status: closed
+    opened_at: 2026-04-06
+    closed_at: 2026-04-07
+---
+Body.
+`;
+    const result = extractFrontmatter(content);
+    assert.ok(Array.isArray(result.case_roster), 'case_roster should be an array');
+    assert.strictEqual(result.case_roster.length, 2, 'should have 2 entries');
+    assert.strictEqual(result.case_roster[0].slug, 'alpha');
+    assert.strictEqual(result.case_roster[0].name, 'Alpha Case');
+    assert.strictEqual(result.case_roster[0].status, 'active');
+    assert.strictEqual(result.case_roster[0].opened_at, '2026-04-07');
+    assert.strictEqual(result.case_roster[1].slug, 'beta');
+    assert.strictEqual(result.case_roster[1].status, 'closed');
+    assert.strictEqual(result.case_roster[1].closed_at, '2026-04-07');
+  });
+
+  test('reconstructFrontmatter serializes array of objects with - slug: format', () => {
+    const obj = {
+      name: 'test',
+      case_roster: [
+        { slug: 'alpha', name: 'Alpha', status: 'active' },
+      ],
+    };
+    const result = reconstructFrontmatter(obj);
+    assert.ok(result.includes('case_roster:'), 'should have case_roster header');
+    assert.ok(result.includes('  - slug: alpha'), 'first key should use dash prefix');
+    assert.ok(result.includes('    name: Alpha'), 'subsequent keys should be indented');
+    assert.ok(result.includes('    status: active'), 'status should be indented');
+  });
+
+  test('round-trip: parse -> serialize -> parse preserves array-of-objects', () => {
+    const original = {
+      name: 'roundtrip',
+      case_roster: [
+        { slug: 'alpha', name: 'Alpha Case', status: 'active', opened_at: '2026-04-07', technique_count: '0' },
+        { slug: 'beta', name: 'Beta Case', status: 'closed', opened_at: '2026-04-06', closed_at: '2026-04-07', technique_count: '3' },
+      ],
+    };
+    const yaml = reconstructFrontmatter(original);
+    const content = `---\n${yaml}\n---\nBody.\n`;
+    const parsed = extractFrontmatter(content);
+    assert.strictEqual(parsed.name, 'roundtrip');
+    assert.ok(Array.isArray(parsed.case_roster), 'case_roster should be array after round-trip');
+    assert.strictEqual(parsed.case_roster.length, 2);
+    assert.strictEqual(parsed.case_roster[0].slug, 'alpha');
+    assert.strictEqual(parsed.case_roster[0].name, 'Alpha Case');
+    assert.strictEqual(parsed.case_roster[0].technique_count, '0');
+    assert.strictEqual(parsed.case_roster[1].slug, 'beta');
+    assert.strictEqual(parsed.case_roster[1].closed_at, '2026-04-07');
+  });
+
+  test('flat string arrays still work (regression)', () => {
+    const content = '---\ntags:\n  - auth\n  - api\n  - db\n---\n';
+    const result = extractFrontmatter(content);
+    assert.ok(Array.isArray(result.tags), 'tags should be array');
+    assert.deepStrictEqual(result.tags, ['auth', 'api', 'db']);
+  });
+
+  test('empty case_roster parses as empty array', () => {
+    const content = '---\ncase_roster: []\n---\n';
+    const result = extractFrontmatter(content);
+    assert.ok(Array.isArray(result.case_roster), 'case_roster should be array');
+    assert.strictEqual(result.case_roster.length, 0, 'should be empty');
+  });
+
+  test('serializes empty array of objects as inline []', () => {
+    const result = reconstructFrontmatter({ case_roster: [] });
+    assert.strictEqual(result, 'case_roster: []');
+  });
+});
+
