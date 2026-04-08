@@ -11,6 +11,12 @@ const {
   getAllTactics,
 } = require('./intel.cjs');
 const { buildNavigatorLayer } = require('./layers.cjs');
+const {
+  compareDetections,
+  suggestDetections,
+  getThreatProfile,
+  listThreatProfiles,
+} = require('./coverage.cjs');
 
 // ─── Timeout wrapper ───────────────────────────────────────────────────────
 
@@ -247,24 +253,89 @@ async function handleGenerateLayer(db, args) {
 }
 
 /**
- * Handle analyze_coverage tool call.
+ * Handle compare_detections tool call.
  * @param {import('better-sqlite3').Database} db
- * @param {{ group_id: string, include_techniques?: boolean }} args
+ * @param {{ technique_id?: string, query?: string }} args
+ * @returns {object} MCP tool response
+ */
+async function handleCompareDetections(db, args) {
+  const { technique_id, query } = args;
+  const input = technique_id || query;
+  if (!input) {
+    return {
+      content: [{ type: 'text', text: 'Either technique_id or query required' }],
+      isError: true,
+    };
+  }
+  const result = compareDetections(db, input);
+  return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+}
+
+/**
+ * Handle suggest_detections tool call.
+ * @param {import('better-sqlite3').Database} db
+ * @param {{ technique_id: string }} args
+ * @returns {object} MCP tool response
+ */
+async function handleSuggestDetections(db, args) {
+  const { technique_id } = args;
+  const tech = lookupTechnique(db, technique_id);
+  if (!tech) {
+    return {
+      content: [{ type: 'text', text: `Technique ${technique_id} not found` }],
+      isError: true,
+    };
+  }
+  const result = suggestDetections(db, technique_id);
+  return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+}
+
+/**
+ * Handle analyze_coverage tool call.
+ * Supports lookup by group_id (ATT&CK group) or profile (named threat profile).
+ * When group_id is provided, it takes precedence over profile.
+ * @param {import('better-sqlite3').Database} db
+ * @param {{ group_id?: string, profile?: string, include_techniques?: boolean }} args
  * @returns {object} MCP tool response
  */
 async function handleAnalyzeCoverage(db, args) {
-  const { group_id, include_techniques = true } = args;
+  const { group_id, profile, include_techniques = true } = args;
 
-  // Get group info
-  const group = lookupGroup(db, group_id);
-  if (!group) {
+  // Resolve technique set: group_id takes precedence over profile
+  let techIds;
+  let resultMeta;
+
+  if (group_id) {
+    // Existing group-based behavior
+    const group = lookupGroup(db, group_id);
+    if (!group) {
+      return {
+        content: [{ type: 'text', text: `Group ${group_id} not found` }],
+        isError: true,
+      };
+    }
+    techIds = getGroupTechniques(db, group_id);
+    resultMeta = { group_id: group.id, group_name: group.name };
+  } else if (profile) {
+    // Profile-based coverage analysis
+    const profileTechIds = getThreatProfile(profile);
+    if (!profileTechIds) {
+      return {
+        content: [{ type: 'text', text: `Unknown threat profile: ${profile}. Available: ${listThreatProfiles().join(', ')}` }],
+        isError: true,
+      };
+    }
+    techIds = profileTechIds;
+    resultMeta = { profile_name: profile.toLowerCase() };
+  } else {
+    // Neither group_id nor profile provided
     return {
-      content: [{ type: 'text', text: `Group ${group_id} not found` }],
+      content: [{ type: 'text', text: `Either group_id or profile required. Available profiles: ${listThreatProfiles().join(', ')}` }],
       isError: true,
     };
   }
 
-  const groupTechIds = getGroupTechniques(db, group_id);
+  const groupTechIds = techIds;
 
   // Check detections table (Phase 54 graceful degradation)
   let detectedSet = new Set();
@@ -313,8 +384,7 @@ async function handleAnalyzeCoverage(db, args) {
   const uncovered = totalTechniques - covered;
 
   const result = {
-    group_id: group.id,
-    group_name: group.name,
+    ...resultMeta,
     total_techniques: totalTechniques,
     covered,
     uncovered,
@@ -394,12 +464,34 @@ function registerTools(server, db) {
   // Tool 5: analyze_coverage
   server.tool(
     'analyze_coverage',
-    'Analyze detection coverage for a threat group. Returns per-tactic breakdown showing which techniques have detections and which are gaps.',
+    'Analyze detection coverage for a threat group or named threat profile. Returns per-tactic breakdown showing which techniques have detections and which are gaps.',
     {
-      group_id: z.string().describe('ATT&CK group ID (e.g., G0007)'),
+      group_id: z.string().optional().describe('ATT&CK group ID (e.g., G0007)'),
+      profile: z.string().optional().describe('Named threat profile: ransomware, apt, initial-access, persistence, credential-access, defense-evasion'),
       include_techniques: z.boolean().default(true).describe('Include technique-level detail in each tactic'),
     },
     withTimeout(async (args) => handleAnalyzeCoverage(db, args))
+  );
+
+  // Tool 6: compare_detections
+  server.tool(
+    'compare_detections',
+    'Compare detection coverage across sources (Sigma, ESCU, Elastic, KQL) for a technique or topic.',
+    {
+      technique_id: z.string().optional().describe('ATT&CK technique ID (e.g., T1059)'),
+      query: z.string().optional().describe('Free-text search query'),
+    },
+    withTimeout(async (args) => handleCompareDetections(db, args))
+  );
+
+  // Tool 7: suggest_detections
+  server.tool(
+    'suggest_detections',
+    'Suggest detections for an uncovered technique based on rules from the same tactic family.',
+    {
+      technique_id: z.string().regex(/^T\d{4}(?:\.\d{3})?$/i).describe('ATT&CK technique ID'),
+    },
+    withTimeout(async (args) => handleSuggestDetections(db, args))
   );
 }
 
@@ -413,5 +505,7 @@ module.exports = {
   handleLookupGroup,
   handleGenerateLayer,
   handleAnalyzeCoverage,
+  handleCompareDetections,
+  handleSuggestDetections,
   withTimeout,
 };
