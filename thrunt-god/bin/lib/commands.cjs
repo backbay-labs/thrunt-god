@@ -8,7 +8,16 @@ const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, com
 const { extractFrontmatter, spliceFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
 const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('./state.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
-const { openProgramDb, indexCase, searchCases, findTechniqueOverlap, extractTechniqueIds } = require('./db.cjs');
+
+// Lazy-require db.cjs: better-sqlite3 native module may not be available in all environments
+// (e.g., install manifest tests that copy files to temp dirs without node_modules)
+let dbModule;
+try {
+  dbModule = require('./db.cjs');
+} catch {
+  dbModule = null;
+}
+const { openProgramDb, indexCase, searchCases, findTechniqueOverlap, extractTechniqueIds } = dbModule || {};
 
 // Lazy-require tenant module to avoid circular deps at load time
 function getTenant() { return require('./tenant.cjs'); }
@@ -3418,7 +3427,7 @@ function cmdCaseNew(cwd, name, options, raw) {
 
   // Auto-search past cases for similar signals (silent failure)
   let past_case_matches = [];
-  try {
+  if (dbModule) try {
     const db = openProgramDb(cwd);
     if (db) {
       try {
@@ -3498,7 +3507,7 @@ function cmdCaseClose(cwd, slug, raw) {
   }
 
   // Index case artifacts into program.db (non-fatal)
-  try {
+  if (dbModule) try {
     const db = openProgramDb(cwd);
     if (db) {
       try {
@@ -3543,6 +3552,80 @@ function cmdCaseStatus(cwd, slug, raw) {
     technique_count: entry.technique_count || '0',
     is_active: entry.slug === activeCase,
   }, raw);
+}
+
+// ─── Case search ─────────────────────────────────────────────────────────────
+
+function cmdCaseSearch(cwd, query, options, raw) {
+  if (!query) {
+    output({ success: false, error: 'Query required. Usage: thrunt-tools case-search <query>' }, raw);
+    return;
+  }
+
+  const searchCwd = options.program || cwd;
+  let db;
+  if (dbModule) {
+    try {
+      db = openProgramDb(searchCwd);
+    } catch {
+      db = null;
+    }
+  }
+
+  if (!db) {
+    output({ success: true, query, results: [], total: 0, message: 'No program database found' }, raw);
+    return;
+  }
+
+  try {
+    const limit = options.limit || 10;
+    let results = searchCases(db, query, { limit });
+
+    // If --technique specified, filter results to those with matching techniques
+    if (options.technique) {
+      const techIds = Array.isArray(options.technique) ? options.technique : [options.technique];
+      const overlap = findTechniqueOverlap(db, techIds);
+      const overlapMap = new Map(overlap.map(o => [o.slug, o]));
+      // Filter to only results with technique overlap
+      results = results.filter(r => overlapMap.has(r.slug));
+      // Enrich with overlap data
+      results = results.map(r => ({
+        ...r,
+        technique_overlap: (overlapMap.get(r.slug)?.overlapping_techniques || '').split(',').filter(Boolean),
+      }));
+    }
+
+    // For results without explicit technique enrichment, fetch technique data
+    if (!options.technique) {
+      results = results.map(r => {
+        const caseRow = db.prepare('SELECT id FROM case_index WHERE slug = ?').get(r.slug);
+        if (caseRow) {
+          const techs = db.prepare('SELECT technique_id FROM case_techniques WHERE case_id = ?').all(caseRow.id);
+          return { ...r, technique_overlap: techs.map(t => t.technique_id) };
+        }
+        return { ...r, technique_overlap: [] };
+      });
+    }
+
+    output({
+      success: true,
+      query,
+      results: results.map(r => ({
+        slug: r.slug,
+        name: r.name,
+        status: r.status,
+        opened_at: r.opened_at || null,
+        closed_at: r.closed_at || null,
+        match_snippet: r.match_snippet,
+        technique_overlap: r.technique_overlap || [],
+        outcome_summary: r.outcome_summary || null,
+        relevance_score: r.relevance_score,
+      })),
+      total: results.length,
+    }, raw);
+  } finally {
+    db.close();
+  }
 }
 
 // ─── Program commands ────────────────────────────────────────────────────────
@@ -3813,6 +3896,7 @@ module.exports = {
   cmdCaseList,
   cmdCaseClose,
   cmdCaseStatus,
+  cmdCaseSearch,
   cmdProgramRollup,
   cmdMigrateCase,
 };

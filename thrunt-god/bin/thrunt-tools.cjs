@@ -1216,6 +1216,18 @@ async function runCommand(command, args, cwd, raw) {
       break;
     }
 
+    case 'case-search': {
+      const query = args[1];
+      const limitIdx = args.indexOf('--limit');
+      const limit = limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : undefined;
+      const techIdx = args.indexOf('--technique');
+      const technique = techIdx !== -1 ? args[techIdx + 1] : undefined;
+      const progIdx = args.indexOf('--program');
+      const programPath = progIdx !== -1 ? args[progIdx + 1] : undefined;
+      commands.cmdCaseSearch(programPath || cwd, query, { limit, technique, program: programPath }, raw);
+      break;
+    }
+
     default:
       error(`Unknown command: ${command}`);
   }

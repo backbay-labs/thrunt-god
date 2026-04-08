@@ -2217,11 +2217,13 @@ describe('cmdCaseSearch', () => {
   }
 
   function createAndCloseCase(cwd, slug, name, opts = {}) {
-    // Create case via CLI
-    runThruntTools(['case', 'new', name], cwd);
+    // Create case via CLI — slug is derived from name automatically
+    const newResult = runThruntTools(['case', 'new', name], cwd);
+    // Derive the actual slug from the CLI output
+    const derivedSlug = newResult.success ? JSON.parse(newResult.output).slug : slug;
 
     // Add FINDINGS.md if provided
-    const caseDir = path.join(cwd, '.planning', 'cases', slug);
+    const caseDir = path.join(cwd, '.planning', 'cases', derivedSlug);
     if (opts.findings) {
       fs.writeFileSync(path.join(caseDir, 'FINDINGS.md'), opts.findings);
     }
@@ -2236,7 +2238,7 @@ describe('cmdCaseSearch', () => {
     }
 
     // Close the case (triggers indexing)
-    runThruntTools(['case', 'close', slug], cwd);
+    runThruntTools(['case', 'close', derivedSlug], cwd);
   }
 
   beforeEach(() => {
@@ -2289,7 +2291,7 @@ describe('cmdCaseSearch', () => {
     // Results should only include cases with T1566.001
     for (const r of output.results) {
       assert.ok(
-        r.slug === 'phishing-case' || r.technique_overlap?.includes('T1566.001'),
+        r.slug === 'phishing-campaign' || r.technique_overlap?.includes('T1566.001'),
         `result ${r.slug} should have technique T1566.001`
       );
     }
