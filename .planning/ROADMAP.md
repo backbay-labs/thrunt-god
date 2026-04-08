@@ -198,7 +198,7 @@ Plans:
   2. Opening a new case with `thrunt new-case` automatically queries past cases and surfaces any matches for similar signals, hypotheses, or techniques before the hunter writes their first query
   3. Running `thrunt-tools case-search <query>` returns matching past cases with case name, matched text in context, technique overlap, and outcome summary — optionally filtered by program
   4. Search results include enough context that a hunter can decide whether a past case is relevant without opening it
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 52-01-PLAN.md — SQLite+FTS5 db.cjs module with openProgramDb, ensureSchema, indexCase, searchCases, findTechniqueOverlap
 - [ ] 52-02-PLAN.md — Wire indexing into cmdCaseClose, auto-search into cmdCaseNew, new cmdCaseSearch CLI command
@@ -300,7 +300,7 @@ Plans:
 | 49. Reusable CI & Ecosystem Tooling | 2/2 | Complete | 2026-03-31 |
 | 50. Program & Case Hierarchy | 3/3 | Complete    | 2026-04-08 |
 | 51. Program Dashboard & Extension Wiring | 2/2 | Complete    | 2026-04-08 |
-| 52. Cross-Case Intelligence | 0/TBD | Not started | - |
+| 52. Cross-Case Intelligence | 1/2 | In Progress|  |
 | 53. MCP Server & ATT&CK Tools | 0/TBD | Not started | - |
 | 54. Detection Rule Ingestion | 0/TBD | Not started | - |
 | 55. Detection Coverage & Gap Analysis | 0/TBD | Not started | - |

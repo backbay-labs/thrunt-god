@@ -17,7 +17,7 @@ Requirements for Hunt Program Intelligence release. Each maps to roadmap phases.
 
 ### Intelligence
 
-- [ ] **INTEL-01**: Past case artifacts (findings, hypotheses, techniques, IOCs, outcomes) are indexed into SQLite+FTS5 on case close
+- [x] **INTEL-01**: Past case artifacts (findings, hypotheses, techniques, IOCs, outcomes) are indexed into SQLite+FTS5 on case close
 - [ ] **INTEL-02**: new-case auto-searches past cases for similar signals, hypotheses, and techniques, presenting matches to the hunter
 - [ ] **INTEL-03**: thrunt-tools case-search command enables explicit full-text search across all past cases with program filter
 - [ ] **INTEL-04**: Case search results include case name, match context, technique overlap, and outcome summary
@@ -105,7 +105,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | HIER-03 | Phase 50 | Complete |
 | HIER-04 | Phase 50 | Complete |
 | HIER-05 | Phase 50 | Complete |
-| INTEL-01 | Phase 52 | Pending |
+| INTEL-01 | Phase 52 | Complete |
 | INTEL-02 | Phase 52 | Pending |
 | INTEL-03 | Phase 52 | Pending |
 | INTEL-04 | Phase 52 | Pending |

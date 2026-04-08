@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-status: active
-stopped_at: Completed 51-02-PLAN.md
-last_updated: "2026-04-08T14:06:56Z"
-last_activity: 2026-04-08 -- Phase 51 complete (program dashboard webview panel)
+status: executing
+stopped_at: Completed 52-01-PLAN.md
+last_updated: "2026-04-08T14:44:31.274Z"
+last_activity: 2026-04-08 -- Phase 52 Plan 01 complete (db.cjs SQLite+FTS5 module)
 progress:
   total_phases: 15
   completed_phases: 9
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  total_plans: 20
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.0 Hunt Program Intelligence — Phase 51: Program Dashboard Extension Wiring
+**Current focus:** v3.0 Hunt Program Intelligence — Phase 52: Cross-Case Intelligence
 
 ## Current Milestone: v3.0 Hunt Program Intelligence
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 
 ## Current Position
 
-Phase: 51 of 57 (Program Dashboard Extension Wiring)
-Plan: 51-02 (complete) of 2 plans in phase
-Status: Complete (2/2 plans complete)
-Last activity: 2026-04-08 -- Phase 51 complete (program dashboard webview panel)
+Phase: 52 of 57 (Cross-Case Intelligence)
+Plan: 52-01 (complete) of 2 plans in phase
+Status: In Progress (1/2 plans complete)
+Last activity: 2026-04-08 -- Phase 52 Plan 01 complete (db.cjs SQLite+FTS5 module)
 
-Progress: [██████████] 100% (v3.0 Phase 51: 2/2 plans)
+Progress: [█████████░] 95% (v3.0 Phase 52: 1/2 plans)
 
 ## Accumulated Context
 
@@ -66,6 +66,10 @@ Progress: [██████████] 100% (v3.0 Phase 51: 2/2 plans)
 - [Phase 51]: deriveProgramDashboard placed on HuntDataStore class alongside existing derive methods for consistent store-driven pattern
 - [Phase 51]: uniqueTechniques set to 0 as placeholder -- technique data requires file reads the store doesn't currently do
 - [Phase 51]: case:open navigates to MISSION.md file via vscode.open rather than opening a new workspace window
+- [Phase 52]: IOC extraction uses cascading hash regex (SHA256 first, then SHA1, then MD5) to avoid substring false positives
+- [Phase 52]: parseHypotheses splits on ## or ### headings into individual artifact rows for granular FTS matching
+- [Phase 52]: All IOCs stored as single ioc artifact row with type prefixes (ip:, md5:, sha256:) rather than individual rows
+- [Phase 52]: IOC extraction uses cascading hash regex (SHA256 first, then SHA1, then MD5) to avoid substring false positives
 
 ### Blockers/Concerns
 
@@ -73,6 +77,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T14:06:56Z
-Stopped at: Completed 51-02-PLAN.md
-Resume: Phase 51 complete. Both plans executed: Plan 01 (watcher case fix + CLI rollup) and Plan 02 (webview panel). All 256 tests pass.
+Last session: 2026-04-08T14:44:24.935Z
+Stopped at: Completed 52-01-PLAN.md
+Resume: Phase 52 Plan 01 complete. db.cjs SQLite+FTS5 module created with 5 core exports + 2 helpers. 35 new tests pass, full suite 2696/2697 (pre-existing integration-helpers timeout). Plan 02 next: integration into cmdCaseClose/cmdCaseNew + case-search CLI.
