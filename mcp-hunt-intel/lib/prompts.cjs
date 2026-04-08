@@ -3,14 +3,6 @@
 const { getThreatProfile, listThreatProfiles, compareDetections } = require('./coverage.cjs');
 const { lookupTechnique } = require('./intel.cjs');
 
-// ─── Prompt Definitions ──────────────────────────────────────────────────
-
-/**
- * Pre-built MCP prompt definitions.
- * Each maps to threat profiles from coverage.cjs and includes a suggested approach.
- *
- * name -> { description, profiles (null = all), suggested_approach }
- */
 const PROMPT_DEFS = {
   'ransomware-readiness': {
     description: 'Assess detection readiness against ransomware techniques. Returns relevant ATT&CK techniques, current detection coverage, and a suggested investigation approach.',
@@ -36,7 +28,7 @@ const PROMPT_DEFS = {
   },
   'detection-sprint': {
     description: 'Plan a detection engineering sprint across all threat categories. Returns comprehensive technique coverage across ransomware, APT, initial-access, persistence, credential-access, and defense-evasion profiles.',
-    profiles: null, // null means ALL profiles
+    profiles: null,
     suggested_approach: [
       '1. Triage gaps by severity: prioritize techniques seen in active campaigns',
       '2. Group uncovered techniques by data source for efficient rule authoring',
@@ -59,19 +51,12 @@ const PROMPT_DEFS = {
   },
 };
 
-// ─── Prompt Content Builder ──────────────────────────────────────────────
-
 /**
- * Build the prompt content for a given prompt definition.
- * Gathers techniques from specified profiles, checks detection coverage,
- * and assembles a structured response.
- *
- * @param {import('better-sqlite3').Database} db - Intel database
+ * @param {import('better-sqlite3').Database} db
  * @param {object} def - Prompt definition from PROMPT_DEFS
- * @returns {string} Formatted prompt content as text
+ * @returns {string}
  */
 function buildPromptContent(db, def) {
-  // Gather technique IDs from specified profiles
   const allProfiles = def.profiles || listThreatProfiles();
   const techIdSet = new Set();
   const profileSummaries = [];
@@ -86,7 +71,6 @@ function buildPromptContent(db, def) {
 
   const techIds = [...techIdSet];
 
-  // Build technique details with coverage
   const techniques = [];
   let coveredCount = 0;
   let gapCount = 0;
@@ -109,7 +93,6 @@ function buildPromptContent(db, def) {
     });
   }
 
-  // Assemble structured content
   const sections = [];
 
   sections.push('## Threat Profiles');
@@ -125,7 +108,6 @@ function buildPromptContent(db, def) {
 
   sections.push('');
   sections.push('## Technique Details');
-  // Group by covered vs gap
   const gaps = techniques.filter(t => !t.covered);
   const covered = techniques.filter(t => t.covered);
 
@@ -152,13 +134,9 @@ function buildPromptContent(db, def) {
   return sections.join('\n');
 }
 
-// ─── MCP Registration ────────────────────────────────────────────────────
-
 /**
- * Register all 4 MCP prompts on the server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server
- * @param {import('better-sqlite3').Database} db - Intel database
+ * @param {import('better-sqlite3').Database} db
  */
 function registerPrompts(server, db) {
   for (const [name, def] of Object.entries(PROMPT_DEFS)) {
@@ -177,8 +155,6 @@ function registerPrompts(server, db) {
     );
   }
 }
-
-// ─── Exports ─────────────────────────────────────────────────────────────
 
 module.exports = {
   registerPrompts,

@@ -7,21 +7,17 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 
-// Helper: create an isolated temp directory (never touches real ~/.thrunt/)
 function makeTempIntelDir() {
   const dir = path.join(os.tmpdir(), `thrunt-intel-test-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-// Lazy-load intel.cjs
 let intel;
 function loadIntel() {
   if (!intel) intel = require('../mcp-hunt-intel/lib/intel.cjs');
   return intel;
 }
-
-// ── openIntelDb ─────────────────────────────────────────────────────────────
 
 describe('intel.cjs - openIntelDb', () => {
   let tmpDir;
@@ -37,10 +33,10 @@ describe('intel.cjs - openIntelDb', () => {
   it('creates the dbDir directory and intel.db file', () => {
     const { openIntelDb } = loadIntel();
     const db = openIntelDb({ dbDir: tmpDir });
-    assert.ok(db, 'should return a database object');
+    assert.ok(db);
 
     const dbPath = path.join(tmpDir, 'intel.db');
-    assert.ok(fs.existsSync(dbPath), 'intel.db file should be created');
+    assert.ok(fs.existsSync(dbPath));
     db.close();
   });
 
@@ -70,15 +66,15 @@ describe('intel.cjs - openIntelDb', () => {
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     ).all().map(r => r.name);
 
-    assert.ok(tables.includes('techniques'), 'techniques table should exist');
-    assert.ok(tables.includes('techniques_fts'), 'techniques_fts virtual table should exist');
-    assert.ok(tables.includes('groups'), 'groups table should exist');
-    assert.ok(tables.includes('group_techniques'), 'group_techniques table should exist');
-    assert.ok(tables.includes('group_software'), 'group_software table should exist');
-    assert.ok(tables.includes('software'), 'software table should exist');
-    assert.ok(tables.includes('software_techniques'), 'software_techniques table should exist');
-    assert.ok(tables.includes('detections'), 'detections table should exist');
-    assert.ok(tables.includes('detections_fts'), 'detections_fts virtual table should exist');
+    assert.ok(tables.includes('techniques'));
+    assert.ok(tables.includes('techniques_fts'));
+    assert.ok(tables.includes('groups'));
+    assert.ok(tables.includes('group_techniques'));
+    assert.ok(tables.includes('group_software'));
+    assert.ok(tables.includes('software'));
+    assert.ok(tables.includes('software_techniques'));
+    assert.ok(tables.includes('detections'));
+    assert.ok(tables.includes('detections_fts'));
     db.close();
   });
 
@@ -86,12 +82,10 @@ describe('intel.cjs - openIntelDb', () => {
     const { openIntelDb } = loadIntel();
     const customPath = path.join(tmpDir, 'custom.db');
     const db = openIntelDb({ dbDir: tmpDir, dbPath: customPath });
-    assert.ok(fs.existsSync(customPath), 'custom.db should be created');
+    assert.ok(fs.existsSync(customPath));
     db.close();
   });
 });
-
-// ── Population ──────────────────────────────────────────────────────────────
 
 describe('intel.cjs - population', () => {
   let tmpDir, db;
@@ -108,7 +102,6 @@ describe('intel.cjs - population', () => {
   });
 
   it('populates techniques table with 160 parent techniques', () => {
-    // Parent techniques have no dot in their ID
     const parentCount = db.prepare(
       "SELECT COUNT(*) AS cnt FROM techniques WHERE id NOT LIKE '%.%'"
     ).get().cnt;
@@ -132,12 +125,12 @@ describe('intel.cjs - population', () => {
 
   it('populates group_techniques junction table', () => {
     const count = db.prepare('SELECT COUNT(*) AS cnt FROM group_techniques').get().cnt;
-    assert.ok(count > 0, 'group_techniques should have rows');
+    assert.ok(count > 0);
   });
 
   it('populates group_software junction table', () => {
     const count = db.prepare('SELECT COUNT(*) AS cnt FROM group_software').get().cnt;
-    assert.ok(count > 0, 'group_software should have rows');
+    assert.ok(count > 0);
   });
 
   it('populates software table from mitre-attack-groups.json', () => {
@@ -147,35 +140,32 @@ describe('intel.cjs - population', () => {
 
   it('populates software_techniques junction table', () => {
     const count = db.prepare('SELECT COUNT(*) AS cnt FROM software_techniques').get().cnt;
-    assert.ok(count > 0, 'software_techniques should have rows');
+    assert.ok(count > 0);
   });
 
   it('is idempotent - second openIntelDb call does not duplicate rows', () => {
     const countBefore = db.prepare('SELECT COUNT(*) AS cnt FROM techniques').get().cnt;
 
-    // Open again on same dir (triggers populateIfEmpty again)
     const { openIntelDb } = loadIntel();
     const db2 = openIntelDb({ dbDir: tmpDir });
     const countAfter = db2.prepare('SELECT COUNT(*) AS cnt FROM techniques').get().cnt;
 
-    assert.equal(countBefore, countAfter, 'technique count should not change on second open');
+    assert.equal(countBefore, countAfter);
     db2.close();
   });
 
   it('stores technique URLs in correct format', () => {
     const row = db.prepare("SELECT url FROM techniques WHERE id = 'T1059'").get();
-    assert.ok(row, 'T1059 should exist');
-    assert.ok(row.url.includes('attack.mitre.org/techniques/T1059'), `URL should contain technique path, got: ${row.url}`);
+    assert.ok(row);
+    assert.ok(row.url.includes('attack.mitre.org/techniques/T1059'));
   });
 
   it('stores sub-technique URLs in correct format', () => {
     const row = db.prepare("SELECT url FROM techniques WHERE id = 'T1059.001'").get();
-    assert.ok(row, 'T1059.001 should exist');
-    assert.ok(row.url.includes('attack.mitre.org/techniques/T1059/001'), `URL should contain sub-technique path, got: ${row.url}`);
+    assert.ok(row);
+    assert.ok(row.url.includes('attack.mitre.org/techniques/T1059/001'));
   });
 });
-
-// ── lookupTechnique ─────────────────────────────────────────────────────────
 
 describe('intel.cjs - lookupTechnique', () => {
   let tmpDir, db;
@@ -194,39 +184,37 @@ describe('intel.cjs - lookupTechnique', () => {
   it('returns a parent technique by ID', () => {
     const { lookupTechnique } = loadIntel();
     const result = lookupTechnique(db, 'T1059');
-    assert.ok(result, 'should return a result for T1059');
+    assert.ok(result);
     assert.equal(result.id, 'T1059');
     assert.equal(result.name, 'Command and Scripting Interpreter');
-    assert.ok(result.description, 'should have description');
-    assert.ok(result.tactics, 'should have tactics');
-    assert.ok(result.platforms, 'should have platforms');
-    assert.ok(result.data_sources, 'should have data_sources');
-    assert.ok(result.url, 'should have url');
+    assert.ok(result.description);
+    assert.ok(result.tactics);
+    assert.ok(result.platforms);
+    assert.ok(result.data_sources);
+    assert.ok(result.url);
   });
 
   it('returns a sub-technique by ID with parent context', () => {
     const { lookupTechnique } = loadIntel();
     const result = lookupTechnique(db, 'T1059.001');
-    assert.ok(result, 'should return a result for T1059.001');
+    assert.ok(result);
     assert.equal(result.id, 'T1059.001');
-    assert.ok(result.name, 'should have name');
+    assert.ok(result.name);
   });
 
   it('is case-insensitive', () => {
     const { lookupTechnique } = loadIntel();
     const result = lookupTechnique(db, 't1059');
-    assert.ok(result, 'should find technique with lowercase id');
+    assert.ok(result);
     assert.equal(result.id, 'T1059');
   });
 
   it('returns null for non-existent technique', () => {
     const { lookupTechnique } = loadIntel();
     const result = lookupTechnique(db, 'T9999');
-    assert.equal(result, null, 'should return null for non-existent ID');
+    assert.equal(result, null);
   });
 });
-
-// ── searchTechniques ────────────────────────────────────────────────────────
 
 describe('intel.cjs - searchTechniques', () => {
   let tmpDir, db;
@@ -245,24 +233,22 @@ describe('intel.cjs - searchTechniques', () => {
   it('returns results for keyword search', () => {
     const { searchTechniques } = loadIntel();
     const results = searchTechniques(db, 'powershell');
-    assert.ok(results.length > 0, 'should return results for "powershell"');
+    assert.ok(results.length > 0);
   });
 
   it('returns results ranked by BM25 relevance', () => {
     const { searchTechniques } = loadIntel();
     const results = searchTechniques(db, 'credential');
-    assert.ok(results.length > 0, 'should return results for "credential"');
-    // Results should be ordered - first result should be most relevant
-    assert.ok(results[0].id, 'first result should have id');
+    assert.ok(results.length > 0);
+    assert.ok(results[0].id);
   });
 
   it('filters by tactic', () => {
     const { searchTechniques } = loadIntel();
     const allResults = searchTechniques(db, 'account');
     const filtered = searchTechniques(db, 'account', { tactic: 'Persistence' });
-    assert.ok(filtered.length > 0, 'should have filtered results');
-    assert.ok(filtered.length <= allResults.length, 'filtered should be <= all results');
-    // Every filtered result should include the tactic
+    assert.ok(filtered.length > 0);
+    assert.ok(filtered.length <= allResults.length);
     for (const r of filtered) {
       assert.ok(r.tactics.includes('Persistence'), `result ${r.id} should include Persistence tactic`);
     }
@@ -271,7 +257,7 @@ describe('intel.cjs - searchTechniques', () => {
   it('filters by platform', () => {
     const { searchTechniques } = loadIntel();
     const filtered = searchTechniques(db, 'phishing', { platform: 'Windows' });
-    assert.ok(filtered.length > 0, 'should have platform-filtered results');
+    assert.ok(filtered.length > 0);
     for (const r of filtered) {
       assert.ok(r.platforms.includes('Windows'), `result ${r.id} should include Windows platform`);
     }
@@ -280,7 +266,7 @@ describe('intel.cjs - searchTechniques', () => {
   it('respects limit option', () => {
     const { searchTechniques } = loadIntel();
     const results = searchTechniques(db, 'access', { limit: 3 });
-    assert.ok(results.length <= 3, 'should respect limit');
+    assert.ok(results.length <= 3);
   });
 
   it('returns empty array for no matches', () => {
@@ -289,8 +275,6 @@ describe('intel.cjs - searchTechniques', () => {
     assert.deepEqual(results, []);
   });
 });
-
-// ── lookupGroup ─────────────────────────────────────────────────────────────
 
 describe('intel.cjs - lookupGroup', () => {
   let tmpDir, db;
@@ -309,18 +293,18 @@ describe('intel.cjs - lookupGroup', () => {
   it('returns group data for APT28 (G0007)', () => {
     const { lookupGroup } = loadIntel();
     const result = lookupGroup(db, 'G0007');
-    assert.ok(result, 'should return APT28 data');
+    assert.ok(result);
     assert.equal(result.id, 'G0007');
     assert.equal(result.name, 'APT28');
-    assert.ok(result.aliases, 'should have aliases');
-    assert.ok(result.description, 'should have description');
-    assert.ok(result.url, 'should have url');
+    assert.ok(result.aliases);
+    assert.ok(result.description);
+    assert.ok(result.url);
   });
 
   it('is case-insensitive', () => {
     const { lookupGroup } = loadIntel();
     const result = lookupGroup(db, 'g0007');
-    assert.ok(result, 'should find group with lowercase id');
+    assert.ok(result);
   });
 
   it('returns null for non-existent group', () => {
@@ -329,8 +313,6 @@ describe('intel.cjs - lookupGroup', () => {
     assert.equal(result, null);
   });
 });
-
-// ── getGroupTechniques ──────────────────────────────────────────────────────
 
 describe('intel.cjs - getGroupTechniques', () => {
   let tmpDir, db;
@@ -349,11 +331,10 @@ describe('intel.cjs - getGroupTechniques', () => {
   it('returns technique IDs for APT28', () => {
     const { getGroupTechniques } = loadIntel();
     const techniques = getGroupTechniques(db, 'G0007');
-    assert.ok(Array.isArray(techniques), 'should return an array');
-    assert.ok(techniques.length > 0, 'APT28 should have associated techniques');
-    // Each entry should be a technique ID string
+    assert.ok(Array.isArray(techniques));
+    assert.ok(techniques.length > 0);
     for (const tid of techniques) {
-      assert.ok(typeof tid === 'string', 'each entry should be a string');
+      assert.ok(typeof tid === 'string');
       assert.match(tid, /^T\d{4}/, 'each entry should look like a technique ID');
     }
   });
@@ -364,8 +345,6 @@ describe('intel.cjs - getGroupTechniques', () => {
     assert.deepEqual(techniques, []);
   });
 });
-
-// ── getGroupSoftware ────────────────────────────────────────────────────────
 
 describe('intel.cjs - getGroupSoftware', () => {
   let tmpDir, db;
@@ -384,12 +363,11 @@ describe('intel.cjs - getGroupSoftware', () => {
   it('returns software entries for APT28', () => {
     const { getGroupSoftware } = loadIntel();
     const software = getGroupSoftware(db, 'G0007');
-    assert.ok(Array.isArray(software), 'should return an array');
-    assert.ok(software.length > 0, 'APT28 should have associated software');
-    // Each entry should have id, name, type
+    assert.ok(Array.isArray(software));
+    assert.ok(software.length > 0);
     for (const s of software) {
-      assert.ok(s.id, 'software should have id');
-      assert.ok(s.name, 'software should have name');
+      assert.ok(s.id);
+      assert.ok(s.name);
     }
   });
 
@@ -399,8 +377,6 @@ describe('intel.cjs - getGroupSoftware', () => {
     assert.deepEqual(software, []);
   });
 });
-
-// ── getTechniquesByTactic ───────────────────────────────────────────────────
 
 describe('intel.cjs - getTechniquesByTactic', () => {
   let tmpDir, db;
@@ -419,14 +395,12 @@ describe('intel.cjs - getTechniquesByTactic', () => {
   it('returns techniques for Execution tactic', () => {
     const { getTechniquesByTactic } = loadIntel();
     const results = getTechniquesByTactic(db, 'Execution');
-    assert.ok(results.length > 0, 'should return techniques for Execution');
+    assert.ok(results.length > 0);
     for (const r of results) {
       assert.ok(r.tactics.includes('Execution'), `technique ${r.id} should have Execution tactic`);
     }
   });
 });
-
-// ── getAllTactics ────────────────────────────────────────────────────────────
 
 describe('intel.cjs - getAllTactics', () => {
   let tmpDir, db;
@@ -445,14 +419,13 @@ describe('intel.cjs - getAllTactics', () => {
   it('returns all unique tactic names sorted', () => {
     const { getAllTactics } = loadIntel();
     const tactics = getAllTactics(db);
-    assert.ok(Array.isArray(tactics), 'should return an array');
+    assert.ok(Array.isArray(tactics));
     assert.ok(tactics.length >= 10, `expected at least 10 tactics, got ${tactics.length}`);
-    assert.ok(tactics.includes('Execution'), 'should include Execution');
-    assert.ok(tactics.includes('Initial Access'), 'should include Initial Access');
-    assert.ok(tactics.includes('Persistence'), 'should include Persistence');
+    assert.ok(tactics.includes('Execution'));
+    assert.ok(tactics.includes('Initial Access'));
+    assert.ok(tactics.includes('Persistence'));
 
-    // Should be sorted
     const sorted = [...tactics].sort();
-    assert.deepEqual(tactics, sorted, 'tactics should be sorted');
+    assert.deepEqual(tactics, sorted);
   });
 });

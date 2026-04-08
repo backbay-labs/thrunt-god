@@ -5,7 +5,6 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const toml = require('smol-toml');
 
-// ─── DetectionRow JSDoc ────────────────────────────────────────────────────
 /**
  * @typedef {Object} DetectionRow
  * @property {string} id - Composite key: 'source_format:original_id' (e.g., sigma:abc123)
@@ -21,11 +20,7 @@ const toml = require('smol-toml');
  * @property {string} file_path - Original file path
  */
 
-// ─── Sigma YAML Parser ────────────────────────────────────────────────────
-
 /**
- * Parse a Sigma rule YAML string into a DetectionRow.
- *
  * @param {string} yamlText - Raw YAML text of a Sigma rule
  * @param {string} filePath - File path of the rule (stored in row)
  * @returns {DetectionRow|null} Normalized DetectionRow or null if malformed
@@ -37,13 +32,11 @@ function parseSigmaRule(yamlText, filePath) {
 
     const tags = Array.isArray(doc.tags) ? doc.tags : [];
 
-    // Extract MITRE technique IDs: tags matching attack.tXXXX
     const techniqueIds = tags
       .filter(t => /^attack\.t\d{4}/i.test(t))
       .map(t => t.replace(/^attack\./i, '').toUpperCase())
       .filter((v, i, a) => a.indexOf(v) === i); // deduplicate
 
-    // Extract tactics: attack.* tags that are NOT technique IDs
     const tactics = tags
       .filter(t => /^attack\./.test(t) && !/^attack\.t\d{4}/i.test(t))
       .map(t =>
@@ -81,11 +74,7 @@ function parseSigmaRule(yamlText, filePath) {
   }
 }
 
-// ─── ESCU YAML Parser ──────────────────────────────────────────────────────
-
 /**
- * Parse an ESCU (Splunk Enterprise Security Content Update) YAML string into a DetectionRow.
- *
  * @param {string} yamlText - Raw YAML text of an ESCU rule
  * @param {string} filePath - File path of the rule
  * @returns {DetectionRow|null} Normalized DetectionRow or null if malformed
@@ -102,7 +91,6 @@ function parseEscuRule(yamlText, filePath) {
 
     const dataSources = Array.isArray(doc.data_source) ? doc.data_source.join(', ') : (doc.data_source || '');
 
-    // Extract risk score from rba.risk_objects[0].score
     let riskScore = null;
     if (doc.rba && Array.isArray(doc.rba.risk_objects) && doc.rba.risk_objects.length > 0) {
       riskScore = doc.rba.risk_objects[0].score || null;
@@ -139,11 +127,7 @@ function parseEscuRule(yamlText, filePath) {
   }
 }
 
-// ─── Elastic TOML Parser ──────────────────────────────────────────────────
-
 /**
- * Parse an Elastic detection rule TOML string into a DetectionRow.
- *
  * @param {string} tomlText - Raw TOML text of an Elastic rule
  * @param {string} filePath - File path of the rule
  * @returns {DetectionRow|null} Normalized DetectionRow or null if malformed
@@ -159,10 +143,8 @@ function parseElasticRule(tomlText, filePath) {
     const techniqueIds = [];
     const tacticNames = [];
 
-    // Iterate all [[rule.threat]] entries
     const threats = Array.isArray(rule.threat) ? rule.threat : [];
     for (const threat of threats) {
-      // Extract tactic
       if (threat.tactic && threat.tactic.name) {
         const tName = threat.tactic.name.trim();
         if (!tacticNames.includes(tName)) {
@@ -170,7 +152,6 @@ function parseElasticRule(tomlText, filePath) {
         }
       }
 
-      // Extract techniques
       const techniques = Array.isArray(threat.technique) ? threat.technique : [];
       for (const tech of techniques) {
         if (tech.id) {
@@ -180,7 +161,6 @@ function parseElasticRule(tomlText, filePath) {
           }
         }
 
-        // Extract subtechniques
         const subtechniques = Array.isArray(tech.subtechnique) ? tech.subtechnique : [];
         for (const sub of subtechniques) {
           if (sub.id) {
@@ -223,8 +203,6 @@ function parseElasticRule(tomlText, filePath) {
   }
 }
 
-// ─── KQL Markdown Parser ──────────────────────────────────────────────────
-
 // Microsoft table names that appear in KQL queries
 const MS_TABLES = [
   'DeviceEvents', 'DeviceProcessEvents', 'DeviceNetworkEvents',
@@ -240,19 +218,15 @@ const TECHNIQUE_REGEX = /\bT\d{4}(?:\.\d{3})?\b/g;
 const KQL_HEURISTIC = /\b(where|project|summarize|extend|DeviceEvents|DeviceProcessEvents)\b/;
 
 /**
- * Parse a KQL markdown file into a DetectionRow.
- *
  * @param {string} mdText - Raw markdown text of a KQL detection
  * @param {string} filePath - File path (basename used for ID)
- * @returns {DetectionRow|null} Normalized DetectionRow or null if no KQL code blocks found
+ * @returns {DetectionRow|null}
  */
 function parseKqlRule(mdText, filePath) {
   try {
-    // Extract title from first H1 or H2 heading
     const headingMatch = mdText.match(/^#{1,2}\s+(.+)$/m);
     let title = headingMatch ? headingMatch[1].trim() : null;
 
-    // Fallback to filename without extension
     if (!title) {
       const basename = path.basename(filePath, path.extname(filePath));
       title = basename;
@@ -277,22 +251,17 @@ function parseKqlRule(mdText, filePath) {
 
     const query = kqlBlocks.join('\n\n');
 
-    // Extract technique IDs from full text
     const techniqueMatches = mdText.match(TECHNIQUE_REGEX) || [];
     const techniqueIds = [...new Set(techniqueMatches)];
 
-    // Extract Microsoft table names from query
     const tableMatches = query.match(MS_TABLE_REGEX) || [];
     const tables = [...new Set(tableMatches)];
 
-    // Build logsource from tables
     const logsource = tables.join(', ');
 
-    // Build description: first 500 chars of markdown with code blocks stripped
     const stripped = mdText.replace(/```[\s\S]*?```/g, '').trim();
     const description = stripped.substring(0, 500).trim();
 
-    // ID from kql: + filePath (relative from dir root)
     const id = `kql:${filePath}`;
 
     return {
@@ -317,13 +286,7 @@ function parseKqlRule(mdText, filePath) {
   }
 }
 
-// ─── Schema ────────────────────────────────────────────────────────────────
-
-/**
- * Create detections and detections_fts tables idempotently.
- *
- * @param {import('better-sqlite3').Database} db
- */
+/** @param {import('better-sqlite3').Database} db */
 function ensureDetectionsSchema(db) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS detections (
@@ -350,15 +313,10 @@ function ensureDetectionsSchema(db) {
   `);
 }
 
-// ─── Insert ────────────────────────────────────────────────────────────────
-
 /**
- * Insert a DetectionRow into both detections and detections_fts tables.
- * Duplicate IDs are silently skipped (INSERT OR IGNORE).
- *
  * @param {import('better-sqlite3').Database} db
  * @param {DetectionRow} row
- * @returns {number} 1 if inserted, 0 if duplicate
+ * @returns {number} 1 if inserted, 0 if duplicate (INSERT OR IGNORE)
  */
 function insertDetection(db, row) {
   if (!row.id) return 0; // Skip rows with no ID (malformed rules)
@@ -376,7 +334,6 @@ function insertDetection(db, row) {
   );
 
   if (result.changes > 0) {
-    // Also insert into FTS table
     db.prepare(
       'INSERT INTO detections_fts (title, description, query, technique_ids) VALUES (?, ?, ?, ?)'
     ).run(row.title, row.description, row.query, row.technique_ids);
@@ -385,11 +342,7 @@ function insertDetection(db, row) {
   return result.changes;
 }
 
-// ─── Directory Indexers ────────────────────────────────────────────────────
-
 /**
- * Recursively index a directory of Sigma YAML rules.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
@@ -399,8 +352,6 @@ function indexSigmaDirectory(db, dirPath) {
 }
 
 /**
- * Recursively index a directory of ESCU YAML rules.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
@@ -410,8 +361,6 @@ function indexEscuDirectory(db, dirPath) {
 }
 
 /**
- * Recursively index a directory of Elastic TOML rules.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
@@ -421,8 +370,6 @@ function indexElasticDirectory(db, dirPath) {
 }
 
 /**
- * Recursively index a directory of KQL markdown rules.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
@@ -431,17 +378,7 @@ function indexKqlDirectory(db, dirPath) {
   return indexDirectory(db, dirPath, /\.md$/i, parseKqlRule, 'kql');
 }
 
-/**
- * Generic directory indexer -- recursively reads files matching a pattern,
- * parses each with the given parser, and inserts valid rows.
- *
- * @param {import('better-sqlite3').Database} db
- * @param {string} dirPath
- * @param {RegExp} extPattern
- * @param {Function} parseFn
- * @param {string} format - Source format name (for log messages)
- * @returns {number} Count of rules indexed
- */
+/** @returns {number} Count of rules indexed */
 function indexDirectory(db, dirPath, extPattern, parseFn, format) {
   let count = 0;
 
@@ -483,12 +420,7 @@ function indexDirectory(db, dirPath, extPattern, parseFn, format) {
   return count;
 }
 
-// ─── Search ────────────────────────────────────────────────────────────────
-
 /**
- * Full-text search across detection rules.
- * Results are ranked by BM25 relevance.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} query - FTS5 query string
  * @param {{ source_format?: string, severity?: string, technique_id?: string, limit?: number }} [opts={}]
@@ -534,22 +466,11 @@ function searchDetections(db, query, opts = {}) {
 
     return db.prepare(sql).all(...params);
   } catch {
-    // Return empty on malformed FTS query or other errors
     return [];
   }
 }
 
-// ─── Population ────────────────────────────────────────────────────────────
-
-/**
- * Helper: index directories from an environment variable.
- * Env var is expected to be a path.delimiter-separated list of directories.
- *
- * @param {import('better-sqlite3').Database} db
- * @param {string} envKey - Environment variable name
- * @param {Function} indexFn - Directory indexer function
- * @returns {number} Total count of rules indexed
- */
+/** @returns {number} Total count of rules indexed */
 function indexEnvPaths(db, envKey, indexFn) {
   const envVal = process.env[envKey];
   if (!envVal) return 0;
@@ -566,34 +487,25 @@ function indexEnvPaths(db, envKey, indexFn) {
   return count;
 }
 
-/**
- * Populate the detections table if empty.
- * Indexes bundled sigma-core rules and any directories specified by env vars.
- * Uses BEGIN IMMEDIATE transaction for safety.
- *
- * @param {import('better-sqlite3').Database} db
- */
+/** @param {import('better-sqlite3').Database} db */
 function populateDetectionsIfEmpty(db) {
   const doPopulate = db.transaction(() => {
     const count = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
-    if (count > 0) return; // Already populated
+    if (count > 0) return;
 
-    // Index bundled sigma-core rules
     const bundledSigmaDir = path.join(__dirname, '..', 'data', 'sigma-core', 'rules');
     if (fs.existsSync(bundledSigmaDir)) {
       indexSigmaDirectory(db, bundledSigmaDir);
     }
 
-    // Index env var paths
     indexEnvPaths(db, 'SIGMA_PATHS', indexSigmaDirectory);
     indexEnvPaths(db, 'SPLUNK_PATHS', indexEscuDirectory);
     indexEnvPaths(db, 'ELASTIC_PATHS', indexElasticDirectory);
+    indexEnvPaths(db, 'KQL_PATHS', indexKqlDirectory);
   });
 
   doPopulate.immediate();
 }
-
-// ─── Exports ───────────────────────────────────────────────────────────────
 
 module.exports = {
   parseSigmaRule,

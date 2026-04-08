@@ -2,13 +2,6 @@
 
 const { lookupTechnique, getTechniquesByTactic } = require('./intel.cjs');
 
-// ─── Threat Profiles ──────────────────────────────────────────────────────
-
-/**
- * Curated technique ID arrays for 6 named threat profiles.
- * Each profile maps to a set of MITRE ATT&CK technique IDs commonly
- * associated with that threat category.
- */
 const THREAT_PROFILES = {
   ransomware: [
     'T1486',     // Data Encrypted for Impact
@@ -102,14 +95,9 @@ const THREAT_PROFILES = {
   ],
 };
 
-// ─── Profile Lookup ───────────────────────────────────────────────────────
-
 /**
- * Get a threat profile's technique ID array by name.
- * Case-insensitive lookup.
- *
  * @param {string} name - Profile name (e.g., 'ransomware', 'APT')
- * @returns {string[]|null} Array of technique IDs, or null if not found
+ * @returns {string[]|null}
  */
 function getThreatProfile(name) {
   if (!name || typeof name !== 'string') return null;
@@ -117,26 +105,15 @@ function getThreatProfile(name) {
   return THREAT_PROFILES[key] || null;
 }
 
-/**
- * List all available threat profile names.
- *
- * @returns {string[]} Array of profile names
- */
+/** @returns {string[]} */
 function listThreatProfiles() {
   return Object.keys(THREAT_PROFILES);
 }
 
-// ─── Compare Detections ───────────────────────────────────────────────────
-
 /**
- * Compare detection coverage across sources for a given technique ID or free-text query.
- *
- * If input matches /^T\d{4}/i, treats it as a technique ID lookup.
- * Otherwise, performs FTS search on techniques and returns comparison for the first match.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} input - Technique ID (e.g., 'T1059') or free-text query
- * @returns {object} { technique_id, technique_name, sources: [{format, rule_id, title, severity}], source_count }
+ * @returns {object} { technique_id, technique_name, sources, source_count }
  */
 function compareDetections(db, input) {
   if (!input || typeof input !== 'string') {
@@ -145,12 +122,10 @@ function compareDetections(db, input) {
 
   const trimmed = input.trim();
 
-  // Check if input looks like a technique ID
   if (/^T\d{4}/i.test(trimmed)) {
     return _compareForTechnique(db, trimmed.toUpperCase());
   }
 
-  // Free-text: search techniques table for matching IDs via FTS
   try {
     const ftsRows = db.prepare(
       'SELECT id FROM techniques_fts WHERE techniques_fts MATCH ? LIMIT 5'
@@ -160,26 +135,16 @@ function compareDetections(db, input) {
       return { technique_id: null, technique_name: null, sources: [], source_count: 0 };
     }
 
-    // Return comparison for the first match
     return _compareForTechnique(db, ftsRows[0].id);
   } catch {
     return { technique_id: null, technique_name: null, sources: [], source_count: 0 };
   }
 }
 
-/**
- * Internal: compare detections for a specific technique ID.
- *
- * @param {import('better-sqlite3').Database} db
- * @param {string} techniqueId - Uppercase technique ID (e.g., 'T1059')
- * @returns {object}
- */
 function _compareForTechnique(db, techniqueId) {
-  // Look up technique name
   const tech = lookupTechnique(db, techniqueId);
   const techniqueName = tech ? tech.name : null;
 
-  // Query detections matching this technique ID
   let rows;
   try {
     rows = db.prepare(
@@ -189,7 +154,6 @@ function _compareForTechnique(db, techniqueId) {
     rows = [];
   }
 
-  // Build sources array
   const sources = rows.map(r => ({
     format: r.source_format,
     rule_id: r.id,
@@ -197,7 +161,6 @@ function _compareForTechnique(db, techniqueId) {
     severity: r.severity,
   }));
 
-  // Count distinct source formats
   const formatSet = new Set(sources.map(s => s.format));
 
   return {
@@ -208,12 +171,7 @@ function _compareForTechnique(db, techniqueId) {
   };
 }
 
-// ─── Suggest Detections ───────────────────────────────────────────────────
-
 /**
- * Generate detection suggestions for a technique by analyzing rules from
- * sibling techniques in the same tactic family.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} techniqueId - Technique ID (e.g., 'T1047')
  * @returns {object} { technique_id, technique_name, tactic, suggestion_basis, similar_rules, data_sources }
@@ -232,7 +190,6 @@ function suggestDetections(db, techniqueId) {
 
   const normalised = techniqueId.toUpperCase().trim();
 
-  // Look up the technique in the techniques table
   const tech = lookupTechnique(db, normalised);
   if (!tech) {
     return {
@@ -245,28 +202,23 @@ function suggestDetections(db, techniqueId) {
     };
   }
 
-  // Extract data_sources
   const dataSources = tech.data_sources
     ? tech.data_sources.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
-  // Get the primary tactic (first one)
   const tactics = tech.tactics
     ? tech.tactics.split(',').map(s => s.trim()).filter(Boolean)
     : [];
   const primaryTactic = tactics[0] || '';
 
-  // Find sibling techniques in the same tactic that have detections
   const similarRules = [];
 
   if (primaryTactic) {
-    // Get all techniques in the same tactic
     const siblingTechs = getTechniquesByTactic(db, primaryTactic);
     const siblingIds = siblingTechs
       .map(t => t.id)
-      .filter(id => id !== normalised); // exclude the target technique itself
+      .filter(id => id !== normalised);
 
-    // Find detections for sibling techniques (up to 10 rules)
     for (const sibId of siblingIds) {
       if (similarRules.length >= 10) break;
 
@@ -284,9 +236,7 @@ function suggestDetections(db, techniqueId) {
             source_format: row.source_format,
           });
         }
-      } catch {
-        // Skip if detections table query fails
-      }
+      } catch {}
     }
   }
 
@@ -303,8 +253,6 @@ function suggestDetections(db, techniqueId) {
     data_sources: dataSources,
   };
 }
-
-// ─── Exports ──────────────────────────────────────────────────────────────
 
 module.exports = {
   THREAT_PROFILES,

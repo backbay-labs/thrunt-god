@@ -7,15 +7,12 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 function makeTempDir() {
   const dir = path.join(os.tmpdir(), `thrunt-coverage-test-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-// Lazy-load modules
 let intel, coverage;
 function loadIntel() {
   if (!intel) intel = require('../mcp-hunt-intel/lib/intel.cjs');
@@ -25,8 +22,6 @@ function loadCoverage() {
   if (!coverage) coverage = require('../mcp-hunt-intel/lib/coverage.cjs');
   return coverage;
 }
-
-// ── THREAT_PROFILES constant ──────────────────────────────────────────────
 
 describe('THREAT_PROFILES constant', () => {
   it('is an object with exactly 6 keys', () => {
@@ -85,8 +80,6 @@ describe('THREAT_PROFILES constant', () => {
   });
 });
 
-// ── getThreatProfile ──────────────────────────────────────────────────────
-
 describe('getThreatProfile', () => {
   it('returns the ransomware technique ID array', () => {
     const { getThreatProfile, THREAT_PROFILES } = loadCoverage();
@@ -112,8 +105,6 @@ describe('getThreatProfile', () => {
   });
 });
 
-// ── listThreatProfiles ────────────────────────────────────────────────────
-
 describe('listThreatProfiles', () => {
   it('returns array of 6 strings matching THREAT_PROFILES keys', () => {
     const { listThreatProfiles, THREAT_PROFILES } = loadCoverage();
@@ -126,8 +117,6 @@ describe('listThreatProfiles', () => {
   });
 });
 
-// ── compareDetections (with DB) ───────────────────────────────────────────
-
 describe('compareDetections', () => {
   let db, tmpDir;
 
@@ -136,7 +125,6 @@ describe('compareDetections', () => {
     const { openIntelDb } = loadIntel();
     db = openIntelDb({ dbDir: tmpDir });
 
-    // Insert test detections for T1059 from two sources
     db.prepare(`INSERT OR IGNORE INTO detections (id, title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       'sigma:test-t1059-1', 'Sigma Powershell Execution', 'sigma', 'T1059,T1059.001', 'Execution', 'high', '{}', 'detect powershell', 'Test sigma rule', '{}', 'test/sigma1.yml'
     );
@@ -151,7 +139,6 @@ describe('compareDetections', () => {
       'Elastic Script Execution', 'Test elastic rule', 'process where', 'T1059'
     );
 
-    // Insert a detection for T1078 (single source)
     db.prepare(`INSERT OR IGNORE INTO detections (id, title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       'sigma:test-t1078-1', 'Valid Accounts Usage', 'sigma', 'T1078', 'Persistence', 'medium', '{}', 'detect valid accounts', 'Test sigma rule', '{}', 'test/sigma2.yml'
     );
@@ -169,56 +156,52 @@ describe('compareDetections', () => {
     const { compareDetections } = loadCoverage();
     const result = compareDetections(db, 'T1059');
 
-    assert.ok(result, 'should return a result');
+    assert.ok(result);
     assert.equal(result.technique_id, 'T1059');
-    assert.ok(result.technique_name, 'should include technique_name');
-    assert.ok(Array.isArray(result.sources), 'should have sources array');
-    assert.ok(typeof result.source_count === 'number', 'should have source_count');
+    assert.ok(result.technique_name);
+    assert.ok(Array.isArray(result.sources));
+    assert.ok(typeof result.source_count === 'number');
   });
 
-  it('sources array groups rules by source_format (sigma entries have format=sigma)', () => {
+  it('sources array groups rules by source_format', () => {
     const { compareDetections } = loadCoverage();
     const result = compareDetections(db, 'T1059');
 
     const sigmaEntries = result.sources.filter(s => s.format === 'sigma');
-    assert.ok(sigmaEntries.length > 0, 'should have sigma entries');
+    assert.ok(sigmaEntries.length > 0);
     for (const entry of sigmaEntries) {
       assert.equal(entry.format, 'sigma');
-      assert.ok(entry.rule_id, 'should have rule_id');
-      assert.ok(entry.title, 'should have title');
+      assert.ok(entry.rule_id);
+      assert.ok(entry.title);
     }
   });
 
-  it('source_count equals number of distinct source_format values', () => {
+  it('source_count equals distinct source_format count', () => {
     const { compareDetections } = loadCoverage();
     const result = compareDetections(db, 'T1059');
 
     const formats = new Set(result.sources.map(s => s.format));
-    assert.equal(result.source_count, formats.size, `source_count (${result.source_count}) should match distinct formats (${formats.size})`);
-    assert.equal(result.source_count, 2, 'T1059 should have 2 source formats (sigma + elastic)');
+    assert.equal(result.source_count, formats.size);
+    assert.equal(result.source_count, 2);
   });
 
-  it('returns sources=[] and source_count=0 for technique with no detections', () => {
+  it('returns empty sources for technique with no detections', () => {
     const { compareDetections } = loadCoverage();
-    // Use a technique ID that has no bundled detections and no test detections
     const result = compareDetections(db, 'T1199');
 
-    assert.ok(result, 'should return a result even for uncovered technique');
+    assert.ok(result);
     assert.equal(result.technique_id, 'T1199');
     assert.deepEqual(result.sources, []);
     assert.equal(result.source_count, 0);
   });
 
-  it('accepts free-text query and searches via FTS', () => {
+  it('accepts free-text query via FTS', () => {
     const { compareDetections } = loadCoverage();
     const result = compareDetections(db, 'powershell execution');
 
-    // Free-text should return some results related to the search
-    assert.ok(result, 'should return a result for free-text query');
+    assert.ok(result);
   });
 });
-
-// ── suggestDetections (with DB) ───────────────────────────────────────────
 
 describe('suggestDetections', () => {
   let db, tmpDir;
@@ -228,7 +211,6 @@ describe('suggestDetections', () => {
     const { openIntelDb } = loadIntel();
     db = openIntelDb({ dbDir: tmpDir });
 
-    // Insert detection for T1059 (Execution tactic) so sibling techniques can reference it
     db.prepare(`INSERT OR IGNORE INTO detections (id, title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       'sigma:suggest-t1059', 'PowerShell Execution Detection', 'sigma', 'T1059', 'Execution', 'high', '{"product":"windows"}', 'detect powershell', 'Sigma detection for powershell', '{}', 'test/suggest-sigma.yml'
     );
@@ -244,28 +226,26 @@ describe('suggestDetections', () => {
 
   it('returns suggestions for uncovered technique with tactic-family rules', () => {
     const { suggestDetections } = loadCoverage();
-    // T1047 (WMI) is in Execution tactic, same as T1059 which has coverage
     const result = suggestDetections(db, 'T1047');
 
-    assert.ok(result, 'should return a result');
+    assert.ok(result);
     assert.equal(result.technique_id, 'T1047');
-    assert.ok(result.technique_name, 'should include technique_name');
-    assert.ok(result.tactic, 'should include tactic');
-    assert.ok(result.suggestion_basis, 'should include suggestion_basis');
-    assert.ok(Array.isArray(result.similar_rules), 'should have similar_rules array');
-    assert.ok(Array.isArray(result.data_sources), 'should have data_sources array');
+    assert.ok(result.technique_name);
+    assert.ok(result.tactic);
+    assert.ok(result.suggestion_basis);
+    assert.ok(Array.isArray(result.similar_rules));
+    assert.ok(Array.isArray(result.data_sources));
   });
 
-  it('similar_rules come from techniques in the same tactic that have detections', () => {
+  it('similar_rules come from same-tactic techniques with detections', () => {
     const { suggestDetections } = loadCoverage();
     const result = suggestDetections(db, 'T1047');
 
-    // T1059 has detections and is in the same Execution tactic
     if (result.similar_rules.length > 0) {
       for (const rule of result.similar_rules) {
-        assert.ok(rule.id, 'similar_rule should have id');
-        assert.ok(rule.title, 'similar_rule should have title');
-        assert.ok(rule.source_format, 'similar_rule should have source_format');
+        assert.ok(rule.id);
+        assert.ok(rule.title);
+        assert.ok(rule.source_format);
       }
     }
   });
@@ -274,24 +254,23 @@ describe('suggestDetections', () => {
     const { suggestDetections } = loadCoverage();
     const result = suggestDetections(db, 'T1047');
 
-    assert.ok(Array.isArray(result.data_sources), 'data_sources should be an array');
-    // T1047 (WMI) should have data_sources from techniques table
+    assert.ok(Array.isArray(result.data_sources));
   });
 
   it('suggestion_basis describes why rules are relevant', () => {
     const { suggestDetections } = loadCoverage();
     const result = suggestDetections(db, 'T1047');
 
-    assert.ok(typeof result.suggestion_basis === 'string', 'suggestion_basis should be a string');
-    assert.ok(result.suggestion_basis.length > 0, 'suggestion_basis should be non-empty');
+    assert.ok(typeof result.suggestion_basis === 'string');
+    assert.ok(result.suggestion_basis.length > 0);
   });
 
-  it('for a technique with existing coverage, similar_rules still returned', () => {
+  it('returns similar_rules even for technique with existing coverage', () => {
     const { suggestDetections } = loadCoverage();
     const result = suggestDetections(db, 'T1059');
 
-    assert.ok(result, 'should return a result');
+    assert.ok(result);
     assert.equal(result.technique_id, 'T1059');
-    assert.ok(Array.isArray(result.similar_rules), 'should still have similar_rules');
+    assert.ok(Array.isArray(result.similar_rules));
   });
 });

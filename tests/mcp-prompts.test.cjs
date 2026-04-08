@@ -7,15 +7,12 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 function makeTempDir() {
   const dir = path.join(os.tmpdir(), `thrunt-prompts-test-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-// Lazy-load modules
 let prompts, intel;
 function loadPrompts() {
   if (!prompts) prompts = require('../mcp-hunt-intel/lib/prompts.cjs');
@@ -25,8 +22,6 @@ function loadIntel() {
   if (!intel) intel = require('../mcp-hunt-intel/lib/intel.cjs');
   return intel;
 }
-
-// ── MCP Prompt Tests ──────────────────────────────────────────────────────
 
 describe('prompts.cjs - PROMPT_DEFS', () => {
   it('defines exactly 4 prompt entries', () => {
@@ -126,7 +121,7 @@ describe('prompts.cjs - buildPromptContent', () => {
     assert.ok(content.includes('credential-access'), 'Should reference credential-access profile');
   });
 
-  it('each prompt response includes suggested_approach with actionable guidance', () => {
+  it('each prompt includes suggested_approach with numbered steps', () => {
     const { buildPromptContent, PROMPT_DEFS } = loadPrompts();
 
     for (const [name, def] of Object.entries(PROMPT_DEFS)) {
@@ -143,7 +138,7 @@ describe('prompts.cjs - buildPromptContent', () => {
     }
   });
 
-  it('each prompt response includes coverage_summary with covered/gap counts', () => {
+  it('each prompt includes coverage_summary with covered/gap counts', () => {
     const { buildPromptContent, PROMPT_DEFS } = loadPrompts();
 
     for (const [name, def] of Object.entries(PROMPT_DEFS)) {
@@ -163,12 +158,11 @@ describe('prompts.cjs - buildPromptContent', () => {
     }
   });
 
-  it('registerPrompts does not throw when called with real McpServer', () => {
+  it('registerPrompts does not throw with real McpServer', () => {
     const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
     const { registerPrompts } = loadPrompts();
 
     const server = new McpServer({ name: 'test-prompts', version: '0.1.0' });
-    // Should not throw
     assert.doesNotThrow(() => registerPrompts(server, db));
   });
 });

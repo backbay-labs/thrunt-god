@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-// CRITICAL: All logging to stderr for stdout purity (JSON-RPC only on stdout)
+// All logging to stderr (JSON-RPC only on stdout)
 const log = (...args) => console.error('[mcp-hunt-intel]', ...args);
 
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
@@ -15,8 +15,6 @@ const server = new McpServer({
   version: '0.1.0',
 });
 
-// Open global intel database (creates + populates on first run)
-// Support THRUNT_INTEL_DB_DIR env var for testing
 const dbOpts = {};
 if (process.env.THRUNT_INTEL_DB_DIR) {
   dbOpts.dbDir = process.env.THRUNT_INTEL_DB_DIR;
@@ -25,15 +23,12 @@ log('Opening intel database...');
 const db = openIntelDb(dbOpts);
 log('Intel database ready');
 
-// Register all tools
 registerTools(server, db);
 log('Tools registered');
 
-// Register pre-built workflow prompts
 registerPrompts(server, db);
 log('Prompts registered');
 
-// Connect via stdio transport
 const transport = new StdioServerTransport();
 server.connect(transport).then(() => {
   log('MCP server started on stdio');
@@ -42,6 +37,5 @@ server.connect(transport).then(() => {
   process.exit(1);
 });
 
-// Graceful shutdown
 process.on('SIGINT', () => { db.close(); process.exit(0); });
 process.on('SIGTERM', () => { db.close(); process.exit(0); });

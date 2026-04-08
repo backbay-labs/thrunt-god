@@ -8,15 +8,12 @@ const os = require('os');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 function makeTempDir() {
   const dir = path.join(os.tmpdir(), `thrunt-kg-mcp-test-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-// Lazy-load modules
 let knowledge, tools;
 function loadKnowledge() {
   if (!knowledge) knowledge = require('../mcp-hunt-intel/lib/knowledge.cjs');
@@ -26,8 +23,6 @@ function loadTools() {
   if (!tools) tools = require('../mcp-hunt-intel/lib/tools.cjs');
   return tools;
 }
-
-// ── Knowledge Graph MCP Tool Handler Tests ────────────────────────────────
 
 describe('handleQueryKnowledge', () => {
   let db, tmpDir;
@@ -40,13 +35,11 @@ describe('handleQueryKnowledge', () => {
     const kg = loadKnowledge();
     kg.ensureKnowledgeSchema(db);
 
-    // Seed entities
     kg.addEntity(db, { type: 'threat_actor', name: 'APT28', description: 'Russian cyber espionage group' });
     kg.addEntity(db, { type: 'threat_actor', name: 'APT29', description: 'Russian intelligence SVR group' });
     kg.addEntity(db, { type: 'tool', name: 'Mimikatz', description: 'Credential dumping tool' });
     kg.addEntity(db, { type: 'vulnerability', name: 'CVE-2021-34527', description: 'PrintNightmare vulnerability' });
 
-    // Add a relation
     kg.addRelation(db, {
       from_entity: 'threat_actor--apt28',
       to_entity: 'tool--mimikatz',
@@ -82,7 +75,7 @@ describe('handleQueryKnowledge', () => {
     }
   });
 
-  it('returns informative message when no results', async () => {
+  it('returns message when no results', async () => {
     const { handleQueryKnowledge } = loadTools();
     const result = await handleQueryKnowledge(db, { query: 'xyznonexistent' });
 
@@ -149,7 +142,6 @@ describe('handleLogDecision', () => {
 
     const parsed = JSON.parse(result.content[0].text);
     assert.ok(parsed.related_decisions.length >= 2);
-    // Both decisions should be present
     const decisions = parsed.related_decisions.map(d => d.decision);
     assert.ok(decisions.includes('Escalate to IR team'), 'Should include first decision');
     assert.ok(decisions.includes('Monitor for recurrence'), 'Should include second decision');

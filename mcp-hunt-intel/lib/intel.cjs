@@ -4,31 +4,24 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// Resolve better-sqlite3 from mcp-hunt-intel's own dependencies (or monorepo root)
 const Database = require('better-sqlite3');
 
-// Lazy-load detections module (avoids circular dependency; only needed at DB open time)
 let _detections;
 function getDetections() {
   if (!_detections) _detections = require('./detections.cjs');
   return _detections;
 }
 
-// ─── Defaults (overridable via openIntelDb opts) ────────────────────────────
-
 const INTEL_DB_DIR = path.join(os.homedir(), '.thrunt');
 const INTEL_DB_PATH = path.join(INTEL_DB_DIR, 'intel.db');
 
-// Data file paths (relative to this file's location in mcp-hunt-intel/lib/)
 const TECHNIQUES_DATA = path.join(__dirname, '..', '..', 'thrunt-god', 'data', 'mitre-attack-enterprise.json');
 const GROUPS_DATA = path.join(__dirname, '..', '..', 'thrunt-god', 'data', 'mitre-attack-groups.json');
-
-// ─── Schema ─────────────────────────────────────────────────────────────────
 
 /**
  * Create all tables idempotently.
  * Uses regular FTS5 (NOT external content) since intel.db data is
- * write-once/immutable after population. This avoids sync issues.
+ * write-once/immutable after population.
  *
  * @param {import('better-sqlite3').Database} db
  */
@@ -87,15 +80,8 @@ function ensureIntelSchema(db) {
   `);
 }
 
-// ─── Population ─────────────────────────────────────────────────────────────
-
 /**
- * Build the ATT&CK technique URL from an ID.
- * T1059 -> https://attack.mitre.org/techniques/T1059/
- * T1059.001 -> https://attack.mitre.org/techniques/T1059/001/
- *
- * @param {string} id
- * @returns {string}
+ * T1059 -> /techniques/T1059/, T1059.001 -> /techniques/T1059/001/
  */
 function buildTechniqueUrl(id) {
   return `https://attack.mitre.org/techniques/${id.replace('.', '/')}/`;
@@ -104,17 +90,14 @@ function buildTechniqueUrl(id) {
 /**
  * Populate the database from bundled JSON files if empty.
  * Uses BEGIN IMMEDIATE to prevent concurrent population races.
- * Idempotent: skips if techniques already exist.
  *
  * @param {import('better-sqlite3').Database} db
  */
 function populateIfEmpty(db) {
   const doPopulate = db.transaction(() => {
-    // Check if already populated
     const count = db.prepare('SELECT COUNT(*) AS cnt FROM techniques').get().cnt;
-    if (count > 0) return; // Already populated -- no-op
+    if (count > 0) return;
 
-    // ── Load and insert techniques ──────────────────────────────────────
     const techRaw = fs.readFileSync(TECHNIQUES_DATA, 'utf8');
     const techData = JSON.parse(techRaw);
 
@@ -130,22 +113,18 @@ function populateIfEmpty(db) {
       const dataSources = Array.isArray(t.data_sources) ? t.data_sources.join(', ') : (t.data_sources || '');
       const url = buildTechniqueUrl(t.id);
 
-      // Insert parent technique
       insertTechnique.run(t.id, t.name, t.description, t.tactic, platforms, dataSources, url);
       insertFts.run(t.name, t.description, t.id);
 
-      // Insert sub-techniques
       if (Array.isArray(t.sub_techniques)) {
         for (const sub of t.sub_techniques) {
           const subUrl = buildTechniqueUrl(sub.id);
-          // Sub-techniques inherit parent's description, tactic, platforms, data_sources
           insertTechnique.run(sub.id, sub.name, t.description, t.tactic, platforms, dataSources, subUrl);
           insertFts.run(sub.name, t.description, sub.id);
         }
       }
     }
 
-    // ── Load and insert groups & software ────────────────────────────────
     const groupsRaw = fs.readFileSync(GROUPS_DATA, 'utf8');
     const groupsData = JSON.parse(groupsRaw);
 
@@ -193,15 +172,11 @@ function populateIfEmpty(db) {
     }
   });
 
-  // BEGIN IMMEDIATE to avoid write-upgrade deadlock
   doPopulate.immediate();
 }
 
-// ─── Database Lifecycle ─────────────────────────────────────────────────────
-
 /**
  * Open (or create) the global intel.db database.
- * Accepts opts.dbDir and opts.dbPath for testing (to avoid touching ~/.thrunt/).
  *
  * @param {{ dbDir?: string, dbPath?: string }} [opts={}]
  * @returns {import('better-sqlite3').Database}
@@ -220,20 +195,14 @@ function openIntelDb(opts = {}) {
   ensureIntelSchema(db);
   populateIfEmpty(db);
 
-  // Extend schema with detections tables (Phase 54)
   getDetections().ensureDetectionsSchema(db);
-
-  // Lazy-populate detections from bundled rules + env var paths (Phase 54)
   getDetections().populateDetectionsIfEmpty(db);
 
   return db;
 }
 
-// ─── Query Functions ────────────────────────────────────────────────────────
-
 /**
  * Look up a technique by ID (e.g., "T1059" or "T1059.001").
- * Case-insensitive. Returns the technique row or null.
  *
  * @param {import('better-sqlite3').Database} db
  * @param {string} id
@@ -246,7 +215,6 @@ function lookupTechnique(db, id) {
   const row = db.prepare('SELECT * FROM techniques WHERE id = ? COLLATE NOCASE').get(normalised);
   if (!row) return null;
 
-  // If sub-technique, also query parent for additional context
   if (normalised.includes('.')) {
     const parentId = normalised.split('.')[0];
     const parent = db.prepare('SELECT id, name FROM techniques WHERE id = ?').get(parentId);
@@ -261,7 +229,6 @@ function lookupTechnique(db, id) {
 
 /**
  * Full-text search across technique names and descriptions.
- * Results are ranked by BM25 relevance.
  *
  * @param {import('better-sqlite3').Database} db
  * @param {string} query
@@ -274,7 +241,6 @@ function searchTechniques(db, query, opts = {}) {
   const limit = opts.limit || 20;
 
   try {
-    // Build query with optional filters
     let sql = `
       SELECT t.*
       FROM techniques t
@@ -304,14 +270,12 @@ function searchTechniques(db, query, opts = {}) {
 
     return db.prepare(sql).all(...params);
   } catch {
-    // Return empty on malformed FTS query or other errors
     return [];
   }
 }
 
 /**
  * Look up a group by ID (e.g., "G0007").
- * Case-insensitive. Returns the group row or null.
  *
  * @param {import('better-sqlite3').Database} db
  * @param {string} id
@@ -326,8 +290,6 @@ function lookupGroup(db, id) {
 }
 
 /**
- * Get all technique IDs associated with a group.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} groupId
  * @returns {string[]}
@@ -343,8 +305,6 @@ function getGroupTechniques(db, groupId) {
 }
 
 /**
- * Get all software entries associated with a group.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} groupId
  * @returns {object[]}
@@ -358,8 +318,6 @@ function getGroupSoftware(db, groupId) {
 }
 
 /**
- * Get all techniques that have the given tactic.
- *
  * @param {import('better-sqlite3').Database} db
  * @param {string} tactic
  * @returns {object[]}
@@ -373,8 +331,6 @@ function getTechniquesByTactic(db, tactic) {
 }
 
 /**
- * Get all unique tactic names from the techniques table, sorted.
- *
  * @param {import('better-sqlite3').Database} db
  * @returns {string[]}
  */
@@ -392,8 +348,6 @@ function getAllTactics(db) {
 
   return [...tacticSet].sort();
 }
-
-// ─── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
   openIntelDb,

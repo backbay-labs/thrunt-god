@@ -66,8 +66,10 @@ function extractFrontmatter(content) {
       const itemRaw = line.trim().slice(2);
       const itemValue = itemRaw.replace(/^["']|["']$/g, '');
 
-      // Detect object items: "- key: value" pattern within an array
-      const objKeyMatch = itemRaw.match(/^([a-zA-Z0-9_-]+):\s*(.*)/);
+      // Detect object items: "- key: value" but NOT URLs (https:), Windows paths (C:\), or bare strings with colons
+      const objKeyMatch = !itemRaw.includes('//') && !itemRaw.includes(':\\')
+        ? itemRaw.match(/^([a-zA-Z_][a-zA-Z0-9_]*):\s(.+)/)
+        : null;
 
       // If current context is an empty object, convert to array
       if (typeof current.obj === 'object' && !Array.isArray(current.obj) && Object.keys(current.obj).length === 0) {

@@ -8,15 +8,12 @@ const os = require('os');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
 function makeTempDir() {
   const dir = path.join(os.tmpdir(), `thrunt-mcp-test-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-// Lazy-load modules
 let intel, tools, layers;
 function loadIntel() {
   if (!intel) intel = require('../mcp-hunt-intel/lib/intel.cjs');
@@ -30,8 +27,6 @@ function loadLayers() {
   if (!layers) layers = require('../mcp-hunt-intel/lib/layers.cjs');
   return layers;
 }
-
-// ── layers.cjs ─────────────────────────────────────────────────────────────
 
 describe('layers.cjs - buildNavigatorLayer', () => {
   it('exports buildNavigatorLayer function', () => {
@@ -90,8 +85,6 @@ describe('layers.cjs - buildNavigatorLayer', () => {
   });
 });
 
-// ── tools.cjs - exports ────────────────────────────────────────────────────
-
 describe('tools.cjs - exports', () => {
   it('exports registerTools function', () => {
     const { registerTools } = loadTools();
@@ -113,8 +106,6 @@ describe('tools.cjs - exports', () => {
   });
 });
 
-// ── Tool handler tests with shared DB ──────────────────────────────────────
-
 describe('tool handlers with intel DB', () => {
   let db, tmpDir;
 
@@ -129,13 +120,11 @@ describe('tool handlers with intel DB', () => {
     if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  // ── lookup_technique ─────────────────────────────────────────────────
-
   describe('lookup_technique', () => {
     it('returns technique data for valid ID (T1059)', async () => {
       const { handleLookupTechnique } = loadTools();
       const result = await handleLookupTechnique(db, { technique_id: 'T1059' });
-      assert.ok(!result.isError, 'should not be an error');
+      assert.ok(!result.isError);
       assert.ok(result.content);
       assert.equal(result.content[0].type, 'text');
 
@@ -150,7 +139,7 @@ describe('tool handlers with intel DB', () => {
     it('returns sub-technique data for dotted ID (T1059.001)', async () => {
       const { handleLookupTechnique } = loadTools();
       const result = await handleLookupTechnique(db, { technique_id: 'T1059.001' });
-      assert.ok(!result.isError, 'should not be an error');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
       assert.equal(data.id, 'T1059.001');
@@ -161,8 +150,8 @@ describe('tool handlers with intel DB', () => {
       const { handleLookupTechnique } = loadTools();
       const result = await handleLookupTechnique(db, { technique_id: 'T1059' });
       const data = JSON.parse(result.content[0].text);
-      assert.ok(Array.isArray(data.sub_techniques), 'should include sub_techniques');
-      assert.ok(data.sub_techniques.length > 0, 'T1059 should have sub-techniques');
+      assert.ok(Array.isArray(data.sub_techniques));
+      assert.ok(data.sub_techniques.length > 0);
     });
 
     it('returns isError: true for invalid ID', async () => {
@@ -172,8 +161,6 @@ describe('tool handlers with intel DB', () => {
       assert.ok(result.content[0].text.includes('not found'));
     });
   });
-
-  // ── search_techniques ────────────────────────────────────────────────
 
   describe('search_techniques', () => {
     it('returns multiple results for keyword "credential"', async () => {
@@ -186,24 +173,23 @@ describe('tool handlers with intel DB', () => {
       assert.ok(data.length > 1, `should find multiple techniques related to credential, got ${data.length}`);
     });
 
-    it('narrows results with tactic filter "Persistence"', async () => {
+    it('narrows results with tactic filter', async () => {
       const { handleSearchTechniques } = loadTools();
       const allResults = await handleSearchTechniques(db, { query: 'account', limit: 100 });
       const filteredResults = await handleSearchTechniques(db, { query: 'account', tactic: 'Persistence', limit: 100 });
 
       const allData = JSON.parse(allResults.content[0].text);
       const filtData = JSON.parse(filteredResults.content[0].text);
-      assert.ok(filtData.length <= allData.length, 'filtered should be <= unfiltered');
+      assert.ok(filtData.length <= allData.length);
     });
 
-    it('narrows results with platform filter "Windows"', async () => {
+    it('narrows results with platform filter', async () => {
       const { handleSearchTechniques } = loadTools();
       const allResults = await handleSearchTechniques(db, { query: 'execution', limit: 100 });
       const filteredResults = await handleSearchTechniques(db, { query: 'execution', platform: 'Windows', limit: 100 });
 
       const allData = JSON.parse(allResults.content[0].text);
       const filtData = JSON.parse(filteredResults.content[0].text);
-      // Platform filter may not reduce if all have Windows -- just ensure it runs
       assert.ok(Array.isArray(filtData));
     });
 
@@ -211,14 +197,12 @@ describe('tool handlers with intel DB', () => {
       const { handleSearchTechniques } = loadTools();
       const result = await handleSearchTechniques(db, { query: 'access', limit: 5 });
       const data = JSON.parse(result.content[0].text);
-      assert.ok(data.length <= 5, 'should return at most 5 results');
+      assert.ok(data.length <= 5);
     });
   });
 
-  // ── lookup_group ─────────────────────────────────────────────────────
-
   describe('lookup_group', () => {
-    it('returns group data with techniques and software for valid ID (G0007)', async () => {
+    it('returns group data with techniques and software for G0007', async () => {
       const { handleLookupGroup } = loadTools();
       const result = await handleLookupGroup(db, { group_id: 'G0007' });
       assert.ok(!result.isError);
@@ -227,14 +211,14 @@ describe('tool handlers with intel DB', () => {
       assert.equal(data.id, 'G0007');
       assert.ok(data.name);
       assert.ok(data.description);
-      assert.ok(Array.isArray(data.techniques), 'should include techniques array');
-      assert.ok(Array.isArray(data.software), 'should include software array');
+      assert.ok(Array.isArray(data.techniques));
+      assert.ok(Array.isArray(data.software));
     });
 
     it('supports name-based lookup', async () => {
       const { handleLookupGroup } = loadTools();
       const result = await handleLookupGroup(db, { group_id: 'APT28' });
-      assert.ok(!result.isError, 'should find group by name');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
       assert.ok(data.name);
@@ -249,10 +233,8 @@ describe('tool handlers with intel DB', () => {
     });
   });
 
-  // ── generate_layer ───────────────────────────────────────────────────
-
   describe('generate_layer', () => {
-    it('custom mode produces valid layer with given technique IDs', async () => {
+    it('custom mode produces layer with given technique IDs', async () => {
       const { handleGenerateLayer } = loadTools();
       const result = await handleGenerateLayer(db, {
         mode: 'custom',
@@ -279,7 +261,7 @@ describe('tool handlers with intel DB', () => {
       assert.ok(!result.isError);
 
       const layer = JSON.parse(result.content[0].text);
-      assert.ok(layer.techniques.length > 0, 'group layer should have techniques');
+      assert.ok(layer.techniques.length > 0);
       assert.equal(layer.versions.layer, '4.5');
     });
 
@@ -292,10 +274,9 @@ describe('tool handlers with intel DB', () => {
       assert.ok(!result.isError);
 
       const layer = JSON.parse(result.content[0].text);
-      assert.ok(layer.techniques.length > 0, 'coverage layer should have techniques');
-      // With bundled SigmaHQ rules, some techniques should have coverage (score=100)
+      assert.ok(layer.techniques.length > 0);
       const covered = layer.techniques.filter(t => t.score === 100);
-      assert.ok(covered.length > 0, 'some techniques should have detection coverage from bundled rules');
+      assert.ok(covered.length > 0);
     });
 
     it('gap mode produces layer highlighting uncovered techniques', async () => {
@@ -308,13 +289,12 @@ describe('tool handlers with intel DB', () => {
       assert.ok(!result.isError);
 
       const layer = JSON.parse(result.content[0].text);
-      assert.ok(layer.techniques.length > 0, 'gap layer should have techniques');
-      // With bundled detections, some techniques may be covered (score=0) and some uncovered (score=100)
+      assert.ok(layer.techniques.length > 0);
       const uncovered = layer.techniques.filter(t => t.score === 100);
-      assert.ok(uncovered.length >= 0, 'gap layer should include technique entries');
+      assert.ok(uncovered.length >= 0);
     });
 
-    it('generated layer techniques have techniqueID, score, enabled', async () => {
+    it('layer techniques have techniqueID, score, enabled', async () => {
       const { handleGenerateLayer } = loadTools();
       const result = await handleGenerateLayer(db, {
         mode: 'custom',
@@ -323,79 +303,74 @@ describe('tool handlers with intel DB', () => {
       });
       const layer = JSON.parse(result.content[0].text);
       const tech = layer.techniques[0];
-      assert.ok('techniqueID' in tech, 'should have techniqueID');
-      assert.ok('score' in tech, 'should have score');
-      assert.ok('enabled' in tech, 'should have enabled');
+      assert.ok('techniqueID' in tech);
+      assert.ok('score' in tech);
+      assert.ok('enabled' in tech);
     });
   });
 
-  // ── compare_detections ────────────────────────────────────────────────
-
   describe('tools.cjs - handleCompareDetections', () => {
-    it('returns sources array with format, rule_id, title, severity for technique_id=T1059', async () => {
+    it('returns sources with format, rule_id, title, severity for T1059', async () => {
       const { handleCompareDetections } = loadTools();
       const result = await handleCompareDetections(db, { technique_id: 'T1059' });
-      assert.ok(!result.isError, 'should not be an error');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
       assert.equal(data.technique_id, 'T1059');
-      assert.ok(Array.isArray(data.sources), 'should have sources array');
-      assert.ok(typeof data.source_count === 'number', 'should have source_count');
+      assert.ok(Array.isArray(data.sources));
+      assert.ok(typeof data.source_count === 'number');
 
       if (data.sources.length > 0) {
         const src = data.sources[0];
-        assert.ok('format' in src, 'source should have format');
-        assert.ok('rule_id' in src, 'source should have rule_id');
-        assert.ok('title' in src, 'source should have title');
-        assert.ok('severity' in src, 'source should have severity');
+        assert.ok('format' in src);
+        assert.ok('rule_id' in src);
+        assert.ok('title' in src);
+        assert.ok('severity' in src);
       }
     });
 
-    it('returns results from FTS-matched techniques for query="powershell"', async () => {
+    it('resolves FTS-matched technique for query="powershell"', async () => {
       const { handleCompareDetections } = loadTools();
       const result = await handleCompareDetections(db, { query: 'powershell' });
-      assert.ok(!result.isError, 'should not be an error');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
-      assert.ok(data.technique_id, 'should resolve a technique from FTS');
+      assert.ok(data.technique_id);
       assert.ok(Array.isArray(data.sources));
     });
 
     it('returns empty sources for nonexistent technique', async () => {
       const { handleCompareDetections } = loadTools();
       const result = await handleCompareDetections(db, { technique_id: 'T9999' });
-      assert.ok(!result.isError, 'should not be an error even for unknown technique');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
       assert.equal(data.source_count, 0);
       assert.deepEqual(data.sources, []);
     });
 
-    it('returns isError when neither technique_id nor query provided', async () => {
+    it('returns isError when no technique_id or query provided', async () => {
       const { handleCompareDetections } = loadTools();
       const result = await handleCompareDetections(db, {});
       assert.equal(result.isError, true);
     });
   });
 
-  // ── suggest_detections ──────────────────────────────────────────────────
-
   describe('tools.cjs - handleSuggestDetections', () => {
-    it('returns suggestions with similar_rules for an uncovered technique', async () => {
+    it('returns suggestions for an uncovered technique', async () => {
       const { handleSuggestDetections } = loadTools();
-      // T1199 (Trusted Relationship) has no bundled detections
       const result = await handleSuggestDetections(db, { technique_id: 'T1199' });
-      assert.ok(!result.isError, 'should not be an error');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
       assert.equal(data.technique_id, 'T1199');
-      assert.ok(data.technique_name, 'should have technique_name');
-      assert.ok('suggestion_basis' in data, 'should have suggestion_basis');
-      assert.ok(Array.isArray(data.similar_rules), 'should have similar_rules array');
-      assert.ok(Array.isArray(data.data_sources), 'should have data_sources array');
+      assert.ok(data.technique_name);
+      assert.ok('suggestion_basis' in data);
+      assert.ok(Array.isArray(data.similar_rules));
+      assert.ok(Array.isArray(data.data_sources));
     });
 
-    it('returns content with JSON containing technique_id, technique_name, suggestion_basis, similar_rules, data_sources', async () => {
+    it('response JSON has all required fields', async () => {
       const { handleSuggestDetections } = loadTools();
       const result = await handleSuggestDetections(db, { technique_id: 'T1059' });
       assert.ok(!result.isError);
@@ -408,7 +383,7 @@ describe('tool handlers with intel DB', () => {
       assert.ok('data_sources' in data);
     });
 
-    it('returns isError for nonexistent technique_id', async () => {
+    it('returns isError for nonexistent technique', async () => {
       const { handleSuggestDetections } = loadTools();
       const result = await handleSuggestDetections(db, { technique_id: 'T9999' });
       assert.equal(result.isError, true);
@@ -416,13 +391,11 @@ describe('tool handlers with intel DB', () => {
     });
   });
 
-  // ── analyze_coverage (profile mode) ─────────────────────────────────────
-
   describe('tools.cjs - handleAnalyzeCoverage (profile mode)', () => {
-    it('returns coverage analysis with profile="ransomware" (no group_id)', async () => {
+    it('returns coverage analysis for ransomware profile', async () => {
       const { handleAnalyzeCoverage } = loadTools();
       const result = await handleAnalyzeCoverage(db, { profile: 'ransomware' });
-      assert.ok(!result.isError, 'should not be an error');
+      assert.ok(!result.isError);
 
       const data = JSON.parse(result.content[0].text);
       assert.ok(typeof data.total_techniques === 'number');
@@ -432,7 +405,7 @@ describe('tool handlers with intel DB', () => {
       assert.ok(Array.isArray(data.by_tactic));
     });
 
-    it('includes profile_name field when using profile parameter', async () => {
+    it('includes profile_name field for profile parameter', async () => {
       const { handleAnalyzeCoverage } = loadTools();
       const result = await handleAnalyzeCoverage(db, { profile: 'apt' });
       assert.ok(!result.isError);
@@ -441,7 +414,7 @@ describe('tool handlers with intel DB', () => {
       assert.equal(data.profile_name, 'apt');
     });
 
-    it('group_id takes precedence when both group_id and profile provided', async () => {
+    it('group_id takes precedence over profile', async () => {
       const { handleAnalyzeCoverage } = loadTools();
       const result = await handleAnalyzeCoverage(db, { group_id: 'G0007', profile: 'ransomware' });
       assert.ok(!result.isError);
@@ -449,19 +422,16 @@ describe('tool handlers with intel DB', () => {
       const data = JSON.parse(result.content[0].text);
       assert.equal(data.group_id, 'G0007');
       assert.ok(data.group_name);
-      // Should NOT have profile_name since group_id takes precedence
-      assert.ok(!data.profile_name, 'should not have profile_name when group_id is used');
+      assert.ok(!data.profile_name);
     });
 
-    it('returns isError when neither group_id nor profile provided', async () => {
+    it('returns isError when no group_id or profile provided', async () => {
       const { handleAnalyzeCoverage } = loadTools();
       const result = await handleAnalyzeCoverage(db, {});
       assert.equal(result.isError, true);
       assert.ok(result.content[0].text.includes('Available'));
     });
   });
-
-  // ── analyze_coverage ─────────────────────────────────────────────────
 
   describe('analyze_coverage', () => {
     it('returns structured coverage data for group', async () => {
@@ -484,7 +454,7 @@ describe('tool handlers with intel DB', () => {
       const result = await handleAnalyzeCoverage(db, { group_id: 'G0007', include_techniques: true });
       const data = JSON.parse(result.content[0].text);
 
-      assert.ok(data.by_tactic.length > 0, 'should have tactic breakdown');
+      assert.ok(data.by_tactic.length > 0);
       const tactic = data.by_tactic[0];
       assert.ok('tactic' in tactic);
       assert.ok('total' in tactic);
@@ -498,19 +468,15 @@ describe('tool handlers with intel DB', () => {
       const result = await handleAnalyzeCoverage(db, { group_id: 'G0007', include_techniques: false });
       const data = JSON.parse(result.content[0].text);
 
-      // With bundled SigmaHQ rules, some techniques should have coverage
-      assert.ok(typeof data.covered === 'number', 'covered should be a number');
-      assert.ok(typeof data.gap_percent === 'number', 'gap_percent should be a number');
-      assert.ok(data.gap_percent >= 0 && data.gap_percent <= 100, 'gap_percent should be 0-100');
+      assert.ok(typeof data.covered === 'number');
+      assert.ok(typeof data.gap_percent === 'number');
+      assert.ok(data.gap_percent >= 0 && data.gap_percent <= 100);
     });
   });
 });
 
-// ── timeout enforcement ────────────────────────────────────────────────────
-
 describe('timeout enforcement', () => {
   it('withTimeout aborts slow handlers', async () => {
-    // Test the pattern directly with a short timeout
     const TIMEOUT_MS = 50;
     function testWithTimeout(fn) {
       return async (args) => {
@@ -545,36 +511,29 @@ describe('timeout enforcement', () => {
   });
 });
 
-// ── stdout purity ──────────────────────────────────────────────────────────
-
 describe('server.cjs stdout purity', () => {
   it('server.cjs does not contain console.log calls', () => {
     const serverPath = path.join(__dirname, '..', 'mcp-hunt-intel', 'bin', 'server.cjs');
     const content = fs.readFileSync(serverPath, 'utf-8');
-    assert.ok(!content.includes('console.log('), 'server.cjs must not contain console.log()');
-    assert.ok(content.includes('console.error'), 'server.cjs should use console.error for logging');
+    assert.ok(!content.includes('console.log('));
+    assert.ok(content.includes('console.error'));
   });
 
   it('server.cjs has shebang line', () => {
     const serverPath = path.join(__dirname, '..', 'mcp-hunt-intel', 'bin', 'server.cjs');
     const content = fs.readFileSync(serverPath, 'utf-8');
-    assert.ok(content.startsWith('#!/usr/bin/env node'), 'should start with shebang');
+    assert.ok(content.startsWith('#!/usr/bin/env node'));
   });
 
   it('server.cjs can be required without throwing', () => {
-    // We only check syntax -- actually requiring it would start the server
     const serverPath = path.join(__dirname, '..', 'mcp-hunt-intel', 'bin', 'server.cjs');
     const content = fs.readFileSync(serverPath, 'utf-8');
-    // Strip shebang for syntax check
     const code = content.replace(/^#!.*\n/, '');
-    // Syntax check via new Function (won't execute requires)
     assert.doesNotThrow(() => {
       new Function('require', 'module', 'exports', '__dirname', '__filename', 'process', code);
-    }, 'server.cjs should have valid JavaScript syntax');
+    });
   });
 });
-
-// ── registerTools count ───────────────────────────────────────────────────
 
 describe('tools.cjs - registerTools count', () => {
   it('registers exactly 10 tools on the server', () => {
@@ -595,8 +554,6 @@ describe('tools.cjs - registerTools count', () => {
     assert.equal(toolCount, 10, `expected 10 tool registrations, got ${toolCount}`);
   });
 });
-
-// ── server smoke test ──────────────────────────────────────────────────────
 
 describe('server smoke test', () => {
   it('responds to JSON-RPC initialize request', async () => {
@@ -638,10 +595,7 @@ describe('server smoke test', () => {
         }
       });
 
-      // Wait for server to start (stderr will show startup messages), then send request
       setTimeout(() => {
-        // Send JSON-RPC initialize request as line-delimited JSON
-        // (MCP SDK StdioServerTransport accepts newline-delimited JSON)
         const request = JSON.stringify({
           jsonrpc: '2.0',
           id: 1,
@@ -655,7 +609,6 @@ describe('server smoke test', () => {
         proc.stdin.write(request + '\n');
       }, 500);
 
-      // Timeout after 10 seconds
       setTimeout(() => {
         if (!resolved) {
           resolved = true;
@@ -665,11 +618,9 @@ describe('server smoke test', () => {
       }, 10000);
     });
 
-    // Verify we got a JSON-RPC response on stdout
-    assert.ok(result.stdout.includes('"jsonrpc"'), `should receive JSON-RPC response, got stdout: "${result.stdout.slice(0, 300)}", stderr: "${result.stderr.slice(0, 300)}"`);
-    assert.ok(result.stdout.includes('"result"'), `should have result field, got: ${result.stdout.slice(0, 300)}`);
+    assert.ok(result.stdout.includes('"jsonrpc"'), `stdout: "${result.stdout.slice(0, 300)}", stderr: "${result.stderr.slice(0, 300)}"`);
+    assert.ok(result.stdout.includes('"result"'), `stdout: ${result.stdout.slice(0, 300)}`);
 
-    // Cleanup
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });

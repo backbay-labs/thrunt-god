@@ -26,19 +26,8 @@ const {
   getLearnings,
 } = require('./knowledge.cjs');
 
-// ─── Timeout wrapper ───────────────────────────────────────────────────────
-
 const TIMEOUT_MS = parseInt(process.env.THRUNT_MCP_TIMEOUT, 10) || 30000;
 
-/**
- * Wrap a tool handler with an abort-on-timeout.
- * The handler receives (args, signal) where signal is an AbortSignal.
- * If the handler does not complete within TIMEOUT_MS, the AbortController
- * is triggered and the tool returns an error response.
- *
- * @param {Function} fn - async (args, signal) => MCP response
- * @returns {Function} async (args) => MCP response
- */
 function withTimeout(fn) {
   return async (args) => {
     const controller = new AbortController();
@@ -59,14 +48,6 @@ function withTimeout(fn) {
   };
 }
 
-// ─── Tool Handlers (exported for testing) ──────────────────────────────────
-
-/**
- * Handle lookup_technique tool call.
- * @param {import('better-sqlite3').Database} db
- * @param {{ technique_id: string }} args
- * @returns {object} MCP tool response
- */
 async function handleLookupTechnique(db, args) {
   const { technique_id } = args;
   const row = lookupTechnique(db, technique_id);
@@ -78,7 +59,6 @@ async function handleLookupTechnique(db, args) {
     };
   }
 
-  // If this is a parent technique, include sub-techniques
   if (!technique_id.toUpperCase().includes('.')) {
     const parentId = technique_id.toUpperCase().trim();
     const subs = db.prepare(
@@ -92,12 +72,6 @@ async function handleLookupTechnique(db, args) {
   };
 }
 
-/**
- * Handle search_techniques tool call.
- * @param {import('better-sqlite3').Database} db
- * @param {{ query: string, tactic?: string, platform?: string, limit?: number }} args
- * @returns {object} MCP tool response
- */
 async function handleSearchTechniques(db, args) {
   const { query, tactic, platform, limit = 20 } = args;
   const results = searchTechniques(db, query, { tactic, platform, limit });
@@ -106,22 +80,12 @@ async function handleSearchTechniques(db, args) {
   };
 }
 
-/**
- * Handle lookup_group tool call.
- * Supports lookup by ID (G0007) or by name/alias (APT28).
- * @param {import('better-sqlite3').Database} db
- * @param {{ group_id: string }} args
- * @returns {object} MCP tool response
- */
 async function handleLookupGroup(db, args) {
   const { group_id } = args;
 
-  // First try exact ID lookup
   let group = lookupGroup(db, group_id);
 
-  // If not found and doesn't match G-pattern, try name/alias search
   if (!group && !/^G\d+$/i.test(group_id)) {
-    // Escape LIKE wildcards to prevent data exfiltration via '%' or '_' inputs
     const escaped = group_id.replace(/%/g, '\\%').replace(/_/g, '\\_');
     const nameMatch = db.prepare(
       "SELECT * FROM groups WHERE name LIKE ? ESCAPE '\\' OR aliases LIKE ? ESCAPE '\\' LIMIT 1"
@@ -136,7 +100,6 @@ async function handleLookupGroup(db, args) {
     };
   }
 
-  // Enrich with techniques and software
   const techniques = getGroupTechniques(db, group.id);
   const software = getGroupSoftware(db, group.id);
 
@@ -147,13 +110,6 @@ async function handleLookupGroup(db, args) {
   };
 }
 
-/**
- * Handle generate_layer tool call.
- * Modes: custom, group, coverage, gap.
- * @param {import('better-sqlite3').Database} db
- * @param {{ mode: string, name: string, technique_ids?: string[], group_id?: string, description?: string }} args
- * @returns {object} MCP tool response
- */
 async function handleGenerateLayer(db, args) {
   const { mode, name, technique_ids, group_id, description } = args;
 
@@ -192,19 +148,15 @@ async function handleGenerateLayer(db, args) {
     }
 
     case 'coverage': {
-      // Get all techniques
       const allTechs = db.prepare('SELECT id FROM techniques').all();
 
-      // Try to check detections table (Phase 54 graceful degradation)
       let detectedSet = new Set();
       try {
         const rows = db.prepare('SELECT technique_ids FROM detections').all();
         for (const r of rows) {
           if (r.technique_ids) r.technique_ids.split(',').forEach(t => detectedSet.add(t.trim()));
         }
-      } catch {
-        // detections table doesn't exist yet -- all scores = 0
-      }
+      } catch { /* no detections table */ }
 
       techniqueEntries = allTechs.map(t => ({
         id: t.id,
@@ -221,26 +173,23 @@ async function handleGenerateLayer(db, args) {
           isError: true,
         };
       }
-      const groupTechIds = getGroupTechniques(db, group_id);
+      const techIds = getGroupTechniques(db, group_id);
 
-      // Check which have detections (Phase 54 graceful degradation)
       let coveredSet = new Set();
       try {
-        if (groupTechIds.length > 0) {
+        if (techIds.length > 0) {
           const rows = db.prepare('SELECT technique_ids FROM detections').all();
           const allDetected = new Set();
           for (const r of rows) {
             if (r.technique_ids) r.technique_ids.split(',').forEach(t => allDetected.add(t.trim()));
           }
-          for (const id of groupTechIds) {
+          for (const id of techIds) {
             if (allDetected.has(id)) coveredSet.add(id);
           }
         }
-      } catch {
-        // detections table doesn't exist yet
-      }
+      } catch { /* no detections table */ }
 
-      techniqueEntries = groupTechIds.map(id => ({
+      techniqueEntries = techIds.map(id => ({
         id,
         score: coveredSet.has(id) ? 0 : 100,
         color: coveredSet.has(id) ? '#00cc00' : '#ff6666',
@@ -262,12 +211,6 @@ async function handleGenerateLayer(db, args) {
   };
 }
 
-/**
- * Handle compare_detections tool call.
- * @param {import('better-sqlite3').Database} db
- * @param {{ technique_id?: string, query?: string }} args
- * @returns {object} MCP tool response
- */
 async function handleCompareDetections(db, args) {
   const { technique_id, query } = args;
   const input = technique_id || query;
@@ -281,12 +224,6 @@ async function handleCompareDetections(db, args) {
   return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
 }
 
-/**
- * Handle suggest_detections tool call.
- * @param {import('better-sqlite3').Database} db
- * @param {{ technique_id: string }} args
- * @returns {object} MCP tool response
- */
 async function handleSuggestDetections(db, args) {
   const { technique_id } = args;
   const tech = lookupTechnique(db, technique_id);
@@ -300,23 +237,13 @@ async function handleSuggestDetections(db, args) {
   return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
 }
 
-/**
- * Handle analyze_coverage tool call.
- * Supports lookup by group_id (ATT&CK group) or profile (named threat profile).
- * When group_id is provided, it takes precedence over profile.
- * @param {import('better-sqlite3').Database} db
- * @param {{ group_id?: string, profile?: string, include_techniques?: boolean }} args
- * @returns {object} MCP tool response
- */
 async function handleAnalyzeCoverage(db, args) {
   const { group_id, profile, include_techniques = true } = args;
 
-  // Resolve technique set: group_id takes precedence over profile
   let techIds;
   let resultMeta;
 
   if (group_id) {
-    // Existing group-based behavior
     const group = lookupGroup(db, group_id);
     if (!group) {
       return {
@@ -327,7 +254,6 @@ async function handleAnalyzeCoverage(db, args) {
     techIds = getGroupTechniques(db, group_id);
     resultMeta = { group_id: group.id, group_name: group.name };
   } else if (profile) {
-    // Profile-based coverage analysis
     const profileTechIds = getThreatProfile(profile);
     if (!profileTechIds) {
       return {
@@ -338,42 +264,35 @@ async function handleAnalyzeCoverage(db, args) {
     techIds = profileTechIds;
     resultMeta = { profile_name: profile.toLowerCase() };
   } else {
-    // Neither group_id nor profile provided
     return {
       content: [{ type: 'text', text: `Either group_id or profile required. Available profiles: ${listThreatProfiles().join(', ')}` }],
       isError: true,
     };
   }
 
-  const groupTechIds = techIds;
-
-  // Check detections table (Phase 54 graceful degradation)
   let detectedSet = new Set();
   try {
-    if (groupTechIds.length > 0) {
+    if (techIds.length > 0) {
       const rows = db.prepare('SELECT technique_ids FROM detections').all();
       const allDetected = new Set();
       for (const r of rows) {
         if (r.technique_ids) r.technique_ids.split(',').forEach(t => allDetected.add(t.trim()));
       }
-      for (const id of groupTechIds) {
+      for (const id of techIds) {
         if (allDetected.has(id)) detectedSet.add(id);
       }
     }
-  } catch {
-    // detections table doesn't exist yet -- covered = 0
-  }
+  } catch { /* no detections table */ }
 
-  // Build per-tactic breakdown (batch-fetch to avoid N+1)
   const tacticBreakdown = {};
   const tacticMap = new Map();
-  if (groupTechIds.length > 0) {
-    const ph = groupTechIds.map(() => '?').join(',');
-    const rows = db.prepare(`SELECT id, tactics FROM techniques WHERE id IN (${ph})`).all(...groupTechIds);
+  if (techIds.length > 0) {
+    const ph = techIds.map(() => '?').join(',');
+    const rows = db.prepare(`SELECT id, tactics FROM techniques WHERE id IN (${ph})`).all(...techIds);
     for (const r of rows) tacticMap.set(r.id, r.tactics);
   }
 
-  for (const tid of groupTechIds) {
+  for (const tid of techIds) {
     const tactics_str = tacticMap.get(tid);
     if (!tactics_str) continue;
 
@@ -395,7 +314,7 @@ async function handleAnalyzeCoverage(db, args) {
     }
   }
 
-  const totalTechniques = groupTechIds.length;
+  const totalTechniques = techIds.length;
   const covered = detectedSet.size;
   const uncovered = totalTechniques - covered;
 
@@ -420,15 +339,6 @@ async function handleAnalyzeCoverage(db, args) {
   };
 }
 
-// ─── Knowledge Graph Tool Handlers (Phase 56) ────────────────────────────
-
-/**
- * Handle query_knowledge tool call.
- * Searches entities by text and includes related entities for each match.
- * @param {import('better-sqlite3').Database} db
- * @param {{ query: string, type?: string, limit?: number }} args
- * @returns {object} MCP tool response
- */
 async function handleQueryKnowledge(db, args) {
   const { query, type, limit = 10 } = args;
   const entities = searchEntities(db, query, { type, limit });
@@ -439,7 +349,6 @@ async function handleQueryKnowledge(db, args) {
     };
   }
 
-  // Enrich each entity with its relations (up to 5 per entity)
   const enriched = entities.map(entity => {
     const relations = getRelations(db, entity.id, { limit: 5 });
     return { ...entity, relations };
@@ -450,13 +359,6 @@ async function handleQueryKnowledge(db, args) {
   };
 }
 
-/**
- * Handle log_decision tool call.
- * Logs a decision and returns recent decisions for the same technique.
- * @param {import('better-sqlite3').Database} db
- * @param {{ case_slug: string, technique_id: string, decision: string, reasoning?: string, context?: string }} args
- * @returns {object} MCP tool response
- */
 async function handleLogDecision(db, args) {
   const { case_slug, technique_id, decision, reasoning, context } = args;
   logDecision(db, { case_slug, technique_id, decision, reasoning, context });
@@ -468,13 +370,6 @@ async function handleLogDecision(db, args) {
   };
 }
 
-/**
- * Handle log_learning tool call.
- * Logs a learning and returns recent learnings on the same topic.
- * @param {import('better-sqlite3').Database} db
- * @param {{ topic: string, pattern: string, detail?: string, technique_ids?: string, case_slug?: string }} args
- * @returns {object} MCP tool response
- */
 async function handleLogLearning(db, args) {
   const { topic, pattern, detail, technique_ids, case_slug } = args;
   logLearning(db, { topic, pattern, detail, technique_ids, case_slug });
@@ -486,15 +381,7 @@ async function handleLogLearning(db, args) {
   };
 }
 
-// ─── Tool Registration ─────────────────────────────────────────────────────
-
-/**
- * Register all 5 MCP tools on a given McpServer instance.
- * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server
- * @param {import('better-sqlite3').Database} db
- */
 function registerTools(server, db) {
-  // Tool 1: lookup_technique
   server.tool(
     'lookup_technique',
     'Look up an ATT&CK technique by ID (e.g., T1059.001). Returns technique name, description, tactics, platforms, data sources, and MITRE URL.',
@@ -506,7 +393,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleLookupTechnique(db, args))
   );
 
-  // Tool 2: search_techniques
   server.tool(
     'search_techniques',
     'Full-text search across ATT&CK technique names and descriptions. Supports filtering by tactic and platform.',
@@ -519,7 +405,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleSearchTechniques(db, args))
   );
 
-  // Tool 3: lookup_group
   server.tool(
     'lookup_group',
     'Look up an ATT&CK threat group by ID or name. Returns group details with associated techniques and software/malware.',
@@ -529,7 +414,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleLookupGroup(db, args))
   );
 
-  // Tool 4: generate_layer
   server.tool(
     'generate_layer',
     'Generate an ATT&CK Navigator v4.5 layer JSON. Supports custom technique sets, group-based layers, coverage snapshots, and gap analysis.',
@@ -543,7 +427,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleGenerateLayer(db, args))
   );
 
-  // Tool 5: analyze_coverage
   server.tool(
     'analyze_coverage',
     'Analyze detection coverage for a threat group or named threat profile. Returns per-tactic breakdown showing which techniques have detections and which are gaps.',
@@ -555,7 +438,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleAnalyzeCoverage(db, args))
   );
 
-  // Tool 6: compare_detections
   server.tool(
     'compare_detections',
     'Compare detection coverage across sources (Sigma, ESCU, Elastic, KQL) for a technique or topic.',
@@ -566,7 +448,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleCompareDetections(db, args))
   );
 
-  // Tool 7: suggest_detections
   server.tool(
     'suggest_detections',
     'Suggest detections for an uncovered technique based on rules from the same tactic family.',
@@ -576,7 +457,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleSuggestDetections(db, args))
   );
 
-  // Tool 8: query_knowledge (Phase 56)
   server.tool(
     'query_knowledge',
     'Search the hunt knowledge graph for entities (threat actors, techniques, tools, campaigns, vulnerabilities, data sources) and their relationships. Returns matching entities with related connections.',
@@ -588,7 +468,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleQueryKnowledge(db, args))
   );
 
-  // Tool 9: log_decision (Phase 56)
   server.tool(
     'log_decision',
     'Log a hunt decision with reasoning for future reference. Decisions are tagged by technique and case, enabling institutional memory across hunt sessions.',
@@ -602,7 +481,6 @@ function registerTools(server, db) {
     withTimeout(async (args) => handleLogDecision(db, args))
   );
 
-  // Tool 10: log_learning (Phase 56)
   server.tool(
     'log_learning',
     'Log a hunt learning or pattern for future reference. Learnings are tagged by topic and technique, surfacing when future hunts touch the same areas.',
@@ -617,11 +495,8 @@ function registerTools(server, db) {
   );
 }
 
-// ─── Exports ───────────────────────────────────────────────────────────────
-
 module.exports = {
   registerTools,
-  // Exported for testing
   handleLookupTechnique,
   handleSearchTechniques,
   handleLookupGroup,

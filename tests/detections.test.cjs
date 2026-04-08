@@ -7,14 +7,12 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 
-// Helper: create an isolated temp directory (never touches real ~/.thrunt/)
 function makeTempDir() {
   const dir = path.join(os.tmpdir(), `thrunt-det-test-${crypto.randomUUID()}`);
   fs.mkdirSync(dir, { recursive: true });
   return dir;
 }
 
-// Lazy-load modules
 let det;
 function loadDet() {
   if (!det) det = require('../mcp-hunt-intel/lib/detections.cjs');
@@ -27,65 +25,60 @@ function loadIntel() {
   return intel;
 }
 
-// Read fixture files
 const FIXTURES_DIR = path.join(__dirname, 'fixtures');
 const sigmaYaml = fs.readFileSync(path.join(FIXTURES_DIR, 'sigma-sample.yml'), 'utf8');
 const escuYaml = fs.readFileSync(path.join(FIXTURES_DIR, 'escu-sample.yml'), 'utf8');
 const elasticToml = fs.readFileSync(path.join(FIXTURES_DIR, 'elastic-sample.toml'), 'utf8');
 const kqlMd = fs.readFileSync(path.join(FIXTURES_DIR, 'kql-sample.md'), 'utf8');
 
-// ── parseSigmaRule ─────────────────────────────────────────────────────────
-
 describe('detections.cjs - parseSigmaRule', () => {
   it('parses valid Sigma YAML into a DetectionRow', () => {
     const { parseSigmaRule } = loadDet();
     const row = parseSigmaRule(sigmaYaml, '/rules/sigma/test.yml');
 
-    assert.ok(row, 'should return a row');
+    assert.ok(row);
     assert.equal(row.id, 'sigma:3b6ab547-f55a-4d6e-88a1-a6a9f87e1234');
     assert.equal(row.title, 'Suspicious PowerShell Download');
     assert.equal(row.source_format, 'sigma');
-    assert.ok(row.technique_ids.includes('T1059.001'), 'should include T1059.001');
-    assert.ok(row.technique_ids.includes('T1027'), 'should include T1027');
+    assert.ok(row.technique_ids.includes('T1059.001'));
+    assert.ok(row.technique_ids.includes('T1027'));
     assert.equal(row.severity, 'high');
-    assert.ok(row.logsource, 'should have logsource');
-    assert.ok(row.query, 'should have query (detection block)');
+    assert.ok(row.logsource);
+    assert.ok(row.query);
     assert.equal(row.description, 'Detects suspicious PowerShell download cradles');
     assert.equal(row.file_path, '/rules/sigma/test.yml');
 
-    // Check metadata JSON
     const meta = JSON.parse(row.metadata);
-    assert.ok(Array.isArray(meta.falsepositives), 'metadata should have falsepositives');
+    assert.ok(Array.isArray(meta.falsepositives));
     assert.equal(meta.author, 'Test Author');
     assert.equal(meta.status, 'test');
-    assert.ok(Array.isArray(meta.references), 'metadata should have references');
+    assert.ok(Array.isArray(meta.references));
   });
 
   it('extracts tactics from tags as title-cased strings', () => {
     const { parseSigmaRule } = loadDet();
     const row = parseSigmaRule(sigmaYaml, '/test.yml');
-    assert.ok(row.tactics.includes('Execution'), 'should include Execution tactic');
-    assert.ok(row.tactics.includes('Defense Evasion'), 'should include Defense Evasion tactic');
+    assert.ok(row.tactics.includes('Execution'));
+    assert.ok(row.tactics.includes('Defense Evasion'));
   });
 
   it('returns null for malformed YAML', () => {
     const { parseSigmaRule } = loadDet();
     const row = parseSigmaRule('{{{{not yaml at all!@#$', '/bad.yml');
-    assert.equal(row, null, 'should return null for malformed YAML');
+    assert.equal(row, null);
   });
 
   it('returns null for YAML missing title', () => {
     const { parseSigmaRule } = loadDet();
     const row = parseSigmaRule('id: abc\nlevel: high\n', '/no-title.yml');
-    assert.equal(row, null, 'should return null when title is missing');
+    assert.equal(row, null);
   });
 
   it('filters out non-attack tags (e.g. cve.*)', () => {
     const { parseSigmaRule } = loadDet();
     const row = parseSigmaRule(sigmaYaml, '/test.yml');
-    // cve.2024.1234 should NOT appear in technique_ids
-    assert.ok(!row.technique_ids.includes('CVE'), 'should not include CVE tags');
-    assert.ok(!row.technique_ids.includes('cve'), 'should not include cve tags');
+    assert.ok(!row.technique_ids.includes('CVE'));
+    assert.ok(!row.technique_ids.includes('cve'));
   });
 
   it('deduplicates technique IDs', () => {
@@ -106,49 +99,46 @@ detection:
   condition: selection
 `;
     const row = parseSigmaRule(yaml, '/dup.yml');
-    assert.ok(row, 'should return a row');
+    assert.ok(row);
     const ids = row.technique_ids.split(',');
     const unique = [...new Set(ids)];
-    assert.deepEqual(ids, unique, 'technique_ids should be deduplicated');
+    assert.deepEqual(ids, unique);
   });
 });
-
-// ── parseEscuRule ──────────────────────────────────────────────────────────
 
 describe('detections.cjs - parseEscuRule', () => {
   it('parses valid ESCU YAML into a DetectionRow', () => {
     const { parseEscuRule } = loadDet();
     const row = parseEscuRule(escuYaml, '/escu/test.yml');
 
-    assert.ok(row, 'should return a row');
+    assert.ok(row);
     assert.equal(row.id, 'escu:87654321-abcd-ef01-2345-678901234567');
     assert.equal(row.title, 'Remote System Discovery With AdsiSearcher');
     assert.equal(row.source_format, 'escu');
-    assert.ok(row.technique_ids.includes('T1018'), 'should include T1018');
-    assert.ok(row.technique_ids.includes('T1069.002'), 'should include T1069.002');
-    assert.ok(row.query.includes('tstats'), 'should have query with tstats');
+    assert.ok(row.technique_ids.includes('T1018'));
+    assert.ok(row.technique_ids.includes('T1069.002'));
+    assert.ok(row.query.includes('tstats'));
     assert.equal(row.description, 'Detects the use of ADSISearcher for remote system discovery');
     assert.equal(row.file_path, '/escu/test.yml');
 
-    // Check metadata JSON
     const meta = JSON.parse(row.metadata);
-    assert.ok(Array.isArray(meta.analytic_story), 'metadata should have analytic_story');
+    assert.ok(Array.isArray(meta.analytic_story));
     assert.equal(meta.asset_type, 'Endpoint');
     assert.equal(meta.security_domain, 'endpoint');
-    assert.ok(Array.isArray(meta.data_models), 'metadata should have data_models');
+    assert.ok(Array.isArray(meta.data_models));
     assert.equal(meta.risk_score, 40, 'risk_score should come from rba.risk_objects[0].score');
   });
 
   it('returns null for malformed YAML', () => {
     const { parseEscuRule } = loadDet();
     const row = parseEscuRule('not: [valid: yaml: {{', '/bad.yml');
-    assert.equal(row, null, 'should return null for malformed YAML');
+    assert.equal(row, null);
   });
 
   it('returns null for YAML missing name', () => {
     const { parseEscuRule } = loadDet();
     const row = parseEscuRule('id: abc\ntype: TTP\n', '/no-name.yml');
-    assert.equal(row, null, 'should return null when name is missing');
+    assert.equal(row, null);
   });
 
   it('stores analytic_story in metadata', () => {
@@ -159,23 +149,20 @@ describe('detections.cjs - parseEscuRule', () => {
   });
 });
 
-// ── parseElasticRule ───────────────────────────────────────────────────────
-
 describe('detections.cjs - parseElasticRule', () => {
   it('parses valid Elastic TOML into a DetectionRow', () => {
     const { parseElasticRule } = loadDet();
     const row = parseElasticRule(elasticToml, '/elastic/test.toml');
 
-    assert.ok(row, 'should return a row');
+    assert.ok(row);
     assert.equal(row.id, 'elastic:abcdef12-3456-7890-abcd-ef1234567890');
     assert.equal(row.title, 'Suspicious Syslog Service Disable');
     assert.equal(row.source_format, 'elastic');
     assert.equal(row.severity, 'medium');
-    assert.ok(row.query.includes('process where'), 'should have query');
+    assert.ok(row.query.includes('process where'));
     assert.equal(row.description, 'Detects attempts to disable the syslog service');
     assert.equal(row.file_path, '/elastic/test.toml');
 
-    // Check metadata JSON
     const meta = JSON.parse(row.metadata);
     assert.equal(meta.maturity, 'production');
     assert.equal(meta.risk_score, 47);
@@ -187,68 +174,63 @@ describe('detections.cjs - parseElasticRule', () => {
     const { parseElasticRule } = loadDet();
     const row = parseElasticRule(elasticToml, '/elastic/test.toml');
 
-    // Should have techniques from BOTH threat entries
-    assert.ok(row.technique_ids.includes('T1562'), 'should include T1562');
-    assert.ok(row.technique_ids.includes('T1543'), 'should include T1543');
-    // And the subtechnique
-    assert.ok(row.technique_ids.includes('T1562.001'), 'should include T1562.001 subtechnique');
+    assert.ok(row.technique_ids.includes('T1562'));
+    assert.ok(row.technique_ids.includes('T1543'));
+    assert.ok(row.technique_ids.includes('T1562.001'));
   });
 
   it('extracts tactics from all threat entries', () => {
     const { parseElasticRule } = loadDet();
     const row = parseElasticRule(elasticToml, '/elastic/test.toml');
 
-    assert.ok(row.tactics.includes('Defense Evasion'), 'should include Defense Evasion');
-    assert.ok(row.tactics.includes('Persistence'), 'should include Persistence');
+    assert.ok(row.tactics.includes('Defense Evasion'));
+    assert.ok(row.tactics.includes('Persistence'));
   });
 
   it('returns null for malformed TOML', () => {
     const { parseElasticRule } = loadDet();
     const row = parseElasticRule('not valid toml [[[bad', '/bad.toml');
-    assert.equal(row, null, 'should return null for malformed TOML');
+    assert.equal(row, null);
   });
 
   it('returns null for TOML missing rule name', () => {
     const { parseElasticRule } = loadDet();
     const row = parseElasticRule('[rule]\nrule_id = "abc"\n', '/no-name.toml');
-    assert.equal(row, null, 'should return null when rule name is missing');
+    assert.equal(row, null);
   });
 });
-
-// ── parseKqlRule ───────────────────────────────────────────────────────────
 
 describe('detections.cjs - parseKqlRule', () => {
   it('parses valid KQL markdown into a DetectionRow', () => {
     const { parseKqlRule } = loadDet();
     const row = parseKqlRule(kqlMd, 'kql-sample.md');
 
-    assert.ok(row, 'should return a row');
-    assert.ok(row.id.startsWith('kql:'), 'id should start with kql:');
+    assert.ok(row);
+    assert.ok(row.id.startsWith('kql:'));
     assert.equal(row.title, 'Network Service Discovery T1046');
     assert.equal(row.source_format, 'kql');
-    assert.ok(row.technique_ids.includes('T1046'), 'should include T1046');
-    assert.ok(row.technique_ids.includes('T1135'), 'should include T1135');
-    assert.ok(row.query.includes('DeviceNetworkEvents'), 'query should contain KQL');
-    assert.ok(row.query.includes('RemotePort'), 'query should contain RemotePort');
+    assert.ok(row.technique_ids.includes('T1046'));
+    assert.ok(row.technique_ids.includes('T1135'));
+    assert.ok(row.query.includes('DeviceNetworkEvents'));
+    assert.ok(row.query.includes('RemotePort'));
 
-    // Check metadata
     const meta = JSON.parse(row.metadata);
-    assert.ok(Array.isArray(meta.tables), 'metadata should have tables array');
-    assert.ok(meta.tables.includes('DeviceNetworkEvents'), 'tables should include DeviceNetworkEvents');
+    assert.ok(Array.isArray(meta.tables));
+    assert.ok(meta.tables.includes('DeviceNetworkEvents'));
   });
 
   it('returns null when no KQL code blocks found', () => {
     const { parseKqlRule } = loadDet();
     const row = parseKqlRule('# Just a heading\n\nNo code blocks here.\n', 'no-code.md');
-    assert.equal(row, null, 'should return null when no code blocks');
+    assert.equal(row, null);
   });
 
   it('uses filename as title fallback when no heading found', () => {
     const { parseKqlRule } = loadDet();
     const md = '```kql\nDeviceEvents\n| where ActionType == "test"\n```\n';
     const row = parseKqlRule(md, 'my-detection-rule.md');
-    assert.ok(row, 'should return a row');
-    assert.equal(row.title, 'my-detection-rule', 'title should be filename sans extension');
+    assert.ok(row);
+    assert.equal(row.title, 'my-detection-rule');
   });
 
   it('extracts technique IDs from text via regex', () => {
@@ -261,14 +243,12 @@ DeviceProcessEvents
 T1059 mentioned here too
 `;
     const row = parseKqlRule(md, 'techniques.md');
-    assert.ok(row, 'should return a row');
-    assert.ok(row.technique_ids.includes('T1059.001'), 'should extract T1059.001');
-    assert.ok(row.technique_ids.includes('T1027'), 'should extract T1027');
-    assert.ok(row.technique_ids.includes('T1059'), 'should extract T1059');
+    assert.ok(row);
+    assert.ok(row.technique_ids.includes('T1059.001'));
+    assert.ok(row.technique_ids.includes('T1027'));
+    assert.ok(row.technique_ids.includes('T1059'));
   });
 });
-
-// ── ensureDetectionsSchema ────────────────────────────────────────────────
 
 describe('detections.cjs - ensureDetectionsSchema', () => {
   let tmpDir, db;
@@ -292,8 +272,8 @@ describe('detections.cjs - ensureDetectionsSchema', () => {
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     ).all().map(r => r.name);
 
-    assert.ok(tables.includes('detections'), 'detections table should exist');
-    assert.ok(tables.includes('detections_fts'), 'detections_fts virtual table should exist');
+    assert.ok(tables.includes('detections'));
+    assert.ok(tables.includes('detections_fts'));
   });
 
   it('creates idx_det_source and idx_det_severity indexes', () => {
@@ -304,18 +284,16 @@ describe('detections.cjs - ensureDetectionsSchema', () => {
       "SELECT name FROM sqlite_master WHERE type='index' ORDER BY name"
     ).all().map(r => r.name);
 
-    assert.ok(indexes.includes('idx_det_source'), 'idx_det_source index should exist');
-    assert.ok(indexes.includes('idx_det_severity'), 'idx_det_severity index should exist');
+    assert.ok(indexes.includes('idx_det_source'));
+    assert.ok(indexes.includes('idx_det_severity'));
   });
 
   it('is idempotent (calling twice does not error)', () => {
     const { ensureDetectionsSchema } = loadDet();
     ensureDetectionsSchema(db);
-    assert.doesNotThrow(() => ensureDetectionsSchema(db), 'second call should not throw');
+    assert.doesNotThrow(() => ensureDetectionsSchema(db));
   });
 });
-
-// ── insertDetection + searchDetections ────────────────────────────────────
 
 describe('detections.cjs - insertDetection + searchDetections', () => {
   let tmpDir, db;
@@ -337,42 +315,39 @@ describe('detections.cjs - insertDetection + searchDetections', () => {
     const { insertDetection, parseSigmaRule } = loadDet();
     const row = parseSigmaRule(sigmaYaml, '/test.yml');
     const changes = insertDetection(db, row);
-    assert.equal(changes, 1, 'should return 1 for new insert');
+    assert.equal(changes, 1);
   });
 
   it('returns 0 for duplicate insert', () => {
     const { insertDetection, parseSigmaRule } = loadDet();
     const row = parseSigmaRule(sigmaYaml, '/test.yml');
     const changes = insertDetection(db, row);
-    assert.equal(changes, 0, 'should return 0 for duplicate id');
+    assert.equal(changes, 0);
   });
 
   it('FTS search finds by title', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'PowerShell');
-    assert.ok(results.length > 0, 'should find by title keyword');
-    assert.ok(
-      results.some(r => r.title.includes('PowerShell')),
-      'at least one result should match title keyword'
-    );
+    assert.ok(results.length > 0);
+    assert.ok(results.some(r => r.title.includes('PowerShell')));
   });
 
   it('FTS search finds by technique_id using LIKE filter', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'PowerShell', { technique_id: 'T1059.001' });
-    assert.ok(results.length > 0, 'should find by technique_id filter');
+    assert.ok(results.length > 0);
   });
 
   it('FTS search finds by description keyword', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'download cradles');
-    assert.ok(results.length > 0, 'should find by description keyword');
+    assert.ok(results.length > 0);
   });
 
   it('FTS search filters by source_format', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'PowerShell', { source_format: 'sigma' });
-    assert.ok(results.length > 0, 'should find with source_format filter');
+    assert.ok(results.length > 0);
     for (const r of results) {
       assert.equal(r.source_format, 'sigma');
     }
@@ -381,7 +356,7 @@ describe('detections.cjs - insertDetection + searchDetections', () => {
   it('FTS search filters by severity', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'PowerShell', { severity: 'high' });
-    assert.ok(results.length > 0, 'should find with severity filter');
+    assert.ok(results.length > 0);
     for (const r of results) {
       assert.equal(r.severity, 'high');
     }
@@ -396,11 +371,9 @@ describe('detections.cjs - insertDetection + searchDetections', () => {
   it('malformed FTS query returns empty array (no throw)', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'AND OR NOT ""');
-    assert.ok(Array.isArray(results), 'should return an array');
+    assert.ok(Array.isArray(results));
   });
 });
-
-// ── indexSigmaDirectory ──────────────────────────────────────────────────
 
 describe('detections.cjs - indexSigmaDirectory', () => {
   let tmpDir, db, rulesDir;
@@ -412,21 +385,18 @@ describe('detections.cjs - indexSigmaDirectory', () => {
     const { ensureDetectionsSchema } = loadDet();
     ensureDetectionsSchema(db);
 
-    // Create a temp rules directory with the sigma fixture
     rulesDir = path.join(tmpDir, 'sigma-rules');
     fs.mkdirSync(rulesDir, { recursive: true });
     fs.copyFileSync(
       path.join(FIXTURES_DIR, 'sigma-sample.yml'),
       path.join(rulesDir, 'test-rule.yml')
     );
-    // Add a subdirectory with another rule
     const subDir = path.join(rulesDir, 'sub');
     fs.mkdirSync(subDir);
     fs.copyFileSync(
       path.join(FIXTURES_DIR, 'sigma-sample.yml'),
       path.join(subDir, 'nested-rule.yaml')
     );
-    // Add a malformed file
     fs.writeFileSync(path.join(rulesDir, 'bad.yml'), '{{{{bad yaml');
   });
 
@@ -443,14 +413,10 @@ describe('detections.cjs - indexSigmaDirectory', () => {
   });
 
   it('skips malformed YAML files', () => {
-    // The bad.yml was in the same directory; indexSigmaDirectory should not throw
-    // and should have completed successfully (tested above)
     const count = db.prepare("SELECT COUNT(*) AS cnt FROM detections WHERE source_format = 'sigma'").get().cnt;
-    assert.ok(count >= 1, 'should have sigma rows despite malformed file');
+    assert.ok(count >= 1);
   });
 });
-
-// ── indexEscuDirectory ───────────────────────────────────────────────────
 
 describe('detections.cjs - indexEscuDirectory', () => {
   let tmpDir, db, rulesDir;
@@ -482,8 +448,6 @@ describe('detections.cjs - indexEscuDirectory', () => {
   });
 });
 
-// ── indexElasticDirectory ────────────────────────────────────────────────
-
 describe('detections.cjs - indexElasticDirectory', () => {
   let tmpDir, db, rulesDir;
 
@@ -513,8 +477,6 @@ describe('detections.cjs - indexElasticDirectory', () => {
     assert.ok(count >= 1, `should index at least 1 Elastic rule, got ${count}`);
   });
 });
-
-// ── indexKqlDirectory ───────────────────────────────────────────────────
 
 describe('detections.cjs - indexKqlDirectory', () => {
   let tmpDir, db, rulesDir;
@@ -546,8 +508,6 @@ describe('detections.cjs - indexKqlDirectory', () => {
   });
 });
 
-// ── populateDetectionsIfEmpty ────────────────────────────────────────────
-
 describe('detections.cjs - populateDetectionsIfEmpty', () => {
   let tmpDir, db;
 
@@ -566,37 +526,30 @@ describe('detections.cjs - populateDetectionsIfEmpty', () => {
 
   it('skips population when detections table is not empty', () => {
     const { populateDetectionsIfEmpty, insertDetection, parseSigmaRule } = loadDet();
-    // First insert a row so the table is not empty
     const row = parseSigmaRule(sigmaYaml, '/test.yml');
     insertDetection(db, row);
 
     const countBefore = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
-    assert.ok(countBefore > 0, 'table should have rows');
+    assert.ok(countBefore > 0);
 
-    // populateDetectionsIfEmpty should be a no-op
-    assert.doesNotThrow(() => populateDetectionsIfEmpty(db), 'should not throw');
+    assert.doesNotThrow(() => populateDetectionsIfEmpty(db));
 
     const countAfter = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
-    // Count should be the same (or possibly higher if bundled data exists, but not fewer)
-    assert.ok(countAfter >= countBefore, 'row count should not decrease');
+    assert.ok(countAfter >= countBefore);
   });
 
   it('does not throw when bundled sigma-core directory is missing', () => {
-    // Create a fresh DB with no rows to trigger population
     const freshDir = makeTempDir();
     const { openIntelDb } = loadIntel();
     const freshDb = openIntelDb({ dbDir: freshDir });
     const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
     ensureDetectionsSchema(freshDb);
 
-    // Should not throw even if data/sigma-core doesn't exist
-    assert.doesNotThrow(() => populateDetectionsIfEmpty(freshDb), 'should not throw when no bundled rules');
+    assert.doesNotThrow(() => populateDetectionsIfEmpty(freshDb));
     freshDb.close();
     fs.rmSync(freshDir, { recursive: true, force: true });
   });
 });
-
-// ── openIntelDb integration ────────────────────────────────────────────────
 
 describe('detections.cjs - openIntelDb integration', () => {
   let tmpDir, db;
@@ -617,33 +570,29 @@ describe('detections.cjs - openIntelDb integration', () => {
       "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
     ).all().map(r => r.name);
 
-    assert.ok(tables.includes('techniques'), 'techniques table should exist');
-    assert.ok(tables.includes('detections'), 'detections table should exist');
-    assert.ok(tables.includes('detections_fts'), 'detections_fts virtual table should exist');
+    assert.ok(tables.includes('techniques'));
+    assert.ok(tables.includes('detections'));
+    assert.ok(tables.includes('detections_fts'));
   });
 
   it('openIntelDb populates bundled Sigma rules on first run', () => {
     const count = db.prepare(
       "SELECT COUNT(*) AS cnt FROM detections WHERE source_format = 'sigma'"
     ).get().cnt;
-    // Bundled sigma-core directory has real rules (1000+), but at minimum >= 3 for fallback
-    assert.ok(count >= 3, `should have at least 3 bundled sigma rules, got ${count}`);
+    assert.ok(count >= 3, `expected at least 3 bundled sigma rules, got ${count}`);
   });
 
   it('populateDetectionsIfEmpty is idempotent', () => {
     const countBefore = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
-    assert.ok(countBefore > 0, 'should have rows from initial population');
+    assert.ok(countBefore > 0);
 
-    // Call again -- should be a no-op since table is not empty
     const { populateDetectionsIfEmpty } = loadDet();
     populateDetectionsIfEmpty(db);
 
     const countAfter = db.prepare('SELECT COUNT(*) AS cnt FROM detections').get().cnt;
-    assert.equal(countAfter, countBefore, 'row count should not change on second populate');
+    assert.equal(countAfter, countBefore);
   });
 });
-
-// ── env var path indexing ─────────────────────────────────────────────────
 
 describe('detections.cjs - env var path indexing', () => {
   let tmpDir, db;
@@ -670,10 +619,8 @@ describe('detections.cjs - env var path indexing', () => {
   });
 
   it('SIGMA_PATHS indexes custom directory', () => {
-    // Create temp sigma directory with a custom rule
     const customDir = path.join(tmpDir, 'custom-sigma');
     fs.mkdirSync(customDir, { recursive: true });
-    // Copy fixture but change the ID so it doesn't conflict with bundled
     const customYaml = sigmaYaml.replace(
       '3b6ab547-f55a-4d6e-88a1-a6a9f87e1234',
       'custom-sigma-env-test-001'
@@ -694,7 +641,7 @@ describe('detections.cjs - env var path indexing', () => {
     const row = db.prepare(
       "SELECT * FROM detections WHERE id = 'sigma:custom-sigma-env-test-001'"
     ).get();
-    assert.ok(row, 'custom sigma rule from SIGMA_PATHS should be indexed');
+    assert.ok(row);
     assert.equal(row.source_format, 'sigma');
   });
 
@@ -721,7 +668,7 @@ describe('detections.cjs - env var path indexing', () => {
     const row = db.prepare(
       "SELECT * FROM detections WHERE id = 'escu:custom-escu-env-test-001'"
     ).get();
-    assert.ok(row, 'custom ESCU rule from SPLUNK_PATHS should be indexed');
+    assert.ok(row);
     assert.equal(row.source_format, 'escu');
   });
 
@@ -748,7 +695,7 @@ describe('detections.cjs - env var path indexing', () => {
     const row = db.prepare(
       "SELECT * FROM detections WHERE id = 'elastic:custom-elastic-env-test-001'"
     ).get();
-    assert.ok(row, 'custom Elastic rule from ELASTIC_PATHS should be indexed');
+    assert.ok(row);
     assert.equal(row.source_format, 'elastic');
   });
 
@@ -763,14 +710,9 @@ describe('detections.cjs - env var path indexing', () => {
     db.pragma('foreign_keys = ON');
     ensureDetectionsSchema(db);
 
-    assert.doesNotThrow(
-      () => populateDetectionsIfEmpty(db),
-      'should not throw for nonexistent env var path'
-    );
+    assert.doesNotThrow(() => populateDetectionsIfEmpty(db));
   });
 });
-
-// ── end-to-end search ────────────────────────────────────────────────────
 
 describe('detections.cjs - end-to-end search', () => {
   let tmpDir, db;
@@ -789,17 +731,13 @@ describe('detections.cjs - end-to-end search', () => {
   it('search finds Sigma rule by technique ID', () => {
     const { searchDetections } = loadDet();
     const results = searchDetections(db, 'T1059', { technique_id: 'T1059' });
-    assert.ok(results.length > 0, 'should find detections for T1059');
-    assert.ok(
-      results.some(r => r.source_format === 'sigma'),
-      'at least one result should be sigma format'
-    );
+    assert.ok(results.length > 0);
+    assert.ok(results.some(r => r.source_format === 'sigma'));
   });
 
   it('search finds rule by keyword in title', () => {
     const { searchDetections } = loadDet();
-    // "suspicious" or "powershell" are common in Sigma rule titles
     const results = searchDetections(db, 'suspicious');
-    assert.ok(results.length > 0, 'should find detections matching "suspicious"');
+    assert.ok(results.length > 0);
   });
 });
