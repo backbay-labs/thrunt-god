@@ -714,6 +714,50 @@ function setActiveWorkstream(cwd, name) {
   fs.writeFileSync(filePath, name + '\n', 'utf-8');
 }
 
+// ─── Active Case Detection ──────────────────────────────────────────────────
+
+/**
+ * Get the active case slug from .planning/.active-case file.
+ * Returns null if no active case, file doesn't exist, or slug is invalid.
+ */
+function getActiveCase(cwd) {
+  const filePath = path.join(planningRoot(cwd), '.active-case');
+  try {
+    const slug = fs.readFileSync(filePath, 'utf-8').trim();
+    if (!slug || !/^[a-zA-Z0-9_-]+$/.test(slug)) return null;
+    const caseDir = path.join(planningRoot(cwd), 'cases', slug);
+    if (!fs.existsSync(caseDir)) return null;
+    return slug;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Set the active case. Pass null to clear.
+ */
+function setActiveCase(cwd, slug) {
+  const filePath = path.join(planningRoot(cwd), '.active-case');
+  if (!slug) {
+    try { fs.unlinkSync(filePath); } catch {}
+    return;
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
+    throw new Error('Invalid case slug: must be alphanumeric, hyphens, and underscores only');
+  }
+  fs.writeFileSync(filePath, slug + '\n', 'utf-8');
+}
+
+/**
+ * Resolve the current hunt context -- both workstream and case pointers.
+ * Returns { workstream: string|null, case: string|null }.
+ */
+function resolveHuntContext(cwd) {
+  const ws = getActiveWorkstream(cwd);
+  const caseSlug = getActiveCase(cwd);
+  return { workstream: ws, case: caseSlug };
+}
+
 // ─── Phase utilities ──────────────────────────────────────────────────────────
 
 function escapeRegex(value) {
@@ -1338,6 +1382,9 @@ module.exports = {
   getHuntmapDocInfo,
   getActiveWorkstream,
   setActiveWorkstream,
+  getActiveCase,
+  setActiveCase,
+  resolveHuntContext,
   filterPlanFiles,
   filterSummaryFiles,
   getPhaseFileStats,
