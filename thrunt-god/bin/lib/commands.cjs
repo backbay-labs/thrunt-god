@@ -4,8 +4,9 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync, execFileSync } = require('child_process');
-const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, PLANNING_DIR_NAME } = require('./core.cjs');
-const { extractFrontmatter } = require('./frontmatter.cjs');
+const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningRoot, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, getActiveCase, setActiveCase, PLANNING_DIR_NAME } = require('./core.cjs');
+const { extractFrontmatter, spliceFrontmatter } = require('./frontmatter.cjs');
+const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('./state.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
 // Lazy-require tenant module to avoid circular deps at load time
@@ -3366,6 +3367,125 @@ async function cmdConnectorsInit(cwd, args, raw) {
   }, raw);
 }
 
+// ─── Case commands ───────────────────────────────────────────────────────────
+
+function cmdCaseNew(cwd, name, options, raw) {
+  if (!name) {
+    error('Case name required. Usage: case new <name>');
+  }
+
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!slug) {
+    error('Invalid case name — must contain at least one alphanumeric character');
+  }
+
+  // Check slug uniqueness
+  const roster = getCaseRoster(cwd);
+  if (roster.some(c => c.slug === slug)) {
+    output({ success: false, error: `Case slug "${slug}" already exists` }, raw);
+    return;
+  }
+
+  const root = planningRoot(cwd);
+  const caseDir = path.join(root, 'cases', slug);
+  fs.mkdirSync(caseDir, { recursive: true });
+
+  const today = new Date().toISOString().split('T')[0];
+
+  // Create HUNTMAP.md
+  const huntmapFm = `---\ntitle: ${name}\nstatus: active\ncreated: ${today}\n---\n\n`;
+  const huntmapBody = `# Huntmap\n\n## Hypotheses\n\nSee HYPOTHESES.md\n`;
+  fs.writeFileSync(path.join(caseDir, 'HUNTMAP.md'), huntmapFm + huntmapBody, 'utf-8');
+
+  // Create HYPOTHESES.md
+  fs.writeFileSync(path.join(caseDir, 'HYPOTHESES.md'), `# Hypotheses\n\n_No hypotheses yet._\n`, 'utf-8');
+
+  // Create case-level STATE.md
+  const caseStateFm = `---\nstatus: active\nopened_at: ${today}\ntechnique_ids: []\n---\n\n`;
+  const caseStateBody = `# Case: ${name}\n\nStatus: Active\n`;
+  fs.writeFileSync(path.join(caseDir, 'STATE.md'), caseStateFm + caseStateBody, 'utf-8');
+
+  // Create QUERIES/ and RECEIPTS/ directories
+  fs.mkdirSync(path.join(caseDir, 'QUERIES'), { recursive: true });
+  fs.mkdirSync(path.join(caseDir, 'RECEIPTS'), { recursive: true });
+
+  // Add to program roster
+  addCaseToRoster(cwd, { slug, name, status: 'active', opened_at: today, technique_count: '0' });
+
+  // Set active case pointer
+  setActiveCase(cwd, slug);
+
+  const caseDirRel = toPosixPath(path.relative(cwd, caseDir));
+  output({ success: true, slug, name, case_dir: caseDirRel, message: `Case created: ${slug}` }, raw);
+}
+
+function cmdCaseList(cwd, raw) {
+  const roster = getCaseRoster(cwd);
+  output({
+    cases: roster,
+    total: roster.length,
+    active: roster.filter(c => c.status === 'active').length,
+    closed: roster.filter(c => c.status === 'closed').length,
+  }, raw);
+}
+
+function cmdCaseClose(cwd, slug, raw) {
+  if (!slug) {
+    error('Case slug required. Usage: case close <slug>');
+  }
+
+  // Update program roster
+  updateCaseInRoster(cwd, slug, { status: 'closed', closed_at: new Date().toISOString().split('T')[0] });
+
+  // Update case-level STATE.md
+  const root = planningRoot(cwd);
+  const caseStatePath = path.join(root, 'cases', slug, 'STATE.md');
+  if (fs.existsSync(caseStatePath)) {
+    const content = fs.readFileSync(caseStatePath, 'utf-8');
+    const fm = extractFrontmatter(content);
+    fm.status = 'closed';
+    fm.closed_at = new Date().toISOString().split('T')[0];
+    const newContent = spliceFrontmatter(content, fm);
+    fs.writeFileSync(caseStatePath, newContent, 'utf-8');
+  }
+
+  // Clear active case if it matches
+  const activeCase = getActiveCase(cwd);
+  if (activeCase === slug) {
+    setActiveCase(cwd, null);
+  }
+
+  output({ success: true, slug, message: `Case closed: ${slug}` }, raw);
+}
+
+function cmdCaseStatus(cwd, slug, raw) {
+  let targetSlug = slug;
+  if (!targetSlug) {
+    targetSlug = getActiveCase(cwd);
+    if (!targetSlug) {
+      error('No case specified and no active case. Usage: case status <slug>');
+    }
+  }
+
+  const roster = getCaseRoster(cwd);
+  const entry = roster.find(c => c.slug === targetSlug);
+  if (!entry) {
+    output({ error: `Case "${targetSlug}" not found in roster` }, raw);
+    return;
+  }
+
+  const activeCase = getActiveCase(cwd);
+  output({
+    slug: entry.slug,
+    name: entry.name,
+    status: entry.status,
+    opened_at: entry.opened_at,
+    closed_at: entry.closed_at || null,
+    technique_count: entry.technique_count || '0',
+    is_active: entry.slug === activeCase,
+  }, raw);
+}
+
 module.exports = {
   cmdGenerateSlug,
   cmdCurrentTimestamp,
@@ -3416,4 +3536,8 @@ module.exports = {
   cmdConnectorsInit,
   escapeJsString,
   renderTemplate,
+  cmdCaseNew,
+  cmdCaseList,
+  cmdCaseClose,
+  cmdCaseStatus,
 };

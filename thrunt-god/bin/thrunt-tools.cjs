@@ -307,6 +307,32 @@ async function main() {
     process.env.THRUNT_WORKSTREAM = ws;
   }
 
+  // Optional case override for program/case hierarchy.
+  // Priority: --case flag > THRUNT_CASE env var > .active-case file > null
+  const caseEqArg = args.find(arg => arg.startsWith('--case='));
+  const caseIdx = args.indexOf('--case');
+  let caseSlug = null;
+  if (caseEqArg) {
+    caseSlug = caseEqArg.slice('--case='.length).trim();
+    if (!caseSlug) error('Missing value for --case');
+    args.splice(args.indexOf(caseEqArg), 1);
+  } else if (caseIdx !== -1) {
+    caseSlug = args[caseIdx + 1];
+    if (!caseSlug || caseSlug.startsWith('--')) error('Missing value for --case');
+    args.splice(caseIdx, 2);
+  } else if (process.env.THRUNT_CASE) {
+    caseSlug = process.env.THRUNT_CASE.trim();
+  } else {
+    const { getActiveCase } = require('./lib/core.cjs');
+    caseSlug = getActiveCase(cwd);
+  }
+  if (caseSlug && !/^[a-zA-Z0-9_-]+$/.test(caseSlug)) {
+    error('Invalid case slug: must be alphanumeric, hyphens, and underscores only');
+  }
+  if (caseSlug) {
+    process.env.THRUNT_CASE = caseSlug;
+  }
+
   const rawIndex = args.indexOf('--raw');
   const raw = rawIndex !== -1;
   if (rawIndex !== -1) args.splice(rawIndex, 1);
@@ -325,7 +351,7 @@ async function main() {
   const command = args[0];
 
   if (!command) {
-    error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, pack, runtime, config-ensure-section, config-new-program, init, workstream');
+    error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>] [--case <slug>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, pack, runtime, config-ensure-section, config-new-program, init, workstream, case');
   }
 
   // Multi-repo guard: resolve project root for commands that read/write .planning/.
@@ -964,6 +990,9 @@ async function runCommand(command, args, cwd, raw) {
         case 'new-program':
           init.cmdInitNewProgram(cwd, raw);
           break;
+        case 'new-case':
+          init.cmdInitNewCase(cwd, raw);
+          break;
         case 'new-milestone':
           init.cmdInitNewMilestone(cwd, raw);
           break;
@@ -1007,7 +1036,7 @@ async function runCommand(command, args, cwd, raw) {
           await commands.cmdInitConnector(cwd, args.slice(2), raw);
           break;
         default:
-          error(`Unknown init workflow: ${workflow}\nAvailable: run, plan, new-program, new-milestone, quick, resume, validate-findings, phase-op, todos, milestone-op, map-environment, progress, manager, new-workspace, list-workspaces, remove-workspace, connector`);
+          error(`Unknown init workflow: ${workflow}\nAvailable: run, plan, new-program, new-case, new-milestone, quick, resume, validate-findings, phase-op, todos, milestone-op, map-environment, progress, manager, new-workspace, list-workspaces, remove-workspace, connector`);
       }
       break;
     }
@@ -1152,6 +1181,22 @@ async function runCommand(command, args, cwd, raw) {
         workstream.cmdWorkstreamProgress(cwd, raw);
       } else {
         error('Unknown workstream subcommand. Available: create, list, status, complete, set, get, progress');
+      }
+      break;
+    }
+
+    case 'case': {
+      const subcommand = args[1];
+      if (subcommand === 'new') {
+        commands.cmdCaseNew(cwd, args.slice(2).join(' '), {}, raw);
+      } else if (subcommand === 'list') {
+        commands.cmdCaseList(cwd, raw);
+      } else if (subcommand === 'close') {
+        commands.cmdCaseClose(cwd, args[2], raw);
+      } else if (subcommand === 'status') {
+        commands.cmdCaseStatus(cwd, args[2], raw);
+      } else {
+        error('Unknown case subcommand. Available: new, list, close, status');
       }
       break;
     }

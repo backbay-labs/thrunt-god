@@ -361,6 +361,38 @@ function cmdInitNewProgram(cwd, raw) {
   output(withProjectRoot(cwd, result), raw);
 }
 
+function cmdInitNewCase(cwd, raw) {
+  const root = planningRoot(cwd);
+  const programState = path.join(root, 'STATE.md');
+
+  if (!fs.existsSync(programState)) {
+    output({ error: 'No active program. Run new-program first.', program_exists: false }, raw);
+    return;
+  }
+
+  const casesDir = path.join(root, 'cases');
+  const existingCases = [];
+  if (fs.existsSync(casesDir)) {
+    const entries = fs.readdirSync(casesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory()) existingCases.push(entry.name);
+    }
+  }
+
+  const config = loadConfig(cwd);
+  const result = {
+    program_exists: true,
+    cases_dir: toPosixPath(path.relative(cwd, casesDir)),
+    existing_cases: existingCases,
+    case_count: existingCases.length,
+    commit_docs: config.commit_docs,
+    mission_path: toPosixPath(path.relative(cwd, path.join(root, 'MISSION.md'))),
+    program_state_path: toPosixPath(path.relative(cwd, programState)),
+  };
+
+  output(withProjectRoot(cwd, result), raw);
+}
+
 function cmdInitNewMilestone(cwd, raw) {
   const config = loadConfig(cwd);
   const milestone = getMilestoneInfo(cwd);
@@ -1472,6 +1504,7 @@ module.exports = {
   cmdInitRun,
   cmdInitPlan,
   cmdInitNewProgram,
+  cmdInitNewCase,
   cmdInitNewMilestone,
   cmdInitQuick,
   cmdInitResume,
