@@ -39,9 +39,9 @@ Requirements for Hunt Program Intelligence release. Each maps to roadmap phases.
 - [x] **DET-04**: KQL markdown parser extracts detection queries, Microsoft table references, MITRE tags
 - [x] **DET-05**: Unified detections table with FTS5 external content tables, searchable by technique/tactic/severity/source/process name
 - [x] **DET-06**: Bundled SigmaHQ core rules + configurable SIGMA_PATHS/SPLUNK_PATHS/ELASTIC_PATHS env vars for custom rule directories
-- [ ] **DET-07**: Cross-source detection coverage comparison for any technique or topic
-- [ ] **DET-08**: Gap identification against threat profiles (ransomware, APT, initial-access, persistence, credential-access, defense-evasion)
-- [ ] **DET-09**: Detection suggestions for uncovered techniques based on available data sources
+- [x] **DET-07**: Cross-source detection coverage comparison for any technique or topic
+- [x] **DET-08**: Gap identification against threat profiles (ransomware, APT, initial-access, persistence, credential-access, defense-evasion)
+- [x] **DET-09**: Detection suggestions for uncovered techniques based on available data sources
 
 ### Knowledge
 
@@ -121,9 +121,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | DET-04 | Phase 54 | Complete |
 | DET-05 | Phase 54 | Complete |
 | DET-06 | Phase 54 | Complete |
-| DET-07 | Phase 55 | Pending |
-| DET-08 | Phase 55 | Pending |
-| DET-09 | Phase 55 | Pending |
+| DET-07 | Phase 55 | Complete |
+| DET-08 | Phase 55 | Complete |
+| DET-09 | Phase 55 | Complete |
 | KNOW-01 | Phase 56 | Pending |
 | KNOW-02 | Phase 56 | Pending |
 | KNOW-03 | Phase 56 | Pending |

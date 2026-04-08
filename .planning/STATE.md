@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-status: in-progress
-stopped_at: Completed 54-02-PLAN.md
-last_updated: "2026-04-08T18:38:51.000Z"
-last_activity: 2026-04-08 -- Phase 54 Plan 02 complete (detections lifecycle wiring + bundled SigmaHQ rules + integration tests)
+status: executing
+stopped_at: Completed 55-01-PLAN.md
+last_updated: "2026-04-08T19:14:34.371Z"
+last_activity: 2026-04-08 -- Phase 55 Plan 01 complete (coverage.cjs data layer with threat profiles + comparison + suggestions)
 progress:
   total_phases: 15
   completed_phases: 12
-  total_plans: 24
-  completed_plans: 24
-  percent: 100
+  total_plans: 26
+  completed_plans: 25
+  percent: 96
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.0 Hunt Program Intelligence — Phase 54: Detection Rule Ingestion
+**Current focus:** v3.0 Hunt Program Intelligence — Phase 55: Detection Coverage & Gap Analysis
 
 ## Current Milestone: v3.0 Hunt Program Intelligence
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 
 ## Current Position
 
-Phase: 54 of 57 (Detection Rule Ingestion)
-Plan: 2 of 2 plans in phase
-Status: Complete (2/2 plans complete)
-Last activity: 2026-04-08 -- Phase 54 Plan 02 complete (detections lifecycle wiring + bundled SigmaHQ rules + integration tests)
+Phase: 55 of 57 (Detection Coverage & Gap Analysis)
+Plan: 1 of 2 plans in phase
+Status: In Progress (1/2 plans complete)
+Last activity: 2026-04-08 -- Phase 55 Plan 01 complete (coverage.cjs data layer with threat profiles + comparison + suggestions)
 
-Progress: [██████████] 100% (v3.0 Phase 54: 2/2 plans)
+Progress: [██████████] 96% (v3.0 Phase 55: 1/2 plans)
 
 ## Accumulated Context
 
@@ -89,6 +89,10 @@ Progress: [██████████] 100% (v3.0 Phase 54: 2/2 plans)
 - [Phase 54]: Lazy require pattern for detections module in intel.cjs (getDetections() avoids circular dependency)
 - [Phase 54]: SigmaHQ core rules bundled from r2026-01-01 release (1378 rules across 9 categories)
 - [Phase 54]: populateDetectionsIfEmpty called after populateIfEmpty in openIntelDb to ensure ATT&CK data loads first
+- [Phase 55]: THREAT_PROFILES defined as plain JS constant object with 6 named profiles of curated technique ID arrays
+- [Phase 55]: compareDetections uses LIKE query on technique_ids column for flexible sub-technique matching
+- [Phase 55]: suggestDetections finds sibling techniques in same tactic via getTechniquesByTactic, limits to 10 similar rules
+- [Phase 55]: Free-text input to compareDetections uses techniques_fts for FTS lookup then compares first match
 
 ### Blockers/Concerns
 
@@ -96,6 +100,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T18:29:01Z
-Stopped at: Completed 54-02-PLAN.md
-Resume: Phase 54 complete. openIntelDb now auto-creates detections + detections_fts tables and indexes 1378 bundled SigmaHQ core rules on first access. Env var paths (SIGMA_PATHS, SPLUNK_PATHS, ELASTIC_PATHS) add custom rule directories. tools.cjs coverage/gap modes find real detection data. 47 detections tests + 35 intel-db tests pass. Phase 54 (Detection Rule Ingestion) is fully complete -- all 2 plans done.
+Last session: 2026-04-08T19:14:28.788Z
+Stopped at: Completed 55-01-PLAN.md
+Resume: Phase 55 Plan 01 complete. coverage.cjs exports 5 functions: THREAT_PROFILES (6 profiles), getThreatProfile, listThreatProfiles, compareDetections (per-source breakdown), suggestDetections (tactic-family suggestions). 21 tests pass. Ready for 55-02 to wire MCP tools (compare_detections, suggest_detections).
