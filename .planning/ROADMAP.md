@@ -214,10 +214,10 @@ Plans:
   4. An agent can generate an ATT&CK Navigator v4.5 layer file for a custom technique set, a coverage snapshot, a specific threat group, or a gap analysis
   5. An agent can request a per-tactic coverage breakdown and identify which techniques used by a named threat group have no detection coverage
   6. The global ~/.thrunt/intel.db is populated with ATT&CK STIX data on first run and shared safely between CLI and MCP server via WAL mode and busy_timeout
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
-- [ ] 53-01-PLAN.md — Package scaffold, curated ATT&CK groups data, intel.cjs data layer (intel.db schema, population, query functions)
-- [ ] 53-02-PLAN.md — MCP server entry point, 5 tool registrations (lookup_technique, search_techniques, lookup_group, generate_layer, analyze_coverage), Navigator layer builder
+- [x] 53-01-PLAN.md — Package scaffold, curated ATT&CK groups data, intel.cjs data layer (intel.db schema, population, query functions)
+- [x] 53-02-PLAN.md — MCP server entry point, 5 tool registrations (lookup_technique, search_techniques, lookup_group, generate_layer, analyze_coverage), Navigator layer builder
 
 ### Phase 54: Detection Rule Ingestion
 **Goal**: Detection rules from Sigma, Splunk ESCU, Elastic, and KQL sources are parsed, normalized, and searchable in a unified table
@@ -301,7 +301,7 @@ Plans:
 | 50. Program & Case Hierarchy | 3/3 | Complete    | 2026-04-08 |
 | 51. Program Dashboard & Extension Wiring | 2/2 | Complete    | 2026-04-08 |
 | 52. Cross-Case Intelligence | 2/2 | Complete    | 2026-04-08 |
-| 53. MCP Server & ATT&CK Tools | 1/2 | In progress | - |
+| 53. MCP Server & ATT&CK Tools | 2/2 | Complete    | 2026-04-08 |
 | 54. Detection Rule Ingestion | 0/TBD | Not started | - |
 | 55. Detection Coverage & Gap Analysis | 0/TBD | Not started | - |
 | 56. Knowledge Graph | 0/TBD | Not started | - |

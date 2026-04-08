@@ -24,11 +24,11 @@ Requirements for Hunt Program Intelligence release. Each maps to roadmap phases.
 
 ### MCP Server
 
-- [ ] **MCP-01**: @thrunt/mcp-hunt-intel MCP server runs via stdio transport with tool timeout SLA and stdout purity enforcement
+- [x] **MCP-01**: @thrunt/mcp-hunt-intel MCP server runs via stdio transport with tool timeout SLA and stdout purity enforcement
 - [x] **MCP-02**: ATT&CK technique lookup by ID, full-text search, filter by tactic and platform
 - [x] **MCP-03**: ATT&CK threat group lookup, group-to-technique mapping, software/malware correlation
-- [ ] **MCP-04**: ATT&CK Navigator v4.5 layer generation (custom, coverage, group, gap layers)
-- [ ] **MCP-05**: Coverage analysis with per-tactic breakdown, gap identification against threat groups
+- [x] **MCP-04**: ATT&CK Navigator v4.5 layer generation (custom, coverage, group, gap layers)
+- [x] **MCP-05**: Coverage analysis with per-tactic breakdown, gap identification against threat groups
 - [x] **MCP-06**: Global intel.db at ~/.thrunt/ with ATT&CK STIX data indexed into SQLite+FTS5, WAL mode, busy_timeout for CLI coexistence
 
 ### Detection
@@ -109,11 +109,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | INTEL-02 | Phase 52 | Complete |
 | INTEL-03 | Phase 52 | Complete |
 | INTEL-04 | Phase 52 | Complete |
-| MCP-01 | Phase 53 | Pending |
+| MCP-01 | Phase 53 | Complete |
 | MCP-02 | Phase 53 | Complete |
 | MCP-03 | Phase 53 | Complete |
-| MCP-04 | Phase 53 | Pending |
-| MCP-05 | Phase 53 | Pending |
+| MCP-04 | Phase 53 | Complete |
+| MCP-05 | Phase 53 | Complete |
 | MCP-06 | Phase 53 | Complete |
 | DET-01 | Phase 54 | Pending |
 | DET-02 | Phase 54 | Pending |
