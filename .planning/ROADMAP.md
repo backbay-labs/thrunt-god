@@ -246,8 +246,8 @@ Plans:
   3. For any uncovered technique, the system suggests detections based on available data sources and patterns extracted from existing rules in the same tactic family
 **Plans:** 2 plans
 Plans:
-- [ ] 51-01-PLAN.md — Watcher artifact fix for cases/ prefix + CLI cmdProgramRollup for STATE.md rollup
-- [ ] 51-02-PLAN.md — VS Code program dashboard webview panel (shared types, panel provider, store method, Preact UI)
+- [ ] 55-01-PLAN.md — coverage.cjs module with cross-source comparison, threat profiles, and detection suggestions
+- [ ] 55-02-PLAN.md — Wire compare_detections and suggest_detections MCP tools, extend analyze_coverage with profile parameter
 
 ### Phase 56: Knowledge Graph
 **Goal**: Hunt decisions, learnings, and threat relationships persist across sessions as a queryable knowledge graph that grows with every hunt
@@ -303,7 +303,7 @@ Plans:
 | 51. Program Dashboard & Extension Wiring | 2/2 | Complete    | 2026-04-08 |
 | 52. Cross-Case Intelligence | 2/2 | Complete    | 2026-04-08 |
 | 53. MCP Server & ATT&CK Tools | 2/2 | Complete    | 2026-04-08 |
-| 54. Detection Rule Ingestion | 2/2 | Complete   | 2026-04-08 |
-| 55. Detection Coverage & Gap Analysis | 0/TBD | Not started | - |
+| 54. Detection Rule Ingestion | 2/2 | Complete    | 2026-04-08 |
+| 55. Detection Coverage & Gap Analysis | 0/2 | Planned | - |
 | 56. Knowledge Graph | 0/TBD | Not started | - |
 | 57. Agent Wiring & Workflow Integration | 0/TBD | Not started | - |
