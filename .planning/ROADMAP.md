@@ -155,7 +155,7 @@ Plans:
 - [x] **Phase 53: MCP Server & ATT&CK Tools** - @thrunt/mcp-hunt-intel stdio server, technique/group/software lookup, Navigator layer generation, coverage analysis (completed 2026-04-08)
 - [x] **Phase 54: Detection Rule Ingestion** - Multi-format parsers (Sigma, ESCU, Elastic TOML, KQL markdown), unified detections table, bundled SigmaHQ rules (completed 2026-04-08)
 - [x] **Phase 55: Detection Coverage & Gap Analysis** - Cross-source coverage comparison, gap identification against threat profiles, detection suggestions (completed 2026-04-08)
-- [ ] **Phase 56: Knowledge Graph** - Persistent entity/relation graph in program.db, decision logging, institutional memory, ATT&CK STIX auto-population
+- [x] **Phase 56: Knowledge Graph** - Persistent entity/relation graph in program.db, decision logging, institutional memory, ATT&CK STIX auto-population (completed 2026-04-08)
 - [ ] **Phase 57: Agent Wiring & Workflow Integration** - MCP tools in agent frontmatter, new-case auto-workflow, pre-built MCP prompts
 
 ## Phase Details
@@ -258,7 +258,7 @@ Plans:
   2. When a hunter makes a decision during a hunt (e.g., choosing a query approach, ruling out a hypothesis), that decision is logged with context and reasoning and is retrievable in future hunts on the same topic
   3. Learnings and tribal knowledge patterns written during a hunt are persisted and surfaced when a new hunt touches the same techniques or threat actors
   4. ATT&CK STIX relationships (group-to-technique, campaign-to-software, software-to-technique) are automatically imported into the knowledge graph from intel.db on program initialization
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 56-01-PLAN.md — Knowledge graph data layer (knowledge.cjs): entity/relation schema, decision/learning logging, FTS search, STIX auto-population
 - [ ] 56-02-PLAN.md — Wire KG into openProgramDb lifecycle, register 3 MCP tools (query_knowledge, log_decision, log_learning)
@@ -305,5 +305,5 @@ Plans:
 | 53. MCP Server & ATT&CK Tools | 2/2 | Complete    | 2026-04-08 |
 | 54. Detection Rule Ingestion | 2/2 | Complete    | 2026-04-08 |
 | 55. Detection Coverage & Gap Analysis | 2/2 | Complete    | 2026-04-08 |
-| 56. Knowledge Graph | 1/2 | In Progress|  |
+| 56. Knowledge Graph | 2/2 | Complete   | 2026-04-08 |
 | 57. Agent Wiring & Workflow Integration | 0/TBD | Not started | - |

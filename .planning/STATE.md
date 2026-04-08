@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
-status: executing
-stopped_at: Completed 56-01-PLAN.md
-last_updated: "2026-04-08T19:45:37.914Z"
-last_activity: 2026-04-08 -- Phase 56 Plan 01 complete (knowledge.cjs data layer with 12 exports, 39 tests)
+status: completed
+stopped_at: Completed 56-02-PLAN.md
+last_updated: "2026-04-08T19:51:24.678Z"
+last_activity: 2026-04-08 -- Phase 56 Plan 02 complete (KG wired into openProgramDb, 3 MCP tools, 12 tests)
 progress:
   total_phases: 15
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 28
-  completed_plans: 27
-  percent: 96
+  completed_plans: 28
+  percent: 100
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 ## Current Position
 
 Phase: 56 of 57 (Knowledge Graph)
-Plan: 1 of 2 plans in phase
-Status: In Progress (1/2 plans complete)
-Last activity: 2026-04-08 -- Phase 56 Plan 01 complete (knowledge.cjs data layer with 12 exports, 39 tests)
+Plan: 2 of 2 plans in phase
+Status: Complete (2/2 plans complete)
+Last activity: 2026-04-08 -- Phase 56 Plan 02 complete (KG wired into openProgramDb, 3 MCP tools, 12 tests)
 
-Progress: [██████████] 96% (v3.0 Phase 56: 1/2 plans)
+Progress: [██████████] 100% (v3.0 Phase 56: 2/2 plans)
 
 ## Accumulated Context
 
@@ -100,6 +100,9 @@ Progress: [██████████] 96% (v3.0 Phase 56: 1/2 plans)
 - [Phase 56]: STIX import deletes all att&ck-stix relations before re-inserting for clean idempotent re-imports
 - [Phase 56]: addEntityDirect internal helper avoids nested transactions during STIX bulk import
 - [Phase 56]: Entity ID generation uses deterministic type--slugified-name scheme for natural deduplication
+- [Phase 56]: Lazy require pattern for knowledge.cjs/intel.cjs in db.cjs with try/catch for non-fatal degradation in minimal installs
+- [Phase 56]: STIX auto-import guarded by kg_entities row count check (only imports on first open when empty)
+- [Phase 56]: handleQueryKnowledge enriches each entity with up to 5 relations for context-rich MCP responses
 
 ### Blockers/Concerns
 
@@ -107,6 +110,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T19:45:32.788Z
-Stopped at: Completed 56-01-PLAN.md
-Resume: Phase 56 Plan 01 complete. knowledge.cjs exports 12 functions: ensureKnowledgeSchema, addEntity, getEntity, findEntities, addRelation, getRelations, searchEntities, logDecision, getDecisions, logLearning, getLearnings, importStixFromIntel. 39 tests pass. Ready for 56-02 to wire MCP tools for knowledge graph queries.
+Last session: 2026-04-08T19:51:24.675Z
+Stopped at: Completed 56-02-PLAN.md
+Resume: Phase 56 complete. Plan 02 wired KG into openProgramDb lifecycle (auto-create tables + STIX import) and registered 3 MCP tools (query_knowledge, log_decision, log_learning). 12 new tests pass. All 86 tests across db.test.cjs, knowledge.test.cjs, knowledge-mcp.test.cjs pass with zero regressions.
