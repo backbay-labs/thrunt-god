@@ -53,7 +53,7 @@ Requirements for Hunt Program Intelligence release. Each maps to roadmap phases.
 ### Dashboard
 
 - [x] **DASH-01**: Program-level case status rollup in STATE.md aggregating active/closed/stale cases with technique coverage gaps
-- [ ] **DASH-02**: VS Code extension webview showing program-level case overview with status, timeline, and coverage metrics
+- [x] **DASH-02**: VS Code extension webview showing program-level case overview with status, timeline, and coverage metrics
 - [x] **DASH-03**: Extension artifact watcher correctly resolves case artifacts in .planning/cases/<slug>/ subdirectories
 
 ### Wiring
@@ -129,7 +129,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | KNOW-03 | Phase 56 | Pending |
 | KNOW-04 | Phase 56 | Pending |
 | DASH-01 | Phase 51 | Complete |
-| DASH-02 | Phase 51 | Pending |
+| DASH-02 | Phase 51 | Complete |
 | DASH-03 | Phase 51 | Complete |
 | WIRE-01 | Phase 57 | Pending |
 | WIRE-02 | Phase 57 | Pending |

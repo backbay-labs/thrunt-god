@@ -150,7 +150,7 @@ Plans:
 ### Phases
 
 - [x] **Phase 50: Program & Case Hierarchy** - Refactor planningPaths and all artifact-resolving modules; new-program and new-case commands; case migration (completed 2026-04-08)
-- [ ] **Phase 51: Program Dashboard & Extension Wiring** - STATE.md case rollup, VS Code webview for program overview, extension artifact watcher for cases/
+- [x] **Phase 51: Program Dashboard & Extension Wiring** - STATE.md case rollup, VS Code webview for program overview, extension artifact watcher for cases/ (completed 2026-04-08)
 - [ ] **Phase 52: Cross-Case Intelligence** - SQLite+FTS5 case index, auto-search on new-case, case-search CLI command
 - [ ] **Phase 53: MCP Server & ATT&CK Tools** - @thrunt/mcp-hunt-intel stdio server, technique/group/software lookup, Navigator layer generation, coverage analysis
 - [ ] **Phase 54: Detection Rule Ingestion** - Multi-format parsers (Sigma, ESCU, Elastic TOML, KQL markdown), unified detections table, bundled SigmaHQ rules
@@ -184,7 +184,7 @@ Plans:
   1. Program STATE.md aggregates active/closed/stale case counts, overall technique coverage gaps, and a case timeline — readable without opening individual case directories
   2. The VS Code extension webview opens a program-level case overview panel showing each case's status, opened/closed date, and technique coverage metrics
   3. The extension's artifact watcher resolves huntmaps, receipts, and findings inside .planning/cases/<slug>/ subdirectories — decorations and sidebar entries appear for case artifacts
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 51-01-PLAN.md — Watcher artifact fix for cases/ prefix + CLI cmdProgramRollup for STATE.md rollup
 - [ ] 51-02-PLAN.md — VS Code program dashboard webview panel (shared types, panel provider, store method, Preact UI)
@@ -299,7 +299,7 @@ Plans:
 | 48. Built-in Connector Migration | 2/2 | Complete | 2026-03-31 |
 | 49. Reusable CI & Ecosystem Tooling | 2/2 | Complete | 2026-03-31 |
 | 50. Program & Case Hierarchy | 3/3 | Complete    | 2026-04-08 |
-| 51. Program Dashboard & Extension Wiring | 1/2 | In Progress|  |
+| 51. Program Dashboard & Extension Wiring | 2/2 | Complete   | 2026-04-08 |
 | 52. Cross-Case Intelligence | 0/TBD | Not started | - |
 | 53. MCP Server & ATT&CK Tools | 0/TBD | Not started | - |
 | 54. Detection Rule Ingestion | 0/TBD | Not started | - |

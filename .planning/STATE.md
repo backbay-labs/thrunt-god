@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Advanced Hunt Features
 status: active
-stopped_at: Completed 51-01-PLAN.md
-last_updated: "2026-04-08T13:55:18Z"
-last_activity: 2026-04-08 -- Plan 51-01 complete (watcher case fix + program rollup CLI)
+stopped_at: Completed 51-02-PLAN.md
+last_updated: "2026-04-08T14:06:56Z"
+last_activity: 2026-04-08 -- Phase 51 complete (program dashboard webview panel)
 progress:
   total_phases: 15
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 18
-  completed_plans: 17
-  percent: 94
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-04-07)
 ## Current Position
 
 Phase: 51 of 57 (Program Dashboard Extension Wiring)
-Plan: 51-01 (complete) of 2 plans in phase
-Status: In progress (1/2 plans complete)
-Last activity: 2026-04-08 -- Plan 51-01 complete (watcher case fix + program rollup CLI)
+Plan: 51-02 (complete) of 2 plans in phase
+Status: Complete (2/2 plans complete)
+Last activity: 2026-04-08 -- Phase 51 complete (program dashboard webview panel)
 
-Progress: [█████████░] 94% (v3.0 Phase 51: 1/2 plans)
+Progress: [██████████] 100% (v3.0 Phase 51: 2/2 plans)
 
 ## Accumulated Context
 
@@ -63,6 +63,9 @@ Progress: [█████████░] 94% (v3.0 Phase 51: 1/2 plans)
 - [Phase 51]: stripCasePrefix applied in toArtifactRelativePath (not resolveArtifactType) so all downstream consumers automatically work for case artifacts
 - [Phase 51]: cmdProgramRollup replaces entire body below frontmatter for idempotent re-generation
 - [Phase 51]: Stale threshold: 14 days with no activity for active cases
+- [Phase 51]: deriveProgramDashboard placed on HuntDataStore class alongside existing derive methods for consistent store-driven pattern
+- [Phase 51]: uniqueTechniques set to 0 as placeholder -- technique data requires file reads the store doesn't currently do
+- [Phase 51]: case:open navigates to MISSION.md file via vscode.open rather than opening a new workspace window
 
 ### Blockers/Concerns
 
@@ -70,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T13:55:18Z
-Stopped at: Completed 51-01-PLAN.md
-Resume: Phase 51 plan 01 complete. Watcher case fix and program rollup CLI done. Ready for 51-02 (webview panel).
+Last session: 2026-04-08T14:06:56Z
+Stopped at: Completed 51-02-PLAN.md
+Resume: Phase 51 complete. Both plans executed: Plan 01 (watcher case fix + CLI rollup) and Plan 02 (webview panel). All 256 tests pass.
