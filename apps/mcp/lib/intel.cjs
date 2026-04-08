@@ -216,6 +216,9 @@ function openIntelDb(opts = {}) {
   getDetections().ensureDetectionsSchema(db);
   getDetections().populateDetectionsIfEmpty(db);
 
+  const { ensureKnowledgeSchema } = require('./knowledge.cjs');
+  ensureKnowledgeSchema(db);
+
   return db;
 }
 

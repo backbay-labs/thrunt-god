@@ -528,7 +528,7 @@ describe('server.cjs stdout purity', () => {
   it('server.cjs can be required without throwing', () => {
     const serverPath = path.join(__dirname, '..', 'apps', 'mcp', 'bin', 'server.cjs');
     const content = fs.readFileSync(serverPath, 'utf-8');
-    const code = content.replace(/^#!.*\n/, '');
+    const code = content.replace(/^#!.*\r?\n/, '');
     assert.doesNotThrow(() => {
       new Function('require', 'module', 'exports', '__dirname', '__filename', 'process', code);
     });
