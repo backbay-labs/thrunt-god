@@ -577,7 +577,7 @@ describe('server.cjs stdout purity', () => {
 // ── registerTools count ───────────────────────────────────────────────────
 
 describe('tools.cjs - registerTools count', () => {
-  it('registers exactly 7 tools on the server', () => {
+  it('registers exactly 10 tools on the server', () => {
     const { registerTools } = loadTools();
     const tmpDir = makeTempDir();
     const { openIntelDb } = loadIntel();
@@ -592,7 +592,7 @@ describe('tools.cjs - registerTools count', () => {
     testDb.close();
     fs.rmSync(tmpDir, { recursive: true, force: true });
 
-    assert.equal(toolCount, 7, `expected 7 tool registrations, got ${toolCount}`);
+    assert.equal(toolCount, 10, `expected 10 tool registrations, got ${toolCount}`);
   });
 });
 
