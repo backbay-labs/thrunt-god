@@ -95,16 +95,7 @@ function handleSearchTechniques(db, args) {
 
 function handleLookupGroup(db, args) {
   const { group_id } = args;
-
-  let group = lookupGroup(db, group_id);
-
-  if (!group && !/^G\d+$/i.test(group_id)) {
-    const escaped = group_id.replace(/%/g, '\\%').replace(/_/g, '\\_');
-    const nameMatch = db.prepare(
-      "SELECT * FROM groups WHERE name LIKE ? ESCAPE '\\' OR aliases LIKE ? ESCAPE '\\' LIMIT 1"
-    ).get(`%${escaped}%`, `%${escaped}%`);
-    if (nameMatch) group = nameMatch;
-  }
+  const group = resolveGroup(db, group_id);
 
   if (!group) {
     return {
@@ -123,10 +114,25 @@ function handleLookupGroup(db, args) {
   };
 }
 
+function resolveGroup(db, groupId) {
+  let group = lookupGroup(db, groupId);
+
+  if (!group && !/^G\d+$/i.test(groupId)) {
+    const escaped = groupId.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const nameMatch = db.prepare(
+      "SELECT * FROM groups WHERE name LIKE ? ESCAPE '\\' OR aliases LIKE ? ESCAPE '\\' LIMIT 1"
+    ).get(`%${escaped}%`, `%${escaped}%`);
+    if (nameMatch) group = nameMatch;
+  }
+
+  return group || null;
+}
+
 function handleGenerateLayer(db, args) {
   const { mode, name, technique_ids, group_id, description } = args;
 
   let techniqueEntries = [];
+  let group = null;
 
   switch (mode) {
     case 'custom': {
@@ -151,7 +157,14 @@ function handleGenerateLayer(db, args) {
           isError: true,
         };
       }
-      const techIds = getGroupTechniques(db, group_id);
+      group = resolveGroup(db, group_id);
+      if (!group) {
+        return {
+          content: [{ type: 'text', text: `Group ${group_id} not found` }],
+          isError: true,
+        };
+      }
+      const techIds = getGroupTechniques(db, group.id);
       techniqueEntries = techIds.map(id => ({
         id,
         score: 50,
@@ -186,7 +199,14 @@ function handleGenerateLayer(db, args) {
           isError: true,
         };
       }
-      const techIds = getGroupTechniques(db, group_id);
+      group = resolveGroup(db, group_id);
+      if (!group) {
+        return {
+          content: [{ type: 'text', text: `Group ${group_id} not found` }],
+          isError: true,
+        };
+      }
+      const techIds = getGroupTechniques(db, group.id);
 
       let coveredSet = new Set();
       try {
@@ -257,7 +277,7 @@ function handleAnalyzeCoverage(db, args) {
   let resultMeta;
 
   if (group_id) {
-    const group = lookupGroup(db, group_id);
+    const group = resolveGroup(db, group_id);
     if (!group) {
       return {
         content: [{ type: 'text', text: `Group ${group_id} not found` }],

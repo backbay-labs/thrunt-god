@@ -265,6 +265,17 @@ describe('tool handlers with intel DB', () => {
       assert.equal(layer.versions.layer, '4.5');
     });
 
+    it('group mode returns isError for an unknown group', async () => {
+      const { handleGenerateLayer } = loadTools();
+      const result = await handleGenerateLayer(db, {
+        mode: 'group',
+        name: 'Unknown Group Layer',
+        group_id: 'G9999',
+      });
+      assert.equal(result.isError, true);
+      assert.ok(result.content[0].text.includes('Group G9999 not found'));
+    });
+
     it('coverage mode produces layer with detection scores', async () => {
       const { handleGenerateLayer } = loadTools();
       const result = await handleGenerateLayer(db, {
@@ -292,6 +303,17 @@ describe('tool handlers with intel DB', () => {
       assert.ok(layer.techniques.length > 0);
       const uncovered = layer.techniques.filter(t => t.score === 100);
       assert.ok(uncovered.length >= 0);
+    });
+
+    it('gap mode returns isError for an unknown group', async () => {
+      const { handleGenerateLayer } = loadTools();
+      const result = await handleGenerateLayer(db, {
+        mode: 'gap',
+        name: 'Unknown Group Gaps',
+        group_id: 'G9999',
+      });
+      assert.equal(result.isError, true);
+      assert.ok(result.content[0].text.includes('Group G9999 not found'));
     });
 
     it('layer techniques have techniqueID, score, enabled', async () => {

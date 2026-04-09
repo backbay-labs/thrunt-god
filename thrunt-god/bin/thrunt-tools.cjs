@@ -285,6 +285,7 @@ async function main() {
   const wsEqArg = args.find(arg => arg.startsWith('--ws='));
   const wsIdx = args.indexOf('--ws');
   let ws = null;
+  const wsProvided = !!wsEqArg || wsIdx !== -1;
   if (wsEqArg) {
     ws = wsEqArg.slice('--ws='.length).trim();
     if (!ws) error('Missing value for --ws');
@@ -363,7 +364,7 @@ async function main() {
     cwd = findProjectRoot(cwd);
   }
 
-  if (!caseProvided) {
+  if (!caseProvided && !wsProvided) {
     const { getActiveCase } = require('./lib/core.cjs');
     caseSlug = getActiveCase(cwd);
   }
