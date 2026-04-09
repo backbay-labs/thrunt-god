@@ -7,6 +7,7 @@ import { HUNT_MARKERS, OUTPUT_CHANNEL_NAME } from './constants';
 import { ArtifactWatcher } from './watcher';
 import { HuntDataStore } from './store';
 import { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
+import { AutomationTreeDataProvider } from './automationSidebar';
 import { HuntStatusBar } from './statusBar';
 import { HuntCodeLensProvider } from './codeLens';
 import { EvidenceIntegrityDiagnostics } from './diagnostics';
@@ -40,6 +41,7 @@ import { resolveArtifactType } from './watcher';
 const CLI_OUTPUT_CHANNEL_NAME = `${OUTPUT_CHANNEL_NAME} CLI`;
 const LAST_CLI_COMMAND_KEY = 'thruntGod.lastCliCommand';
 const LAST_PHASE_COMMAND_KEY = 'thruntGod.lastPhaseCommand';
+const HAS_RUNNABLE_PHASES_CONTEXT = 'thruntGod.hasRunnablePhases';
 const DEFAULT_PHASE_COMMAND_TEMPLATE = 'runtime execute --pack {packId} --phase {phase}';
 
 interface RenderedMarkdownResult {
@@ -348,6 +350,25 @@ function resolvePhaseCommandTemplate(
     commandString,
     args,
   };
+}
+
+function isPhaseComplete(status: string | undefined): boolean {
+  return (status ?? '').trim().toLowerCase() === 'complete';
+}
+
+function updateRunnablePhaseContext(store?: HuntDataStore | null): void {
+  const hunt = store?.getHunt();
+  const hasRunnablePhases = Boolean(
+    hunt &&
+      hunt.huntMap.status === 'loaded' &&
+      hunt.huntMap.data.phases.some((phase) => !isPhaseComplete(phase.status))
+  );
+
+  void vscode.commands.executeCommand(
+    'setContext',
+    HAS_RUNNABLE_PHASES_CONTEXT,
+    hasRunnablePhases
+  );
 }
 
 function formatCliArg(arg: string): string {
@@ -1043,6 +1064,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', false);
+  updateRunnablePhaseContext(null);
 
   findHuntRoot().then((huntRoot) => {
     if (!huntRoot) {
@@ -1076,8 +1098,13 @@ export function activate(context: vscode.ExtensionContext): void {
         outputChannel.appendLine(
           `[Store] ${event.type}: ${event.artifactType} ${event.id}`
         );
+        updateRunnablePhaseContext(store);
       })
     );
+
+    void store.initialScanComplete().then(() => {
+      updateRunnablePhaseContext(store);
+    });
 
     vscode.commands.executeCommand('setContext', 'thruntGod.huntDetected', true);
 
@@ -1089,6 +1116,45 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
       vscode.window.registerTreeDataProvider('thruntGod.huntTree', treeProvider)
     );
+
+    // Automation sidebar tree
+    const automationProvider = new AutomationTreeDataProvider();
+    context.subscriptions.push(automationProvider);
+    context.subscriptions.push(
+      vscode.window.registerTreeDataProvider('thruntGod.automationTree', automationProvider)
+    );
+
+    // Watch .planning/runbooks/ for YAML runbook files
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (workspaceFolder) {
+      const runbookPattern = new vscode.RelativePattern(
+        workspaceFolder,
+        '.planning/runbooks/*.{yaml,yml}'
+      );
+      const runbookWatcher = vscode.workspace.createFileSystemWatcher(
+        runbookPattern,
+        false,
+        false,
+        false
+      );
+
+      const updateRunbookCount = async () => {
+        try {
+          const files = await vscode.workspace.findFiles(runbookPattern);
+          automationProvider.setRunbookCount(files.length);
+        } catch {
+          automationProvider.setRunbookCount(0);
+        }
+      };
+
+      runbookWatcher.onDidCreate(() => updateRunbookCount());
+      runbookWatcher.onDidDelete(() => updateRunbookCount());
+      runbookWatcher.onDidChange(() => updateRunbookCount());
+      context.subscriptions.push(runbookWatcher);
+
+      // Initial count on activation
+      void updateRunbookCount();
+    }
 
     // Sidebar commands
     context.subscriptions.push(
@@ -1376,13 +1442,41 @@ export function activate(context: vscode.ExtensionContext): void {
         }
 
         const requestedPhase = extractPhaseNumberFromTarget(target);
-        let selectedPhase = hunt.huntMap.data.phases.find(
+        const allPhases = hunt.huntMap.data.phases;
+        const runnablePhases = allPhases.filter(
+          (phase) => !isPhaseComplete(phase.status)
+        );
+        let selectedPhase = allPhases.find(
           (phase) => phase.number === requestedPhase
         );
 
+        if (selectedPhase && isPhaseComplete(selectedPhase.status)) {
+          const childHuntCount = store.getChildHunts().length;
+          const detail =
+            childHuntCount > 0
+              ? ' Open a child case to inspect its existing evidence.'
+              : '';
+          await vscode.window.showInformationMessage(
+            `Phase ${selectedPhase.number} is already complete in this workspace.${detail}`
+          );
+          return undefined;
+        }
+
+        if (!selectedPhase && runnablePhases.length === 0) {
+          const childHuntCount = store.getChildHunts().length;
+          const detail =
+            childHuntCount > 0
+              ? ' Open a child case to inspect its existing evidence.'
+              : '';
+          await vscode.window.showInformationMessage(
+            `All hunt phases are already complete in this workspace.${detail}`
+          );
+          return undefined;
+        }
+
         if (!selectedPhase) {
           const picked = await vscode.window.showQuickPick(
-            hunt.huntMap.data.phases.map((phase) => ({
+            runnablePhases.map((phase) => ({
               label: `Phase ${phase.number}: ${phase.name}`,
               description: `[${phase.status}]`,
               phase,
@@ -1531,6 +1625,12 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.refreshSidebar', () => {
         treeProvider.refresh();
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.refreshAutomationSidebar', () => {
+        automationProvider.refresh();
       })
     );
 
