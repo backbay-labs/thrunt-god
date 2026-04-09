@@ -52,7 +52,8 @@
     "onWebviewPanel:thruntGod.evidenceBoard",
     "onWebviewPanel:thruntGod.queryAnalysis",
     "onWebviewPanel:thruntGod.drainViewer",
-    "onWebviewPanel:thruntGod.programDashboard"
+    "onWebviewPanel:thruntGod.programDashboard",
+    "onWebviewPanel:thruntGod.mcpControlPanel"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -257,6 +258,31 @@
         "command": "thrunt-god.refreshAutomationSidebar",
         "title": "THRUNT: Refresh Automation Sidebar",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "thrunt-god.mcpStart",
+        "title": "Start MCP Server",
+        "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.mcpRestart",
+        "title": "Restart MCP Server",
+        "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.mcpHealthCheck",
+        "title": "Run MCP Health Check",
+        "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.mcpListTools",
+        "title": "List MCP Tools",
+        "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.mcpOpenLogs",
+        "title": "Open MCP Logs",
+        "category": "THRUNT"
       }
     ],
     "menus": {
@@ -315,6 +341,31 @@
           "command": "thrunt-god.openHuntOverview",
           "when": "view == thruntGod.huntTree && viewItem == mission",
           "group": "navigation@3"
+        },
+        {
+          "command": "thrunt-god.mcpStart",
+          "when": "view == thruntGod.automationTree && viewItem == automationMcp",
+          "group": "mcp@1"
+        },
+        {
+          "command": "thrunt-god.mcpRestart",
+          "when": "view == thruntGod.automationTree && viewItem == automationMcp",
+          "group": "mcp@2"
+        },
+        {
+          "command": "thrunt-god.mcpHealthCheck",
+          "when": "view == thruntGod.automationTree && viewItem == automationMcp",
+          "group": "mcp@3"
+        },
+        {
+          "command": "thrunt-god.mcpListTools",
+          "when": "view == thruntGod.automationTree && viewItem == automationMcp",
+          "group": "mcp@4"
+        },
+        {
+          "command": "thrunt-god.mcpOpenLogs",
+          "when": "view == thruntGod.automationTree && viewItem == automationMcp",
+          "group": "mcp@5"
         }
       ],
       "editor/context": [
