@@ -106,6 +106,34 @@ export const BUILT_IN_COMMANDS: CommandDef[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Context-relevance mapping: tree selection -> relevant command IDs
+// ---------------------------------------------------------------------------
+
+export function getContextRelevantIds(context: CommandDeckContext | null): string[] {
+  if (!context) return [];
+  switch (context.nodeType) {
+    case 'phase':
+      return ['run-pack', 'analyze-coverage'];
+    case 'case':
+      return ['close-case', 'publish-findings', 'open-evidence-board'];
+    case 'query':
+      return ['query-knowledge', 'analyze-coverage'];
+    case 'receipt':
+      return ['open-evidence-board', 'publish-findings'];
+    case 'hypothesis':
+      return ['analyze-coverage', 'query-knowledge'];
+    case 'finding':
+      return ['publish-findings'];
+    case 'mission':
+      return ['open-program-dashboard', 'runtime-doctor'];
+    case 'huntmap':
+      return ['generate-attack-layer', 'analyze-coverage'];
+    default:
+      return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // CommandDeckRegistry — manages command list, pinned state, recent history
 // ---------------------------------------------------------------------------
 

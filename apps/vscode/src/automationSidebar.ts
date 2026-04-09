@@ -53,10 +53,12 @@ export class AutomationTreeDataProvider
     this._onDidChangeTreeData.event;
 
   private runbookCount: number;
+  private commandCount: number;
   private mcpStatus: MCPStatusManager | null;
 
-  constructor(options?: { runbookCount?: number; mcpStatus?: MCPStatusManager }) {
+  constructor(options?: { runbookCount?: number; commandCount?: number; mcpStatus?: MCPStatusManager }) {
     this.runbookCount = options?.runbookCount ?? 0;
+    this.commandCount = options?.commandCount ?? 0;
     this.mcpStatus = options?.mcpStatus ?? null;
   }
 
@@ -66,6 +68,11 @@ export class AutomationTreeDataProvider
 
   setRunbookCount(count: number): void {
     this.runbookCount = count;
+    this.refresh();
+  }
+
+  setCommandCount(count: number): void {
+    this.commandCount = count;
     this.refresh();
   }
 
@@ -94,7 +101,7 @@ export class AutomationTreeDataProvider
       this.getMcpRootNode(),
       new AutomationTreeItem('Command Deck', vscode.TreeItemCollapsibleState.Collapsed, {
         iconPath: new vscode.ThemeIcon('terminal'),
-        description: '0 commands',
+        description: this.commandCount > 0 ? `${this.commandCount} commands` : '0 commands',
         nodeType: 'command-deck',
         contextValue: 'automationCommandDeck',
       }),

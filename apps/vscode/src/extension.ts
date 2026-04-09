@@ -37,7 +37,8 @@ import { EvidenceBoardPanel, EVIDENCE_BOARD_VIEW_TYPE } from './evidenceBoardPan
 import { QueryAnalysisPanel, QUERY_ANALYSIS_VIEW_TYPE } from './queryAnalysisPanel';
 import { ProgramDashboardPanel, PROGRAM_DASHBOARD_VIEW_TYPE } from './programDashboardPanel';
 import { McpControlPanel, MCP_CONTROL_VIEW_TYPE } from './mcpControlPanel';
-import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE } from './commandDeck';
+import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE, BUILT_IN_COMMANDS, getContextRelevantIds } from './commandDeck';
+import type { CommandDeckContext } from '../shared/command-deck';
 import type { SessionDiff } from '../shared/hunt-overview';
 import { resolveArtifactType } from './watcher';
 
@@ -1116,9 +1117,10 @@ export function activate(context: vscode.ExtensionContext): void {
       cliBridge,
     });
     context.subscriptions.push(treeProvider);
-    context.subscriptions.push(
-      vscode.window.registerTreeDataProvider('thruntGod.huntTree', treeProvider)
-    );
+    const huntTreeView = vscode.window.createTreeView('thruntGod.huntTree', {
+      treeDataProvider: treeProvider,
+    });
+    context.subscriptions.push(huntTreeView);
 
     // MCP output channel and status manager
     const mcpOutputChannel = vscode.window.createOutputChannel('THRUNT MCP');
@@ -1173,6 +1175,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Command Deck
     const commandDeckRegistry = new CommandDeckRegistry(context.workspaceState);
+    automationProvider.setCommandCount(BUILT_IN_COMMANDS.length);
 
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openCommandDeck', () => {
@@ -1189,6 +1192,24 @@ export function activate(context: vscode.ExtensionContext): void {
         },
       })
     );
+
+    // Wire investigation tree selection to Command Deck context
+    if (huntTreeView) {
+      context.subscriptions.push(
+        huntTreeView.onDidChangeSelection((e) => {
+          const selected = e.selection[0];
+          if (selected && CommandDeckPanel.currentPanel) {
+            const ctx: CommandDeckContext = {
+              nodeType: selected.nodeType ?? '',
+              dataId: typeof selected.dataId === 'string' ? selected.dataId : undefined,
+            };
+            CommandDeckPanel.currentPanel.setContext(ctx);
+          } else if (CommandDeckPanel.currentPanel) {
+            CommandDeckPanel.currentPanel.setContext(null);
+          }
+        })
+      );
+    }
 
     // Sidebar commands
     context.subscriptions.push(
@@ -1982,4 +2003,5 @@ export {
   CommandDeckPanel,
   COMMAND_DECK_VIEW_TYPE,
   BUILT_IN_COMMANDS,
+  getContextRelevantIds,
 } from './commandDeck';
