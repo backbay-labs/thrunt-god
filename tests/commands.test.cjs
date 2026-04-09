@@ -2542,6 +2542,14 @@ describe('cmdCaseSearch', () => {
     }
   });
 
+  test('case-search rejects option-only invocation without a real query', () => {
+    const result = runThruntTools(['case-search', '--limit', '1'], tmpDir);
+    assert.ok(result.success, `case-search should exit cleanly: ${result.error}`);
+    const output = JSON.parse(result.output);
+    assert.strictEqual(output.success, false, 'option-only invocation should fail validation');
+    assert.ok(output.error.includes('Query required'), 'error should report missing query');
+  });
+
   test('case-search on empty DB returns empty results', () => {
     // Don't create or close any cases — DB should be empty or non-existent
     const result = runThruntTools(['case-search', 'anything'], tmpDir);

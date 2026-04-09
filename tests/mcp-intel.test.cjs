@@ -120,6 +120,65 @@ describe('tool handlers with intel DB', () => {
     if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
+  function seedLowercaseCoverageScenario({ techniqueId, groupId, groupName }) {
+    const detectionId = `test:${techniqueId.toLowerCase()}:lowercase`;
+
+    db.prepare(`
+      INSERT OR REPLACE INTO techniques (id, name, description, tactics, platforms, data_sources, url)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      techniqueId,
+      `Technique ${techniqueId}`,
+      'Synthetic technique for lowercase coverage normalization tests.',
+      'Execution',
+      'Windows',
+      'Process monitoring',
+      `https://example.test/${techniqueId}`
+    );
+
+    db.prepare(`
+      INSERT OR REPLACE INTO groups (id, name, aliases, description, url)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      groupId,
+      groupName,
+      '',
+      'Synthetic group for lowercase coverage normalization tests.',
+      `https://example.test/${groupId}`
+    );
+
+    db.prepare('INSERT OR REPLACE INTO group_techniques (group_id, technique_id) VALUES (?, ?)').run(
+      groupId,
+      techniqueId
+    );
+
+    db.prepare(`
+      INSERT OR REPLACE INTO detections (
+        id, title, source_format, technique_ids, tactics, severity,
+        logsource, query, description, metadata, file_path
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      detectionId,
+      `Lowercase Detection ${techniqueId}`,
+      'test',
+      techniqueId.toLowerCase(),
+      'Execution',
+      'medium',
+      '',
+      '',
+      '',
+      '{}',
+      `/tmp/${detectionId}`
+    );
+
+    return () => {
+      db.prepare('DELETE FROM detections WHERE id = ?').run(detectionId);
+      db.prepare('DELETE FROM group_techniques WHERE group_id = ? AND technique_id = ?').run(groupId, techniqueId);
+      db.prepare('DELETE FROM groups WHERE id = ?').run(groupId);
+      db.prepare('DELETE FROM techniques WHERE id = ?').run(techniqueId);
+    };
+  }
+
   describe('lookup_technique', () => {
     it('returns technique data for valid ID (T1059)', async () => {
       const { handleLookupTechnique } = loadTools();
@@ -290,6 +349,30 @@ describe('tool handlers with intel DB', () => {
       assert.ok(covered.length > 0);
     });
 
+    it('coverage mode normalizes lowercase detection technique IDs', async () => {
+      const cleanupScenario = seedLowercaseCoverageScenario({
+        techniqueId: 'T9000',
+        groupId: 'G9000',
+        groupName: 'Lowercase Coverage Group',
+      });
+
+      try {
+        const { handleGenerateLayer } = loadTools();
+        const result = await handleGenerateLayer(db, {
+          mode: 'coverage',
+          name: 'Lowercase Coverage Snapshot',
+        });
+        assert.ok(!result.isError);
+
+        const layer = JSON.parse(result.content[0].text);
+        const technique = layer.techniques.find(t => t.techniqueID === 'T9000');
+        assert.ok(technique, 'synthetic technique should be present in the layer');
+        assert.equal(technique.score, 100);
+      } finally {
+        cleanupScenario();
+      }
+    });
+
     it('gap mode produces layer highlighting uncovered techniques', async () => {
       const { handleGenerateLayer } = loadTools();
       const result = await handleGenerateLayer(db, {
@@ -303,6 +386,31 @@ describe('tool handlers with intel DB', () => {
       assert.ok(layer.techniques.length > 0);
       const uncovered = layer.techniques.filter(t => t.score === 100);
       assert.ok(uncovered.length >= 0);
+    });
+
+    it('gap mode normalizes lowercase detection technique IDs', async () => {
+      const cleanupScenario = seedLowercaseCoverageScenario({
+        techniqueId: 'T9001',
+        groupId: 'G9001',
+        groupName: 'Lowercase Gap Group',
+      });
+
+      try {
+        const { handleGenerateLayer } = loadTools();
+        const result = await handleGenerateLayer(db, {
+          mode: 'gap',
+          name: 'Lowercase Gap Layer',
+          group_id: 'G9001',
+        });
+        assert.ok(!result.isError);
+
+        const layer = JSON.parse(result.content[0].text);
+        const technique = layer.techniques.find(t => t.techniqueID === 'T9001');
+        assert.ok(technique, 'synthetic technique should be present in the layer');
+        assert.equal(technique.score, 0);
+      } finally {
+        cleanupScenario();
+      }
     });
 
     it('gap mode returns isError for an unknown group', async () => {
@@ -504,6 +612,32 @@ describe('tool handlers with intel DB', () => {
       assert.ok(typeof data.covered === 'number');
       assert.ok(typeof data.gap_percent === 'number');
       assert.ok(data.gap_percent >= 0 && data.gap_percent <= 100);
+    });
+
+    it('analyze_coverage normalizes lowercase detection technique IDs', async () => {
+      const cleanupScenario = seedLowercaseCoverageScenario({
+        techniqueId: 'T9002',
+        groupId: 'G9002',
+        groupName: 'Lowercase Analyze Group',
+      });
+
+      try {
+        const { handleAnalyzeCoverage } = loadTools();
+        const result = await handleAnalyzeCoverage(db, { group_id: 'G9002', include_techniques: true });
+        assert.ok(!result.isError);
+
+        const data = JSON.parse(result.content[0].text);
+        assert.equal(data.group_id, 'G9002');
+        assert.equal(data.total_techniques, 1);
+        assert.equal(data.covered, 1);
+        assert.equal(data.uncovered, 0);
+        assert.ok(
+          data.by_tactic.some(tactic => tactic.techniques?.some(technique => technique.id === 'T9002' && technique.covered === true)),
+          'synthetic technique should be marked covered'
+        );
+      } finally {
+        cleanupScenario();
+      }
     });
 
     it('deduplicates repeated profile technique IDs before computing totals', async () => {

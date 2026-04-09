@@ -410,6 +410,21 @@ describe('thrunt-tools --ws flag integration', () => {
     assert.ok(data.directory.includes('workstreams/test-ws'), `path should remain workstream-scoped: ${data.directory}`);
     assert.ok(!data.directory.includes('cases/alpha-case'), `path should not switch to case scope: ${data.directory}`);
   });
+
+  test('--ws flag suppresses inherited THRUNT_CASE env context', () => {
+    const caseDir = path.join(tmpDir, '.planning', 'cases', 'env-case');
+    fs.mkdirSync(path.join(caseDir, 'phases', '01-case-phase'), { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'STATE.md'),
+      '---\nstatus: In progress\ncurrent_phase: 1\n---\n# State\n');
+    fs.writeFileSync(path.join(caseDir, 'MISSION.md'), '# Mission\n');
+
+    const result = runThruntTools(['find-phase', '1', '--ws', 'test-ws'], tmpDir, { THRUNT_CASE: 'env-case' });
+    assert.ok(result.success, `find-phase failed: ${result.error}`);
+    const data = JSON.parse(result.output);
+    assert.ok(data.found, 'phase should be found');
+    assert.ok(data.directory.includes('workstreams/test-ws'), `path should remain workstream-scoped: ${data.directory}`);
+    assert.ok(!data.directory.includes('cases/env-case'), `path should not inherit env case scope: ${data.directory}`);
+  });
 });
 
 // ─── Path Traversal Rejection ────────────────────────────────────────────────

@@ -28,6 +28,17 @@ const {
 
 const TIMEOUT_MS = parseInt(process.env.THRUNT_MCP_TIMEOUT, 10) || 30000;
 
+function normalizeTechniqueId(value) {
+  return String(value || '').trim().toUpperCase();
+}
+
+function collectTechniqueIds(set, techniqueIds) {
+  for (const token of String(techniqueIds || '').split(',')) {
+    const normalized = normalizeTechniqueId(token);
+    if (normalized) set.add(normalized);
+  }
+}
+
 function withTimeout(fn) {
   return async (args) => {
     const controller = new AbortController();
@@ -142,7 +153,10 @@ function handleGenerateLayer(db, args) {
           isError: true,
         };
       }
-      techniqueEntries = technique_ids.map(id => ({
+      techniqueEntries = technique_ids
+        .map(id => normalizeTechniqueId(id))
+        .filter(Boolean)
+        .map(id => ({
         id,
         score: 100,
         color: '#0033cc',
@@ -176,18 +190,18 @@ function handleGenerateLayer(db, args) {
     case 'coverage': {
       const allTechs = db.prepare('SELECT id FROM techniques').all();
 
-      let detectedSet = new Set();
+      const detectedSet = new Set();
       try {
         const rows = db.prepare('SELECT technique_ids FROM detections').all();
         for (const r of rows) {
-          if (r.technique_ids) r.technique_ids.split(',').forEach(t => detectedSet.add(t.trim()));
+          collectTechniqueIds(detectedSet, r.technique_ids);
         }
       } catch { /* no detections table */ }
 
       techniqueEntries = allTechs.map(t => ({
         id: t.id,
-        score: detectedSet.has(t.id) ? 100 : 0,
-        color: detectedSet.has(t.id) ? '#00cc00' : '#ff0000',
+        score: detectedSet.has(normalizeTechniqueId(t.id)) ? 100 : 0,
+        color: detectedSet.has(normalizeTechniqueId(t.id)) ? '#00cc00' : '#ff0000',
       }));
       break;
     }
@@ -206,15 +220,17 @@ function handleGenerateLayer(db, args) {
           isError: true,
         };
       }
-      const techIds = getGroupTechniques(db, group.id);
+      const techIds = getGroupTechniques(db, group.id)
+        .map(id => normalizeTechniqueId(id))
+        .filter(Boolean);
 
-      let coveredSet = new Set();
+      const coveredSet = new Set();
       try {
         if (techIds.length > 0) {
           const rows = db.prepare('SELECT technique_ids FROM detections').all();
           const allDetected = new Set();
           for (const r of rows) {
-            if (r.technique_ids) r.technique_ids.split(',').forEach(t => allDetected.add(t.trim()));
+            collectTechniqueIds(allDetected, r.technique_ids);
           }
           for (const id of techIds) {
             if (allDetected.has(id)) coveredSet.add(id);
@@ -303,15 +319,15 @@ function handleAnalyzeCoverage(db, args) {
     };
   }
 
-  techIds = [...new Set((techIds || []).map(id => String(id || '').toUpperCase().trim()).filter(Boolean))];
+  techIds = [...new Set((techIds || []).map(id => normalizeTechniqueId(id)).filter(Boolean))];
 
-  let detectedSet = new Set();
+  const detectedSet = new Set();
   try {
     if (techIds.length > 0) {
       const rows = db.prepare('SELECT technique_ids FROM detections').all();
       const allDetected = new Set();
       for (const r of rows) {
-        if (r.technique_ids) r.technique_ids.split(',').forEach(t => allDetected.add(t.trim()));
+        collectTechniqueIds(allDetected, r.technique_ids);
       }
       for (const id of techIds) {
         if (allDetected.has(id)) detectedSet.add(id);

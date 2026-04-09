@@ -244,6 +244,53 @@ function parseMultiwordArg(args, flag) {
   return tokens.length > 0 ? tokens.join(' ') : null;
 }
 
+function parseCaseSearchArgs(args) {
+  const positionals = [];
+  let limit;
+  let technique;
+  let program;
+
+  for (let i = 1; i < args.length; i++) {
+    const token = args[i];
+
+    if (token === '--limit' || token.startsWith('--limit=')) {
+      const rawValue = token.includes('=') ? token.slice('--limit='.length) : args[++i];
+      if (!rawValue || String(rawValue).startsWith('--')) error('Missing value for --limit');
+      const parsed = parseInt(rawValue, 10);
+      if (!Number.isFinite(parsed) || parsed <= 0) error('Invalid value for --limit: must be a positive integer');
+      limit = parsed;
+      continue;
+    }
+
+    if (token === '--technique' || token.startsWith('--technique=')) {
+      const rawValue = token.includes('=') ? token.slice('--technique='.length) : args[++i];
+      if (!rawValue || String(rawValue).startsWith('--')) error('Missing value for --technique');
+      technique = rawValue;
+      continue;
+    }
+
+    if (token === '--program' || token.startsWith('--program=')) {
+      const rawValue = token.includes('=') ? token.slice('--program='.length) : args[++i];
+      if (!rawValue || String(rawValue).startsWith('--')) error('Missing value for --program');
+      program = rawValue;
+      continue;
+    }
+
+    if (token.startsWith('--')) {
+      error(`Unknown case-search option: ${token}`);
+    }
+
+    positionals.push(token);
+  }
+
+  return {
+    query: positionals.join(' ').trim() || null,
+    limit,
+    technique,
+    program,
+  };
+}
+
 // ─── CLI Router ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -313,20 +360,17 @@ async function main() {
   const caseEqArg = args.find(arg => arg.startsWith('--case='));
   const caseIdx = args.indexOf('--case');
   let caseSlug = null;
-  let caseProvided = false;
+  const explicitCaseProvided = !!caseEqArg || caseIdx !== -1;
   if (caseEqArg) {
     caseSlug = caseEqArg.slice('--case='.length).trim();
     if (!caseSlug) error('Missing value for --case');
     args.splice(args.indexOf(caseEqArg), 1);
-    caseProvided = true;
   } else if (caseIdx !== -1) {
     caseSlug = args[caseIdx + 1];
     if (!caseSlug || caseSlug.startsWith('--')) error('Missing value for --case');
     args.splice(caseIdx, 2);
-    caseProvided = true;
-  } else if (process.env.THRUNT_CASE) {
+  } else if (!wsProvided && process.env.THRUNT_CASE) {
     caseSlug = process.env.THRUNT_CASE.trim();
-    caseProvided = true;
   }
   if (caseSlug && !/^[a-zA-Z0-9_-]+$/.test(caseSlug)) {
     error('Invalid case slug: must be alphanumeric, hyphens, and underscores only');
@@ -364,7 +408,11 @@ async function main() {
     cwd = findProjectRoot(cwd);
   }
 
-  if (!caseProvided && !wsProvided) {
+  if (wsProvided && !explicitCaseProvided) {
+    delete process.env.THRUNT_CASE;
+  }
+
+  if (!caseSlug && !wsProvided) {
     const { getActiveCase } = require('./lib/core.cjs');
     caseSlug = getActiveCase(cwd);
   }
@@ -1227,14 +1275,8 @@ async function runCommand(command, args, cwd, raw) {
     }
 
     case 'case-search': {
-      const query = args[1];
-      const limitIdx = args.indexOf('--limit');
-      const limit = limitIdx !== -1 ? parseInt(args[limitIdx + 1], 10) : undefined;
-      const techIdx = args.indexOf('--technique');
-      const technique = techIdx !== -1 ? args[techIdx + 1] : undefined;
-      const progIdx = args.indexOf('--program');
-      const programPath = progIdx !== -1 ? args[progIdx + 1] : undefined;
-      commands.cmdCaseSearch(programPath || cwd, query, { limit, technique, program: programPath }, raw);
+      const { query, limit, technique, program } = parseCaseSearchArgs(args);
+      commands.cmdCaseSearch(program || cwd, query, { limit, technique, program }, raw);
       break;
     }
 
