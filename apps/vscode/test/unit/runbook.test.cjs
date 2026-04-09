@@ -379,3 +379,41 @@ describe('RunbookEngine', () => {
     assert.ok(record.startTime <= record.endTime, 'startTime should be <= endTime');
   });
 });
+
+// ---------------------------------------------------------------------------
+// RunbookPanel tests
+// ---------------------------------------------------------------------------
+
+describe('RunbookPanel', () => {
+  it('RunbookPanel is exported from bundle', () => {
+    assert.equal(typeof ext.RunbookPanel, 'function');
+  });
+
+  it('RunbookPanel has static createOrShow', () => {
+    assert.equal(typeof ext.RunbookPanel.createOrShow, 'function');
+  });
+
+  it('RunbookPanel has static restorePanel', () => {
+    assert.equal(typeof ext.RunbookPanel.restorePanel, 'function');
+  });
+
+  it('RunbookPanel.currentPanel is initially undefined', () => {
+    assert.equal(ext.RunbookPanel.currentPanel, undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Runbook webview build artifacts
+// ---------------------------------------------------------------------------
+
+describe('Runbook webview build', () => {
+  it('webview-runbook.js exists in dist', () => {
+    const jsPath = path.join(__dirname, '..', '..', 'dist', 'webview-runbook.js');
+    assert.ok(fs.existsSync(jsPath), 'dist/webview-runbook.js should exist');
+  });
+
+  it('webview-runbook.css exists in dist', () => {
+    const cssPath = path.join(__dirname, '..', '..', 'dist', 'webview-runbook.css');
+    assert.ok(fs.existsSync(cssPath), 'dist/webview-runbook.css should exist');
+  });
+});

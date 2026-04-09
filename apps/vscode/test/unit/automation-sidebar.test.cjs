@@ -82,10 +82,12 @@ describe('AutomationTreeDataProvider', () => {
       assert.deepEqual(deckChildren, []);
     });
 
-    it('returns empty array for Runbooks children (placeholder)', () => {
+    it('returns "No registry" placeholder for Runbooks children when no registry set', () => {
       const roots = provider.getChildren(undefined);
       const runbookChildren = provider.getChildren(roots[2]);
-      assert.deepEqual(runbookChildren, []);
+      assert.equal(runbookChildren.length, 1);
+      assert.equal(runbookChildren[0].label, 'No registry');
+      assert.equal(runbookChildren[0].contextValue, 'automationRunbookChild');
     });
 
     it('returns empty array for Recent Runs children (placeholder)', () => {

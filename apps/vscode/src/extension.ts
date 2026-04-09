@@ -7,7 +7,7 @@ import { HUNT_MARKERS, OUTPUT_CHANNEL_NAME } from './constants';
 import { ArtifactWatcher } from './watcher';
 import { HuntDataStore } from './store';
 import { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
-import { AutomationTreeDataProvider } from './automationSidebar';
+import { AutomationTreeDataProvider, AutomationTreeItem } from './automationSidebar';
 import { MCPStatusManager } from './mcpStatusManager';
 import { HuntStatusBar } from './statusBar';
 import { HuntCodeLensProvider } from './codeLens';
@@ -38,6 +38,8 @@ import { QueryAnalysisPanel, QUERY_ANALYSIS_VIEW_TYPE } from './queryAnalysisPan
 import { ProgramDashboardPanel, PROGRAM_DASHBOARD_VIEW_TYPE } from './programDashboardPanel';
 import { McpControlPanel, MCP_CONTROL_VIEW_TYPE } from './mcpControlPanel';
 import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE, BUILT_IN_COMMANDS, getContextRelevantIds } from './commandDeck';
+import { RunbookPanel } from './runbookPanel';
+import { RunbookRegistry, RunbookEngine, RUNBOOK_PANEL_VIEW_TYPE } from './runbook';
 import type { CommandDeckContext } from '../shared/command-deck';
 import type { SessionDiff } from '../shared/hunt-overview';
 import { resolveArtifactType } from './watcher';
@@ -1141,6 +1143,17 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.window.registerTreeDataProvider('thruntGod.automationTree', automationProvider)
     );
 
+    // Runbook registry and engine
+    const runbookRegistry = new RunbookRegistry(workspaceRoot || '');
+    void runbookRegistry.discover().then(() => {
+      automationProvider.setRunbookRegistry(runbookRegistry);
+    });
+
+    const runbookEngine = new RunbookEngine(
+      workspaceRoot || '',
+      mcpServerPath,
+    );
+
     // Watch .planning/runbooks/ for YAML runbook files
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (workspaceFolder) {
@@ -1159,6 +1172,8 @@ export function activate(context: vscode.ExtensionContext): void {
         try {
           const files = await vscode.workspace.findFiles(runbookPattern);
           automationProvider.setRunbookCount(files.length);
+          await runbookRegistry.refresh();
+          automationProvider.refresh();
         } catch {
           automationProvider.setRunbookCount(0);
         }
@@ -1172,6 +1187,23 @@ export function activate(context: vscode.ExtensionContext): void {
       // Initial count on activation
       void updateRunbookCount();
     }
+
+    // Runbook commands and panel serializer
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.openRunbook', (item?: AutomationTreeItem) => {
+        const runbookPath = item?.dataId;
+        RunbookPanel.createOrShow(context, runbookRegistry, runbookEngine, runbookPath);
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(RUNBOOK_PANEL_VIEW_TYPE, {
+        deserializeWebviewPanel(panel: vscode.WebviewPanel, _state: unknown) {
+          RunbookPanel.restorePanel(context, runbookRegistry, runbookEngine, panel);
+          return Promise.resolve();
+        },
+      })
+    );
 
     // Command Deck
     const commandDeckRegistry = new CommandDeckRegistry(context.workspaceState);
@@ -2006,3 +2038,4 @@ export {
   getContextRelevantIds,
 } from './commandDeck';
 export { validateRunbook, parseRunbook, RunbookRegistry, RunbookEngine, resolveParams, RUNBOOK_PANEL_VIEW_TYPE, VALID_STEP_ACTIONS } from './runbook';
+export { RunbookPanel } from './runbookPanel';

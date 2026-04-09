@@ -54,7 +54,9 @@
     "onWebviewPanel:thruntGod.drainViewer",
     "onWebviewPanel:thruntGod.programDashboard",
     "onWebviewPanel:thruntGod.mcpControlPanel",
-    "onWebviewPanel:thruntGod.commandDeckPanel"
+    "onWebviewPanel:thruntGod.commandDeckPanel",
+    "onCommand:thrunt-god.openRunbook",
+    "onWebviewPanel:thruntGod.runbookPanel"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -294,6 +296,11 @@
         "command": "thrunt-god.openCommandDeck",
         "title": "Open Command Deck",
         "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.openRunbook",
+        "title": "Open Runbook",
+        "category": "THRUNT GOD"
       }
     ],
     "menus": {
@@ -387,6 +394,11 @@
           "command": "thrunt-god.openCommandDeck",
           "when": "view == thruntGod.automationTree && viewItem == automationCommandDeck",
           "group": "commandDeck@1"
+        },
+        {
+          "command": "thrunt-god.openRunbook",
+          "when": "view == thruntGod.automationTree && viewItem == automationRunbookItem",
+          "group": "runbooks@1"
         }
       ],
       "editor/context": [

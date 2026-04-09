@@ -62,6 +62,7 @@ const webviewConfigs = [
   createWebviewConfig('webview/program-dashboard/index.tsx', 'dist/webview-program-dashboard.js'),
   createWebviewConfig('webview/mcp-control-panel/index.tsx', 'dist/webview-mcp-control.js'),
   createWebviewConfig('webview/command-deck/index.tsx', 'dist/webview-command-deck.js'),
+  createWebviewConfig('webview/runbook/index.tsx', 'dist/webview-runbook.js'),
 ];
 
 /**
@@ -178,6 +179,7 @@ async function build() {
     reportSizes('Webview: Program Dashboard (ESM)', 'dist/webview-program-dashboard.js');
     reportSizes('Webview: MCP Control (ESM)', 'dist/webview-mcp-control.js');
     reportSizes('Webview: Command Deck (ESM)', 'dist/webview-command-deck.js');
+    reportSizes('Webview: Runbook (ESM)', 'dist/webview-runbook.js');
     reportSizes('Bundled THRUNT CLI', 'dist/thrunt-god/bin/thrunt-tools.cjs');
 
     if (elapsed < 1000) {

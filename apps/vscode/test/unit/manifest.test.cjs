@@ -138,6 +138,36 @@ describe('Command Deck manifest', () => {
   });
 });
 
+describe('Runbook manifest', () => {
+  it('package.json has openRunbook command', () => {
+    const cmd = findCommand('thrunt-god.openRunbook');
+    assert.ok(cmd, 'openRunbook command exists');
+    assert.equal(cmd.title, 'Open Runbook');
+    assert.equal(cmd.category, 'THRUNT GOD');
+  });
+
+  it('package.json has runbook context menu entry for automationRunbookItem', () => {
+    const entry = findMenuEntry('view/item/context', 'thrunt-god.openRunbook');
+    assert.ok(entry, 'openRunbook context menu entry exists');
+    assert.ok(entry.when.includes('automationRunbookItem'), 'when clause includes automationRunbookItem');
+    assert.ok(entry.when.includes('view == thruntGod.automationTree'), 'when clause includes automationTree');
+  });
+
+  it('has runbookPanel activation event', () => {
+    assert.ok(
+      manifest.activationEvents.includes('onWebviewPanel:thruntGod.runbookPanel'),
+      'runbookPanel activation event registered'
+    );
+  });
+
+  it('has openRunbook command activation event', () => {
+    assert.ok(
+      manifest.activationEvents.includes('onCommand:thrunt-god.openRunbook'),
+      'openRunbook command activation event registered'
+    );
+  });
+});
+
 describe('MCP commands', () => {
   it('registers 6 MCP commands in package.json', () => {
     const mcpCommands = manifest.contributes.commands.filter(
