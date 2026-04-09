@@ -30,7 +30,7 @@
 - [x] **Phase 58: Sidebar Automation Section Foundation** - Second tree view in sidebar with MCP, Command Deck, Runbooks, Recent Runs root nodes (completed 2026-04-09)
 - [x] **Phase 59: MCP Runtime Control Panel** - MCP status node with health checks, quick actions, and full webview control panel (completed 2026-04-09)
 - [x] **Phase 60: Command Deck Webview** - Curated action deck with pins, recents, context-aware commands, and parameterized templates (completed 2026-04-09)
-- [ ] **Phase 61: Runbook Engine & Editor** - YAML runbook format, parser, execution engine with step types, and webview panel
+- [x] **Phase 61: Runbook Engine & Editor** - YAML runbook format, parser, execution engine with step types, and webview panel (completed 2026-04-09)
 - [ ] **Phase 62: Execution History & Guardrails** - Logged execution history, read-only/mutating labels, confirmation dialogs, environment indicators
 
 ## Phase Details
@@ -127,5 +127,5 @@ Phases execute in numeric order: 58 -> 59 -> 60 -> 61 -> 62
 | 58. Sidebar Automation Section Foundation | 2/2 | Complete    | 2026-04-09 |
 | 59. MCP Runtime Control Panel | 3/3 | Complete    | 2026-04-09 |
 | 60. Command Deck Webview | 3/3 | Complete    | 2026-04-09 |
-| 61. Runbook Engine & Editor | 2/3 | In Progress|  |
+| 61. Runbook Engine & Editor | 3/3 | Complete   | 2026-04-09 |
 | 62. Execution History & Guardrails | 0/2 | Planned | - |

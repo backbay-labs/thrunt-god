@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Sidebar Automation & Operations
 status: executing
-stopped_at: Completed 61-02-PLAN.md
-last_updated: "2026-04-09T22:14:23.629Z"
-last_activity: 2026-04-09 -- Completed 61-02 (RunbookEngine with dry-run, confirm, subprocess execution)
+stopped_at: Completed 61-03-PLAN.md
+last_updated: "2026-04-09T22:26:03.000Z"
+last_activity: 2026-04-09 -- Completed 61-03 (RunbookPanel webview, tree children, extension wiring)
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 61 of 62 (Runbook Engine & Editor)
-Plan: 2 of 3 plans in phase
-Status: In progress
-Last activity: 2026-04-09 -- Completed 61-02 (RunbookEngine with dry-run, confirm, subprocess execution)
+Plan: 3 of 3 plans in phase (COMPLETE)
+Status: Phase 61 complete
+Last activity: 2026-04-09 -- Completed 61-03 (RunbookPanel webview, tree children, extension wiring)
 
-Progress: [█████████░] 91% (v3.1 Phase 61: 2/3 plans)
+Progress: [██████████] 100% (v3.1 Phase 61: 3/3 plans)
 
 ## Accumulated Context
 
@@ -79,6 +79,10 @@ Progress: [█████████░] 91% (v3.1 Phase 61: 2/3 plans)
 - [Phase 61]: RunbookEngine uses async generator to yield StepResult per step for real-time webview streaming
 - [Phase 61]: CLI steps use 60s timeout with SIGTERM; MCP steps use 30s timeout with SIGTERM then SIGKILL after 2s grace
 - [Phase 61]: resolveParams exported separately for direct testing and reuse outside RunbookEngine
+- [Phase 61]: RunbookPanel follows CommandDeckPanel/McpControlPanel pattern exactly for webview host consistency
+- [Phase 61]: confirmResolve uses Promise-based blocking: webview sends confirm:continue/abort, host resolves stored promise
+- [Phase 61]: Runbook tree children use contextValue automationRunbookItem with dataId set to absolute file path
+- [Phase 61]: RunbookRegistry.discover() called with void .then() pattern since activate callback is not async
 
 ### Blockers/Concerns
 
@@ -86,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T22:14:17.679Z
-Stopped at: Completed 61-02-PLAN.md
-Resume: Phase 61 Plan 02 complete. RunbookEngine class with async generator executeRunbook, 5 step executors (cli/mcp/open/note/confirm), dry-run mode, confirm pause/abort, resolveParams helper. 390 total tests passing. Next: Plan 03 (RunbookPanel webview host).
+Last session: 2026-04-09T22:26:03.000Z
+Stopped at: Completed 61-03-PLAN.md
+Resume: Phase 61 complete. All 3 plans delivered: schema/registry (01), engine (02), webview/wiring (03). RunbookPanel webview host, Preact UI with input form/step progress/confirm/result, automation tree children, extension command/serializer, esbuild entry. 400 total tests passing. Phase 61 (Runbook Engine & Editor) is fully shipped.
