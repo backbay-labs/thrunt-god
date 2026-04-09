@@ -114,3 +114,55 @@ describe('extension manifest', () => {
     );
   });
 });
+
+describe('MCP commands', () => {
+  it('registers 5 MCP commands in package.json', () => {
+    const mcpCommands = manifest.contributes.commands.filter(
+      (c) => c.command.startsWith('thrunt-god.mcp')
+    );
+    assert.equal(mcpCommands.length, 5);
+  });
+
+  it('registers mcpStart command with THRUNT category', () => {
+    const cmd = manifest.contributes.commands.find(c => c.command === 'thrunt-god.mcpStart');
+    assert.ok(cmd, 'mcpStart command exists');
+    assert.equal(cmd.category, 'THRUNT');
+    assert.equal(cmd.title, 'Start MCP Server');
+  });
+
+  it('registers mcpHealthCheck command', () => {
+    const cmd = manifest.contributes.commands.find(c => c.command === 'thrunt-god.mcpHealthCheck');
+    assert.ok(cmd, 'mcpHealthCheck command exists');
+    assert.equal(cmd.title, 'Run MCP Health Check');
+  });
+
+  it('registers 5 MCP context menu entries gated by automationMcp', () => {
+    const ctx = manifest.contributes.menus['view/item/context'];
+    const mcpMenus = ctx.filter(m => m.command.startsWith('thrunt-god.mcp'));
+    assert.equal(mcpMenus.length, 5);
+    for (const menu of mcpMenus) {
+      assert.ok(
+        menu.when.includes('viewItem == automationMcp'),
+        `${menu.command} when clause should include automationMcp`
+      );
+      assert.ok(
+        menu.when.includes('view == thruntGod.automationTree'),
+        `${menu.command} when clause should include automationTree`
+      );
+    }
+  });
+
+  it('MCP context menu entries use ordered mcp@ groups', () => {
+    const ctx = manifest.contributes.menus['view/item/context'];
+    const mcpMenus = ctx.filter(m => m.command.startsWith('thrunt-god.mcp'));
+    const groups = mcpMenus.map(m => m.group).sort();
+    assert.deepEqual(groups, ['mcp@1', 'mcp@2', 'mcp@3', 'mcp@4', 'mcp@5']);
+  });
+
+  it('has mcpControlPanel activation event', () => {
+    assert.ok(
+      manifest.activationEvents.includes('onWebviewPanel:thruntGod.mcpControlPanel'),
+      'mcpControlPanel activation event exists'
+    );
+  });
+});

@@ -8,6 +8,7 @@ import { ArtifactWatcher } from './watcher';
 import { HuntDataStore } from './store';
 import { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
 import { AutomationTreeDataProvider } from './automationSidebar';
+import { MCPStatusManager } from './mcpStatusManager';
 import { HuntStatusBar } from './statusBar';
 import { HuntCodeLensProvider } from './codeLens';
 import { EvidenceIntegrityDiagnostics } from './diagnostics';
@@ -1117,8 +1118,20 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.window.registerTreeDataProvider('thruntGod.huntTree', treeProvider)
     );
 
+    // MCP output channel and status manager
+    const mcpOutputChannel = vscode.window.createOutputChannel('THRUNT MCP');
+    context.subscriptions.push(mcpOutputChannel);
+
+    // Resolve MCP server path: prefer workspace-local apps/mcp, fall back to setting
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const mcpServerPath = vscode.workspace.getConfiguration('thruntGod').get<string>('mcp.serverPath')
+      || (workspaceRoot ? path.join(workspaceRoot, 'apps', 'mcp', 'bin', 'server.cjs') : '');
+
+    const mcpStatus = new MCPStatusManager(mcpOutputChannel, mcpServerPath);
+    context.subscriptions.push(mcpStatus);
+
     // Automation sidebar tree
-    const automationProvider = new AutomationTreeDataProvider();
+    const automationProvider = new AutomationTreeDataProvider({ mcpStatus });
     context.subscriptions.push(automationProvider);
     context.subscriptions.push(
       vscode.window.registerTreeDataProvider('thruntGod.automationTree', automationProvider)
@@ -1631,6 +1644,75 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.refreshAutomationSidebar', () => {
         automationProvider.refresh();
+      })
+    );
+
+    // Refresh automation tree when MCP status changes
+    context.subscriptions.push(
+      mcpStatus.onDidChange(() => automationProvider.refresh())
+    );
+
+    // MCP commands
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.mcpStart', async () => {
+        try {
+          await mcpStatus.start();
+          vscode.window.showInformationMessage('MCP server started');
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to start MCP: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.mcpRestart', async () => {
+        try {
+          await mcpStatus.restart();
+          vscode.window.showInformationMessage('MCP server restarted');
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to restart MCP: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.mcpHealthCheck', async () => {
+        const result = await mcpStatus.runHealthCheck();
+        if (result.status === 'healthy') {
+          const dbKb = (result.dbSizeBytes / 1024).toFixed(1);
+          vscode.window.showInformationMessage(
+            `MCP healthy: ${result.toolCount} tools, DB ${dbKb} KB (${result.dbTableCount} tables), uptime ${(result.uptimeMs / 1000).toFixed(1)}s`
+          );
+        } else {
+          vscode.window.showErrorMessage(
+            `MCP health check ${result.status}: ${result.error || 'Unknown error'}`
+          );
+        }
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.mcpListTools', async () => {
+        const tools = await mcpStatus.listTools();
+        if (tools.length === 0) {
+          vscode.window.showWarningMessage('No MCP tools found or server not reachable');
+          return;
+        }
+        mcpOutputChannel.clear();
+        mcpOutputChannel.appendLine('=== MCP Tool Inventory ===\n');
+        for (const tool of tools) {
+          mcpOutputChannel.appendLine(`${tool.name}`);
+          mcpOutputChannel.appendLine(`  ${tool.description}`);
+          mcpOutputChannel.appendLine(`  Input: ${JSON.stringify(tool.inputSchema)}`);
+          mcpOutputChannel.appendLine('');
+        }
+        mcpOutputChannel.show(true);
+      })
+    );
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.mcpOpenLogs', () => {
+        mcpOutputChannel.show(true);
       })
     );
 
