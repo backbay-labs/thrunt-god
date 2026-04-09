@@ -27,7 +27,7 @@
 - Integer phases (58-62): Planned milestone work
 - Decimal phases (e.g., 58.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 58: Sidebar Automation Section Foundation** - Second tree view in sidebar with MCP, Command Deck, Runbooks, Recent Runs root nodes
+- [x] **Phase 58: Sidebar Automation Section Foundation** - Second tree view in sidebar with MCP, Command Deck, Runbooks, Recent Runs root nodes (completed 2026-04-09)
 - [ ] **Phase 59: MCP Runtime Control Panel** - MCP status node with health checks, quick actions, and full webview control panel
 - [ ] **Phase 60: Command Deck Webview** - Curated action deck with pins, recents, context-aware commands, and parameterized templates
 - [ ] **Phase 61: Runbook Engine & Editor** - YAML runbook format, parser, execution engine with step types, and webview panel
@@ -124,7 +124,7 @@ Phases execute in numeric order: 58 -> 59 -> 60 -> 61 -> 62
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 58. Sidebar Automation Section Foundation | 1/2 | In Progress|  |
+| 58. Sidebar Automation Section Foundation | 2/2 | Complete   | 2026-04-09 |
 | 59. MCP Runtime Control Panel | 0/3 | Planned | - |
 | 60. Command Deck Webview | 0/3 | Planned | - |
 | 61. Runbook Engine & Editor | 0/3 | Planned | - |
