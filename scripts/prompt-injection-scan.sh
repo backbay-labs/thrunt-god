@@ -64,7 +64,8 @@ PATTERNS=(
 )
 
 # ─── Allowlist ───────────────────────────────────────────────────────────────
-# Files that legitimately discuss injection patterns (security docs, tests, this script)
+# Files that legitimately trip the generic prompt-injection heuristics.
+# Keep vendored data entries file-scoped so new corpus additions still get scanned.
 ALLOWLIST=(
   'scripts/prompt-injection-scan.sh'
   'scripts/base64-scan.sh'
@@ -76,6 +77,9 @@ ALLOWLIST=(
   'thrunt-god/bin/lib/security.cjs'
   'hooks/thrunt-prompt-guard.js'
   'SECURITY.md'
+  'apps/mcp/data/mitre-attack-enterprise.json'
+  'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_renamed_binary_highly_relevant.yml'
+  'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_w32tm.yml'
   'thrunt-god/data/mitre-attack-enterprise.json'
 )
 

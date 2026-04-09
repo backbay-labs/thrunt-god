@@ -213,6 +213,14 @@ describe('prompt-injection-scan.sh', { skip: IS_WINDOWS }, () => {
     }
   });
 
+  test('uses file-scoped MCP data allowlist entries instead of broad directory exemptions', () => {
+    const content = fs.readFileSync(SCRIPTS.injection, 'utf-8');
+    assert.ok(content.includes("'apps/mcp/data/mitre-attack-enterprise.json'"));
+    assert.ok(content.includes("'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_renamed_binary_highly_relevant.yml'"));
+    assert.ok(content.includes("'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_w32tm.yml'"));
+    assert.ok(!content.includes("'apps/mcp/data/'"), 'apps/mcp/data/ should not be broadly allowlisted');
+  });
+
   test('directory allowlist matching is anchored to a path boundary in the script source', () => {
     const content = fs.readFileSync(SCRIPTS.injection, 'utf-8');
     assert.ok(content.includes('"$candidate/"*'), 'relative directory allowlist should require a trailing slash boundary');
