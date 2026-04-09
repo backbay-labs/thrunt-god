@@ -4,9 +4,10 @@
 
 const { test, describe, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 const { runThruntTools, createTempProject, cleanup } = require('./helpers.cjs');
+const { extractFrontmatter } = require('../thrunt-god/bin/lib/frontmatter.cjs');
 
 describe('state-snapshot command', () => {
   let tmpDir;
@@ -24,7 +25,11 @@ describe('state-snapshot command', () => {
     assert.ok(result.success, `Command should succeed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.error, 'STATE.md not found', 'should report missing file');
+    assert.strictEqual(
+      output.error,
+      'STATE.md not found',
+      'should report missing file'
+    );
   });
 
   test('extracts basic fields from STATE.md', () => {
@@ -49,13 +54,21 @@ describe('state-snapshot command', () => {
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.current_phase, '03', 'current phase extracted');
-    assert.strictEqual(output.current_phase_name, 'API Layer', 'phase name extracted');
+    assert.strictEqual(
+      output.current_phase_name,
+      'API Layer',
+      'phase name extracted'
+    );
     assert.strictEqual(output.total_phases, 6, 'total phases extracted');
     assert.strictEqual(output.current_plan, '03-02', 'current plan extracted');
     assert.strictEqual(output.total_plans_in_phase, 3, 'total plans extracted');
     assert.strictEqual(output.status, 'In progress', 'status extracted');
     assert.strictEqual(output.progress_percent, 45, 'progress extracted');
-    assert.strictEqual(output.last_activity, '2024-01-15', 'last activity date extracted');
+    assert.strictEqual(
+      output.last_activity,
+      '2024-01-15',
+      'last activity date extracted'
+    );
   });
 
   test('extracts decisions table', () => {
@@ -80,8 +93,16 @@ describe('state-snapshot command', () => {
     const output = JSON.parse(result.output);
     assert.strictEqual(output.decisions.length, 2, 'should have 2 decisions');
     assert.strictEqual(output.decisions[0].phase, '01', 'first decision phase');
-    assert.strictEqual(output.decisions[0].summary, 'Use Prisma', 'first decision summary');
-    assert.strictEqual(output.decisions[0].rationale, 'Better DX than raw SQL', 'first decision rationale');
+    assert.strictEqual(
+      output.decisions[0].summary,
+      'Use Prisma',
+      'first decision summary'
+    );
+    assert.strictEqual(
+      output.decisions[0].rationale,
+      'Better DX than raw SQL',
+      'first decision rationale'
+    );
   });
 
   test('extracts blockers list', () => {
@@ -102,10 +123,11 @@ describe('state-snapshot command', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.deepStrictEqual(output.blockers, [
-      'Waiting for API credentials',
-      'Need design review for dashboard',
-    ], 'blockers extracted');
+    assert.deepStrictEqual(
+      output.blockers,
+      ['Waiting for API credentials', 'Need design review for dashboard'],
+      'blockers extracted'
+    );
   });
 
   test('extracts session continuity info', () => {
@@ -127,9 +149,21 @@ describe('state-snapshot command', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.session.last_date, '2024-01-15', 'session date extracted');
-    assert.strictEqual(output.session.stopped_at, 'Phase 3, Plan 2, Task 1', 'stopped at extracted');
-    assert.strictEqual(output.session.resume_file, '.planning/phases/03-api/03-02-PLAN.md', 'resume file extracted');
+    assert.strictEqual(
+      output.session.last_date,
+      '2024-01-15',
+      'session date extracted'
+    );
+    assert.strictEqual(
+      output.session.stopped_at,
+      'Phase 3, Plan 2, Task 1',
+      'stopped at extracted'
+    );
+    assert.strictEqual(
+      output.session.resume_file,
+      '.planning/phases/03-api/03-02-PLAN.md',
+      'resume file extracted'
+    );
   });
 
   test('handles paused_at field', () => {
@@ -146,14 +180,20 @@ describe('state-snapshot command', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.paused_at, 'Phase 3, Plan 1, Task 2 - mid-implementation', 'paused_at extracted');
+    assert.strictEqual(
+      output.paused_at,
+      'Phase 3, Plan 1, Task 2 - mid-implementation',
+      'paused_at extracted'
+    );
   });
 
   describe('--cwd override', () => {
     let outsideDir;
 
     beforeEach(() => {
-      outsideDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thrunt-test-outside-'));
+      outsideDir = fs.mkdtempSync(
+        path.join(require('node:os').tmpdir(), 'thrunt-test-outside-')
+      );
     });
 
     afterEach(() => {
@@ -170,12 +210,23 @@ describe('state-snapshot command', () => {
 `
       );
 
-      const result = runThruntTools(`state-snapshot --cwd "${tmpDir}"`, outsideDir);
+      const result = runThruntTools(
+        `state-snapshot --cwd "${tmpDir}"`,
+        outsideDir
+      );
       assert.ok(result.success, `Command failed: ${result.error}`);
 
       const output = JSON.parse(result.output);
-      assert.strictEqual(output.current_phase, '03', 'should read STATE.md from overridden cwd');
-      assert.strictEqual(output.status, 'Ready to plan', 'should parse status from overridden cwd');
+      assert.strictEqual(
+        output.current_phase,
+        '03',
+        'should read STATE.md from overridden cwd'
+      );
+      assert.strictEqual(
+        output.status,
+        'Ready to plan',
+        'should parse status from overridden cwd'
+      );
     });
   });
 
@@ -183,7 +234,10 @@ describe('state-snapshot command', () => {
     const invalid = path.join(tmpDir, 'does-not-exist');
     const result = runThruntTools(`state-snapshot --cwd "${invalid}"`, tmpDir);
     assert.ok(!result.success, 'should fail for invalid --cwd');
-    assert.ok(result.error.includes('Invalid --cwd'), 'error should mention invalid --cwd');
+    assert.ok(
+      result.error.includes('Invalid --cwd'),
+      'error should mention invalid --cwd'
+    );
   });
 });
 
@@ -212,19 +266,38 @@ None
     );
 
     const result = runThruntTools(
-      ['state', 'add-decision', '--phase', '11-01', '--summary', 'Benchmark prices moved from $0.50 to $2.00 to $5.00', '--rationale', 'track cost growth'],
+      [
+        'state',
+        'add-decision',
+        '--phase',
+        '11-01',
+        '--summary',
+        'Benchmark prices moved from $0.50 to $2.00 to $5.00',
+        '--rationale',
+        'track cost growth',
+      ],
       tmpDir
     );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const state = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const state = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
     assert.match(
       state,
       /- \[Phase 11-01\]: Benchmark prices moved from \$0\.50 to \$2\.00 to \$5\.00 — track cost growth/,
       'decision entry should preserve literal dollar values'
     );
-    assert.strictEqual((state.match(/^## Decisions$/gm) || []).length, 1, 'Decisions heading should not be duplicated');
-    assert.ok(!state.includes('No decisions yet.'), 'placeholder should be removed');
+    assert.strictEqual(
+      (state.match(/^## Decisions$/gm) || []).length,
+      1,
+      'Decisions heading should not be duplicated'
+    );
+    assert.ok(
+      !state.includes('No decisions yet.'),
+      'placeholder should be removed'
+    );
   });
 
   test('add-blocker preserves dollar strings without corrupting Blockers section', () => {
@@ -240,12 +313,31 @@ None
 `
     );
 
-    const result = runThruntTools(['state', 'add-blocker', '--text', 'Waiting on vendor quote $1.00 before approval'], tmpDir);
+    const result = runThruntTools(
+      [
+        'state',
+        'add-blocker',
+        '--text',
+        'Waiting on vendor quote $1.00 before approval',
+      ],
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const state = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.match(state, /- Waiting on vendor quote \$1\.00 before approval/, 'blocker entry should preserve literal dollar values');
-    assert.strictEqual((state.match(/^## Blockers$/gm) || []).length, 1, 'Blockers heading should not be duplicated');
+    const state = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.match(
+      state,
+      /- Waiting on vendor quote \$1\.00 before approval/,
+      'blocker entry should preserve literal dollar values'
+    );
+    assert.strictEqual(
+      (state.match(/^## Blockers$/gm) || []).length,
+      1,
+      'Blockers heading should not be duplicated'
+    );
   });
 
   test('add-decision supports file inputs to preserve shell-sensitive dollar text', () => {
@@ -264,7 +356,10 @@ None
     const summaryPath = path.join(tmpDir, 'decision-summary.txt');
     const rationalePath = path.join(tmpDir, 'decision-rationale.txt');
     fs.writeFileSync(summaryPath, 'Price tiers: $0.50, $2.00, else $5.00\n');
-    fs.writeFileSync(rationalePath, 'Keep exact currency literals for budgeting\n');
+    fs.writeFileSync(
+      rationalePath,
+      'Keep exact currency literals for budgeting\n'
+    );
 
     const result = runThruntTools(
       `state add-decision --phase 11-02 --summary-file "${summaryPath}" --rationale-file "${rationalePath}"`,
@@ -272,7 +367,10 @@ None
     );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const state = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const state = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
     assert.match(
       state,
       /- \[Phase 11-02\]: Price tiers: \$0\.50, \$2\.00, else \$5\.00 — Keep exact currency literals for budgeting/,
@@ -294,13 +392,25 @@ None
     );
 
     const blockerPath = path.join(tmpDir, 'blocker.txt');
-    fs.writeFileSync(blockerPath, 'Vendor quote updated from $1.00 to $2.00 pending approval\n');
+    fs.writeFileSync(
+      blockerPath,
+      'Vendor quote updated from $1.00 to $2.00 pending approval\n'
+    );
 
-    const result = runThruntTools(`state add-blocker --text-file "${blockerPath}"`, tmpDir);
+    const result = runThruntTools(
+      `state add-blocker --text-file "${blockerPath}"`,
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const state = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.match(state, /- Vendor quote updated from \$1\.00 to \$2\.00 pending approval/);
+    const state = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.match(
+      state,
+      /- Vendor quote updated from \$1\.00 to \$2\.00 pending approval/
+    );
   });
 });
 
@@ -324,7 +434,11 @@ describe('state json command', () => {
     assert.ok(result.success, `Command should succeed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.error, 'STATE.md not found', 'should report missing file');
+    assert.strictEqual(
+      output.error,
+      'STATE.md not found',
+      'should report missing file'
+    );
   });
 
   test('builds frontmatter on-the-fly from body when no frontmatter exists', () => {
@@ -347,15 +461,35 @@ describe('state json command', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.thrunt_state_version, '1.0', 'should have version 1.0');
+    assert.strictEqual(
+      output.thrunt_state_version,
+      '1.0',
+      'should have version 1.0'
+    );
     assert.strictEqual(output.current_phase, '05', 'current phase extracted');
-    assert.strictEqual(output.current_phase_name, 'Deployment', 'phase name extracted');
+    assert.strictEqual(
+      output.current_phase_name,
+      'Deployment',
+      'phase name extracted'
+    );
     assert.strictEqual(output.current_plan, '05-03', 'current plan extracted');
-    assert.strictEqual(output.status, 'executing', 'status normalized to executing');
+    assert.strictEqual(
+      output.status,
+      'executing',
+      'status normalized to executing'
+    );
     assert.ok(output.last_updated, 'should have last_updated timestamp');
-    assert.strictEqual(output.last_activity, '2026-01-20', 'last activity extracted');
+    assert.strictEqual(
+      output.last_activity,
+      '2026-01-20',
+      'last activity extracted'
+    );
     assert.ok(output.progress, 'should have progress object');
-    assert.strictEqual(output.progress.percent, 60, 'progress percent extracted');
+    assert.strictEqual(
+      output.progress.percent,
+      60,
+      'progress percent extracted'
+    );
   });
 
   test('reads existing frontmatter when present', () => {
@@ -379,10 +513,18 @@ stopped_at: Plan 2 of Phase 3
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.thrunt_state_version, '1.0', 'version from frontmatter');
+    assert.strictEqual(
+      output.thrunt_state_version,
+      '1.0',
+      'version from frontmatter'
+    );
     assert.strictEqual(output.current_phase, '03', 'phase from frontmatter');
     assert.strictEqual(output.status, 'paused', 'status from frontmatter');
-    assert.strictEqual(output.stopped_at, 'Plan 2 of Phase 3', 'stopped_at from frontmatter');
+    assert.strictEqual(
+      output.stopped_at,
+      'Plan 2 of Phase 3',
+      'stopped_at from frontmatter'
+    );
   });
 
   test('normalizes various status values', () => {
@@ -391,7 +533,10 @@ stopped_at: Plan 2 of Phase 3
       { input: 'Ready to execute', expected: 'executing' },
       { input: 'Paused at Plan 3', expected: 'paused' },
       { input: 'Ready to plan', expected: 'planning' },
-      { input: 'Phase complete — ready for validation', expected: 'validating' },
+      {
+        input: 'Phase complete — ready for validation',
+        expected: 'validating',
+      },
       { input: 'Milestone complete', expected: 'completed' },
     ];
 
@@ -402,9 +547,16 @@ stopped_at: Plan 2 of Phase 3
       );
 
       const result = runThruntTools('state json', tmpDir);
-      assert.ok(result.success, `Command failed for status "${input}": ${result.error}`);
+      assert.ok(
+        result.success,
+        `Command failed for status "${input}": ${result.error}`
+      );
       const output = JSON.parse(result.output);
-      assert.strictEqual(output.status, expected, `"${input}" should normalize to "${expected}"`);
+      assert.strictEqual(
+        output.status,
+        expected,
+        `"${input}" should normalize to "${expected}"`
+      );
     }
   });
 });
@@ -434,15 +586,36 @@ describe('STATE.md frontmatter sync', () => {
 `
     );
 
-    const result = runThruntTools('state update Status "Executing Plan 1"', tmpDir);
+    const result = runThruntTools(
+      'state update Status "Executing Plan 1"',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(content.startsWith('---\n'), 'should start with frontmatter delimiter');
-    assert.ok(content.includes('thrunt_state_version: 1.0'), 'should have version field');
-    assert.ok(content.includes('current_phase: 02'), 'frontmatter should have current phase');
-    assert.ok(content.includes('**Current Phase:** 02'), 'body field should be preserved');
-    assert.ok(content.includes('**Status:** Executing Plan 1'), 'updated field in body');
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      content.startsWith('---\n'),
+      'should start with frontmatter delimiter'
+    );
+    assert.ok(
+      content.includes('thrunt_state_version: 1.0'),
+      'should have version field'
+    );
+    assert.ok(
+      content.includes('current_phase: 02'),
+      'frontmatter should have current phase'
+    );
+    assert.ok(
+      content.includes('**Current Phase:** 02'),
+      'body field should be preserved'
+    );
+    assert.ok(
+      content.includes('**Status:** Executing Plan 1'),
+      'updated field in body'
+    );
   });
 
   test('state patch adds frontmatter', () => {
@@ -456,11 +629,20 @@ describe('STATE.md frontmatter sync', () => {
 `
     );
 
-    const result = runThruntTools('state patch --Status "In progress" --"Current Plan" 04-02', tmpDir);
+    const result = runThruntTools(
+      'state patch --Status "In progress" --"Current Plan" 04-02',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(content.startsWith('---\n'), 'should have frontmatter after patch');
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      content.startsWith('---\n'),
+      'should have frontmatter after patch'
+    );
   });
 
   test('frontmatter is idempotent on multiple writes', () => {
@@ -476,10 +658,20 @@ describe('STATE.md frontmatter sync', () => {
     runThruntTools('state update Status "In progress"', tmpDir);
     runThruntTools('state update Status "Paused"', tmpDir);
 
-    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
     const delimiterCount = (content.match(/^---$/gm) || []).length;
-    assert.strictEqual(delimiterCount, 2, 'should have exactly one frontmatter block (2 delimiters)');
-    assert.ok(content.includes('status: paused'), 'frontmatter should reflect latest status');
+    assert.strictEqual(
+      delimiterCount,
+      2,
+      'should have exactly one frontmatter block (2 delimiters)'
+    );
+    assert.ok(
+      content.includes('status: paused'),
+      'frontmatter should reflect latest status'
+    );
   });
 
   test('preserves frontmatter status when body Status field is missing', () => {
@@ -501,9 +693,51 @@ milestone: v1.0
     // Any writeStateMd triggers syncStateFrontmatter — use state update on a field that exists
     runThruntTools('state update "Current Plan" "03-03"', tmpDir);
 
-    const content = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(content.includes('status: executing'), 'should preserve existing status, not overwrite with unknown');
-    assert.ok(!content.includes('status: unknown'), 'should not contain unknown status');
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      content.includes('status: executing'),
+      'should preserve existing status, not overwrite with unknown'
+    );
+    assert.ok(
+      !content.includes('status: unknown'),
+      'should not contain unknown status'
+    );
+  });
+
+  test('preserves case metadata that exists only in frontmatter', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      `---
+status: active
+title: "Credential Access Hunt"
+opened_at: 2026-04-01
+closed_at: 2026-04-05
+technique_ids: [T1003, T1555]
+outcome_summary: "Contained and remediated"
+---
+
+# Case: Credential Access Hunt
+
+**Current Phase:** 03
+**Current Plan:** 03-01
+`
+    );
+
+    runThruntTools('state update "Current Plan" "03-02"', tmpDir);
+
+    const content = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    const fm = extractFrontmatter(content);
+    assert.strictEqual(fm.title, 'Credential Access Hunt');
+    assert.strictEqual(fm.opened_at, '2026-04-01');
+    assert.strictEqual(fm.closed_at, '2026-04-05');
+    assert.deepStrictEqual(fm.technique_ids, ['T1003', 'T1555']);
+    assert.strictEqual(fm.outcome_summary, 'Contained and remediated');
   });
 
   test('round-trip: write then read via state json', () => {
@@ -526,9 +760,21 @@ milestone: v1.0
     assert.ok(result.success, `state json failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.current_phase, '07', 'round-trip: phase preserved');
-    assert.strictEqual(output.current_phase_name, 'Production', 'round-trip: phase name preserved');
-    assert.strictEqual(output.status, 'executing', 'round-trip: status normalized');
+    assert.strictEqual(
+      output.current_phase,
+      '07',
+      'round-trip: phase preserved'
+    );
+    assert.strictEqual(
+      output.current_phase_name,
+      'Production',
+      'round-trip: phase name preserved'
+    );
+    assert.strictEqual(
+      output.status,
+      'executing',
+      'round-trip: status normalized'
+    );
     assert.ok(output.last_updated, 'round-trip: timestamp present');
   });
 });
@@ -537,7 +783,11 @@ milestone: v1.0
 // stateExtractField and stateReplaceField helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { stateExtractField, stateReplaceField, stateReplaceFieldWithFallback } = require('../thrunt-god/bin/lib/state.cjs');
+const {
+  stateExtractField,
+  stateReplaceField,
+  stateReplaceFieldWithFallback,
+} = require('../thrunt-god/bin/lib/state.cjs');
 
 describe('stateExtractField and stateReplaceField helpers', () => {
   // stateExtractField tests
@@ -545,25 +795,42 @@ describe('stateExtractField and stateReplaceField helpers', () => {
   test('extracts simple field value', () => {
     const content = '# State\n\n**Status:** In progress\n';
     const result = stateExtractField(content, 'Status');
-    assert.strictEqual(result, 'In progress', 'should extract simple field value');
+    assert.strictEqual(
+      result,
+      'In progress',
+      'should extract simple field value'
+    );
   });
 
   test('extracts field with colon in value', () => {
-    const content = '# State\n\n**Last Activity:** 2024-01-15 — Completed plan\n';
+    const content =
+      '# State\n\n**Last Activity:** 2024-01-15 — Completed plan\n';
     const result = stateExtractField(content, 'Last Activity');
-    assert.strictEqual(result, '2024-01-15 — Completed plan', 'should return full value after field pattern');
+    assert.strictEqual(
+      result,
+      '2024-01-15 — Completed plan',
+      'should return full value after field pattern'
+    );
   });
 
   test('returns null for missing field', () => {
     const content = '# State\n\n**Phase:** 03\n';
     const result = stateExtractField(content, 'Status');
-    assert.strictEqual(result, null, 'should return null when field not present');
+    assert.strictEqual(
+      result,
+      null,
+      'should return null when field not present'
+    );
   });
 
   test('is case-insensitive on field name', () => {
     const content = '# State\n\n**status:** Active\n';
     const result = stateExtractField(content, 'Status');
-    assert.strictEqual(result, 'Active', 'should match field name case-insensitively');
+    assert.strictEqual(
+      result,
+      'Active',
+      'should match field name case-insensitively'
+    );
   });
 
   // stateReplaceField tests
@@ -572,14 +839,24 @@ describe('stateExtractField and stateReplaceField helpers', () => {
     const content = '# State\n\n**Status:** Old\n';
     const result = stateReplaceField(content, 'Status', 'New');
     assert.ok(result !== null, 'should return updated content, not null');
-    assert.ok(result.includes('**Status:** New'), 'output should contain updated field value');
-    assert.ok(!result.includes('**Status:** Old'), 'output should not contain old field value');
+    assert.ok(
+      result.includes('**Status:** New'),
+      'output should contain updated field value'
+    );
+    assert.ok(
+      !result.includes('**Status:** Old'),
+      'output should not contain old field value'
+    );
   });
 
   test('returns null when field not found', () => {
     const content = '# State\n\n**Phase:** 03\n';
     const result = stateReplaceField(content, 'Status', 'New');
-    assert.strictEqual(result, null, 'should return null when field not present');
+    assert.strictEqual(
+      result,
+      null,
+      'should return null when field not present'
+    );
   });
 
   test('preserves surrounding content', () => {
@@ -596,11 +873,20 @@ describe('stateExtractField and stateReplaceField helpers', () => {
 
     const result = stateReplaceField(content, 'Status', 'New');
     assert.ok(result !== null, 'should return updated content');
-    assert.ok(result.includes('**Phase:** 03'), 'Phase line should be unchanged');
+    assert.ok(
+      result.includes('**Phase:** 03'),
+      'Phase line should be unchanged'
+    );
     assert.ok(result.includes('**Status:** New'), 'Status should be updated');
-    assert.ok(result.includes('**Last Activity:** 2024-01-15'), 'Last Activity line should be unchanged');
+    assert.ok(
+      result.includes('**Last Activity:** 2024-01-15'),
+      'Last Activity line should be unchanged'
+    );
     assert.ok(result.includes('## Notes'), 'Notes heading should be unchanged');
-    assert.ok(result.includes('Some notes here.'), 'Notes content should be unchanged');
+    assert.ok(
+      result.includes('Some notes here.'),
+      'Notes content should be unchanged'
+    );
   });
 
   test('round-trip: extract then replace then extract', () => {
@@ -612,7 +898,11 @@ describe('stateExtractField and stateReplaceField helpers', () => {
     assert.ok(updated !== null, 'replace should succeed');
 
     const reExtracted = stateExtractField(updated, 'Phase');
-    assert.strictEqual(reExtracted, '4', 'extract after replace should return "4"');
+    assert.strictEqual(
+      reExtracted,
+      '4',
+      'extract after replace should return "4"'
+    );
   });
 });
 
@@ -623,35 +913,78 @@ describe('stateExtractField and stateReplaceField helpers', () => {
 describe('stateReplaceFieldWithFallback', () => {
   test('replaces primary field when present', () => {
     const content = '# State\n\n**Status:** Old\n';
-    const result = stateReplaceFieldWithFallback(content, 'Status', null, 'New');
+    const result = stateReplaceFieldWithFallback(
+      content,
+      'Status',
+      null,
+      'New'
+    );
     assert.ok(result.includes('**Status:** New'));
   });
 
   test('falls back to secondary field when primary not found', () => {
     const content = '# State\n\nLast activity: 2024-01-01\n';
-    const result = stateReplaceFieldWithFallback(content, 'Last Activity', 'Last activity', '2025-03-19');
-    assert.ok(result.includes('Last activity: 2025-03-19'), 'should update fallback field');
+    const result = stateReplaceFieldWithFallback(
+      content,
+      'Last Activity',
+      'Last activity',
+      '2025-03-19'
+    );
+    assert.ok(
+      result.includes('Last activity: 2025-03-19'),
+      'should update fallback field'
+    );
   });
 
   test('returns content unchanged when neither field matches', () => {
     const content = '# State\n\n**Phase:** 3\n';
-    const result = stateReplaceFieldWithFallback(content, 'Status', 'state', 'New');
+    const result = stateReplaceFieldWithFallback(
+      content,
+      'Status',
+      'state',
+      'New'
+    );
     assert.strictEqual(result, content, 'content should be unchanged');
   });
 
   test('prefers primary over fallback when both exist', () => {
     const content = '# State\n\n**Status:** Old\nStatus: Also old\n';
-    const result = stateReplaceFieldWithFallback(content, 'Status', 'Status', 'New');
+    const result = stateReplaceFieldWithFallback(
+      content,
+      'Status',
+      'Status',
+      'New'
+    );
     // Bold format is tried first by stateReplaceField
-    assert.ok(result.includes('**Status:** New'), 'should replace bold (primary) format');
+    assert.ok(
+      result.includes('**Status:** New'),
+      'should replace bold (primary) format'
+    );
   });
 
   test('works with plain format fields', () => {
-    const content = '# State\n\nPhase: 1 of 3 (Foundation)\nStatus: In progress\nPlan: 01-01\n';
-    let updated = stateReplaceFieldWithFallback(content, 'Status', null, 'Complete');
-    assert.ok(updated.includes('Status: Complete'), 'should update plain Status');
-    updated = stateReplaceFieldWithFallback(updated, 'Current Plan', 'Plan', 'Not started');
-    assert.ok(updated.includes('Plan: Not started'), 'should fall back to Plan field');
+    const content =
+      '# State\n\nPhase: 1 of 3 (Foundation)\nStatus: In progress\nPlan: 01-01\n';
+    let updated = stateReplaceFieldWithFallback(
+      content,
+      'Status',
+      null,
+      'Complete'
+    );
+    assert.ok(
+      updated.includes('Status: Complete'),
+      'should update plain Status'
+    );
+    updated = stateReplaceFieldWithFallback(
+      updated,
+      'Current Plan',
+      'Plan',
+      'Not started'
+    );
+    assert.ok(
+      updated.includes('Plan: Not started'),
+      'should fall back to Plan field'
+    );
   });
 });
 
@@ -688,10 +1021,25 @@ describe('cmdStateLoad (state load)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.state_exists, true, 'state_exists should be true');
-    assert.strictEqual(output.config_exists, true, 'config_exists should be true');
-    assert.strictEqual(output.huntmap_exists, true, 'huntmap_exists should be true');
-    assert.ok(output.state_raw.includes('**Status:** Active'), 'state_raw should contain STATE.md content');
+    assert.strictEqual(
+      output.state_exists,
+      true,
+      'state_exists should be true'
+    );
+    assert.strictEqual(
+      output.config_exists,
+      true,
+      'config_exists should be true'
+    );
+    assert.strictEqual(
+      output.huntmap_exists,
+      true,
+      'huntmap_exists should be true'
+    );
+    assert.ok(
+      output.state_raw.includes('**Status:** Active'),
+      'state_raw should contain STATE.md content'
+    );
   });
 
   test('returns state_exists false when STATE.md missing', () => {
@@ -699,8 +1047,16 @@ describe('cmdStateLoad (state load)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.state_exists, false, 'state_exists should be false');
-    assert.strictEqual(output.state_raw, '', 'state_raw should be empty string');
+    assert.strictEqual(
+      output.state_exists,
+      false,
+      'state_exists should be false'
+    );
+    assert.strictEqual(
+      output.state_raw,
+      '',
+      'state_raw should be empty string'
+    );
   });
 
   test('returns raw key=value format with --raw flag', () => {
@@ -716,10 +1072,22 @@ describe('cmdStateLoad (state load)', () => {
     const result = runThruntTools('state load --raw', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    assert.ok(result.output.includes('state_exists=true'), 'raw output should include state_exists=true');
-    assert.ok(result.output.includes('config_exists=true'), 'raw output should include config_exists=true');
-    assert.ok(result.output.includes('plan_check='), 'raw output should expose plan_check config flag');
-    assert.ok(result.output.includes('validator='), 'raw output should expose validator config flag');
+    assert.ok(
+      result.output.includes('state_exists=true'),
+      'raw output should include state_exists=true'
+    );
+    assert.ok(
+      result.output.includes('config_exists=true'),
+      'raw output should include config_exists=true'
+    );
+    assert.ok(
+      result.output.includes('plan_check='),
+      'raw output should expose plan_check config flag'
+    );
+    assert.ok(
+      result.output.includes('validator='),
+      'raw output should expose validator config flag'
+    );
   });
 });
 
@@ -743,7 +1111,10 @@ describe('cmdStateGet (state get)', () => {
 
     const output = JSON.parse(result.output);
     assert.ok(output.content !== undefined, 'output should have content field');
-    assert.ok(output.content.includes('**Status:** Active'), 'content should include full STATE.md text');
+    assert.ok(
+      output.content.includes('**Status:** Active'),
+      'content should include full STATE.md text'
+    );
   });
 
   test('extracts bold field value', () => {
@@ -756,7 +1127,11 @@ describe('cmdStateGet (state get)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output['Status'], 'Active', 'should extract Status field value');
+    assert.strictEqual(
+      output.Status,
+      'Active',
+      'should extract Status field value'
+    );
   });
 
   test('extracts markdown section content', () => {
@@ -769,9 +1144,18 @@ describe('cmdStateGet (state get)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.ok(output['Blockers'] !== undefined, 'should have Blockers key in output');
-    assert.ok(output['Blockers'].includes('item1'), 'section content should include item1');
-    assert.ok(output['Blockers'].includes('item2'), 'section content should include item2');
+    assert.ok(
+      output.Blockers !== undefined,
+      'should have Blockers key in output'
+    );
+    assert.ok(
+      output.Blockers.includes('item1'),
+      'section content should include item1'
+    );
+    assert.ok(
+      output.Blockers.includes('item2'),
+      'section content should include item2'
+    );
   });
 
   test('returns error for nonexistent field', () => {
@@ -781,11 +1165,17 @@ describe('cmdStateGet (state get)', () => {
     );
 
     const result = runThruntTools('state get Missing', tmpDir);
-    assert.ok(result.success, `Command should exit 0 even for missing field: ${result.error}`);
+    assert.ok(
+      result.success,
+      `Command should exit 0 even for missing field: ${result.error}`
+    );
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.toLowerCase().includes('not found'), 'error should mention "not found"');
+    assert.ok(
+      output.error.toLowerCase().includes('not found'),
+      'error should mention "not found"'
+    );
   });
 
   test('returns error when STATE.md missing', () => {
@@ -800,13 +1190,13 @@ describe('cmdStateGet (state get)', () => {
 
 describe('cmdStatePatch and cmdStateUpdate (state patch, state update)', () => {
   let tmpDir;
-  const stateMd = [
+  const stateMd = `${[
     '# Hunt State',
     '',
     '**Current Phase:** 03',
     '**Status:** In progress',
     '**Last Activity:** 2024-01-15',
-  ].join('\n') + '\n';
+  ].join('\n')}\n`;
 
   beforeEach(() => {
     tmpDir = createTempProject();
@@ -819,47 +1209,86 @@ describe('cmdStatePatch and cmdStateUpdate (state patch, state update)', () => {
   test('state patch updates multiple fields at once', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateMd);
 
-    const result = runThruntTools('state patch --Status Complete --"Current Phase" 04', tmpDir);
+    const result = runThruntTools(
+      'state patch --Status Complete --"Current Phase" 04',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('**Status:** Complete'), 'Status should be updated to Complete');
-    assert.ok(updated.includes('**Last Activity:** 2024-01-15'), 'Last Activity should be unchanged');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('**Status:** Complete'),
+      'Status should be updated to Complete'
+    );
+    assert.ok(
+      updated.includes('**Last Activity:** 2024-01-15'),
+      'Last Activity should be unchanged'
+    );
   });
 
   test('state patch reports failed fields that do not exist', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateMd);
 
-    const result = runThruntTools('state patch --Status Done --Missing value', tmpDir);
+    const result = runThruntTools(
+      'state patch --Status Done --Missing value',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.ok(Array.isArray(output.updated), 'updated should be an array');
-    assert.ok(output.updated.includes('Status'), 'Status should be in updated list');
+    assert.ok(
+      output.updated.includes('Status'),
+      'Status should be in updated list'
+    );
     assert.ok(Array.isArray(output.failed), 'failed should be an array');
-    assert.ok(output.failed.includes('Missing'), 'Missing should be in failed list');
+    assert.ok(
+      output.failed.includes('Missing'),
+      'Missing should be in failed list'
+    );
   });
 
   test('state update changes a single field', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateMd);
 
-    const result = runThruntTools('state update Status "Phase complete"', tmpDir);
+    const result = runThruntTools(
+      'state update Status "Phase complete"',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.updated, true, 'updated should be true');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('**Status:** Phase complete'), 'Status should be updated');
-    assert.ok(updated.includes('**Current Phase:** 03'), 'Current Phase should be unchanged');
-    assert.ok(updated.includes('**Last Activity:** 2024-01-15'), 'Last Activity should be unchanged');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('**Status:** Phase complete'),
+      'Status should be updated'
+    );
+    assert.ok(
+      updated.includes('**Current Phase:** 03'),
+      'Current Phase should be unchanged'
+    );
+    assert.ok(
+      updated.includes('**Last Activity:** 2024-01-15'),
+      'Last Activity should be unchanged'
+    );
   });
 
   test('state update reports field not found', () => {
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateMd);
 
     const result = runThruntTools('state update Missing value', tmpDir);
-    assert.ok(result.success, `Command should exit 0 for not-found field: ${result.error}`);
+    assert.ok(
+      result.success,
+      `Command should exit 0 for not-found field: ${result.error}`
+    );
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.updated, false, 'updated should be false');
@@ -886,14 +1315,14 @@ describe('cmdStatePatch and cmdStateUpdate (state patch, state update)', () => {
 describe('cmdStateAdvancePlan (state advance-plan)', () => {
   let tmpDir;
 
-  const advanceFixture = [
+  const advanceFixture = `${[
     '# Hunt State',
     '',
     '**Current Plan:** 1',
     '**Total Plans in Phase:** 3',
     '**Status:** Executing',
     '**Last Activity:** 2024-01-10',
-  ].join('\n') + '\n';
+  ].join('\n')}\n`;
 
   beforeEach(() => {
     tmpDir = createTempProject();
@@ -904,7 +1333,10 @@ describe('cmdStateAdvancePlan (state advance-plan)', () => {
   });
 
   test('advances plan counter when not on last plan', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), advanceFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      advanceFixture
+    );
 
     const before = new Date().toISOString().split('T')[0];
     const result = runThruntTools('state advance-plan', tmpDir);
@@ -916,30 +1348,60 @@ describe('cmdStateAdvancePlan (state advance-plan)', () => {
     assert.strictEqual(output.current_plan, 2, 'current_plan should be 2');
     assert.strictEqual(output.total_plans, 3, 'total_plans should be 3');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('**Current Plan:** 2'), 'Current Plan should be updated to 2');
-    assert.ok(updated.includes('**Status:** Ready to execute'), 'Status should be Ready to execute');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('**Current Plan:** 2'),
+      'Current Plan should be updated to 2'
+    );
+    assert.ok(
+      updated.includes('**Status:** Ready to execute'),
+      'Status should be Ready to execute'
+    );
     const after = new Date().toISOString().split('T')[0];
     assert.ok(
-      updated.includes(`**Last Activity:** ${before}`) || updated.includes(`**Last Activity:** ${after}`),
+      updated.includes(`**Last Activity:** ${before}`) ||
+        updated.includes(`**Last Activity:** ${after}`),
       `Last Activity should be today (${before}) or next day if midnight boundary (${after})`
     );
   });
 
   test('marks phase complete on last plan', () => {
-    const lastPlanFixture = advanceFixture.replace('**Current Plan:** 1', '**Current Plan:** 3');
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), lastPlanFixture);
+    const lastPlanFixture = advanceFixture.replace(
+      '**Current Plan:** 1',
+      '**Current Plan:** 3'
+    );
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      lastPlanFixture
+    );
 
     const result = runThruntTools('state advance-plan', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.advanced, false, 'advanced should be false');
-    assert.strictEqual(output.reason, 'last_plan', 'reason should be last_plan');
-    assert.strictEqual(output.status, 'ready_for_validation', 'status should be ready_for_validation');
+    assert.strictEqual(
+      output.reason,
+      'last_plan',
+      'reason should be last_plan'
+    );
+    assert.strictEqual(
+      output.status,
+      'ready_for_validation',
+      'status should be ready_for_validation'
+    );
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('Phase complete'), 'Status should contain Phase complete');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('Phase complete'),
+      'Status should contain Phase complete'
+    );
   });
 
   test('returns error when STATE.md missing', () => {
@@ -948,7 +1410,10 @@ describe('cmdStateAdvancePlan (state advance-plan)', () => {
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.includes('STATE.md'), 'error should mention STATE.md');
+    assert.ok(
+      output.error.includes('STATE.md'),
+      'error should mention STATE.md'
+    );
   });
 
   test('returns error when plan fields not parseable', () => {
@@ -962,7 +1427,10 @@ describe('cmdStateAdvancePlan (state advance-plan)', () => {
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.toLowerCase().includes('cannot parse'), 'error should mention Cannot parse');
+    assert.ok(
+      output.error.toLowerCase().includes('cannot parse'),
+      'error should mention Cannot parse'
+    );
   });
 
   test('advances plan in compound "Plan: X of Y" format', () => {
@@ -980,11 +1448,18 @@ describe('cmdStateAdvancePlan (state advance-plan)', () => {
     assert.strictEqual(output.current_plan, 3);
     assert.strictEqual(output.total_plans, 5);
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('Plan: 3 of 5 in current phase'),
-      'should preserve compound format with updated plan number');
-    assert.ok(updated.includes('Status: Ready to execute'),
-      'Status should be updated');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('Plan: 3 of 5 in current phase'),
+      'should preserve compound format with updated plan number'
+    );
+    assert.ok(
+      updated.includes('Status: Ready to execute'),
+      'Status should be updated'
+    );
   });
 
   test('marks phase complete on last plan in compound format', () => {
@@ -1000,15 +1475,21 @@ describe('cmdStateAdvancePlan (state advance-plan)', () => {
     assert.strictEqual(output.advanced, false);
     assert.strictEqual(output.reason, 'last_plan');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('Phase complete'), 'Status should contain Phase complete');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('Phase complete'),
+      'Status should contain Phase complete'
+    );
   });
 });
 
 describe('cmdStateRecordMetric (state record-metric)', () => {
   let tmpDir;
 
-  const metricsFixture = [
+  const metricsFixture = `${[
     '# Hunt State',
     '',
     '## Performance Metrics',
@@ -1018,7 +1499,7 @@ describe('cmdStateRecordMetric (state record-metric)', () => {
     '| Phase 1 P1 | 3min | 2 tasks | 3 files |',
     '',
     '## Session Continuity',
-  ].join('\n') + '\n';
+  ].join('\n')}\n`;
 
   beforeEach(() => {
     tmpDir = createTempProject();
@@ -1029,21 +1510,36 @@ describe('cmdStateRecordMetric (state record-metric)', () => {
   });
 
   test('appends metric row to existing table', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), metricsFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      metricsFixture
+    );
 
-    const result = runThruntTools('state record-metric --phase 2 --plan 1 --duration 5min --tasks 3 --files 4', tmpDir);
+    const result = runThruntTools(
+      'state record-metric --phase 2 --plan 1 --duration 5min --tasks 3 --files 4',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.recorded, true, 'recorded should be true');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('| Phase 2 P1 | 5min | 3 tasks | 4 files |'), 'new row should be present');
-    assert.ok(updated.includes('| Phase 1 P1 | 3min | 2 tasks | 3 files |'), 'existing row should still be present');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('| Phase 2 P1 | 5min | 3 tasks | 4 files |'),
+      'new row should be present'
+    );
+    assert.ok(
+      updated.includes('| Phase 1 P1 | 3min | 2 tasks | 3 files |'),
+      'existing row should still be present'
+    );
   });
 
   test('replaces None yet placeholder with first metric', () => {
-    const noneYetFixture = [
+    const noneYetFixture = `${[
       '# Hunt State',
       '',
       '## Performance Metrics',
@@ -1053,19 +1549,37 @@ describe('cmdStateRecordMetric (state record-metric)', () => {
       'None yet',
       '',
       '## Session Continuity',
-    ].join('\n') + '\n';
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), noneYetFixture);
+    ].join('\n')}\n`;
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      noneYetFixture
+    );
 
-    const result = runThruntTools('state record-metric --phase 1 --plan 1 --duration 2min --tasks 1 --files 2', tmpDir);
+    const result = runThruntTools(
+      'state record-metric --phase 1 --plan 1 --duration 2min --tasks 1 --files 2',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(!updated.includes('None yet'), 'None yet placeholder should be removed');
-    assert.ok(updated.includes('| Phase 1 P1 | 2min | 1 tasks | 2 files |'), 'new row should be present');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      !updated.includes('None yet'),
+      'None yet placeholder should be removed'
+    );
+    assert.ok(
+      updated.includes('| Phase 1 P1 | 2min | 1 tasks | 2 files |'),
+      'new row should be present'
+    );
   });
 
   test('returns error when required fields missing', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), metricsFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      metricsFixture
+    );
 
     const result = runThruntTools('state record-metric --phase 1', tmpDir);
     assert.ok(result.success, `Command should exit 0: ${result.error}`);
@@ -1073,18 +1587,26 @@ describe('cmdStateRecordMetric (state record-metric)', () => {
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
     assert.ok(
-      output.error.includes('phase') || output.error.includes('plan') || output.error.includes('duration'),
+      output.error.includes('phase') ||
+        output.error.includes('plan') ||
+        output.error.includes('duration'),
       'error should mention missing required fields'
     );
   });
 
   test('returns error when STATE.md missing', () => {
-    const result = runThruntTools('state record-metric --phase 1 --plan 1 --duration 2min', tmpDir);
+    const result = runThruntTools(
+      'state record-metric --phase 1 --plan 1 --duration 2min',
+      tmpDir
+    );
     assert.ok(result.success, `Command should exit 0: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.includes('STATE.md'), 'error should mention STATE.md');
+    assert.ok(
+      output.error.includes('STATE.md'),
+      'error should mention STATE.md'
+    );
   });
 });
 
@@ -1125,7 +1647,10 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
     assert.strictEqual(output.completed, 1, 'completed should be 1');
     assert.strictEqual(output.total, 2, 'total should be 2');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
     assert.ok(updated.includes('50%'), 'STATE.md Progress should contain 50%');
   });
 
@@ -1139,7 +1664,11 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.percent, 0, 'percent should be 0 when no plans found');
+    assert.strictEqual(
+      output.percent,
+      0,
+      'percent should be 0 when no plans found'
+    );
   });
 
   test('returns error when Progress field missing', () => {
@@ -1162,7 +1691,10 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.includes('STATE.md'), 'error should mention STATE.md');
+    assert.ok(
+      output.error.includes('STATE.md'),
+      'error should mention STATE.md'
+    );
   });
 });
 
@@ -1173,7 +1705,7 @@ describe('cmdStateUpdateProgress (state update-progress)', () => {
 describe('cmdStateResolveBlocker (state resolve-blocker)', () => {
   let tmpDir;
 
-  const blockerFixture = [
+  const blockerFixture = `${[
     '# Hunt State',
     '',
     '## Blockers',
@@ -1183,7 +1715,7 @@ describe('cmdStateResolveBlocker (state resolve-blocker)', () => {
     '- Pending vendor approval',
     '',
     '## Session Continuity',
-  ].join('\n') + '\n';
+  ].join('\n')}\n`;
 
   beforeEach(() => {
     tmpDir = createTempProject();
@@ -1194,22 +1726,40 @@ describe('cmdStateResolveBlocker (state resolve-blocker)', () => {
   });
 
   test('removes matching blocker line (case-insensitive substring match)', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), blockerFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      blockerFixture
+    );
 
-    const result = runThruntTools('state resolve-blocker --text "api credentials"', tmpDir);
+    const result = runThruntTools(
+      'state resolve-blocker --text "api credentials"',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.strictEqual(output.resolved, true, 'resolved should be true');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(!updated.includes('Waiting for API credentials'), 'matched blocker should be removed');
-    assert.ok(updated.includes('Need design review for dashboard'), 'other blocker should still be present');
-    assert.ok(updated.includes('Pending vendor approval'), 'other blocker should still be present');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      !updated.includes('Waiting for API credentials'),
+      'matched blocker should be removed'
+    );
+    assert.ok(
+      updated.includes('Need design review for dashboard'),
+      'other blocker should still be present'
+    );
+    assert.ok(
+      updated.includes('Pending vendor approval'),
+      'other blocker should still be present'
+    );
   });
 
   test('adds None placeholder when last blocker resolved', () => {
-    const singleBlockerFixture = [
+    const singleBlockerFixture = `${[
       '# Hunt State',
       '',
       '## Blockers',
@@ -1217,23 +1767,41 @@ describe('cmdStateResolveBlocker (state resolve-blocker)', () => {
       '- Single blocker',
       '',
       '## Session Continuity',
-    ].join('\n') + '\n';
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), singleBlockerFixture);
+    ].join('\n')}\n`;
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      singleBlockerFixture
+    );
 
-    const result = runThruntTools('state resolve-blocker --text "single blocker"', tmpDir);
+    const result = runThruntTools(
+      'state resolve-blocker --text "single blocker"',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(!updated.includes('- Single blocker'), 'resolved blocker should be removed');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      !updated.includes('- Single blocker'),
+      'resolved blocker should be removed'
+    );
 
     // Section should contain "None" placeholder, not be empty
     const sectionMatch = updated.match(/## Blockers\n([\s\S]*?)(?=\n##|$)/i);
     assert.ok(sectionMatch, 'Blockers section should still exist');
-    assert.ok(sectionMatch[1].includes('None'), 'Blockers section should contain None placeholder');
+    assert.ok(
+      sectionMatch[1].includes('None'),
+      'Blockers section should contain None placeholder'
+    );
   });
 
   test('returns error when text not provided', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), blockerFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      blockerFixture
+    );
 
     const result = runThruntTools('state resolve-blocker', tmpDir);
     assert.ok(result.success, `Command should exit 0: ${result.error}`);
@@ -1247,29 +1815,45 @@ describe('cmdStateResolveBlocker (state resolve-blocker)', () => {
   });
 
   test('returns error when STATE.md missing', () => {
-    const result = runThruntTools('state resolve-blocker --text "anything"', tmpDir);
+    const result = runThruntTools(
+      'state resolve-blocker --text "anything"',
+      tmpDir
+    );
     assert.ok(result.success, `Command should exit 0: ${result.error}`);
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.includes('STATE.md'), 'error should mention STATE.md');
+    assert.ok(
+      output.error.includes('STATE.md'),
+      'error should mention STATE.md'
+    );
   });
 
   test('returns resolved true even if no line matches', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), blockerFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      blockerFixture
+    );
 
-    const result = runThruntTools('state resolve-blocker --text "nonexistent blocker text"', tmpDir);
+    const result = runThruntTools(
+      'state resolve-blocker --text "nonexistent blocker text"',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.resolved, true, 'resolved should be true even when no line matches');
+    assert.strictEqual(
+      output.resolved,
+      true,
+      'resolved should be true even when no line matches'
+    );
   });
 });
 
 describe('cmdStateRecordSession (state record-session)', () => {
   let tmpDir;
 
-  const sessionFixture = [
+  const sessionFixture = `${[
     '# Hunt State',
     '',
     '## Session Continuity',
@@ -1277,7 +1861,7 @@ describe('cmdStateRecordSession (state record-session)', () => {
     '**Last session:** 2024-01-10',
     '**Stopped at:** Phase 2, Plan 1',
     '**Resume file:** None',
-  ].join('\n') + '\n';
+  ].join('\n')}\n`;
 
   beforeEach(() => {
     tmpDir = createTempProject();
@@ -1288,7 +1872,10 @@ describe('cmdStateRecordSession (state record-session)', () => {
   });
 
   test('updates session fields with stopped-at and resume-file', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), sessionFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      sessionFixture
+    );
 
     const result = runThruntTools(
       'state record-session --stopped-at "Phase 3, Plan 2" --resume-file ".planning/phases/03/03-02-PLAN.md"',
@@ -1300,16 +1887,31 @@ describe('cmdStateRecordSession (state record-session)', () => {
     assert.strictEqual(output.recorded, true, 'recorded should be true');
     assert.ok(Array.isArray(output.updated), 'updated should be an array');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('Phase 3, Plan 2'), 'Stopped at should be updated');
-    assert.ok(updated.includes('.planning/phases/03/03-02-PLAN.md'), 'Resume file should be updated');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('Phase 3, Plan 2'),
+      'Stopped at should be updated'
+    );
+    assert.ok(
+      updated.includes('.planning/phases/03/03-02-PLAN.md'),
+      'Resume file should be updated'
+    );
 
     const today = new Date().toISOString().split('T')[0];
-    assert.ok(updated.includes(today), 'Last session should be updated to today');
+    assert.ok(
+      updated.includes(today),
+      'Last session should be updated to today'
+    );
   });
 
   test('updates Last session timestamp even with no other options', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), sessionFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      sessionFixture
+    );
 
     const result = runThruntTools('state record-session', tmpDir);
     assert.ok(result.success, `Command failed: ${result.error}`);
@@ -1317,23 +1919,44 @@ describe('cmdStateRecordSession (state record-session)', () => {
     const output = JSON.parse(result.output);
     assert.strictEqual(output.recorded, true, 'recorded should be true');
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
     const today = new Date().toISOString().split('T')[0];
-    assert.ok(updated.includes(today), 'Last session should contain today\'s date');
+    assert.ok(
+      updated.includes(today),
+      "Last session should contain today's date"
+    );
   });
 
   test('sets Resume file to None when not specified', () => {
-    fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), sessionFixture);
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      sessionFixture
+    );
 
-    const result = runThruntTools('state record-session --stopped-at "Phase 1 complete"', tmpDir);
+    const result = runThruntTools(
+      'state record-session --stopped-at "Phase 1 complete"',
+      tmpDir
+    );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
-    const updated = fs.readFileSync(path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8');
-    assert.ok(updated.includes('Phase 1 complete'), 'Stopped at should be updated');
+    const updated = fs.readFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
+    );
+    assert.ok(
+      updated.includes('Phase 1 complete'),
+      'Stopped at should be updated'
+    );
     // Resume file should be set to None (default)
     const resumeMatch = updated.match(/\*\*Resume file:\*\*\s*(.*)/i);
     assert.ok(resumeMatch, 'Resume file field should exist');
-    assert.ok(resumeMatch[1].trim() === 'None', 'Resume file should be None when not specified');
+    assert.ok(
+      resumeMatch[1].trim() === 'None',
+      'Resume file should be None when not specified'
+    );
   });
 
   test('returns error when STATE.md missing', () => {
@@ -1342,7 +1965,10 @@ describe('cmdStateRecordSession (state record-session)', () => {
 
     const output = JSON.parse(result.output);
     assert.ok(output.error !== undefined, 'output should have error field');
-    assert.ok(output.error.includes('STATE.md'), 'error should mention STATE.md');
+    assert.ok(
+      output.error.includes('STATE.md'),
+      'error should mention STATE.md'
+    );
   });
 
   test('returns recorded false when no session fields found', () => {
@@ -1355,7 +1981,11 @@ describe('cmdStateRecordSession (state record-session)', () => {
     assert.ok(result.success, `Command should exit 0: ${result.error}`);
 
     const output = JSON.parse(result.output);
-    assert.strictEqual(output.recorded, false, 'recorded should be false when no session fields found');
+    assert.strictEqual(
+      output.recorded,
+      false,
+      'recorded should be false when no session fields found'
+    );
     assert.ok(output.reason !== undefined, 'should have a reason');
   });
 });
@@ -1393,11 +2023,19 @@ describe('milestone-scoped phase counting in frontmatter', () => {
     // Disk has dirs 01-06 (01-04 are leftover from previous milestone)
     for (let i = 1; i <= 6; i++) {
       const padded = String(i).padStart(2, '0');
-      const phaseDir = path.join(tmpDir, '.planning', 'phases', `${padded}-phase-${i}`);
+      const phaseDir = path.join(
+        tmpDir,
+        '.planning',
+        'phases',
+        `${padded}-phase-${i}`
+      );
       fs.mkdirSync(phaseDir, { recursive: true });
       // Add a plan to each
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-PLAN.md`), '# Plan');
-      fs.writeFileSync(path.join(phaseDir, `${padded}-01-SUMMARY.md`), '# Summary');
+      fs.writeFileSync(
+        path.join(phaseDir, `${padded}-01-SUMMARY.md`),
+        '# Summary'
+      );
     }
 
     // Write a STATE.md and trigger a write that will sync frontmatter
@@ -1414,8 +2052,16 @@ describe('milestone-scoped phase counting in frontmatter', () => {
     assert.ok(jsonResult.success, `state json failed: ${jsonResult.error}`);
 
     const output = JSON.parse(jsonResult.output);
-    assert.strictEqual(Number(output.progress.total_phases), 2, 'should count only milestone phases (5 and 6), not all 6');
-    assert.strictEqual(Number(output.progress.completed_phases), 2, 'both milestone phases have summaries');
+    assert.strictEqual(
+      Number(output.progress.total_phases),
+      2,
+      'should count only milestone phases (5 and 6), not all 6'
+    );
+    assert.strictEqual(
+      Number(output.progress.completed_phases),
+      2,
+      'both milestone phases have summaries'
+    );
   });
 
   test('total_phases includes HUNTMAP phases without directories', () => {
@@ -1437,10 +2083,18 @@ describe('milestone-scoped phase counting in frontmatter', () => {
     // Only phases 5-8 have directories (9 and 10 not yet planned)
     for (let i = 5; i <= 8; i++) {
       const padded = String(i).padStart(2, '0');
-      const phaseDir = path.join(tmpDir, '.planning', 'phases', `${padded}-phase-${i}`);
+      const phaseDir = path.join(
+        tmpDir,
+        '.planning',
+        'phases',
+        `${padded}-phase-${i}`
+      );
       fs.mkdirSync(phaseDir, { recursive: true });
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-PLAN.md`), '# Plan');
-      fs.writeFileSync(path.join(phaseDir, `${padded}-01-SUMMARY.md`), '# Summary');
+      fs.writeFileSync(
+        path.join(phaseDir, `${padded}-01-SUMMARY.md`),
+        '# Summary'
+      );
     }
 
     fs.writeFileSync(
@@ -1455,15 +2109,28 @@ describe('milestone-scoped phase counting in frontmatter', () => {
     assert.ok(jsonResult.success, `state json failed: ${jsonResult.error}`);
 
     const output = JSON.parse(jsonResult.output);
-    assert.strictEqual(Number(output.progress.total_phases), 6, 'should count all 6 HUNTMAP phases, not just 4 with directories');
-    assert.strictEqual(Number(output.progress.completed_phases), 4, 'only 4 phases have summaries');
+    assert.strictEqual(
+      Number(output.progress.total_phases),
+      6,
+      'should count all 6 HUNTMAP phases, not just 4 with directories'
+    );
+    assert.strictEqual(
+      Number(output.progress.completed_phases),
+      4,
+      'only 4 phases have summaries'
+    );
   });
 
   test('without HUNTMAP counts all phases (pass-all filter)', () => {
     // No HUNTMAP.md — all phases should be counted
     for (let i = 1; i <= 4; i++) {
       const padded = String(i).padStart(2, '0');
-      const phaseDir = path.join(tmpDir, '.planning', 'phases', `${padded}-phase-${i}`);
+      const phaseDir = path.join(
+        tmpDir,
+        '.planning',
+        'phases',
+        `${padded}-phase-${i}`
+      );
       fs.mkdirSync(phaseDir, { recursive: true });
       fs.writeFileSync(path.join(phaseDir, `${padded}-01-PLAN.md`), '# Plan');
     }
@@ -1480,7 +2147,11 @@ describe('milestone-scoped phase counting in frontmatter', () => {
     assert.ok(jsonResult.success, `state json failed: ${jsonResult.error}`);
 
     const output = JSON.parse(jsonResult.output);
-    assert.strictEqual(Number(output.progress.total_phases), 4, 'without HUNTMAP should count all 4 phases');
+    assert.strictEqual(
+      Number(output.progress.total_phases),
+      4,
+      'without HUNTMAP should count all 4 phases'
+    );
   });
 });
 
@@ -1526,31 +2197,55 @@ Progress: [..........] 0%
     fs.writeFileSync(path.join(tmpDir, '.planning', 'STATE.md'), stateMd);
 
     const result = runThruntTools(
-      ['state', 'begin-phase', '--phase', '1', '--name', 'setup', '--plans', '4'],
+      [
+        'state',
+        'begin-phase',
+        '--phase',
+        '1',
+        '--name',
+        'setup',
+        '--plans',
+        '4',
+      ],
       tmpDir
     );
     assert.ok(result.success, `Command failed: ${result.error}`);
 
     const content = fs.readFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8'
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
     );
 
     // Extract the Current Position section
-    const posMatch = content.match(/## Current Position\s*\n([\s\S]*?)(?=\n##|$)/i);
+    const posMatch = content.match(
+      /## Current Position\s*\n([\s\S]*?)(?=\n##|$)/i
+    );
     assert.ok(posMatch, 'Current Position section should exist');
     const posSection = posMatch[1];
 
     // Phase and Plan lines should be updated
-    assert.ok(/^Phase:.*EXECUTING/m.test(posSection), 'Phase line should say EXECUTING');
-    assert.ok(/^Plan:.*1 of 4/m.test(posSection), 'Plan line should show 1 of 4');
+    assert.ok(
+      /^Phase:.*EXECUTING/m.test(posSection),
+      'Phase line should say EXECUTING'
+    );
+    assert.ok(
+      /^Plan:.*1 of 4/m.test(posSection),
+      'Plan line should show 1 of 4'
+    );
 
     // Status, Last activity, and Progress must still be present (the bug destroys these)
-    assert.ok(/^Status:/m.test(posSection),
-      'Status field must be preserved in Current Position');
-    assert.ok(/^Last activity:/m.test(posSection),
-      'Last activity field must be preserved in Current Position');
-    assert.ok(/^Progress:/m.test(posSection),
-      'Progress field must be preserved in Current Position');
+    assert.ok(
+      /^Status:/m.test(posSection),
+      'Status field must be preserved in Current Position'
+    );
+    assert.ok(
+      /^Last activity:/m.test(posSection),
+      'Last activity field must be preserved in Current Position'
+    );
+    assert.ok(
+      /^Progress:/m.test(posSection),
+      'Progress field must be preserved in Current Position'
+    );
   });
 
   test('advance-plan can update Status after begin-phase', () => {
@@ -1582,7 +2277,16 @@ Progress: [..........] 0%
 
     // Step 1: begin-phase
     const beginResult = runThruntTools(
-      ['state', 'begin-phase', '--phase', '1', '--name', 'setup', '--plans', '2'],
+      [
+        'state',
+        'begin-phase',
+        '--phase',
+        '1',
+        '--name',
+        'setup',
+        '--plans',
+        '2',
+      ],
       tmpDir
     );
     assert.ok(beginResult.success, `begin-phase failed: ${beginResult.error}`);
@@ -1596,15 +2300,23 @@ Progress: [..........] 0%
     assert.ok(adv2.success, `advance-plan 2 failed: ${adv2.error}`);
 
     const content = fs.readFileSync(
-      path.join(tmpDir, '.planning', 'STATE.md'), 'utf-8'
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      'utf-8'
     );
-    const posMatch = content.match(/## Current Position\s*\n([\s\S]*?)(?=\n##|$)/i);
-    assert.ok(posMatch, 'Current Position section should exist after advance-plan');
+    const posMatch = content.match(
+      /## Current Position\s*\n([\s\S]*?)(?=\n##|$)/i
+    );
+    assert.ok(
+      posMatch,
+      'Current Position section should exist after advance-plan'
+    );
     const posSection = posMatch[1];
 
     // After advancing past all plans, Status should say "Phase complete"
-    assert.ok(/Status:.*Phase complete/i.test(posSection),
-      'Status should be updated to "Phase complete" after last advance-plan');
+    assert.ok(
+      /Status:.*Phase complete/i.test(posSection),
+      'Status should be updated to "Phase complete" after last advance-plan'
+    );
   });
 });
 
@@ -1655,8 +2367,17 @@ status: executing
   });
 
   test('addCaseToRoster appends entry to STATE.md frontmatter', () => {
-    const { addCaseToRoster, getCaseRoster } = require('../thrunt-god/bin/lib/state.cjs');
-    addCaseToRoster(tmpDir, { slug: 'alpha', name: 'Alpha Case', status: 'active', opened_at: '2026-04-07', technique_count: 0 });
+    const {
+      addCaseToRoster,
+      getCaseRoster,
+    } = require('../thrunt-god/bin/lib/state.cjs');
+    addCaseToRoster(tmpDir, {
+      slug: 'alpha',
+      name: 'Alpha Case',
+      status: 'active',
+      opened_at: '2026-04-07',
+      technique_count: 0,
+    });
     const roster = getCaseRoster(tmpDir);
     assert.strictEqual(roster.length, 1, 'should have 1 entry');
     assert.strictEqual(roster[0].slug, 'alpha');
@@ -1666,18 +2387,47 @@ status: executing
 
   test('addCaseToRoster throws on duplicate slug', () => {
     const { addCaseToRoster } = require('../thrunt-god/bin/lib/state.cjs');
-    addCaseToRoster(tmpDir, { slug: 'alpha', name: 'Alpha', status: 'active', opened_at: '2026-04-07', technique_count: 0 });
-    assert.throws(() => {
-      addCaseToRoster(tmpDir, { slug: 'alpha', name: 'Alpha Again', status: 'active', opened_at: '2026-04-08', technique_count: 0 });
-    }, /already exists/i, 'should throw on duplicate slug');
+    addCaseToRoster(tmpDir, {
+      slug: 'alpha',
+      name: 'Alpha',
+      status: 'active',
+      opened_at: '2026-04-07',
+      technique_count: 0,
+    });
+    assert.throws(
+      () => {
+        addCaseToRoster(tmpDir, {
+          slug: 'alpha',
+          name: 'Alpha Again',
+          status: 'active',
+          opened_at: '2026-04-08',
+          technique_count: 0,
+        });
+      },
+      /already exists/i,
+      'should throw on duplicate slug'
+    );
   });
 
   test('updateCaseInRoster changes status and closed_at', () => {
-    const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('../thrunt-god/bin/lib/state.cjs');
-    addCaseToRoster(tmpDir, { slug: 'beta', name: 'Beta', status: 'active', opened_at: '2026-04-06', technique_count: 0 });
-    updateCaseInRoster(tmpDir, 'beta', { status: 'closed', closed_at: '2026-04-07' });
+    const {
+      addCaseToRoster,
+      updateCaseInRoster,
+      getCaseRoster,
+    } = require('../thrunt-god/bin/lib/state.cjs');
+    addCaseToRoster(tmpDir, {
+      slug: 'beta',
+      name: 'Beta',
+      status: 'active',
+      opened_at: '2026-04-06',
+      technique_count: 0,
+    });
+    updateCaseInRoster(tmpDir, 'beta', {
+      status: 'closed',
+      closed_at: '2026-04-07',
+    });
     const roster = getCaseRoster(tmpDir);
-    const beta = roster.find(c => c.slug === 'beta');
+    const beta = roster.find((c) => c.slug === 'beta');
     assert.ok(beta, 'beta should exist in roster');
     assert.strictEqual(beta.status, 'closed');
     assert.strictEqual(beta.closed_at, '2026-04-07');

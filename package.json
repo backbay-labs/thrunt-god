@@ -50,12 +50,16 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
     "c8": "^11.0.0",
     "esbuild": "^0.24.0"
   },
   "scripts": {
     "build:hooks": "node scripts/build-hooks.js",
     "build:vscode": "npm --prefix apps/vscode run build",
+    "check:biome": "biome check .",
+    "format:biome": "biome format --write .",
+    "lint:biome": "biome lint .",
     "lint:vscode": "npm --prefix apps/vscode run lint",
     "prepublishOnly": "npm run build:hooks",
     "test": "node scripts/run-tests.cjs",
