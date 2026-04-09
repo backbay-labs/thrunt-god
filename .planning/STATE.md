@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Sidebar Automation & Operations
-status: executing
-stopped_at: Completed 61-03-PLAN.md
-last_updated: "2026-04-09T22:26:03.000Z"
-last_activity: 2026-04-09 -- Completed 61-03 (RunbookPanel webview, tree children, extension wiring)
+status: in_progress
+stopped_at: Completed 62-01-PLAN.md
+last_updated: "2026-04-09T22:51:17.802Z"
+last_activity: 2026-04-09 -- Completed 62-01 (ExecutionLogger, shared types, confirmation dialog, unit tests)
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 13
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.1 Sidebar Automation & Operations — Phase 61: Runbook Engine & Editor
+**Current focus:** v3.1 Sidebar Automation & Operations — Phase 62: Execution History & Guardrails
 
 ## Current Milestone: v3.1 Sidebar Automation & Operations
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 61 of 62 (Runbook Engine & Editor)
-Plan: 3 of 3 plans in phase (COMPLETE)
-Status: Phase 61 complete
-Last activity: 2026-04-09 -- Completed 61-03 (RunbookPanel webview, tree children, extension wiring)
+Phase: 62 of 62 (Execution History & Guardrails)
+Plan: 1 of 2 plans in phase
+Status: Plan 62-01 complete
+Last activity: 2026-04-09 -- Completed 62-01 (ExecutionLogger, shared types, confirmation dialog, unit tests)
 
-Progress: [██████████] 100% (v3.1 Phase 61: 3/3 plans)
+Progress: [█████████░] 92% (v3.1 Phase 62: 1/2 plans)
 
 ## Accumulated Context
 
@@ -83,6 +83,10 @@ Progress: [██████████] 100% (v3.1 Phase 61: 3/3 plans)
 - [Phase 61]: confirmResolve uses Promise-based blocking: webview sends confirm:continue/abort, host resolves stored promise
 - [Phase 61]: Runbook tree children use contextValue automationRunbookItem with dataId set to absolute file path
 - [Phase 61]: RunbookRegistry.discover() called with void .then() pattern since activate callback is not async
+- [Phase 62]: ExecutionLogger uses atomic write pattern (tmp file + fs.renameSync) for crash-safe persistence
+- [Phase 62]: History file stored at .planning/.run-history.json, consistent with existing .planning/ convention
+- [Phase 62]: Configurable retention via thruntGod.executionHistory.maxEntries (default 100, min 10, max 10000)
+- [Phase 62]: No webview message protocol needed -- Recent Runs tree reads directly from ExecutionLogger in extension host
 
 ### Blockers/Concerns
 
@@ -90,6 +94,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T22:26:03.000Z
-Stopped at: Completed 61-03-PLAN.md
-Resume: Phase 61 complete. All 3 plans delivered: schema/registry (01), engine (02), webview/wiring (03). RunbookPanel webview host, Preact UI with input form/step progress/confirm/result, automation tree children, extension command/serializer, esbuild entry. 400 total tests passing. Phase 61 (Runbook Engine & Editor) is fully shipped.
+Last session: 2026-04-09T22:49:36Z
+Stopped at: Completed 62-01-PLAN.md
+Resume: Phase 62 Plan 01 complete. ExecutionLogger class with atomic persistence, shared ExecutionEntry type, confirmMutatingAction dialog, buildCommandEntry/buildRunbookEntry helpers, package.json config. 411 tests passing. Ready for Plan 02 (wiring into CommandDeckPanel, RunbookPanel, Recent Runs tree).
