@@ -113,6 +113,25 @@ function normalizeFsPath(value: string): string {
   return value.replace(/\\/g, '/').replace(/\/+$/, '');
 }
 
+function parseDashboardDateMs(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const directMs = new Date(value).getTime();
+  if (!Number.isNaN(directMs)) {
+    return directMs;
+  }
+
+  const match = value.match(/\b\d{4}-\d{2}-\d{2}(?:T[0-9:.+-]+(?:Z|[+-]\d{2}:\d{2})?)?\b/);
+  if (!match) {
+    return null;
+  }
+
+  const embeddedMs = new Date(match[0]).getTime();
+  return Number.isNaN(embeddedMs) ? null : embeddedMs;
+}
+
 /** Internal type for the watcher's onDidChange event shape */
 interface WatcherLike {
   onDidChange: vscode.Event<string[]>;
@@ -1125,8 +1144,11 @@ export class HuntDataStore implements vscode.Disposable {
     const cases: CaseCard[] = childHunts.map((child) => {
       const lowerStatus = child.status.toLowerCase();
       const isClosed = lowerStatus === 'closed' || lowerStatus === 'complete';
-      const lastActivityMs = child.lastActivity ? new Date(child.lastActivity).getTime() : 0;
-      const isStale = !isClosed && (now - lastActivityMs > STALE_THRESHOLD_MS);
+      const lastActivityMs = parseDashboardDateMs(child.lastActivity)
+        ?? parseDashboardDateMs(child.opened);
+      const isStale = !isClosed
+        && lastActivityMs !== null
+        && (now - lastActivityMs > STALE_THRESHOLD_MS);
 
       let status: CaseCard['status'];
       if (isClosed) {
@@ -1138,6 +1160,7 @@ export class HuntDataStore implements vscode.Disposable {
       }
 
       return {
+        id: child.id,
         slug: child.name,
         name: child.name,
         kind: child.kind,

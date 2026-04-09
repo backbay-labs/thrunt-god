@@ -229,7 +229,7 @@ export class ProgramDashboardPanel implements vscode.Disposable {
         });
         return;
       case 'case:open': {
-        const child = this.store.getChildHunts().find((c) => c.name === msg.slug);
+        const child = this.store.getChildHunts().find((c) => c.id === msg.id);
         if (child) {
           const uri = vscode.Uri.file(child.missionPath);
           void vscode.commands.executeCommand('vscode.open', uri);

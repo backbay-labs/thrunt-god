@@ -18,6 +18,7 @@ const ext = require(BUNDLE_PATH);
 const vscode = require('vscode');
 
 const {
+  HuntDataStore,
   ProgramDashboardPanel,
   PROGRAM_DASHBOARD_VIEW_TYPE,
 } = ext;
@@ -115,68 +116,9 @@ function createMockStore(overrides = {}) {
     ...overrides,
   };
 
-  // Add deriveProgramDashboard that mirrors the real store logic
+  // Use the real deriveProgramDashboard implementation against a lightweight store stub.
   store.deriveProgramDashboard = function () {
-    const hunt = this.getHunt();
-    const childHunts = this.getChildHunts();
-    const programName = hunt?.mission?.status === 'loaded' ? hunt.mission.data.signal : 'Program';
-    const missionSnippet = hunt?.mission?.status === 'loaded'
-      ? (hunt.mission.data.scope || hunt.mission.data.signal)
-      : '';
-
-    const STALE_MS = 14 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-
-    const cases = childHunts.map((child) => {
-      const lower = child.status.toLowerCase();
-      const isClosed = lower === 'closed' || lower === 'complete';
-      const lastMs = child.lastActivity ? new Date(child.lastActivity).getTime() : 0;
-      const isStale = !isClosed && (now - lastMs > STALE_MS);
-      let status;
-      if (isClosed) status = 'closed';
-      else if (isStale) status = 'stale';
-      else status = 'active';
-
-      return {
-        slug: child.name,
-        name: child.name,
-        kind: child.kind,
-        status,
-        openedAt: child.opened,
-        closedAt: isClosed ? child.lastActivity : null,
-        techniqueCount: (child.techniqueIds || []).length,
-        signal: child.signal,
-        currentPhase: child.currentPhase,
-        totalPhases: child.totalPhases,
-        phaseName: child.phaseName,
-        lastActivity: child.lastActivity,
-        findingsPublished: child.findingsPublished,
-      };
-    });
-
-    const active = cases.filter((c) => c.status === 'active').length;
-    const closed = cases.filter((c) => c.status === 'closed').length;
-    const stale = cases.filter((c) => c.status === 'stale').length;
-
-    const allTechniques = new Set();
-    for (const child of childHunts) {
-      for (const tid of (child.techniqueIds || [])) {
-        allTechniques.add(tid);
-      }
-    }
-
-    const timeline = [...childHunts]
-      .filter((c) => c.opened)
-      .sort((a, b) => new Date(a.opened).getTime() - new Date(b.opened).getTime())
-      .map((c) => ({ date: c.opened, event: `Opened: ${c.name}`, slug: c.name }));
-
-    return {
-      programName,
-      missionSnippet,
-      cases,
-      aggregates: { total: cases.length, active, closed, stale, uniqueTechniques: allTechniques.size },
-      timeline,
-    };
+    return HuntDataStore.prototype.deriveProgramDashboard.call(this);
   };
 
   return store;
@@ -349,6 +291,7 @@ describe('deriveProgramDashboard', () => {
 
     const alpha = cases.find((c) => c.slug === 'alpha');
     assert.ok(alpha);
+    assert.equal(alpha.id, 'case:alpha');
     assert.equal(alpha.status, 'active');
     assert.equal(alpha.signal, 'Suspicious auth events');
 
@@ -362,6 +305,36 @@ describe('deriveProgramDashboard', () => {
     assert.equal(gamma.status, 'stale');
 
     panel.dispose();
+  });
+
+  it('parses prefixed last-activity text before stale classification', () => {
+    const store = createMockStore({
+      getChildHunts: () => [
+        {
+          id: 'case:prefix-stale',
+          name: 'prefix-stale',
+          kind: 'case',
+          huntRootPath: '/workspace/cases/prefix-stale',
+          missionPath: '/workspace/cases/prefix-stale/MISSION.md',
+          signal: 'Dormant activity',
+          mode: 'case',
+          status: 'Open',
+          opened: '2026-01-01',
+          owner: 'erin',
+          currentPhase: 1,
+          totalPhases: 2,
+          phaseName: 'Triage',
+          lastActivity: 'Opened 2025-01-01',
+          blockerCount: 0,
+          findingsPublished: false,
+          techniqueIds: ['T1078'],
+        },
+      ],
+    });
+    const vm = store.deriveProgramDashboard();
+
+    assert.equal(vm.aggregates.stale, 1);
+    assert.equal(vm.cases[0].status, 'stale');
   });
 
   it('builds timeline sorted by opened date', () => {
@@ -433,11 +406,73 @@ describe('ProgramDashboardPanel message handling', () => {
     webviewPanel.webview._fireMessage({ type: 'webview:ready' });
     vscode.commands._executed.length = 0;
 
-    webviewPanel.webview._fireMessage({ type: 'case:open', slug: 'alpha' });
+    webviewPanel.webview._fireMessage({ type: 'case:open', id: 'case:alpha' });
 
     const openCmd = vscode.commands._executed.find((c) => c.name === 'vscode.open');
     assert.ok(openCmd, 'Should execute vscode.open command');
     assert.ok(openCmd.args[0].fsPath.includes('alpha'));
+
+    ProgramDashboardPanel.currentPanel.dispose();
+  });
+
+  it('case:open resolves cards by unique child-hunt id', () => {
+    const store = createMockStore({
+      getChildHunts: () => [
+        {
+          id: 'workstream:alpha',
+          name: 'alpha',
+          kind: 'workstream',
+          huntRootPath: '/workspace/workstreams/alpha',
+          missionPath: '/workspace/workstreams/alpha/MISSION.md',
+          signal: 'Shared slug workstream',
+          mode: 'workstream',
+          status: 'Open',
+          opened: '2026-03-01',
+          owner: 'bob',
+          currentPhase: 1,
+          totalPhases: 2,
+          phaseName: 'Triage',
+          lastActivity: '2026-03-20',
+          blockerCount: 0,
+          findingsPublished: false,
+          techniqueIds: [],
+        },
+        {
+          id: 'case:alpha',
+          name: 'alpha',
+          kind: 'case',
+          huntRootPath: '/workspace/cases/alpha',
+          missionPath: '/workspace/cases/alpha/MISSION.md',
+          signal: 'Shared slug case',
+          mode: 'case',
+          status: 'Open',
+          opened: '2026-03-02',
+          owner: 'carol',
+          currentPhase: 2,
+          totalPhases: 3,
+          phaseName: 'Collection',
+          lastActivity: '2026-03-21',
+          blockerCount: 0,
+          findingsPublished: false,
+          techniqueIds: ['T1059'],
+        },
+      ],
+    });
+    const context = createMockContext();
+
+    ProgramDashboardPanel.createOrShow(context, store);
+    const webviewPanel = vscode.window._createdWebviewPanels[
+      vscode.window._createdWebviewPanels.length - 1
+    ];
+
+    webviewPanel.webview._fireMessage({ type: 'webview:ready' });
+    vscode.commands._executed.length = 0;
+
+    webviewPanel.webview._fireMessage({ type: 'case:open', id: 'case:alpha' });
+
+    const openCmd = vscode.commands._executed.find((c) => c.name === 'vscode.open');
+    assert.ok(openCmd, 'Should execute vscode.open command');
+    assert.equal(openCmd.args[0].fsPath, '/workspace/cases/alpha/MISSION.md');
 
     ProgramDashboardPanel.currentPanel.dispose();
   });

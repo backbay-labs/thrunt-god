@@ -40,8 +40,8 @@ function statusLabel(status: CaseCardType['status']): string {
 
 function formatDate(raw: string): string {
   if (!raw) return '\u2014';
-  // Accept ISO dates or date strings; show compact form
-  const d = new Date(raw);
+  const normalized = raw.match(/\b\d{4}-\d{2}-\d{2}(?:T[0-9:.+-]+(?:Z|[+-]\d{2}:\d{2})?)?\b/)?.[0] ?? raw;
+  const d = new Date(normalized);
   if (isNaN(d.getTime())) return raw;
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
@@ -136,7 +136,7 @@ function CaseCard({ card }: { card: CaseCardType }) {
           )}
         </span>
         <GhostButton
-          onClick={() => vscode.postMessage({ type: 'case:open', slug: card.slug })}
+          onClick={() => vscode.postMessage({ type: 'case:open', id: card.id })}
           ariaLabel={`Open case ${card.name}`}
         >
           Open Case
@@ -236,7 +236,7 @@ function ProgramDashboard() {
       ) : (
         <div class="pd-cases-grid">
           {viewModel.cases.map((card) => (
-            <CaseCard key={card.slug} card={card} />
+            <CaseCard key={card.id} card={card} />
           ))}
         </div>
       )}

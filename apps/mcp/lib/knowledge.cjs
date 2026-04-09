@@ -28,6 +28,15 @@ function buildAttackDescription(label, attackId, description = '') {
  * @returns {object}
  */
 function upsertEntityRecord(db, opts) {
+  if (!db.inTransaction) {
+    let entity;
+    const doUpsert = db.transaction(() => {
+      entity = upsertEntityRecord(db, opts);
+    });
+    doUpsert.immediate();
+    return entity;
+  }
+
   const id = opts.id || makeEntityId(opts.type, opts.name);
   const type = opts.type;
   const name = opts.name;
@@ -112,14 +121,7 @@ function ensureKnowledgeSchema(db) {
  * @returns {object}
  */
 function addEntity(db, opts) {
-  let entity;
-  const doAdd = db.transaction(() => {
-    entity = upsertEntityRecord(db, opts);
-  });
-
-  doAdd.immediate();
-
-  return entity;
+  return upsertEntityRecord(db, opts);
 }
 
 /**

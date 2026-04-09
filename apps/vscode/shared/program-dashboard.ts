@@ -1,4 +1,5 @@
 export interface CaseCard {
+  id: string;
   slug: string;
   name: string;
   kind: 'case' | 'workstream';
@@ -39,5 +40,5 @@ export type HostToProgramDashboardMessage =
 
 export type ProgramDashboardToHostMessage =
   | { type: 'webview:ready' }
-  | { type: 'case:open'; slug: string }
+  | { type: 'case:open'; id: string }
   | { type: 'refresh' };
