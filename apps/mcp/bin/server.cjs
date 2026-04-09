@@ -75,6 +75,58 @@ if (process.argv.includes('--list-tools')) {
   process.exit(0);
 }
 
+// --- Run tool mode (one-shot tool execution, no transport) ---
+const runToolIdx = process.argv.indexOf('--run-tool');
+if (runToolIdx !== -1) {
+  const toolName = process.argv[runToolIdx + 1];
+  const inputIdx = process.argv.indexOf('--input');
+  const inputJson = inputIdx !== -1 ? process.argv[inputIdx + 1] : '{}';
+
+  if (!toolName) {
+    process.stdout.write(JSON.stringify({ error: 'Missing tool name after --run-tool' }) + '\n');
+    process.exit(1);
+  }
+
+  const handlers = require('../lib/tools.cjs');
+  const handlerMap = {
+    lookup_technique: handlers.handleLookupTechnique,
+    search_techniques: handlers.handleSearchTechniques,
+    lookup_group: handlers.handleLookupGroup,
+    generate_layer: handlers.handleGenerateLayer,
+    analyze_coverage: handlers.handleAnalyzeCoverage,
+    compare_detections: handlers.handleCompareDetections,
+    suggest_detections: handlers.handleSuggestDetections,
+    query_knowledge: handlers.handleQueryKnowledge,
+    log_decision: handlers.handleLogDecision,
+    log_learning: handlers.handleLogLearning,
+  };
+
+  const handler = handlerMap[toolName];
+  if (!handler) {
+    process.stdout.write(JSON.stringify({ error: `Unknown tool: ${toolName}` }) + '\n');
+    process.exit(1);
+  }
+
+  try {
+    const db = openIntelDb(dbOpts);
+    const args = JSON.parse(inputJson);
+    const result = handler(db, args);
+    // Handle both sync and async results
+    Promise.resolve(result).then((res) => {
+      process.stdout.write(JSON.stringify(res) + '\n');
+      db.close();
+      process.exit(0);
+    }).catch((err) => {
+      process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
+      db.close();
+      process.exit(1);
+    });
+  } catch (err) {
+    process.stdout.write(JSON.stringify({ error: err.message }) + '\n');
+    process.exit(1);
+  }
+}
+
 const server = new McpServer({
   name: 'thrunt-mcp',
   version: '0.1.0',
