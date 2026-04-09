@@ -56,10 +56,12 @@ export interface CommandExecResult {
 
 // Host -> Webview messages
 export type HostToCommandDeckMessage =
-  | { type: 'init'; commands: CommandDef[]; pinned: string[]; recent: RecentCommandEntry[]; context: CommandDeckContext | null; isDark: boolean }
+  | { type: 'init'; commands: CommandDef[]; templates: CommandTemplate[]; pinned: string[]; recent: RecentCommandEntry[]; context: CommandDeckContext | null; isDark: boolean }
   | { type: 'commands'; commands: CommandDef[]; pinned: string[]; recent: RecentCommandEntry[] }
   | { type: 'context'; context: CommandDeckContext | null }
   | { type: 'execResult'; commandId: string; success: boolean; message: string }
+  | { type: 'templates'; templates: CommandTemplate[] }
+  | { type: 'templatePrompt'; templateId: string; placeholders: string[] }
   | { type: 'theme'; isDark: boolean };
 
 // Webview -> Host messages
@@ -68,4 +70,7 @@ export type CommandDeckToHostMessage =
   | { type: 'command:exec'; commandId: string }
   | { type: 'command:pin'; commandId: string }
   | { type: 'command:unpin'; commandId: string }
+  | { type: 'template:save'; template: CommandTemplate }
+  | { type: 'template:delete'; templateId: string }
+  | { type: 'template:exec'; templateId: string; values: Record<string, string> }
   | { type: 'refresh' };

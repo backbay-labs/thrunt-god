@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
+import { spawn } from 'child_process';
 import type {
   CommandDef,
   CommandDeckBootData,
   CommandDeckToHostMessage,
   HostToCommandDeckMessage,
   CommandDeckContext,
+  CommandTemplate,
   RecentCommandEntry,
 } from '../shared/command-deck';
 
@@ -139,6 +142,7 @@ export function getContextRelevantIds(context: CommandDeckContext | null): strin
 
 const PINS_KEY = 'thruntGod.commandDeck.pins';
 const RECENT_KEY = 'thruntGod.commandDeck.recent';
+const TEMPLATES_KEY = 'thruntGod.commandDeck.templates';
 const MAX_RECENT = 20;
 
 export class CommandDeckRegistry {
@@ -185,6 +189,36 @@ export class CommandDeckRegistry {
     };
     const updated = [entry, ...current].slice(0, MAX_RECENT);
     await this.workspaceState.update(RECENT_KEY, updated);
+  }
+
+  // ---- Template CRUD ----
+
+  getTemplates(): CommandTemplate[] {
+    return this.workspaceState.get<CommandTemplate[]>(TEMPLATES_KEY, []);
+  }
+
+  async saveTemplate(template: CommandTemplate): Promise<void> {
+    const current = this.getTemplates();
+    const idx = current.findIndex((t) => t.id === template.id);
+    if (idx >= 0) {
+      current[idx] = template;
+    } else {
+      current.push(template);
+    }
+    await this.workspaceState.update(TEMPLATES_KEY, current);
+  }
+
+  async deleteTemplate(templateId: string): Promise<void> {
+    const current = this.getTemplates();
+    await this.workspaceState.update(
+      TEMPLATES_KEY,
+      current.filter((t) => t.id !== templateId)
+    );
+  }
+
+  static extractPlaceholders(text: string): string[] {
+    const matches = text.match(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g) || [];
+    return [...new Set(matches.map((m) => m.slice(1, -1)))];
   }
 }
 
@@ -391,6 +425,7 @@ export class CommandDeckPanel implements vscode.Disposable {
         this.postMessage({
           type: 'init',
           commands: this.registry.getCommands(),
+          templates: this.registry.getTemplates(),
           pinned: this.registry.getPinnedIds(),
           recent: this.registry.getRecent(),
           context: null,
@@ -406,6 +441,19 @@ export class CommandDeckPanel implements vscode.Disposable {
       case 'command:unpin':
         void this.registry.unpin(msg.commandId).then(() => this.sendCommandsUpdate());
         return;
+      case 'template:save':
+        void this.registry.saveTemplate(msg.template).then(() => {
+          this.postMessage({ type: 'templates', templates: this.registry.getTemplates() });
+        });
+        return;
+      case 'template:delete':
+        void this.registry.deleteTemplate(msg.templateId).then(() => {
+          this.postMessage({ type: 'templates', templates: this.registry.getTemplates() });
+        });
+        return;
+      case 'template:exec':
+        void this.handleTemplateExec(msg.templateId, msg.values);
+        return;
       case 'refresh':
         this.sendCommandsUpdate();
         return;
@@ -418,6 +466,48 @@ export class CommandDeckPanel implements vscode.Disposable {
       commands: this.registry.getCommands(),
       pinned: this.registry.getPinnedIds(),
       recent: this.registry.getRecent(),
+    });
+  }
+
+  private resolveCliPath(): string {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const cliPath =
+      vscode.workspace.getConfiguration('thruntGod').get<string>('cli.path') ||
+      (workspaceRoot
+        ? path.join(workspaceRoot, 'dist', 'thrunt-god', 'bin', 'thrunt-tools.cjs')
+        : '');
+    return cliPath;
+  }
+
+  private runCli(args: string[]): Promise<void> {
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const cliPath = this.resolveCliPath();
+    if (!cliPath) {
+      return Promise.reject(new Error('CLI path not configured'));
+    }
+
+    const child = spawn(process.execPath, [cliPath, ...args], {
+      cwd: workspaceRoot || process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    child.stdout.on('data', (d: Buffer) => {
+      stdout += d.toString();
+    });
+    child.stderr.on('data', (d: Buffer) => {
+      stdout += d.toString();
+    });
+
+    return new Promise<void>((resolve, reject) => {
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`CLI exited with code ${code}: ${stdout.slice(0, 500)}`));
+        }
+      });
+      child.on('error', reject);
     });
   }
 
@@ -436,34 +526,70 @@ export class CommandDeckPanel implements vscode.Disposable {
     try {
       if (cmd.commandId) {
         await vscode.commands.executeCommand(cmd.commandId);
-        await this.registry.recordExecution(commandId, cmd.label, true);
-        this.postMessage({
-          type: 'execResult',
-          commandId,
-          success: true,
-          message: `Executed: ${cmd.label}`,
-        });
       } else if (cmd.cliArgs) {
-        // CLI execution placeholder -- full CLIBridge wiring in Plan 03
-        await this.registry.recordExecution(commandId, cmd.label, true);
-        this.postMessage({
-          type: 'execResult',
-          commandId,
-          success: true,
-          message: `CLI command queued: ${cmd.cliArgs.join(' ')} (full execution wired in Plan 03)`,
-        });
+        await this.runCli(cmd.cliArgs);
       }
-      this.sendCommandsUpdate();
+
+      await this.registry.recordExecution(commandId, cmd.label, true);
+      this.postMessage({
+        type: 'execResult',
+        commandId,
+        success: true,
+        message: 'Command completed',
+      });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const errMsg = err instanceof Error ? err.message : String(err);
       await this.registry.recordExecution(commandId, cmd.label, false);
       this.postMessage({
         type: 'execResult',
         commandId,
         success: false,
-        message,
+        message: errMsg,
       });
-      this.sendCommandsUpdate();
+      vscode.window.showErrorMessage(`Command Deck: ${cmd.label} failed - ${errMsg}`);
     }
+
+    this.sendCommandsUpdate();
+  }
+
+  private async handleTemplateExec(
+    templateId: string,
+    values: Record<string, string>
+  ): Promise<void> {
+    const tmpl = this.registry.getTemplates().find((t) => t.id === templateId);
+    if (!tmpl) {
+      return;
+    }
+
+    // Substitute placeholders in cliArgs
+    const resolvedArgs = (tmpl.cliArgs || []).map((arg) =>
+      arg.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g, (_, key) => values[key] ?? '')
+    );
+
+    try {
+      if (tmpl.commandId) {
+        await vscode.commands.executeCommand(tmpl.commandId);
+      } else if (resolvedArgs.length > 0) {
+        await this.runCli(resolvedArgs);
+      }
+
+      await this.registry.recordExecution(tmpl.id, tmpl.label, true);
+      this.postMessage({
+        type: 'execResult',
+        commandId: tmpl.id,
+        success: true,
+        message: 'Template executed',
+      });
+    } catch (err) {
+      await this.registry.recordExecution(tmpl.id, tmpl.label, false);
+      this.postMessage({
+        type: 'execResult',
+        commandId: tmpl.id,
+        success: false,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    this.sendCommandsUpdate();
   }
 }
