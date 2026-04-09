@@ -1,0 +1,52 @@
+name: Domain Investigation Runbook
+description: Investigate a suspicious domain across threat intel and log sources
+inputs:
+  - name: domain
+    type: string
+    description: The suspicious domain to investigate
+    required: true
+  - name: lookback_days
+    type: string
+    description: Number of days to search back in logs
+    default: "30"
+  - name: output_format
+    type: select
+    description: Output format for findings
+    options:
+      - markdown
+      - json
+    default: markdown
+steps:
+  - action: cli
+    description: Query threat intelligence for domain reputation
+    params:
+      command: knowledge query --ioc {domain} --type domain
+  - action: mcp
+    description: Search logs for DNS queries to this domain
+    params:
+      tool: query_logs
+      input: '{"query": "dns.query:{domain}", "days": "{lookback_days}"}'
+  - action: confirm
+    description: Review results before creating findings
+    params:
+      message: Review the query results above. Continue to create findings?
+  - action: note
+    description: Append investigation notes to findings
+    params:
+      file: .hunt/FINDINGS.md
+      content: |
+        ## Domain Investigation: {domain}
+        - Investigated on: {date}
+        - Lookback: {lookback_days} days
+  - action: open
+    description: Open the findings file for review
+    params:
+      file: .hunt/FINDINGS.md
+dry_run: false
+output_capture: all
+success_conditions:
+  - All CLI and MCP steps completed with exit code 0
+  - Findings file updated with investigation notes
+failure_conditions:
+  - Domain not found in any intelligence source
+  - Log query returned zero results
