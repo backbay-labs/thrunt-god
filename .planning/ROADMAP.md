@@ -126,6 +126,6 @@ Phases execute in numeric order: 58 -> 59 -> 60 -> 61 -> 62
 |-------|----------------|--------|-----------|
 | 58. Sidebar Automation Section Foundation | 2/2 | Complete    | 2026-04-09 |
 | 59. MCP Runtime Control Panel | 3/3 | Complete    | 2026-04-09 |
-| 60. Command Deck Webview | 1/3 | In Progress|  |
+| 60. Command Deck Webview | 2/3 | In Progress|  |
 | 61. Runbook Engine & Editor | 0/3 | Planned | - |
 | 62. Execution History & Guardrails | 0/2 | Planned | - |

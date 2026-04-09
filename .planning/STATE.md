@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.1
 milestone_name: Sidebar Automation & Operations
 status: in_progress
-stopped_at: Completed 60-01-PLAN.md
-last_updated: "2026-04-09T21:35:16Z"
-last_activity: 2026-04-09 -- Completed 60-01 (Command Deck foundation: registry, panel, webview, wiring)
+stopped_at: Completed 60-02-PLAN.md
+last_updated: "2026-04-09T21:40:37Z"
+last_activity: 2026-04-09 -- Completed 60-02 (Context-aware highlighting, tree selection listener, command count)
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 87
 ---
 
 # Project State
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 60 of 62 (Command Deck Webview)
-Plan: 1 of 3 plans in phase
+Plan: 2 of 3 plans in phase
 Status: In progress
-Last activity: 2026-04-09 -- Completed 60-01 (Command Deck foundation: registry, panel, webview, wiring)
+Last activity: 2026-04-09 -- Completed 60-02 (Context-aware highlighting, tree selection listener, command count)
 
-Progress: [███████░░░] 75% (v3.1 Phase 60: 1/3 plans)
+Progress: [████████░░] 81% (v3.1 Phase 60: 2/3 plans)
 
 ## Accumulated Context
 
@@ -66,6 +66,9 @@ Progress: [███████░░░] 75% (v3.1 Phase 60: 1/3 plans)
 - [Phase 60]: CommandDeckPanel follows McpControlPanel pattern exactly for webview host consistency
 - [Phase 60]: CLI command execution uses placeholder in Plan 01; full CLIBridge wiring deferred to Plan 03
 - [Phase 60]: 10 built-in commands: Investigation (2), Execution (3), Intelligence (3), Maintenance (2)
+- [Phase 60]: Context relevance mapping mirrored in extension host and webview for decoupled operation
+- [Phase 60]: Hunt tree changed from registerTreeDataProvider to createTreeView for onDidChangeSelection events
+- [Phase 60]: setCommandCount follows setRunbookCount pattern for consistency in AutomationTreeDataProvider
 
 ### Blockers/Concerns
 
@@ -73,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T21:35:16Z
-Stopped at: Completed 60-01-PLAN.md
-Resume: Phase 60 plan 1 complete. CommandDeckRegistry with 10 built-in commands, CommandDeckPanel webview host, Preact webview with command grid, pin/recent persistence, extension wiring with openCommandDeck command and panel serializer. 341 total tests passing. Ready for 60-02.
+Last session: 2026-04-09T21:40:37Z
+Stopped at: Completed 60-02-PLAN.md
+Resume: Phase 60 plan 2 complete. Context-aware command highlighting via getContextRelevantIds() and tree selection listener. AutomationTreeDataProvider shows live "10 commands" count. 356 total tests passing. Ready for 60-03.
