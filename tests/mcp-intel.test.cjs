@@ -471,6 +471,17 @@ describe('tool handlers with intel DB', () => {
       assert.ok(Array.isArray(data.by_tactic));
     });
 
+    it('resolves named groups before loading coverage techniques', async () => {
+      const { handleAnalyzeCoverage } = loadTools();
+      const result = await handleAnalyzeCoverage(db, { group_id: 'APT28', include_techniques: true });
+      assert.ok(!result.isError);
+
+      const data = JSON.parse(result.content[0].text);
+      assert.equal(data.group_id, 'G0007');
+      assert.equal(data.group_name, 'APT28');
+      assert.ok(data.total_techniques > 0);
+    });
+
     it('by_tactic has tactic, total, covered, uncovered, gap_percent per entry', async () => {
       const { handleAnalyzeCoverage } = loadTools();
       const result = await handleAnalyzeCoverage(db, { group_id: 'G0007', include_techniques: true });

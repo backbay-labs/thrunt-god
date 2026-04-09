@@ -284,7 +284,7 @@ function handleAnalyzeCoverage(db, args) {
         isError: true,
       };
     }
-    techIds = getGroupTechniques(db, group_id);
+    techIds = getGroupTechniques(db, group.id);
     resultMeta = { group_id: group.id, group_name: group.name };
   } else if (profile) {
     const profileTechIds = getThreatProfile(profile);
