@@ -1789,6 +1789,7 @@ export { parseCliInput, resolvePhaseCommandTemplate };
 export { HuntDataStore } from './store';
 export { ArtifactWatcher, resolveArtifactType } from './watcher';
 export { HuntTreeDataProvider, HuntTreeItem } from './sidebar';
+export { AutomationTreeDataProvider, AutomationTreeItem } from './automationSidebar';
 export { HuntStatusBar } from './statusBar';
 export { HuntCodeLensProvider } from './codeLens';
 export { EvidenceIntegrityDiagnostics } from './diagnostics';
