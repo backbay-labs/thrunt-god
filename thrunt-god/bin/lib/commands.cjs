@@ -3783,6 +3783,8 @@ function cmdCaseClose(cwd, slug, raw) {
     techniqueIds = readCaseTechniqueIds(caseDir, slug, null);
   }
 
+  persistCaseStateTechniqueIds(caseStatePath, techniqueIds);
+
   // Update program roster
   updateCaseInRoster(cwd, slug, {
     status: 'closed',
@@ -3929,6 +3931,19 @@ function readCaseStateTechniqueIds(caseStatePath) {
       .map(id => String(id || '').trim().toUpperCase())
       .filter(Boolean)
   )];
+}
+
+function persistCaseStateTechniqueIds(caseStatePath, techniqueIds) {
+  if (!fs.existsSync(caseStatePath)) return;
+
+  const content = fs.readFileSync(caseStatePath, 'utf-8');
+  const fm = extractFrontmatter(content);
+  fm.technique_ids = [...new Set(
+    (techniqueIds || [])
+      .map(id => String(id || '').trim().toUpperCase())
+      .filter(Boolean)
+  )];
+  fs.writeFileSync(caseStatePath, spliceFrontmatter(content, fm), 'utf-8');
 }
 
 function readIndexedCaseTechniqueIds(db, slug) {

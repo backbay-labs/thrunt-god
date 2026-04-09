@@ -215,8 +215,8 @@ function populateIfEmpty(db) {
  * @returns {import('better-sqlite3').Database}
  */
 function openIntelDb(opts = {}) {
-  const dbDir = opts.dbDir || INTEL_DB_DIR;
-  const dbPath = opts.dbPath || path.join(dbDir, 'intel.db');
+  const dbPath = opts.dbPath || path.join(opts.dbDir || INTEL_DB_DIR, 'intel.db');
+  const dbDir = opts.dbPath ? path.dirname(dbPath) : (opts.dbDir || INTEL_DB_DIR);
 
   fs.mkdirSync(dbDir, { recursive: true });
 

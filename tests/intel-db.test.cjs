@@ -95,6 +95,16 @@ describe('intel.cjs - openIntelDb', () => {
     assert.ok(fs.existsSync(customPath));
     db.close();
   });
+
+  it('creates the parent directory for a nested custom dbPath override', () => {
+    const { openIntelDb } = loadIntel();
+    const customDir = path.join(tmpDir, 'nested', 'intel');
+    const customPath = path.join(customDir, 'custom.db');
+    const db = openIntelDb({ dbPath: customPath });
+    assert.ok(fs.existsSync(customDir));
+    assert.ok(fs.existsSync(customPath));
+    db.close();
+  });
 });
 
 describe('intel.cjs - population', () => {

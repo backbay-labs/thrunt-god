@@ -2393,6 +2393,28 @@ describe('cmdCaseClose indexing + cmdCaseNew auto-search', () => {
     assert.strictEqual(status.technique_count, '2');
   });
 
+  test('cmdCaseClose persists inferred technique_ids into case STATE.md frontmatter', () => {
+    setupProgramState(tmpDir, [
+      { slug: 'persist-techniques', name: 'Persist Techniques', status: 'active', opened_at: '2026-04-01', technique_count: '0' },
+    ]);
+    createCaseDir(tmpDir, 'persist-techniques', {
+      name: 'Persist Techniques',
+      findings: '# Findings\n\nObserved T1059.001 execution and T1021.002 lateral movement.\n',
+      hypotheses: '## Hypothesis A\n\nFollow-up on T1059.001 activity.\n',
+    });
+
+    const statePath = path.join(tmpDir, '.planning', 'cases', 'persist-techniques', 'STATE.md');
+    const beforeClose = extractFrontmatter(fs.readFileSync(statePath, 'utf-8'));
+    assert.deepStrictEqual(beforeClose.technique_ids, []);
+
+    const closeResult = runThruntTools(['case', 'close', 'persist-techniques'], tmpDir);
+    assert.ok(closeResult.success, `Close failed: ${closeResult.error}`);
+
+    const afterClose = extractFrontmatter(fs.readFileSync(statePath, 'utf-8'));
+    assert.deepStrictEqual(afterClose.technique_ids, ['T1021.002', 'T1059.001']);
+    assert.strictEqual(afterClose.status, 'closed');
+  });
+
   test('cmdCaseClose preserves legacy case notes when STATE.md lacks Current Position', () => {
     setupProgramState(tmpDir, [
       { slug: 'legacy-case', name: 'Legacy Case', status: 'active', opened_at: '2026-04-01' },
