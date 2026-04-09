@@ -332,6 +332,88 @@ describe('AutomationTreeDataProvider', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Recent Runs children tests
+// ---------------------------------------------------------------------------
+
+function createMockExecutionLogger(entries) {
+  return {
+    getRecent: () => entries,
+    append: () => {},
+    prune: () => {},
+    clear: () => {},
+    getMaxEntries: () => 100,
+  };
+}
+
+describe('Recent Runs children', () => {
+  it('Recent Runs node shows "No history available" when no logger set', () => {
+    const p = new ext.AutomationTreeDataProvider();
+    const roots = p.getChildren(undefined);
+    const recentNode = roots[3];
+    const children = p.getChildren(recentNode);
+    assert.equal(children.length, 1);
+    assert.equal(children[0].label, 'No history available');
+    assert.equal(children[0].iconPath.id, 'info');
+    assert.equal(children[0].contextValue, 'automationRecentRunChild');
+  });
+
+  it('Recent Runs node shows "No recent runs" when logger has empty history', () => {
+    const p = new ext.AutomationTreeDataProvider({ executionLogger: createMockExecutionLogger([]) });
+    const roots = p.getChildren(undefined);
+    const recentNode = roots[3];
+    const children = p.getChildren(recentNode);
+    assert.equal(children.length, 1);
+    assert.equal(children[0].label, 'No recent runs');
+    assert.equal(children[0].iconPath.id, 'info');
+    assert.equal(children[0].contextValue, 'automationRecentRunChild');
+  });
+
+  it('Recent Runs node shows entries with correct status icons', () => {
+    const entries = [
+      { id: 'EXE-1', type: 'command', name: 'Runtime Doctor', args: [], stdout: 'ok', stderr: '', exitCode: 0, startedAt: Date.now(), duration: 500, status: 'success', environment: 'production', mutating: false },
+      { id: 'EXE-2', type: 'runbook', name: 'Domain Hunt', args: ['domain=test.com'], stdout: 'done', stderr: '', exitCode: 1, startedAt: Date.now(), duration: 3000, status: 'failure', environment: null, mutating: true },
+    ];
+    const p = new ext.AutomationTreeDataProvider({ executionLogger: createMockExecutionLogger(entries) });
+    const roots = p.getChildren(undefined);
+    const recentNode = roots[3];
+    const children = p.getChildren(recentNode);
+
+    assert.equal(children.length, 2);
+    assert.equal(children[0].label, 'Runtime Doctor');
+    assert.equal(children[0].iconPath.id, 'pass');
+    assert.equal(children[1].label, 'Domain Hunt');
+    assert.equal(children[1].iconPath.id, 'error');
+    assert.equal(children[0].contextValue, 'automationRecentRunChild');
+    assert.equal(children[1].contextValue, 'automationRecentRunChild');
+  });
+
+  it('Recent Runs root node description shows run count', () => {
+    const entries = [
+      { id: 'EXE-1', type: 'command', name: 'Cmd 1', args: [], stdout: '', stderr: '', exitCode: 0, startedAt: Date.now(), duration: 100, status: 'success', environment: null, mutating: false },
+      { id: 'EXE-2', type: 'command', name: 'Cmd 2', args: [], stdout: '', stderr: '', exitCode: 0, startedAt: Date.now(), duration: 200, status: 'success', environment: null, mutating: false },
+      { id: 'EXE-3', type: 'runbook', name: 'Runbook 1', args: [], stdout: '', stderr: '', exitCode: 0, startedAt: Date.now(), duration: 300, status: 'success', environment: null, mutating: true },
+    ];
+    const p = new ext.AutomationTreeDataProvider({ executionLogger: createMockExecutionLogger(entries) });
+    const roots = p.getChildren(undefined);
+    assert.equal(roots[3].description, '3 runs');
+  });
+
+  it('Recent Runs root node description shows "No recent runs" with empty logger', () => {
+    const p = new ext.AutomationTreeDataProvider({ executionLogger: createMockExecutionLogger([]) });
+    const roots = p.getChildren(undefined);
+    assert.equal(roots[3].description, 'No recent runs');
+  });
+
+  it('setExecutionLogger triggers refresh', () => {
+    const p = new ext.AutomationTreeDataProvider();
+    let fireCount = 0;
+    p.onDidChangeTreeData(() => { fireCount++; });
+    p.setExecutionLogger(createMockExecutionLogger([]));
+    assert.equal(fireCount, 1);
+  });
+});
+
 // Minimal mock store for independence test
 function createMinimalMockStore() {
   const emitter = new vscode.EventEmitter();

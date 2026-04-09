@@ -185,3 +185,27 @@ describe('ExecutionLogger constructor', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// onDidAppend event tests
+// ---------------------------------------------------------------------------
+
+describe('ExecutionLogger onDidAppend event', () => {
+  it('ExecutionLogger has onDidAppend property', () => {
+    const logger = new ext.ExecutionLogger('/tmp/test');
+    assert.equal(typeof logger.onDidAppend, 'function');
+    logger.dispose();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dispose tests
+// ---------------------------------------------------------------------------
+
+describe('ExecutionLogger dispose', () => {
+  it('ExecutionLogger has dispose method', () => {
+    const logger = new ext.ExecutionLogger('/tmp/test');
+    assert.equal(typeof logger.dispose, 'function');
+    logger.dispose();
+  });
+});
