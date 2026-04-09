@@ -53,7 +53,8 @@
     "onWebviewPanel:thruntGod.queryAnalysis",
     "onWebviewPanel:thruntGod.drainViewer",
     "onWebviewPanel:thruntGod.programDashboard",
-    "onWebviewPanel:thruntGod.mcpControlPanel"
+    "onWebviewPanel:thruntGod.mcpControlPanel",
+    "onWebviewPanel:thruntGod.commandDeckPanel"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -288,6 +289,11 @@
         "command": "thrunt-god.mcpOpenPanel",
         "title": "Open MCP Control Panel",
         "category": "THRUNT"
+      },
+      {
+        "command": "thrunt-god.openCommandDeck",
+        "title": "Open Command Deck",
+        "category": "THRUNT"
       }
     ],
     "menus": {
@@ -376,6 +382,11 @@
           "command": "thrunt-god.mcpOpenPanel",
           "when": "view == thruntGod.automationTree && viewItem == automationMcp",
           "group": "mcp@6"
+        },
+        {
+          "command": "thrunt-god.openCommandDeck",
+          "when": "view == thruntGod.automationTree && viewItem == automationCommandDeck",
+          "group": "commandDeck@1"
         }
       ],
       "editor/context": [

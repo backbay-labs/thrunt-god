@@ -37,6 +37,7 @@ import { EvidenceBoardPanel, EVIDENCE_BOARD_VIEW_TYPE } from './evidenceBoardPan
 import { QueryAnalysisPanel, QUERY_ANALYSIS_VIEW_TYPE } from './queryAnalysisPanel';
 import { ProgramDashboardPanel, PROGRAM_DASHBOARD_VIEW_TYPE } from './programDashboardPanel';
 import { McpControlPanel, MCP_CONTROL_VIEW_TYPE } from './mcpControlPanel';
+import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE } from './commandDeck';
 import type { SessionDiff } from '../shared/hunt-overview';
 import { resolveArtifactType } from './watcher';
 
@@ -1170,6 +1171,25 @@ export function activate(context: vscode.ExtensionContext): void {
       void updateRunbookCount();
     }
 
+    // Command Deck
+    const commandDeckRegistry = new CommandDeckRegistry(context.workspaceState);
+
+    context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.openCommandDeck', () => {
+        CommandDeckPanel.createOrShow(context, commandDeckRegistry);
+      })
+    );
+
+    // Command Deck panel serializer for restoration
+    context.subscriptions.push(
+      vscode.window.registerWebviewPanelSerializer(COMMAND_DECK_VIEW_TYPE, {
+        deserializeWebviewPanel(panel: vscode.WebviewPanel, _state: unknown) {
+          CommandDeckPanel.restorePanel(context, commandDeckRegistry, panel);
+          return Promise.resolve();
+        },
+      })
+    );
+
     // Sidebar commands
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openArtifact', (item: HuntTreeItem) => {
@@ -1957,3 +1977,9 @@ export {
   McpControlPanel,
   MCP_CONTROL_VIEW_TYPE,
 } from './mcpControlPanel';
+export {
+  CommandDeckRegistry,
+  CommandDeckPanel,
+  COMMAND_DECK_VIEW_TYPE,
+  BUILT_IN_COMMANDS,
+} from './commandDeck';

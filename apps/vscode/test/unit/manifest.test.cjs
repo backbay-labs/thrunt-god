@@ -115,6 +115,29 @@ describe('extension manifest', () => {
   });
 });
 
+describe('Command Deck manifest', () => {
+  it('registers openCommandDeck command', () => {
+    const cmd = findCommand('thrunt-god.openCommandDeck');
+    assert.ok(cmd, 'openCommandDeck command exists');
+    assert.equal(cmd.title, 'Open Command Deck');
+    assert.equal(cmd.category, 'THRUNT');
+  });
+
+  it('has openCommandDeck context menu entry for automationCommandDeck', () => {
+    const entry = findMenuEntry('view/item/context', 'thrunt-god.openCommandDeck');
+    assert.ok(entry, 'openCommandDeck context menu entry exists');
+    assert.ok(entry.when.includes('automationCommandDeck'), 'when clause includes automationCommandDeck');
+    assert.ok(entry.when.includes('view == thruntGod.automationTree'), 'when clause includes automationTree');
+  });
+
+  it('has commandDeckPanel activation event', () => {
+    assert.ok(
+      manifest.activationEvents.includes('onWebviewPanel:thruntGod.commandDeckPanel'),
+      'commandDeckPanel activation event registered'
+    );
+  });
+});
+
 describe('MCP commands', () => {
   it('registers 6 MCP commands in package.json', () => {
     const mcpCommands = manifest.contributes.commands.filter(
