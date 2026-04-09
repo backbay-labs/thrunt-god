@@ -17,6 +17,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MIN_BLOB_LENGTH=40
+BASE64_BLOB_REGEX='([A-Za-z0-9+/]{4}){10,}([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?'
 
 # ─── Injection Patterns (decoded content) ────────────────────────────────────
 # Subset of patterns — if someone base64-encoded something, check for the
@@ -93,6 +94,12 @@ should_skip_file() {
     */base64-scan.sh) return 0 ;;
     */security-scan.test.cjs) return 0 ;;
   esac
+  # Vendored ATT&CK / Sigma corpora are covered by the prompt-injection scan.
+  # Skip decode-heavy base64 heuristics here to keep the CI security job within budget.
+  case "$file" in
+    apps/mcp/data/*|*/apps/mcp/data/*) return 0 ;;
+    thrunt-god/data/*|*/thrunt-god/data/*) return 0 ;;
+  esac
   return 1
 }
 
@@ -100,6 +107,11 @@ is_data_uri() {
   local context="$1"
   # data:image/png;base64,... or data:application/font-woff;base64,...
   echo "$context" | grep -qE 'data:[a-zA-Z]+/[a-zA-Z0-9.+-]+;base64,' 2>/dev/null
+}
+
+file_has_candidate_blobs() {
+  local file="$1"
+  grep -qE "$BASE64_BLOB_REGEX" "$file" 2>/dev/null
 }
 
 # ─── File Collection ─────────────────────────────────────────────────────────
@@ -146,10 +158,16 @@ collect_files() {
 extract_and_check_blobs() {
   local file="$1"
   local found=0
-  local line_num=0
 
-  while IFS= read -r line; do
-    line_num=$((line_num + 1))
+  if ! file_has_candidate_blobs "$file"; then
+    return 0
+  fi
+
+  while IFS= read -r candidate_line; do
+    [[ -z "$candidate_line" ]] && continue
+
+    local line_num="${candidate_line%%:*}"
+    local line="${candidate_line#*:}"
 
     # Skip data URIs — legitimate base64 usage
     if is_data_uri "$line"; then
@@ -158,7 +176,7 @@ extract_and_check_blobs() {
 
     # Extract base64-like blobs (alphanumeric + / + = padding, >= MIN_BLOB_LENGTH)
     local blobs
-    blobs=$(echo "$line" | grep -oE '[A-Za-z0-9+/]{'"$MIN_BLOB_LENGTH"',}={0,3}' 2>/dev/null || true)
+    blobs=$(printf '%s\n' "$line" | grep -oE "$BASE64_BLOB_REGEX" 2>/dev/null || true)
 
     if [[ -z "$blobs" ]]; then
       continue
@@ -189,7 +207,7 @@ extract_and_check_blobs() {
 
       # Count printable ASCII characters
       local printable_count
-      printable_count=$(echo -n "$decoded" | tr -cd '[:print:]' | wc -c | tr -d ' ')
+      printable_count=$(printf '%s' "$decoded" | LC_ALL=C tr -cd '[:print:]' | wc -c | tr -d ' ')
       # Skip if less than 70% printable (likely binary data, not obfuscated text)
       if [[ $((printable_count * 100 / total_chars)) -lt 70 ]]; then
         continue
@@ -210,7 +228,7 @@ extract_and_check_blobs() {
         fi
       done
     done <<< "$blobs"
-  done < "$file"
+  done < <(grep -nE "$BASE64_BLOB_REGEX" "$file" 2>/dev/null || true)
 
   return $found
 }

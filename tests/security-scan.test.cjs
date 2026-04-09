@@ -277,6 +277,18 @@ describe('base64-scan.sh', { skip: IS_WINDOWS }, () => {
     assert.equal(result.status, 0, `False positive on binary base64: ${result.stdout}`);
   });
 
+  test('ignores long strings that are not valid padded base64 blocks', () => {
+    const content = `token: "${'A'.repeat(41)}"\n`;
+    const result = runScript(SCRIPTS.base64, content);
+    assert.equal(result.status, 0, `False positive on invalid-length blob: ${result.stdout}`);
+  });
+
+  test('documents vendored MCP data skip rules in the script source', () => {
+    const content = fs.readFileSync(SCRIPTS.base64, 'utf-8');
+    assert.ok(content.includes('apps/mcp/data/*'));
+    assert.ok(content.includes('thrunt-god/data/*'));
+  });
+
   test('handles empty file gracefully', () => {
     const result = runScript(SCRIPTS.base64, '');
     assert.equal(result.status, 0);
