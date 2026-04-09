@@ -1,0 +1,98 @@
+# {{PACKAGE_NAME}}
+
+THRUNT GOD connector for **{{CONNECTOR_DISPLAY_NAME}}**.
+
+## Overview
+
+This is a standalone connector plugin for [THRUNT GOD](https://github.com/backbay-labs/thrunt-god). It allows THRUNT GOD to query {{CONNECTOR_DISPLAY_NAME}} as a data source for threat hunting workflows.
+
+## Quick Start
+
+```bash
+npm install
+npm test
+```
+
+## Development Workflow
+
+1. **Fill in the 4 TODO sections** in `src/index.cjs`:
+   - `preflight` -- validate prerequisites (auth, connectivity)
+   - `prepareQuery` -- translate QuerySpec into your API's request format
+   - `executeRequest` -- send the request with auth (usually minimal changes)
+   - `normalizeResponse` -- parse your API's response into the standard envelope
+
+2. **Run contract tests** to verify your adapter meets the connector contract:
+   ```bash
+   node --test tests/contract.test.cjs
+   ```
+
+3. **Run the full test suite** with coverage:
+   ```bash
+   npm run test:coverage
+   ```
+
+4. **Validate your manifest** to ensure `thrunt-connector.json` is correct:
+   ```bash
+   npm run validate
+   ```
+
+## CI Integration
+
+Add this workflow to your repository at `.github/workflows/connector-test.yml`:
+
+```yaml
+name: Connector Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    uses: backbay-labs/thrunt-god/.github/workflows/reusable-connector-test.yml@main
+    with:
+      thrunt-version: 'latest'
+      node-version: '22'
+```
+
+The reusable workflow validates your manifest, runs unit and contract tests, and generates a coverage report.
+
+## Publishing
+
+```bash
+npm publish
+```
+
+Ensure your `package.json` includes the `thrunt-connector` keyword so THRUNT GOD can discover your plugin via the npm registry.
+
+## Auth Configuration
+
+This connector uses `{{AUTH_TYPES_FIRST}}` authentication. Set the following environment variable before running:
+
+```bash
+export {{ENV_PREFIX}}_TOKEN="your-api-token"
+```
+
+Configure the connector profile in your THRUNT GOD config:
+
+```json
+{
+  "connector_profiles": {
+    "{{CONNECTOR_ID}}": {
+      "default": {
+        "auth_type": "{{AUTH_TYPES_FIRST}}",
+        "base_url": "https://your-instance.example.com",
+        "secret_refs": {
+          "access_token": { "type": "env", "value": "{{ENV_PREFIX}}_TOKEN" }
+        }
+      }
+    }
+  }
+}
+```
+
+## License
+
+MIT

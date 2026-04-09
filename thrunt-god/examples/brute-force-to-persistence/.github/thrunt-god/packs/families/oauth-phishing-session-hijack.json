@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "id": "family.oauth-phishing-session-hijack",
+  "kind": "family",
+  "title": "OAuth Phishing and Session Hijack Campaign",
+  "description": "Threat-family style pack that composes email intrusion and identity abuse playbooks into one campaign-level hunt.",
+  "stability": "preview",
+  "extends": [
+    "domain.email-intrusion",
+    "domain.identity-abuse"
+  ],
+  "metadata": {
+    "domains": ["email", "identity"],
+    "coverage": ["oauth phishing", "session hijack", "account takeover"]
+  },
+  "hypothesis_templates": [
+    "Phishing delivery, mailbox tampering, and abnormal session activity are part of a single account-takeover campaign."
+  ],
+  "execution_targets": [
+    {
+      "name": "M365 consent grant and risky app review",
+      "description": "Review suspicious application consent and delegated permission grants tied to the focus user.",
+      "connector": "m365",
+      "dataset": "identity",
+      "language": "graph",
+      "query_template": "/auditLogs/directoryAudits?$filter=activityDisplayName eq 'Consent to application' and initiatedBy/user/displayName eq '{{focus_user}}'"
+    }
+  ],
+  "blind_spots": [
+    "Session-token theft that never reuses the mailbox or identity surfaces covered here may still require browser or proxy telemetry outside the pack."
+  ],
+  "expected_progressions": [
+    {
+      "name": "phish-to-consent-to-takeover",
+      "description": "Phishing delivery leads to OAuth consent grant and full account takeover",
+      "entity_scope": "user",
+      "steps": [
+        {
+          "technique": "T1566",
+          "event_class": "phishing_delivery",
+          "signals": ["suspicious_sender", "url_in_body", "attachment_with_macro"],
+          "expected_benign_next": ["user_reports_phish", "message_quarantined", "no_click"],
+          "expected_malicious_next": ["link_click", "credential_submission", "oauth_consent_prompt"]
+        },
+        {
+          "technique": "T1078",
+          "event_class": "session_hijack",
+          "signals": ["new_session_post_phish", "token_from_unfamiliar_ip", "oauth_app_grant"],
+          "expected_benign_next": ["session_revoked", "password_changed_by_user"],
+          "expected_malicious_next": ["mailbox_rule_creation", "mail_forwarding", "oauth_app_consent"]
+        },
+        {
+          "technique": "T1098",
+          "event_class": "mailbox_tampering",
+          "signals": ["inbox_rule_created", "forwarding_enabled", "delegate_added"],
+          "expected_malicious_next": ["data_collection", "further_phishing_from_compromised_account"]
+        }
+      ],
+      "scoring": {
+        "benign_indicators": ["user_reported_phish", "security_training_completed", "no_downstream_activity"],
+        "malicious_indicators": ["consent_grant_after_phish_click", "mailbox_rule_within_1h", "session_from_new_geo"]
+      }
+    }
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_sender": "evil.example",
+      "focus_ip": "203.0.113.10",
+      "source_ip": "203.0.113.10"
+    }
+  },
+  "publish": {
+    "finding_type": "campaign_hunt",
+    "expected_outcomes": [
+      "campaign_story",
+      "cross_surface_timeline",
+      "detection_candidates"
+    ],
+    "receipt_tags": [
+      "pack:family.oauth-phishing-session-hijack"
+    ]
+  },
+  "notes": [
+    "This is the first family-level pack and is intentionally composed from lower-level domain playbooks rather than restating them."
+  ]
+}

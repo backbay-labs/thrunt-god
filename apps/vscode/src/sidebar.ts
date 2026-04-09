@@ -91,6 +91,10 @@ function resolveArtifactPath(huntRoot: vscode.Uri, type: string, id: string): st
   }
 }
 
+function isPhaseComplete(status: string | undefined): boolean {
+  return (status ?? '').trim().toLowerCase() === 'complete';
+}
+
 /**
  * Build a receipt tree item with deviation score badge.
  */
@@ -326,6 +330,7 @@ export class HuntTreeDataProvider implements vscode.TreeDataProvider<HuntTreeIte
       return new HuntTreeItem(`Phase ${p.number}: ${p.name}`, vscode.TreeItemCollapsibleState.Collapsed, {
         description,
         iconPath: icon,
+        contextValue: isPhaseComplete(p.status) ? 'phase-complete' : 'phase-runnable',
         nodeType: 'phase',
         dataId: p.number.toString(),
       });

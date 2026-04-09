@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "id": "foundation.email-core",
+  "kind": "custom",
+  "title": "Email Hunt Foundation",
+  "description": "Shared email-hunt building blocks for phishing and mailbox compromise investigations.",
+  "stability": "stable",
+  "metadata": {
+    "domains": ["email"]
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "required_connectors": ["m365", "splunk"],
+  "supported_datasets": ["email", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of email and SIEM telemetry to review."
+    },
+    {
+      "name": "focus_user",
+      "type": "string",
+      "required": false,
+      "description": "Mailbox owner or impacted user to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    },
+    {
+      "name": "focus_sender",
+      "type": "string",
+      "required": false,
+      "description": "Optional suspicious sender address or domain.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "mail_flow_visibility",
+      "description": "Message trace, delivery, and mailbox activity with sender and recipient context.",
+      "connectors": ["m365"],
+      "datasets": ["email", "alerts"]
+    },
+    {
+      "surface": "siem_email_pivoting",
+      "description": "SIEM correlation across message delivery, links, and downstream actions.",
+      "connectors": ["splunk"],
+      "datasets": ["events", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Email activity in providers or forwarding paths outside Microsoft 365 will not be visible from this foundation."
+  ],
+  "scope_defaults": {
+    "entities": ["user", "mailbox", "sender", "domain", "url"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_sender": "evil.example"
+    }
+  },
+  "publish": {
+    "finding_type": "email_hunt_foundation",
+    "expected_outcomes": ["email_triage"],
+    "receipt_tags": ["pack:foundation.email-core"]
+  }
+}

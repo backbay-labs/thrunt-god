@@ -398,6 +398,16 @@ function GraphView({
     [onNodeClick],
   );
 
+  if (viewModel.nodes.length === 0) {
+    return (
+      <div class="hunt-eb-graph">
+        <p style={{ color: 'var(--hunt-text-muted)', textAlign: 'center', paddingTop: '80px' }}>
+          No evidence lineage is available for this workspace yet.
+        </p>
+      </div>
+    );
+  }
+
   if (!ready || positions.size === 0) {
     return (
       <div class="hunt-eb-graph">

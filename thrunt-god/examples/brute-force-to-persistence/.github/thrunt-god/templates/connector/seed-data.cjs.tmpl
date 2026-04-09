@@ -1,0 +1,19 @@
+
+/**
+ * Seed {{CONNECTOR_DISPLAY_NAME}} with security events for integration tests.
+ * Uses the shared SEED_EVENTS array and maps to the backend's native ingestion API.
+ *
+ * @param {string} baseUrl - Container URL (e.g. http://127.0.0.1:{{DOCKER_HOST_PORT}})
+ * @returns {Promise<{indexed: number}>}
+ */
+async function seed{{CONNECTOR_FUNCTION_NAME}}(baseUrl) {
+  // TODO: Implement data seeding for {{CONNECTOR_DISPLAY_NAME}}
+  // Map SEED_EVENTS to your backend's ingestion API format and POST them.
+  let indexed = 0;
+  for (const evt of SEED_EVENTS) {
+    // TODO: POST to your backend's ingestion endpoint
+    // Example: await fetch(`${baseUrl}/api/v1/events`, { method: 'POST', body: JSON.stringify(evt) });
+    indexed++;
+  }
+  return { indexed };
+}

@@ -130,6 +130,15 @@ describe('parseHypotheses', () => {
     assert.equal(hyp04.status, 'Disproved');
   });
 
+  it('treats "Supported Hypotheses" as parsed hypotheses', () => {
+    const raw = `# Hypotheses\n\n## Active Hypotheses\n\n_(none)_\n\n## Supported Hypotheses\n\n### HYP-01: Consent grant is malicious\n\n- **Signal:** OAuth consent alert\n- **Assertion:** Attacker-controlled app received consent\n- **Priority:** High\n- **Status:** Supported\n- **Confidence:** High\n- **Scope:** Tenant-wide\n- **Data sources:** Entra audit logs\n- **Evidence needed:** Consent telemetry\n- **Disproof condition:** App is approved by IT\n\n## Parked Hypotheses\n\n- None\n\n## Disproved Hypotheses\n\n- None\n`;
+    const result = ext.parseHypotheses(raw);
+    assert.equal(result.status, 'loaded');
+    assert.equal(result.data.active.length, 1);
+    assert.equal(result.data.active[0].id, 'HYP-01');
+    assert.equal(result.data.active[0].status, 'Supported');
+  });
+
   it('returns error ParseResult on empty string', () => {
     const result = ext.parseHypotheses('');
     assert.equal(result.status, 'error');

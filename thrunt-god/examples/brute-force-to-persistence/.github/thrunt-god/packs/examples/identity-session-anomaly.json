@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "id": "starter.identity-session-anomaly",
+  "kind": "example",
+  "title": "Identity Session Anomaly Starter",
+  "description": "Starter pack for investigating suspicious identity session activity across identity and SIEM telemetry.",
+  "stability": "experimental",
+  "metadata": {
+    "domains": ["identity", "siem"],
+    "attack": ["T1078", "T1110"]
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "required_connectors": ["okta", "m365", "splunk"],
+  "supported_datasets": ["identity", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Logical tenant, environment, or customer identifier.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "How many hours of telemetry to search."
+    },
+    {
+      "name": "focus_user",
+      "type": "string",
+      "required": false,
+      "description": "Optional user identifier to prioritize during the hunt.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "scope_defaults": {
+    "entities": ["user", "session", "device"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com"
+    }
+  },
+  "publish": {
+    "finding_type": "hunt_case",
+    "expected_outcomes": [
+      "validated_session_story",
+      "cross_connector_triage_notes"
+    ],
+    "receipt_tags": [
+      "pack:starter.identity-session-anomaly"
+    ]
+  },
+  "notes": [
+    "Starter example pack used to prove registry loading, inspection, and parameter validation before the real pack library ships."
+  ]
+}

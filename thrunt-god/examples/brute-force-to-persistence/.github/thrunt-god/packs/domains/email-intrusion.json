@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "id": "domain.email-intrusion",
+  "kind": "domain",
+  "title": "Email Intrusion Hunt",
+  "description": "Opinionated email-intrusion hunt pack that starts from phishing, malicious delivery, and mailbox-compromise behaviors.",
+  "stability": "preview",
+  "extends": [
+    "foundation.email-core",
+    "technique.t1566-phishing"
+  ],
+  "metadata": {
+    "domains": ["email"],
+    "coverage": ["phishing", "malicious delivery", "mailbox compromise"]
+  },
+  "hypothesis_templates": [
+    "Suspicious mail delivery and follow-on mailbox actions indicate a real user-targeted intrusion path rather than isolated spam."
+  ],
+  "execution_targets": [
+    {
+      "name": "M365 mailbox rule and forwarding sweep",
+      "description": "Check for suspicious mailbox rules, auto-forwarding, and post-delivery tampering.",
+      "connector": "m365",
+      "dataset": "email",
+      "language": "graph",
+      "query_template": "/users/{{focus_user}}/mailFolders/inbox/messageRules"
+    }
+  ],
+  "blind_spots": [
+    "Forwarding or rule abuse in external mail systems will not appear unless they are routed back into the covered telemetry surfaces."
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_sender": "evil.example"
+    }
+  },
+  "publish": {
+    "finding_type": "email_intrusion_hunt",
+    "expected_outcomes": [
+      "email_intrusion_story",
+      "mailbox_compromise_timeline",
+      "sender_or_campaign_assessment"
+    ],
+    "receipt_tags": [
+      "pack:domain.email-intrusion"
+    ]
+  }
+}

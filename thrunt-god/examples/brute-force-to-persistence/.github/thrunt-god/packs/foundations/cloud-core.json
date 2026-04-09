@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "id": "foundation.cloud-core",
+  "kind": "custom",
+  "title": "Cloud Hunt Foundation",
+  "description": "Shared cloud-hunt building blocks for suspicious cloud control-plane and workload activity.",
+  "stability": "stable",
+  "metadata": {
+    "domains": ["cloud"]
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "required_connectors": ["aws", "gcp", "splunk"],
+  "supported_datasets": ["cloud", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, account grouping, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of cloud telemetry to review."
+    },
+    {
+      "name": "focus_principal",
+      "type": "string",
+      "required": false,
+      "description": "Optional cloud principal, role, or service account to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    },
+    {
+      "name": "focus_resource",
+      "type": "string",
+      "required": false,
+      "description": "Optional cloud resource name or identifier to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "cloud_audit_logs",
+      "description": "Control-plane audit logs for identity, policy, and resource modifications.",
+      "connectors": ["aws", "gcp"],
+      "datasets": ["cloud", "alerts"]
+    },
+    {
+      "surface": "siem_cloud_correlation",
+      "description": "SIEM correlation for cloud control-plane events and cross-tenant pivots.",
+      "connectors": ["splunk"],
+      "datasets": ["events", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Cloud resources that do not emit centralized audit logs or cross-account telemetry will reduce visibility."
+  ],
+  "scope_defaults": {
+    "entities": ["principal", "resource", "account", "ip"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_principal": "svc-analytics@example-tenant",
+      "focus_resource": "critical-bucket"
+    }
+  },
+  "publish": {
+    "finding_type": "cloud_hunt_foundation",
+    "expected_outcomes": ["cloud_triage"],
+    "receipt_tags": ["pack:foundation.cloud-core"]
+  }
+}

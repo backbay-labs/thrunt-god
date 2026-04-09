@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "id": "starter.replace-me",
+  "kind": "custom",
+  "title": "Replace Me",
+  "description": "Use this template to create a new THRUNT pack.",
+  "stability": "experimental",
+  "metadata": {
+    "domains": ["identity"]
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "required_connectors": ["okta"],
+  "supported_datasets": ["identity"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Logical tenant identifier.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    }
+  ],
+  "scope_defaults": {},
+  "execution_defaults": {},
+  "expected_progressions": [],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant"
+    },
+    "notes": [
+      "Update example parameters so pack test can render this pack safely."
+    ]
+  },
+  "publish": {
+    "finding_type": "hunt_case",
+    "expected_outcomes": ["replace_me"],
+    "receipt_tags": ["pack:starter.replace-me"]
+  },
+  "notes": [
+    "Template files are intentionally excluded from registry discovery.",
+    "expected_progressions is optional. Define attack chains when a pack composes multiple technique packs and sequential reasoning applies."
+  ]
+}

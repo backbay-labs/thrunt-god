@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "id": "domain.insider-risk",
+  "kind": "domain",
+  "title": "Insider Risk Hunt",
+  "description": "Opinionated insider-risk hunt pack for unusual access, mailbox actions, and data staging by trusted identities.",
+  "stability": "preview",
+  "extends": [
+    "foundation.identity-core",
+    "foundation.email-core"
+  ],
+  "metadata": {
+    "domains": ["identity", "email"],
+    "coverage": ["insider risk", "data staging", "mailbox abuse"]
+  },
+  "hypothesis_templates": [
+    "A trusted user is abusing legitimate access to stage or exfiltrate sensitive information.",
+    "Mailbox rule changes and unusual identity activity form part of a broader insider-driven collection workflow."
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "mailbox_admin_activity",
+      "description": "Mailbox rule, forwarding, delegate access, and message-access visibility.",
+      "connectors": ["m365"],
+      "datasets": ["email", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Business-process context and HR signals often sit outside the telemetry available to the hunt runtime."
+  ],
+  "execution_targets": [
+    {
+      "name": "M365 mailbox forwarding and delegate review",
+      "description": "Review mailbox forwarding, delegate access, and suspicious mailbox changes for the focus user.",
+      "connector": "m365",
+      "dataset": "email",
+      "language": "graph",
+      "query_template": "/users/{{focus_user}}/mailFolders/inbox/messageRules"
+    },
+    {
+      "name": "Splunk user activity concentration pivot",
+      "description": "Pivot across identity and email logs to find unusual bursts of access or staging behavior.",
+      "connector": "splunk",
+      "dataset": "events",
+      "language": "spl",
+      "query_template": "index=insider tenant={{tenant}} earliest=-{{lookback_hours}}h user={{focus_user}} | stats count by action, src, dest"
+    }
+  ],
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_sender": "evil.example"
+    }
+  },
+  "publish": {
+    "finding_type": "insider_risk_hunt",
+    "expected_outcomes": [
+      "insider_risk_story",
+      "access_and_mailbox_timeline",
+      "escalation_recommendations"
+    ],
+    "receipt_tags": [
+      "pack:domain.insider-risk"
+    ]
+  }
+}

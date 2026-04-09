@@ -223,7 +223,7 @@ suite('Dogfood Harness', function () {
       'thrunt-god.test.snapshotTree'
     );
     const rootLabels = treeSnapshot.tree.map((node) => node.label);
-    assert.deepStrictEqual(rootLabels, ['Mission (case)', 'Hypotheses', 'Phases']);
+    assert.deepStrictEqual(rootLabels, ['Mission', 'Hypotheses', 'Phases']);
 
     const flattened = flattenTree(treeSnapshot.tree);
     const queryNodes = flattened.filter((node) => node.nodeType === 'query');

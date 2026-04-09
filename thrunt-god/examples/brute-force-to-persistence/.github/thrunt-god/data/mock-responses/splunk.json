@@ -1,0 +1,11 @@
+{
+  "connector": "splunk",
+  "mock_response": {
+    "status": "ok",
+    "counts": { "total": 5, "returned": 5 },
+    "results": [
+      { "user": "alice@example.com", "host": "ws-01", "action": "login", "src_ip": "10.0.1.5", "_time": "2024-01-15T10:00:00Z" },
+      { "user": "bob@example.com", "host": "srv-02", "action": "logout", "src_ip": "10.0.2.10", "_time": "2024-01-15T10:05:00Z" }
+    ]
+  }
+}

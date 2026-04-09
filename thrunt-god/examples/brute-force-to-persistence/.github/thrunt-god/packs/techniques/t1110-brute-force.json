@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "id": "technique.t1110-brute-force",
+  "kind": "technique",
+  "title": "Brute Force",
+  "description": "Hunt repeated or distributed authentication failures that may indicate password spraying or brute-force activity.",
+  "stability": "preview",
+  "attack": ["T1110"],
+  "metadata": {
+    "domains": ["identity", "siem"],
+    "severity": "high"
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "hypothesis_templates": [
+    "An external or internal actor is attempting repeated authentication guesses against monitored identities.",
+    "Authentication failure bursts across identity providers and SIEM alerts indicate password spray activity."
+  ],
+  "required_connectors": ["okta", "m365", "sentinel"],
+  "supported_datasets": ["identity", "alerts", "events"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 12,
+      "minimum": 1,
+      "maximum": 168,
+      "description": "Hours of authentication telemetry to review."
+    },
+    {
+      "name": "source_ip",
+      "type": "string",
+      "required": false,
+      "description": "Optional IP address to prioritize in the hunt.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "authentication_failure_logs",
+      "description": "Identity-provider failures with username, IP, geo, and conditional-access context.",
+      "connectors": ["okta", "m365"],
+      "datasets": ["identity", "alerts"]
+    },
+    {
+      "surface": "siem_alerting_and_correlation",
+      "description": "Alert or event correlation for spray-style behavior across users or source networks.",
+      "connectors": ["sentinel"],
+      "datasets": ["alerts", "events"]
+    }
+  ],
+  "blind_spots": [
+    "Rate-limited or blocked attempts may be partially visible depending on the identity provider and logging tier.",
+    "Distributed password sprays across many source IPs may require wider aggregation than the default scope."
+  ],
+  "execution_targets": [
+    {
+      "name": "Okta failure burst review",
+      "description": "Inspect repeated failed sign-ins and challenge failures in Okta System Log.",
+      "connector": "okta",
+      "dataset": "identity",
+      "language": "system_log",
+      "query_template": "eventType eq \"user.authentication.failed\" and client.ipAddress co \"{{source_ip}}\""
+    },
+    {
+      "name": "M365 failed sign-in sweep",
+      "description": "Review repeated failed sign-ins and risk indicators in Microsoft identity telemetry.",
+      "connector": "m365",
+      "dataset": "identity",
+      "language": "graph",
+      "query_template": "/auditLogs/signIns?$filter=createdDateTime ge {{lookback_hours}}h and status/errorCode ne 0"
+    },
+    {
+      "name": "Sentinel password spray correlation",
+      "description": "Use KQL to find repeated authentication failures clustered by source or time.",
+      "connector": "sentinel",
+      "dataset": "alerts",
+      "language": "kql",
+      "query_template": "SigninLogs | where TimeGenerated > ago({{lookback_hours}}h) | summarize failures=count() by IPAddress, UserPrincipalName"
+    }
+  ],
+  "scope_defaults": {
+    "entities": ["user", "ip", "geo"],
+    "time_window": {
+      "lookback_minutes": 720
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "source_ip": "203.0.113.10"
+    }
+  },
+  "publish": {
+    "finding_type": "identity_attack_hunt",
+    "expected_outcomes": [
+      "failed_authentication_cluster_summary",
+      "source_infrastructure_story"
+    ],
+    "receipt_tags": [
+      "pack:technique.t1110-brute-force",
+      "attack:T1110"
+    ]
+  },
+  "notes": [
+    "Use this pack for password spray, brute-force, or repetitive authentication-failure leads."
+  ]
+}

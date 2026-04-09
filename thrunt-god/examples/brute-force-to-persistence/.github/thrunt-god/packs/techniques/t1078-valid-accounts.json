@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "id": "technique.t1078-valid-accounts",
+  "kind": "technique",
+  "title": "Valid Accounts",
+  "description": "Hunt for suspicious use of otherwise valid credentials across identity and SIEM telemetry.",
+  "stability": "preview",
+  "attack": ["T1078"],
+  "metadata": {
+    "domains": ["identity", "siem"],
+    "severity": "high"
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "hypothesis_templates": [
+    "A valid user account is being used outside its normal access patterns or locations.",
+    "Low-noise session anomalies across identity and SIEM telemetry indicate credential misuse."
+  ],
+  "required_connectors": ["okta", "m365", "splunk"],
+  "supported_datasets": ["identity", "events", "alerts"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of identity and SIEM telemetry to review."
+    },
+    {
+      "name": "focus_user",
+      "type": "string",
+      "required": false,
+      "description": "Optional user identifier to prioritize during the hunt.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "identity_sign_in_telemetry",
+      "description": "Interactive and non-interactive sign-in visibility with risk, device, and location context.",
+      "connectors": ["okta", "m365"],
+      "datasets": ["identity", "alerts"]
+    },
+    {
+      "surface": "siem_session_correlation",
+      "description": "Session and alert correlation that can tie identity anomalies to downstream activity.",
+      "connectors": ["splunk"],
+      "datasets": ["events", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Shadow identity providers or unmanaged SaaS may create account activity outside the covered telemetry set.",
+    "Long-lived federated sessions can reduce the fidelity of fresh sign-in evidence."
+  ],
+  "execution_targets": [
+    {
+      "name": "Okta anomalous session review",
+      "description": "Inspect System Log events for unusual user, device, IP, or policy combinations.",
+      "connector": "okta",
+      "dataset": "identity",
+      "language": "system_log",
+      "query_template": "eventType eq \"user.session.start\" and target.displayName co \"{{focus_user}}\""
+    },
+    {
+      "name": "M365 risky sign-in sweep",
+      "description": "Review risky or unusual sign-ins in Entra ID / Microsoft 365 identity telemetry.",
+      "connector": "m365",
+      "dataset": "identity",
+      "language": "graph",
+      "query_template": "/auditLogs/signIns?$filter=createdDateTime ge {{lookback_hours}}h and userDisplayName eq '{{focus_user}}'"
+    },
+    {
+      "name": "Splunk identity to downstream activity pivot",
+      "description": "Correlate suspicious identity events with downstream alerts or access activity.",
+      "connector": "splunk",
+      "dataset": "events",
+      "language": "spl",
+      "query_template": "index=identity tenant={{tenant}} earliest=-{{lookback_hours}}h user={{focus_user}} | transaction user maxspan=8h"
+    }
+  ],
+  "scope_defaults": {
+    "entities": ["user", "session", "device", "ip"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com"
+    }
+  },
+  "publish": {
+    "finding_type": "identity_compromise_hunt",
+    "expected_outcomes": [
+      "session_anomaly_story",
+      "validated_user_access_timeline"
+    ],
+    "receipt_tags": [
+      "pack:technique.t1078-valid-accounts",
+      "attack:T1078"
+    ]
+  },
+  "notes": [
+    "This pack is a strong starting point for suspicious login or session-use leads."
+  ]
+}

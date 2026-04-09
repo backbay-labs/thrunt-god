@@ -404,16 +404,19 @@ describe('HuntTreeDataProvider', () => {
       // Phase 1: complete
       assert.ok(phases[0].label.includes('Initial Access'));
       assert.equal(phases[0].description, 'complete');
+      assert.equal(phases[0].contextValue, 'phase-complete');
       assert.equal(phases[0].iconPath.id, 'check');
 
       // Phase 2: running
       assert.ok(phases[1].label.includes('Lateral Movement'));
       assert.equal(phases[1].description, 'running');
+      assert.equal(phases[1].contextValue, 'phase-runnable');
       assert.equal(phases[1].iconPath.id, 'sync~spin');
 
       // Phase 3: planned
       assert.ok(phases[2].label.includes('Persistence'));
       assert.equal(phases[2].description, 'planned');
+      assert.equal(phases[2].contextValue, 'phase-runnable');
       assert.equal(phases[2].iconPath.id, 'circle-outline');
     });
 
@@ -541,6 +544,12 @@ describe('HuntTreeDataProvider', () => {
       for (const hyp of hypotheses) {
         assert.equal(hyp.contextValue, 'huntTreeItem');
       }
+
+      const phases = provider.getChildren(roots[2]);
+      assert.deepEqual(
+        phases.map((phase) => phase.contextValue),
+        ['phase-complete', 'phase-runnable', 'phase-runnable']
+      );
     });
 
     it('onDidChangeTreeData fires when store emits a change event', () => {

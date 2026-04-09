@@ -1,0 +1,11 @@
+{
+  "connector": "crowdstrike",
+  "mock_response": {
+    "status": "ok",
+    "counts": { "total": 4, "returned": 4 },
+    "results": [
+      { "aid": "abc123", "ComputerName": "ws-01", "UserName": "alice", "event_simpleName": "ProcessRollup2", "CommandLine": "cmd.exe /c whoami", "ParentBaseFileName": "explorer.exe" },
+      { "aid": "def456", "ComputerName": "srv-02", "UserName": "bob", "event_simpleName": "DnsRequest", "DomainName": "evil.example.com" }
+    ]
+  }
+}

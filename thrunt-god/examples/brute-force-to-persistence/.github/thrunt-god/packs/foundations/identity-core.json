@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "id": "foundation.identity-core",
+  "kind": "custom",
+  "title": "Identity Hunt Foundation",
+  "description": "Shared identity-hunt building blocks for domain and family packs.",
+  "stability": "stable",
+  "metadata": {
+    "domains": ["identity"]
+  },
+  "hypothesis_ids": ["HYP-02"],
+  "required_connectors": ["okta", "m365", "splunk"],
+  "supported_datasets": ["identity", "alerts", "events"],
+  "parameters": [
+    {
+      "name": "tenant",
+      "type": "string",
+      "required": true,
+      "description": "Tenant, business unit, or environment selector.",
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    {
+      "name": "lookback_hours",
+      "type": "integer",
+      "required": false,
+      "default": 24,
+      "minimum": 1,
+      "maximum": 720,
+      "description": "Hours of telemetry to review."
+    },
+    {
+      "name": "focus_user",
+      "type": "string",
+      "required": false,
+      "description": "Optional user identifier to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    },
+    {
+      "name": "focus_ip",
+      "type": "string",
+      "required": false,
+      "description": "Optional IP address or IP fragment to prioritize.",
+      "pattern": "^[^\\n]{1,256}$"
+    }
+  ],
+  "telemetry_requirements": [
+    {
+      "surface": "identity_sign_in_telemetry",
+      "description": "Interactive and non-interactive sign-ins with device, location, and risk context.",
+      "connectors": ["okta", "m365"],
+      "datasets": ["identity", "alerts"]
+    },
+    {
+      "surface": "siem_identity_correlation",
+      "description": "SIEM visibility that can pivot suspicious identity events into downstream activity.",
+      "connectors": ["splunk"],
+      "datasets": ["events", "alerts"]
+    }
+  ],
+  "blind_spots": [
+    "Identity activity occurring in unmanaged SaaS or identity providers outside the configured connectors will not appear in this foundation."
+  ],
+  "scope_defaults": {
+    "entities": ["user", "session", "device", "ip"],
+    "time_window": {
+      "lookback_minutes": 1440
+    }
+  },
+  "execution_defaults": {
+    "consistency": "best_effort",
+    "receipt_policy": "material"
+  },
+  "examples": {
+    "parameters": {
+      "tenant": "example-tenant",
+      "lookback_hours": 24,
+      "focus_user": "alice@example.com",
+      "focus_ip": "203.0.113.10"
+    }
+  },
+  "publish": {
+    "finding_type": "identity_hunt_foundation",
+    "expected_outcomes": ["identity_triage"],
+    "receipt_tags": ["pack:foundation.identity-core"]
+  },
+  "notes": [
+    "Foundation packs are meant to be composed into domain or family packs rather than used as the final operator-facing entry point."
+  ]
+}

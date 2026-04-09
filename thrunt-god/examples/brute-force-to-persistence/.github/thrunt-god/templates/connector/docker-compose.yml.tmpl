@@ -1,0 +1,13 @@
+
+  {{CONNECTOR_ID}}:
+    image: {{DOCKER_IMAGE}}
+    environment:
+      # TODO: Add minimal configuration environment variables for {{CONNECTOR_DISPLAY_NAME}}
+    ports:
+      - "{{DOCKER_HOST_PORT}}:{{DOCKER_PORT}}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:{{DOCKER_PORT}}/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s

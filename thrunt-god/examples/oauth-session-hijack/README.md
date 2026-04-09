@@ -1,35 +1,39 @@
 # Example: OAuth Session Hijack Hunt
 
-A completed hunt case demonstrating THRUNT v1.0 features against a realistic OAuth phishing campaign in a corporate M365 tenant.
+This example now opens as a real `.planning` workspace with a closed child case. It is intended for testing the new program dashboard, child-case discovery, published findings indicator, and technique rollup behavior in the VS Code extension.
 
 ## Scenario
 
-A SOC analyst received a Microsoft Defender alert ("Unusual OAuth app consent") for the acme.corp M365 tenant. The hunt discovered a phishing campaign targeting three users. One user (sarah.chen@acme.corp) clicked an embedded OAuth consent link, granted Mail.ReadWrite and Contacts.Read permissions to a malicious app masquerading as "DocuSign Secure View," and the attacker created a mailbox forwarding rule to exfiltrate email to an external Protonmail address.
+Microsoft Defender raised an "Unusual OAuth app consent" alert in the `acme.corp` M365 tenant. The investigation confirmed a phishing campaign that tricked `sarah.chen@acme.corp` into granting `Mail.ReadWrite` and `Contacts.Read` to a malicious app, which then created a forwarding rule to exfiltrate email to Protonmail.
 
-## v1.0 Features Demonstrated
+## PR Features Demonstrated
+
+- Program workspace rooted at `.planning/` with a real child case under `cases/oauth-session-hijack/`
+- Case `STATE.md` frontmatter populated with final `technique_ids` for dashboard aggregation
+- Published findings mirrored to `published/FINDINGS.md`
+- Case scope discoverable from `.planning/.active-case`
+
+## Legacy Hunt Features Still Visible
 
 | Feature | Where to Look |
 |---------|---------------|
-| **Template clustering** | `.hunt/QUERIES/QRY-20260328-001.md` -- 312 identity events reduced to 4 templates via Drain |
-| **Dataset-aware defaults** | All three query logs show `dataset.kind` driving pagination limits, max pages, and timeouts |
-| **Anomaly framing** | `.hunt/RECEIPTS/RCT-20260328-001.md` and `RCT-20260328-002.md` -- sequential prediction with scored deviations |
-| **Pack progressions** | Receipts reference `family.oauth-phishing-session-hijack` expected progression steps and scoring |
+| Template clustering | `.planning/cases/oauth-session-hijack/QUERIES/QRY-20260328-001.md` |
+| Dataset-aware defaults | All three query logs |
+| Anomaly framing | `.planning/cases/oauth-session-hijack/RECEIPTS/RCT-20260328-001.md` and `RCT-20260328-002.md` |
+| Pack progressions | Findings and receipts for `family.oauth-phishing-session-hijack` |
 
-## How to Read the Artifacts
+## How to Read the Workspace
 
-1. Start with `.hunt/MISSION.md` for the signal and scope.
-2. Read `.hunt/HYPOTHESES.md` for the three testable assertions.
-3. Walk the three query logs in `.hunt/QUERIES/` to see telemetry collection with template clustering results.
-4. Read the three receipts in `.hunt/RECEIPTS/` for evidence with anomaly framing scores.
-5. Review `.hunt/FINDINGS.md` for the executive summary and recommended actions.
-6. Check `.hunt/EVIDENCE_REVIEW.md` for publishability verification.
+1. Open `.planning/MISSION.md` for the program-level context.
+2. Open `.planning/STATE.md` or the Program Dashboard for the rollup view.
+3. Review `.planning/cases/oauth-session-hijack/MISSION.md` and `HYPOTHESES.md` for the actual case.
+4. Walk the case `QUERIES/` and `RECEIPTS/`.
+5. Compare `FINDINGS.md` with `published/FINDINGS.md` to see the publish marker the extension consumes.
 
 ## Pack Reference
 
-This hunt uses the `family.oauth-phishing-session-hijack` pack. The expected progression pattern `phish-to-consent-to-takeover` was confirmed through two of its three steps:
+This case uses `family.oauth-phishing-session-hijack`. The progression `phish-to-consent-to-takeover` is confirmed through:
 
-1. T1566 Phishing delivery (consent link in email)
-2. T1078 Session hijack (OAuth consent grant from Tor exit node)
-3. T1098 Mailbox tampering (forwarding rule to external address)
-
-The third hypothesis (lateral movement via stolen tokens) was disproved, indicating a targeted single-user compromise rather than a broader campaign escalation.
+1. `T1566` phishing delivery
+2. `T1078` session hijack through OAuth consent
+3. `T1098` mailbox tampering via forwarding rule creation

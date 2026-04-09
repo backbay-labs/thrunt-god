@@ -19,10 +19,14 @@ export function parseHypotheses(raw: string): ParseResult<Hypotheses> {
 
     // Split into major sections
     const activeSection = extractSection(body, '## Active Hypotheses');
+    const supportedSection = extractSection(body, '## Supported Hypotheses');
     const parkedSection = extractSection(body, '## Parked Hypotheses');
     const disprovedSection = extractSection(body, '## Disproved Hypotheses');
 
-    const active = parseHypothesisList(activeSection);
+    const active = [
+      ...parseHypothesisList(activeSection),
+      ...parseHypothesisList(supportedSection),
+    ];
     const parked = parseHypothesisList(parkedSection);
     const disproved = parseHypothesisList(disprovedSection);
 
