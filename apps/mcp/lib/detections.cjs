@@ -421,6 +421,20 @@ function ensureDetectionsSchema(db) {
       indexed_at TEXT NOT NULL,
       PRIMARY KEY (env_key, dir_path)
     );
+
+    CREATE TABLE IF NOT EXISTS detection_env_files (
+      env_key TEXT NOT NULL,
+      dir_path TEXT NOT NULL,
+      source_path TEXT NOT NULL,
+      file_path TEXT NOT NULL,
+      detection_id TEXT NOT NULL,
+      source_format TEXT NOT NULL,
+      indexed_at TEXT NOT NULL,
+      PRIMARY KEY (env_key, dir_path, source_path)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_detection_env_files_detection_id
+      ON detection_env_files(detection_id);
   `);
 
   ensureDetectionsFtsSchema(db);
@@ -429,30 +443,78 @@ function ensureDetectionsSchema(db) {
 /**
  * @param {import('better-sqlite3').Database} db
  * @param {DetectionRow} row
- * @returns {number} 1 if inserted, 0 if duplicate (INSERT OR IGNORE)
+ * @returns {number} 1 if inserted/updated, 0 if unchanged
  */
 function insertDetection(db, row) {
   if (!row.id) return 0; // Skip rows with no ID (malformed rules)
-  const stmt = db.prepare(`
-    INSERT OR IGNORE INTO detections
-      (id, title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path)
-    VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
 
-  const result = stmt.run(
-    row.id, row.title, row.source_format, row.technique_ids,
-    row.tactics, row.severity, row.logsource, row.query,
-    row.description, row.metadata, row.file_path
-  );
+  const existing = db.prepare(`
+    SELECT title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path
+    FROM detections
+    WHERE id = ?
+  `).get(row.id);
+  const nextValues = [
+    row.title,
+    row.source_format,
+    row.technique_ids,
+    row.tactics,
+    row.severity,
+    row.logsource,
+    row.query,
+    row.description,
+    row.metadata,
+    row.file_path,
+  ];
 
-  if (result.changes > 0) {
-    db.prepare(
-      'INSERT INTO detections_fts (title, description, query, technique_ids, id) VALUES (?, ?, ?, ?, ?)'
-    ).run(row.title, row.description, row.query, row.technique_ids, row.id);
+  if (existing) {
+    const currentValues = [
+      existing.title,
+      existing.source_format,
+      existing.technique_ids,
+      existing.tactics,
+      existing.severity,
+      existing.logsource,
+      existing.query,
+      existing.description,
+      existing.metadata,
+      existing.file_path,
+    ];
+    const changed = nextValues.some((value, index) => value !== currentValues[index]);
+    if (!changed) return 0;
+
+    db.prepare(`
+      UPDATE detections
+      SET title = ?, source_format = ?, technique_ids = ?, tactics = ?, severity = ?,
+          logsource = ?, query = ?, description = ?, metadata = ?, file_path = ?
+      WHERE id = ?
+    `).run(...nextValues, row.id);
+  } else {
+    db.prepare(`
+      INSERT INTO detections
+        (id, title, source_format, technique_ids, tactics, severity, logsource, query, description, metadata, file_path)
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      row.id,
+      row.title,
+      row.source_format,
+      row.technique_ids,
+      row.tactics,
+      row.severity,
+      row.logsource,
+      row.query,
+      row.description,
+      row.metadata,
+      row.file_path
+    );
   }
 
-  return result.changes;
+  db.prepare('DELETE FROM detections_fts WHERE id = ?').run(row.id);
+  db.prepare(
+    'INSERT INTO detections_fts (title, description, query, technique_ids, id) VALUES (?, ?, ?, ?, ?)'
+  ).run(row.title, row.description, row.query, row.technique_ids, row.id);
+
+  return 1;
 }
 
 /**
@@ -460,8 +522,8 @@ function insertDetection(db, row) {
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
  */
-function indexSigmaDirectory(db, dirPath) {
-  return indexDirectory(db, dirPath, /\.(yml|yaml)$/i, parseSigmaRule, 'sigma');
+function indexSigmaDirectory(db, dirPath, opts) {
+  return indexDirectory(db, dirPath, /\.(yml|yaml)$/i, parseSigmaRule, 'sigma', opts);
 }
 
 /**
@@ -469,8 +531,8 @@ function indexSigmaDirectory(db, dirPath) {
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
  */
-function indexEscuDirectory(db, dirPath) {
-  return indexDirectory(db, dirPath, /\.(yml|yaml)$/i, parseEscuRule, 'escu');
+function indexEscuDirectory(db, dirPath, opts) {
+  return indexDirectory(db, dirPath, /\.(yml|yaml)$/i, parseEscuRule, 'escu', opts);
 }
 
 /**
@@ -478,8 +540,8 @@ function indexEscuDirectory(db, dirPath) {
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
  */
-function indexElasticDirectory(db, dirPath) {
-  return indexDirectory(db, dirPath, /\.toml$/i, parseElasticRule, 'elastic');
+function indexElasticDirectory(db, dirPath, opts) {
+  return indexDirectory(db, dirPath, /\.toml$/i, parseElasticRule, 'elastic', opts);
 }
 
 /**
@@ -487,48 +549,33 @@ function indexElasticDirectory(db, dirPath) {
  * @param {string} dirPath
  * @returns {number} Count of rules indexed
  */
-function indexKqlDirectory(db, dirPath) {
-  return indexDirectory(db, dirPath, /\.md$/i, parseKqlRule, 'kql');
+function indexKqlDirectory(db, dirPath, opts) {
+  return indexDirectory(db, dirPath, /\.md$/i, parseKqlRule, 'kql', opts);
 }
 
 /** @returns {number} Count of rules indexed */
-function indexDirectory(db, dirPath, extPattern, parseFn, format) {
+function indexDirectory(db, dirPath, extPattern, parseFn, format, opts = {}) {
   let count = 0;
+  const files = scanDetectionFiles(dirPath, extPattern, format);
+  if (!files) return 0;
 
-  try {
-    const files = fs.readdirSync(dirPath, { recursive: true });
+  for (const file of files) {
+    try {
+      const content = fs.readFileSync(file.fullPath, 'utf8');
+      const row = parseFn(content, file.relPath, file.fullPath);
 
-    for (const relFile of files) {
-      const nativeRel = typeof relFile === 'string' ? relFile : relFile.toString();
-      if (!extPattern.test(nativeRel)) continue;
-      const rel = nativeRel.replace(/\\/g, '/');
+      if (!row) continue;
+      // Skip empty IDs (e.g., sigma: with no actual id)
+      if (row.id === `${format}:`) continue;
 
-      const fullPath = path.join(dirPath, nativeRel);
-
-      // Skip directories that match the extension pattern
-      try {
-        const stat = fs.statSync(fullPath);
-        if (!stat.isFile()) continue;
-      } catch {
-        continue;
+      const changes = insertDetection(db, row);
+      if (changes > 0) count++;
+      if (typeof opts.onIndexed === 'function') {
+        opts.onIndexed({ row, fullPath: file.fullPath, relPath: file.relPath, changed: changes > 0 });
       }
-
-      try {
-        const content = fs.readFileSync(fullPath, 'utf8');
-        const row = parseFn(content, rel, fullPath);
-
-        if (!row) continue;
-        // Skip empty IDs (e.g., sigma: with no actual id)
-        if (row.id === `${format}:`) continue;
-
-        const changes = insertDetection(db, row);
-        if (changes > 0) count++;
-      } catch (err) {
-        process.stderr.write(`[detections] Warning: failed to index ${format} file ${fullPath}: ${err.message}\n`);
-      }
+    } catch (err) {
+      process.stderr.write(`[detections] Warning: failed to index ${format} file ${file.fullPath}: ${err.message}\n`);
     }
-  } catch (err) {
-    process.stderr.write(`[detections] Warning: failed to read ${format} directory ${dirPath}: ${err.message}\n`);
   }
 
   return count;
@@ -585,16 +632,15 @@ function searchDetections(db, query, opts = {}) {
   }
 }
 
-/** @returns {number} Total count of rules indexed */
-function computeDirectoryFingerprint(dirPath, extPattern) {
+function scanDetectionFiles(dirPath, extPattern, format) {
   try {
     const entries = fs.readdirSync(dirPath, { recursive: true });
     const files = [];
     for (const relFile of entries) {
-      const rel = typeof relFile === 'string' ? relFile : relFile.toString();
-      if (!extPattern.test(rel)) continue;
+      const nativeRel = typeof relFile === 'string' ? relFile : relFile.toString();
+      if (!extPattern.test(nativeRel)) continue;
 
-      const fullPath = path.join(dirPath, rel);
+      const fullPath = path.join(dirPath, nativeRel);
       let stat;
       try {
         stat = fs.statSync(fullPath);
@@ -602,13 +648,28 @@ function computeDirectoryFingerprint(dirPath, extPattern) {
         continue;
       }
       if (!stat.isFile()) continue;
-      files.push(`${rel}\0${stat.size}\0${Math.floor(stat.mtimeMs)}`);
+      files.push({
+        fullPath: path.resolve(fullPath),
+        relPath: nativeRel.replace(/\\/g, '/'),
+        size: stat.size,
+        mtimeMs: Math.floor(stat.mtimeMs),
+      });
     }
 
-    files.sort();
+    return files;
+  } catch (err) {
+    process.stderr.write(`[detections] Warning: failed to read ${format} directory ${dirPath}: ${err.message}\n`);
+    return null;
+  }
+}
+
+/** @returns {string|null} */
+function computeDirectoryFingerprint(files) {
+  try {
+    const entries = files.map(file => `${file.relPath}\0${file.size}\0${file.mtimeMs}`);
     const hasher = crypto.createHash('sha256');
-    for (const file of files) {
-      hasher.update(file);
+    for (const entry of entries.sort()) {
+      hasher.update(entry);
       hasher.update('\n');
     }
     return hasher.digest('hex');
@@ -617,11 +678,17 @@ function computeDirectoryFingerprint(dirPath, extPattern) {
   }
 }
 
-function isEnvPathFingerprintCurrent(db, envKey, dirPath, fingerprint) {
+function getEnvPathMappingCount(db, envKey, dirPath) {
+  return db.prepare(
+    'SELECT COUNT(*) AS cnt FROM detection_env_files WHERE env_key = ? AND dir_path = ?'
+  ).get(envKey, dirPath).cnt;
+}
+
+function isEnvPathFingerprintCurrent(db, envKey, dirPath, fingerprint, fileCount) {
   const row = db.prepare(
     'SELECT fingerprint FROM detection_env_index_state WHERE env_key = ? AND dir_path = ?'
   ).get(envKey, dirPath);
-  return !!row && row.fingerprint === fingerprint;
+  return !!row && row.fingerprint === fingerprint && getEnvPathMappingCount(db, envKey, dirPath) === fileCount;
 }
 
 function rememberEnvPathFingerprint(db, envKey, dirPath, fingerprint) {
@@ -631,22 +698,134 @@ function rememberEnvPathFingerprint(db, envKey, dirPath, fingerprint) {
   `).run(envKey, dirPath, fingerprint, new Date().toISOString());
 }
 
+function deleteDetectionById(db, detectionId) {
+  db.prepare('DELETE FROM detections_fts WHERE id = ?').run(detectionId);
+  db.prepare('DELETE FROM detections WHERE id = ?').run(detectionId);
+}
+
+function pruneUnreferencedDetection(db, detectionId) {
+  const remainingRefs = db.prepare(
+    'SELECT COUNT(*) AS cnt FROM detection_env_files WHERE detection_id = ?'
+  ).get(detectionId).cnt;
+  if (remainingRefs === 0) {
+    deleteDetectionById(db, detectionId);
+  }
+}
+
+function rememberEnvFileIndex(db, mapping) {
+  const previous = db.prepare(`
+    SELECT detection_id
+    FROM detection_env_files
+    WHERE env_key = ? AND dir_path = ? AND source_path = ?
+  `).get(mapping.env_key, mapping.dir_path, mapping.source_path);
+
+  db.prepare(`
+    INSERT INTO detection_env_files (
+      env_key, dir_path, source_path, file_path, detection_id, source_format, indexed_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(env_key, dir_path, source_path) DO UPDATE SET
+      file_path = excluded.file_path,
+      detection_id = excluded.detection_id,
+      source_format = excluded.source_format,
+      indexed_at = excluded.indexed_at
+  `).run(
+    mapping.env_key,
+    mapping.dir_path,
+    mapping.source_path,
+    mapping.file_path,
+    mapping.detection_id,
+    mapping.source_format,
+    new Date().toISOString()
+  );
+
+  if (previous && previous.detection_id !== mapping.detection_id) {
+    pruneUnreferencedDetection(db, previous.detection_id);
+  }
+}
+
+function pruneDeletedEnvFileMappings(db, envKey, dirPath, currentSourcePaths) {
+  let rows;
+  if (currentSourcePaths.length === 0) {
+    rows = db.prepare(`
+      SELECT source_path, detection_id
+      FROM detection_env_files
+      WHERE env_key = ? AND dir_path = ?
+    `).all(envKey, dirPath);
+  } else {
+    const placeholders = currentSourcePaths.map(() => '?').join(',');
+    rows = db.prepare(`
+      SELECT source_path, detection_id
+      FROM detection_env_files
+      WHERE env_key = ? AND dir_path = ?
+        AND source_path NOT IN (${placeholders})
+    `).all(envKey, dirPath, ...currentSourcePaths);
+  }
+
+  for (const row of rows) {
+    db.prepare(`
+      DELETE FROM detection_env_files
+      WHERE env_key = ? AND dir_path = ? AND source_path = ?
+    `).run(envKey, dirPath, row.source_path);
+    pruneUnreferencedDetection(db, row.detection_id);
+  }
+}
+
+function pruneRemovedEnvDirectories(db, envKey, currentDirs) {
+  const rows = db.prepare(
+    'SELECT DISTINCT dir_path FROM detection_env_index_state WHERE env_key = ?'
+  ).all(envKey);
+  const currentSet = new Set(currentDirs);
+
+  for (const row of rows) {
+    if (currentSet.has(row.dir_path)) continue;
+    pruneDeletedEnvFileMappings(db, envKey, row.dir_path, []);
+    db.prepare(
+      'DELETE FROM detection_env_index_state WHERE env_key = ? AND dir_path = ?'
+    ).run(envKey, row.dir_path);
+  }
+}
+
 /** @returns {number} Total count of rules indexed */
 function indexEnvPaths(db, envKey, indexFn, extPattern) {
   const envVal = process.env[envKey];
-  if (!envVal) return 0;
+  if (!envVal) {
+    pruneRemovedEnvDirectories(db, envKey, []);
+    return 0;
+  }
 
   let count = 0;
-  const dirs = envVal.split(path.delimiter).filter(Boolean);
+  const dirs = envVal.split(path.delimiter).filter(Boolean).map(dir => path.resolve(dir));
+  pruneRemovedEnvDirectories(db, envKey, dirs);
 
   for (const dir of dirs) {
-    const resolvedDir = path.resolve(dir);
-    if (!fs.existsSync(resolvedDir)) continue;
+    const resolvedDir = dir;
+    if (!fs.existsSync(resolvedDir)) {
+      pruneDeletedEnvFileMappings(db, envKey, resolvedDir, []);
+      db.prepare(
+        'DELETE FROM detection_env_index_state WHERE env_key = ? AND dir_path = ?'
+      ).run(envKey, resolvedDir);
+      continue;
+    }
 
-    const fingerprint = computeDirectoryFingerprint(resolvedDir, extPattern);
-    if (fingerprint && isEnvPathFingerprintCurrent(db, envKey, resolvedDir, fingerprint)) continue;
+    const files = scanDetectionFiles(resolvedDir, extPattern, envKey.toLowerCase());
+    if (!files) continue;
+    const fingerprint = computeDirectoryFingerprint(files);
+    if (fingerprint && isEnvPathFingerprintCurrent(db, envKey, resolvedDir, fingerprint, files.length)) continue;
 
-    count += indexFn(db, resolvedDir);
+    const currentSourcePaths = files.map(file => file.fullPath);
+    count += indexFn(db, resolvedDir, {
+      onIndexed: ({ row, fullPath, relPath }) => {
+        rememberEnvFileIndex(db, {
+          env_key: envKey,
+          dir_path: resolvedDir,
+          source_path: fullPath,
+          file_path: relPath,
+          detection_id: row.id,
+          source_format: row.source_format,
+        });
+      },
+    });
+    pruneDeletedEnvFileMappings(db, envKey, resolvedDir, currentSourcePaths);
     if (fingerprint) {
       rememberEnvPathFingerprint(db, envKey, resolvedDir, fingerprint);
     }

@@ -903,6 +903,56 @@ describe('detections.cjs - env var path indexing', () => {
     assert.ok(row, 'custom detection should be indexed even after bundled rules already exist');
   });
 
+  it('replaces existing custom detections when a rule file changes but keeps the same ID', () => {
+    const customDir = path.join(tmpDir, 'mutable-sigma');
+    fs.mkdirSync(customDir, { recursive: true });
+    const rulePath = path.join(customDir, 'mutable-rule.yml');
+    const initialYaml = sigmaYaml.replace(
+      '3b6ab547-f55a-4d6e-88a1-a6a9f87e1234',
+      'custom-sigma-mutable-001'
+    );
+    fs.writeFileSync(rulePath, initialYaml);
+
+    process.env.SIGMA_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty, searchDetections } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'mutable-env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    let row = db.prepare(
+      "SELECT severity, technique_ids, description FROM detections WHERE id = 'sigma:custom-sigma-mutable-001'"
+    ).get();
+    assert.equal(row.severity, 'high');
+    assert.ok(row.technique_ids.includes('T1027'));
+
+    const updatedYaml = initialYaml
+      .replace('level: high', 'level: low')
+      .replace('attack.t1027', 'attack.t1078')
+      .replace(
+        'Detects suspicious PowerShell download cradles',
+        'Detects updated unique reindex behavior token'
+      );
+    fs.writeFileSync(rulePath, updatedYaml);
+
+    populateDetectionsIfEmpty(db);
+
+    row = db.prepare(
+      "SELECT severity, technique_ids, description FROM detections WHERE id = 'sigma:custom-sigma-mutable-001'"
+    ).get();
+    assert.equal(row.severity, 'low');
+    assert.ok(row.technique_ids.includes('T1078'));
+    assert.ok(!row.technique_ids.includes('T1027'));
+    assert.match(row.description, /updated unique reindex behavior token/i);
+
+    const results = searchDetections(db, 'reindex');
+    assert.ok(results.some(result => result.id === 'sigma:custom-sigma-mutable-001'));
+  });
+
   it('skips re-reading unchanged custom env directories on later startups', () => {
     const customDir = path.join(tmpDir, 'cached-sigma');
     fs.mkdirSync(customDir, { recursive: true });
@@ -977,6 +1027,48 @@ describe('detections.cjs - env var path indexing', () => {
     }
 
     assert.ok(rereadCount > 0, 'changed custom env directories should be reparsed');
+  });
+
+  it('removes detections for deleted custom rule files on reindex', () => {
+    const customDir = path.join(tmpDir, 'pruned-sigma');
+    fs.mkdirSync(customDir, { recursive: true });
+    const rulePath = path.join(customDir, 'deleted-rule.yml');
+    const customYaml = sigmaYaml.replace(
+      '3b6ab547-f55a-4d6e-88a1-a6a9f87e1234',
+      'custom-sigma-prune-001'
+    );
+    fs.writeFileSync(rulePath, customYaml);
+
+    process.env.SIGMA_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'pruned-env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    let row = db.prepare(
+      "SELECT id FROM detections WHERE id = 'sigma:custom-sigma-prune-001'"
+    ).get();
+    assert.ok(row);
+
+    fs.rmSync(rulePath);
+    populateDetectionsIfEmpty(db);
+
+    row = db.prepare(
+      "SELECT id FROM detections WHERE id = 'sigma:custom-sigma-prune-001'"
+    ).get();
+    assert.equal(row, undefined);
+
+    const mappingCount = db.prepare(`
+      SELECT COUNT(*) AS cnt
+      FROM detection_env_files
+      WHERE env_key = 'SIGMA_PATHS'
+    `).get().cnt;
+    assert.equal(mappingCount, 0);
   });
 
   it('nonexistent env var path logs warning but does not throw', () => {
