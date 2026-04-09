@@ -153,6 +153,39 @@ describe('AutomationTreeDataProvider', () => {
     });
   });
 
+  describe('command count', () => {
+    it('AutomationTreeDataProvider default command count is 0', () => {
+      const p = new ext.AutomationTreeDataProvider();
+      const roots = p.getChildren(undefined);
+      const deckNode = roots.find(n => n.label === 'Command Deck');
+      assert.ok(deckNode, 'Command Deck node should exist');
+      assert.equal(deckNode.description, '0 commands');
+    });
+
+    it('AutomationTreeDataProvider setCommandCount updates description', () => {
+      const p = new ext.AutomationTreeDataProvider();
+      p.setCommandCount(10);
+      const roots = p.getChildren(undefined);
+      const deckNode = roots.find(n => n.label === 'Command Deck');
+      assert.ok(deckNode, 'Command Deck node should exist');
+      assert.equal(deckNode.description, '10 commands');
+    });
+
+    it('setCommandCount fires refresh event', () => {
+      let fireCount = 0;
+      provider.onDidChangeTreeData(() => { fireCount++; });
+      provider.setCommandCount(5);
+      assert.equal(fireCount, 1);
+    });
+
+    it('constructor accepts commandCount option', () => {
+      const p = new ext.AutomationTreeDataProvider({ commandCount: 7 });
+      const roots = p.getChildren(undefined);
+      const deckNode = roots.find(n => n.label === 'Command Deck');
+      assert.equal(deckNode.description, '7 commands');
+    });
+  });
+
   describe('getTreeItem', () => {
     it('returns the element unchanged', () => {
       const roots = provider.getChildren(undefined);

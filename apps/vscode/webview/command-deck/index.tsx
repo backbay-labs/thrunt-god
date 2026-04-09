@@ -13,6 +13,21 @@ import '../shared/tokens.css';
 
 const vscode = createVsCodeApi<unknown, CommandDeckToHostMessage>();
 
+function getRelevantIdsFromContext(context: CommandDeckContext | null): string[] {
+  if (!context) return [];
+  switch (context.nodeType) {
+    case 'phase': return ['run-pack', 'analyze-coverage'];
+    case 'case': return ['close-case', 'publish-findings', 'open-evidence-board'];
+    case 'query': return ['query-knowledge', 'analyze-coverage'];
+    case 'receipt': return ['open-evidence-board', 'publish-findings'];
+    case 'hypothesis': return ['analyze-coverage', 'query-knowledge'];
+    case 'finding': return ['publish-findings'];
+    case 'mission': return ['open-program-dashboard', 'runtime-doctor'];
+    case 'huntmap': return ['generate-attack-layer', 'analyze-coverage'];
+    default: return [];
+  }
+}
+
 function CommandDeckApp() {
   const { setIsDark } = useTheme();
   const [commands, setCommands] = useState<CommandDef[]>([]);
@@ -42,12 +57,17 @@ function CommandDeckApp() {
         case 'context':
           setContext(message.context);
           break;
+        case 'execResult':
+          // Brief flash or update recent -- handled by subsequent 'commands' message
+          break;
         case 'theme':
           setIsDark(message.isDark);
           break;
       }
     }, [setIsDark])
   );
+
+  const relevantIds = getRelevantIdsFromContext(context);
 
   if (commands.length === 0) {
     return (
@@ -79,7 +99,7 @@ function CommandDeckApp() {
                 key={cmd.id}
                 cmd={cmd}
                 isPinned={true}
-                isContextRelevant={false}
+                isContextRelevant={relevantIds.includes(cmd.id)}
                 onExec={() => vscode.postMessage({ type: 'command:exec', commandId: cmd.id })}
                 onTogglePin={() => vscode.postMessage({ type: 'command:unpin', commandId: cmd.id })}
               />
@@ -100,7 +120,7 @@ function CommandDeckApp() {
                   key={cmd.id}
                   cmd={cmd}
                   isPinned={pinned.includes(cmd.id)}
-                  isContextRelevant={false}
+                  isContextRelevant={relevantIds.includes(cmd.id)}
                   onExec={() => vscode.postMessage({ type: 'command:exec', commandId: cmd.id })}
                   onTogglePin={() =>
                     vscode.postMessage(

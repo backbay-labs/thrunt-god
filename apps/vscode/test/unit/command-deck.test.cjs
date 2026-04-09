@@ -64,6 +64,69 @@ describe('CommandDeckRegistry', () => {
   });
 });
 
+describe('getContextRelevantIds', () => {
+  it('getContextRelevantIds is exported', () => {
+    assert.equal(typeof ext.getContextRelevantIds, 'function');
+  });
+
+  it('getContextRelevantIds returns empty for null', () => {
+    assert.equal(ext.getContextRelevantIds(null).length, 0);
+  });
+
+  it('getContextRelevantIds returns run-pack for phase context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'phase' });
+    assert.ok(ids.includes('run-pack'), 'should include run-pack');
+    assert.ok(ids.includes('analyze-coverage'), 'should include analyze-coverage');
+  });
+
+  it('getContextRelevantIds returns close-case for case context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'case' });
+    assert.ok(ids.includes('close-case'), 'should include close-case');
+    assert.ok(ids.includes('publish-findings'), 'should include publish-findings');
+    assert.ok(ids.includes('open-evidence-board'), 'should include open-evidence-board');
+  });
+
+  it('getContextRelevantIds returns correct ids for query context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'query' });
+    assert.ok(ids.includes('query-knowledge'));
+    assert.ok(ids.includes('analyze-coverage'));
+  });
+
+  it('getContextRelevantIds returns correct ids for receipt context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'receipt' });
+    assert.ok(ids.includes('open-evidence-board'));
+    assert.ok(ids.includes('publish-findings'));
+  });
+
+  it('getContextRelevantIds returns correct ids for hypothesis context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'hypothesis' });
+    assert.ok(ids.includes('analyze-coverage'));
+    assert.ok(ids.includes('query-knowledge'));
+  });
+
+  it('getContextRelevantIds returns correct ids for finding context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'finding' });
+    assert.ok(ids.includes('publish-findings'));
+    assert.equal(ids.length, 1);
+  });
+
+  it('getContextRelevantIds returns correct ids for mission context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'mission' });
+    assert.ok(ids.includes('open-program-dashboard'));
+    assert.ok(ids.includes('runtime-doctor'));
+  });
+
+  it('getContextRelevantIds returns correct ids for huntmap context', () => {
+    const ids = ext.getContextRelevantIds({ nodeType: 'huntmap' });
+    assert.ok(ids.includes('generate-attack-layer'));
+    assert.ok(ids.includes('analyze-coverage'));
+  });
+
+  it('getContextRelevantIds returns empty for unknown context', () => {
+    assert.equal(ext.getContextRelevantIds({ nodeType: 'xyz' }).length, 0);
+  });
+});
+
 describe('Command Deck manifest', () => {
   it('openCommandDeck command registered', () => {
     const cmd = pkg.contributes.commands.find(c => c.command === 'thrunt-god.openCommandDeck');
