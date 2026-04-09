@@ -3707,16 +3707,16 @@ function cmdCaseClose(cwd, slug, raw) {
     error('Case slug required. Usage: case close <slug>');
   }
 
-  // Update program roster
-  updateCaseInRoster(cwd, slug, { status: 'closed', closed_at: new Date().toISOString().split('T')[0] });
+  const closedAt = new Date().toISOString().split('T')[0];
+  const root = planningRoot(cwd);
+  const caseDir = path.join(root, 'cases', slug);
+  const caseStatePath = path.join(caseDir, 'STATE.md');
+  let techniqueIds = [];
 
   // Update case-level STATE.md
-  const root = planningRoot(cwd);
-  const caseStatePath = path.join(root, 'cases', slug, 'STATE.md');
   if (fs.existsSync(caseStatePath)) {
     const content = fs.readFileSync(caseStatePath, 'utf-8');
     const fm = extractFrontmatter(content);
-    const closedAt = new Date().toISOString().split('T')[0];
     fm.status = 'closed';
     fm.closed_at = closedAt;
     let newContent = spliceFrontmatter(content, fm);
@@ -3728,20 +3728,13 @@ function cmdCaseClose(cwd, slug, raw) {
     fs.writeFileSync(caseStatePath, newContent, 'utf-8');
   }
 
-  // Clear active case if it matches
-  const activeCase = getActiveCase(cwd);
-  if (activeCase === slug) {
-    setActiveCase(cwd, null);
-  }
-
   // Index case artifacts into program.db (non-fatal)
   if (dbModule) try {
     const db = openProgramDb(cwd);
     if (db) {
       try {
-        const root = planningRoot(cwd);
-        const caseDir = path.join(root, 'cases', slug);
         indexCase(db, slug, caseDir);
+        techniqueIds = readCaseTechniqueIds(caseDir, slug, db);
       } finally {
         db.close();
       }
@@ -3749,6 +3742,23 @@ function cmdCaseClose(cwd, slug, raw) {
   } catch (err) {
     // Non-fatal: case is closed even if indexing fails
     if (!raw) console.error(`Warning: case indexing failed: ${err.message}`);
+  }
+
+  if (techniqueIds.length === 0) {
+    techniqueIds = readCaseTechniqueIds(caseDir, slug, null);
+  }
+
+  // Update program roster
+  updateCaseInRoster(cwd, slug, {
+    status: 'closed',
+    closed_at: closedAt,
+    technique_count: String(techniqueIds.length),
+  });
+
+  // Clear active case if it matches
+  const activeCase = getActiveCase(cwd);
+  if (activeCase === slug) {
+    setActiveCase(cwd, null);
   }
 
   output({ success: true, slug, message: `Case closed: ${slug}` }, raw);
@@ -3872,6 +3882,20 @@ function readCaseArtifactTechniqueIds(caseDir) {
   return combined ? extractTechniqueIdsFallback(combined) : [];
 }
 
+function readCaseStateTechniqueIds(caseStatePath) {
+  if (!fs.existsSync(caseStatePath)) return [];
+
+  const content = fs.readFileSync(caseStatePath, 'utf-8');
+  const fm = extractFrontmatter(content);
+  if (!Array.isArray(fm.technique_ids) || fm.technique_ids.length === 0) return [];
+
+  return [...new Set(
+    fm.technique_ids
+      .map(id => String(id || '').trim().toUpperCase())
+      .filter(Boolean)
+  )];
+}
+
 function readIndexedCaseTechniqueIds(db, slug) {
   if (!db) return [];
 
@@ -3884,6 +3908,21 @@ function readIndexedCaseTechniqueIds(db, slug) {
   `).all(slug);
 
   return rows.map(row => row.technique_id).filter(Boolean);
+}
+
+function readCaseTechniqueIds(caseDir, slug, db) {
+  const caseStatePath = path.join(caseDir, 'STATE.md');
+  let techniqueIds = readCaseStateTechniqueIds(caseStatePath);
+
+  if (techniqueIds.length === 0) {
+    techniqueIds = readIndexedCaseTechniqueIds(db, slug);
+  }
+
+  if (techniqueIds.length === 0) {
+    techniqueIds = readCaseArtifactTechniqueIds(caseDir);
+  }
+
+  return [...new Set(techniqueIds.map(id => String(id).trim().toUpperCase()).filter(Boolean))];
 }
 
 function cmdProgramRollup(cwd, raw) {
@@ -3917,22 +3956,7 @@ function cmdProgramRollup(cwd, raw) {
     const enriched = roster.map(entry => {
       const caseDir = path.join(root, 'cases', entry.slug);
       const caseStatePath = path.join(caseDir, 'STATE.md');
-      let techniqueIds = [];
-      if (fs.existsSync(caseStatePath)) {
-        const content = fs.readFileSync(caseStatePath, 'utf-8');
-        const fm = extractFrontmatter(content);
-        if (Array.isArray(fm.technique_ids) && fm.technique_ids.length > 0) {
-          techniqueIds = fm.technique_ids.filter(Boolean);
-        }
-      }
-
-      if (techniqueIds.length === 0) {
-        techniqueIds = readIndexedCaseTechniqueIds(caseDb, entry.slug);
-      }
-
-      if (techniqueIds.length === 0) {
-        techniqueIds = readCaseArtifactTechniqueIds(caseDir);
-      }
+      const techniqueIds = readCaseTechniqueIds(caseDir, entry.slug, caseDb);
 
       for (const t of techniqueIds) allTechniques.add(t);
 
@@ -4067,6 +4091,16 @@ function cmdMigrateCase(cwd, slug, raw) {
   // Migration with rollback
   fs.mkdirSync(caseDir, { recursive: true });
   const filesMoved = [];
+  const rollbackMigration = (reason) => {
+    for (const name of filesMoved) {
+      try { fs.renameSync(path.join(caseDir, name), path.join(baseDir, name)); } catch (_e) { /* best effort */ }
+    }
+    try { fs.rmSync(caseDir, { recursive: true }); } catch (_e) { /* best effort */ }
+    error('Migration failed (rolled back): ' + reason);
+  };
+
+  const openedAt = new Date().toISOString().split('T')[0];
+  const caseTitle = titleizeSlug(slug);
   try {
     for (const item of toMove) {
       const src = path.join(baseDir, item.name);
@@ -4076,61 +4110,51 @@ function cmdMigrateCase(cwd, slug, raw) {
         filesMoved.push(item.name);
       }
     }
-  } catch (err) {
-    // Rollback: move everything back
-    for (const name of filesMoved) {
-      try { fs.renameSync(path.join(caseDir, name), path.join(baseDir, name)); } catch (_e) { /* best effort */ }
+
+    // Create case-level STATE.md
+    const caseStatePath = path.join(caseDir, 'STATE.md');
+    if (!fs.existsSync(caseStatePath)) {
+      const caseFm = {
+        title: caseTitle,
+        status: 'active',
+        opened_at: openedAt,
+        technique_ids: [],
+      };
+      const caseBody = buildCaseStateBody(slug, {
+        activeSignal: `${slug} migrated from flat .planning/ layout`,
+        currentFocus: 'Resume triage from migrated artifacts',
+        lastActivity: `Migrated ${openedAt}`,
+        scope: 'Review migrated artifacts and normalize any remaining case state for continued investigation.',
+      });
+      fs.writeFileSync(caseStatePath, buildStateDocument(caseFm, caseBody), 'utf-8');
     }
-    try { fs.rmSync(caseDir, { recursive: true }); } catch (_e) { /* best effort */ }
-    error('Migration failed (rolled back): ' + err.message);
-    return;
-  }
 
-  // Create case-level STATE.md
-  const caseStatePath = path.join(caseDir, 'STATE.md');
-  const openedAt = new Date().toISOString().split('T')[0];
-  const caseTitle = titleizeSlug(slug);
-  if (!fs.existsSync(caseStatePath)) {
-    const caseFm = {
-      title: caseTitle,
-      status: 'active',
-      opened_at: openedAt,
-      technique_ids: [],
-    };
-    const caseBody = buildCaseStateBody(slug, {
-      activeSignal: `${slug} migrated from flat .planning/ layout`,
-      currentFocus: 'Resume triage from migrated artifacts',
-      lastActivity: `Migrated ${openedAt}`,
-      scope: 'Review migrated artifacts and normalize any remaining case state for continued investigation.',
-    });
-    fs.writeFileSync(caseStatePath, buildStateDocument(caseFm, caseBody), 'utf-8');
-  }
+    const caseMissionPath = path.join(caseDir, 'MISSION.md');
+    if (!fs.existsSync(caseMissionPath)) {
+      const rootMissionPath = path.join(baseDir, 'MISSION.md');
+      const missionContext = fs.existsSync(rootMissionPath)
+        ? extractMissionContext(fs.readFileSync(rootMissionPath, 'utf-8'))
+        : '';
+      const signal = missionContext
+        ? `This case was migrated from the flat .planning/ layout.\n\nExisting mission context: ${missionContext}`
+        : 'This case was migrated from the flat .planning/ layout.';
+      const desiredOutcome = 'Resume the migrated investigation without losing existing context or artifacts.';
+      const scope = 'Review the migrated case artifacts, validate current hypotheses, and continue triage from the child case directory.';
+      fs.writeFileSync(caseMissionPath, buildCaseMissionContent(caseTitle, openedAt, { signal, desiredOutcome, scope }), 'utf-8');
+    }
 
-  const caseMissionPath = path.join(caseDir, 'MISSION.md');
-  if (!fs.existsSync(caseMissionPath)) {
-    const rootMissionPath = path.join(baseDir, 'MISSION.md');
-    const missionContext = fs.existsSync(rootMissionPath)
-      ? extractMissionContext(fs.readFileSync(rootMissionPath, 'utf-8'))
-      : '';
-    const signal = missionContext
-      ? `This case was migrated from the flat .planning/ layout.\n\nExisting mission context: ${missionContext}`
-      : 'This case was migrated from the flat .planning/ layout.';
-    const desiredOutcome = 'Resume the migrated investigation without losing existing context or artifacts.';
-    const scope = 'Review the migrated case artifacts, validate current hypotheses, and continue triage from the child case directory.';
-    fs.writeFileSync(caseMissionPath, buildCaseMissionContent(caseTitle, openedAt, { signal, desiredOutcome, scope }), 'utf-8');
-  }
-
-  // Update program roster
-  try {
+    // Update program roster
+    const techniqueCount = String(readCaseTechniqueIds(caseDir, slug, null).length);
     addCaseToRoster(cwd, {
       slug,
-      name: slug,
+      name: caseTitle,
       status: 'active',
-      opened_at: new Date().toISOString().split('T')[0],
-      technique_count: '0',
+      opened_at: openedAt,
+      technique_count: techniqueCount,
     });
-  } catch (_rosterErr) {
-    // Non-fatal: migration succeeded, roster update failed
+  } catch (err) {
+    rollbackMigration(err.message);
+    return;
   }
 
   // Set active case pointer

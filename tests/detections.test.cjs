@@ -232,7 +232,7 @@ describe('detections.cjs - parseKqlRule', () => {
     assert.equal(row.title, 'Network Service Discovery T1046');
     assert.equal(row.source_format, 'kql');
     assert.ok(row.technique_ids.includes('T1046'));
-    assert.ok(row.technique_ids.includes('T1135'));
+    assert.ok(!row.technique_ids.includes('T1135'));
     assert.ok(row.query.includes('DeviceNetworkEvents'));
     assert.ok(row.query.includes('RemotePort'));
 
@@ -255,20 +255,26 @@ describe('detections.cjs - parseKqlRule', () => {
     assert.equal(row.title, 'my-detection-rule');
   });
 
-  it('extracts technique IDs from text via regex', () => {
+  it('extracts technique IDs only from structured ATT&CK annotations', () => {
     const { parseKqlRule } = loadDet();
-    const md = `# Test T1059.001 and T1027
+    const md = `# Test T1059.001
+A background note mentions T1059 but it is not the covered technique.
 \`\`\`kql
 DeviceProcessEvents
 | where ProcessCommandLine has "powershell"
 \`\`\`
-T1059 mentioned here too
+## References
+
+- MITRE ATT&CK T1027
+- Related: T1135
 `;
     const row = parseKqlRule(md, 'techniques.md');
     assert.ok(row);
-    assert.ok(row.technique_ids.includes('T1059.001'));
-    assert.ok(row.technique_ids.includes('T1027'));
-    assert.ok(row.technique_ids.includes('T1059'));
+    const techniqueIds = row.technique_ids.split(',').filter(Boolean);
+    assert.ok(techniqueIds.includes('T1059.001'));
+    assert.ok(techniqueIds.includes('T1027'));
+    assert.ok(!techniqueIds.includes('T1059'));
+    assert.ok(!techniqueIds.includes('T1135'));
   });
 });
 

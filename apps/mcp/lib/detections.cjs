@@ -255,6 +255,25 @@ const MS_TABLE_REGEX = new RegExp(`\\b(${MS_TABLES.join('|')})\\b`, 'g');
 const TECHNIQUE_REGEX = /\bT\d{4}(?:\.\d{3})?\b/g;
 const KQL_HEURISTIC = /\b(where|project|summarize|extend|DeviceEvents|DeviceProcessEvents)\b/;
 
+function extractKqlTechniqueIds(mdText, title) {
+  const candidates = [];
+  if (title) {
+    candidates.push(...(String(title).match(TECHNIQUE_REGEX) || []));
+  }
+
+  const lines = String(mdText || '').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || /^#{1,6}\s+/.test(trimmed)) continue;
+    const normalized = trimmed.replace(/^[-*]\s+/, '');
+    if (/^Related\b/i.test(normalized)) continue;
+    if (!/^(?:MITRE\s+ATT&CK|ATT&CK|Techniques?:)/i.test(normalized)) continue;
+    candidates.push(...(normalized.match(TECHNIQUE_REGEX) || []));
+  }
+
+  return [...new Set(candidates.map(id => String(id).toUpperCase()))];
+}
+
 function buildKqlRuleId(filePath, sourcePath) {
   const digest = crypto
     .createHash('sha1')
@@ -299,8 +318,7 @@ function parseKqlRule(mdText, filePath, sourcePath) {
 
     const query = kqlBlocks.join('\n\n');
 
-    const techniqueMatches = mdText.match(TECHNIQUE_REGEX) || [];
-    const techniqueIds = [...new Set(techniqueMatches)];
+    const techniqueIds = extractKqlTechniqueIds(mdText, title);
 
     const tableMatches = query.match(MS_TABLE_REGEX) || [];
     const tables = [...new Set(tableMatches)];
@@ -883,6 +901,7 @@ module.exports = {
   parseEscuRule,
   parseElasticRule,
   parseKqlRule,
+  extractKqlTechniqueIds,
   buildTechniqueIdMatchClause,
   ensureDetectionsSchema,
   insertDetection,

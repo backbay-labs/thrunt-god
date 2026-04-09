@@ -1840,6 +1840,32 @@ describe('cmdMigrateCase', () => {
     assert.ok(stateContent.includes('my-hunt'), 'STATE.md roster should contain the case slug');
   });
 
+  test('roster write failure aborts migration and rolls artifacts back', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'STATE.md'),
+      '---\n' +
+      'thrunt_state_version: 1.0\n' +
+      'status: active\n' +
+      'case_roster:\n' +
+      '  - slug: my-hunt\n' +
+      '    name: Existing Hunt\n' +
+      '    status: active\n' +
+      '    opened_at: "2026-04-01"\n' +
+      '    technique_count: "0"\n' +
+      '---\n\n# State\n'
+    );
+
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(!result.success, 'migration should fail when roster already has the slug');
+    assert.ok(
+      (result.error || result.output).includes('rolled back'),
+      'failure should report rollback'
+    );
+
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'HUNTMAP.md')), 'HUNTMAP.md should be restored at root');
+    assert.ok(!fs.existsSync(path.join(tmpDir, '.planning', 'cases', 'my-hunt')), 'case dir should be removed on rollback');
+  });
+
   test('rollback on failure restores files to original location', () => {
     // This test validates via unit test by calling cmdMigrateCase directly with a
     // scenario that would fail. We test indirectly: if the case dir doesn't exist
@@ -2343,6 +2369,27 @@ describe('cmdCaseClose indexing + cmdCaseNew auto-search', () => {
     assert.ok(content.includes('status: closed'), 'frontmatter should be updated to closed');
     assert.ok(content.includes('Status: Closed'), 'body status should be updated to Closed');
     assert.ok(content.includes('Last activity: Closed '), 'body last activity should reflect closure');
+  });
+
+  test('cmdCaseClose refreshes roster technique_count from indexed case techniques', () => {
+    setupProgramState(tmpDir, [
+      { slug: 'count-me', name: 'Count Me', status: 'active', opened_at: '2026-04-01', technique_count: '0' },
+    ]);
+    createCaseDir(tmpDir, 'count-me', {
+      name: 'Count Me',
+      findings: '# Findings\n\nObserved T1059.001 execution and T1021.002 lateral movement.\n',
+      hypotheses: '## Hypothesis A\n\nFollow-up on T1059.001 activity.\n',
+    });
+
+    const closeResult = runThruntTools(['case', 'close', 'count-me'], tmpDir);
+    assert.ok(closeResult.success, `Close failed: ${closeResult.error}`);
+
+    const statusResult = runThruntTools(['case', 'status', 'count-me'], tmpDir);
+    assert.ok(statusResult.success, `Status failed: ${statusResult.error}`);
+    const status = JSON.parse(statusResult.output);
+
+    assert.strictEqual(status.status, 'closed');
+    assert.strictEqual(status.technique_count, '2');
   });
 });
 
