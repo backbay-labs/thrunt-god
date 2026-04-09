@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const yaml = require('js-yaml');
@@ -365,6 +366,14 @@ function ensureDetectionsSchema(db) {
 
     CREATE INDEX IF NOT EXISTS idx_det_source ON detections(source_format);
     CREATE INDEX IF NOT EXISTS idx_det_severity ON detections(severity);
+
+    CREATE TABLE IF NOT EXISTS detection_env_index_state (
+      env_key TEXT NOT NULL,
+      dir_path TEXT NOT NULL,
+      fingerprint TEXT NOT NULL,
+      indexed_at TEXT NOT NULL,
+      PRIMARY KEY (env_key, dir_path)
+    );
   `);
 
   ensureDetectionsFtsSchema(db);
@@ -529,7 +538,53 @@ function searchDetections(db, query, opts = {}) {
 }
 
 /** @returns {number} Total count of rules indexed */
-function indexEnvPaths(db, envKey, indexFn) {
+function computeDirectoryFingerprint(dirPath, extPattern) {
+  try {
+    const entries = fs.readdirSync(dirPath, { recursive: true });
+    const files = [];
+    for (const relFile of entries) {
+      const rel = typeof relFile === 'string' ? relFile : relFile.toString();
+      if (!extPattern.test(rel)) continue;
+
+      const fullPath = path.join(dirPath, rel);
+      let stat;
+      try {
+        stat = fs.statSync(fullPath);
+      } catch {
+        continue;
+      }
+      if (!stat.isFile()) continue;
+      files.push(`${rel}\0${stat.size}\0${Math.floor(stat.mtimeMs)}`);
+    }
+
+    files.sort();
+    const hasher = crypto.createHash('sha256');
+    for (const file of files) {
+      hasher.update(file);
+      hasher.update('\n');
+    }
+    return hasher.digest('hex');
+  } catch {
+    return null;
+  }
+}
+
+function isEnvPathFingerprintCurrent(db, envKey, dirPath, fingerprint) {
+  const row = db.prepare(
+    'SELECT fingerprint FROM detection_env_index_state WHERE env_key = ? AND dir_path = ?'
+  ).get(envKey, dirPath);
+  return !!row && row.fingerprint === fingerprint;
+}
+
+function rememberEnvPathFingerprint(db, envKey, dirPath, fingerprint) {
+  db.prepare(`
+    INSERT OR REPLACE INTO detection_env_index_state (env_key, dir_path, fingerprint, indexed_at)
+    VALUES (?, ?, ?, ?)
+  `).run(envKey, dirPath, fingerprint, new Date().toISOString());
+}
+
+/** @returns {number} Total count of rules indexed */
+function indexEnvPaths(db, envKey, indexFn, extPattern) {
   const envVal = process.env[envKey];
   if (!envVal) return 0;
 
@@ -537,8 +592,15 @@ function indexEnvPaths(db, envKey, indexFn) {
   const dirs = envVal.split(path.delimiter).filter(Boolean);
 
   for (const dir of dirs) {
-    if (fs.existsSync(dir)) {
-      count += indexFn(db, dir);
+    const resolvedDir = path.resolve(dir);
+    if (!fs.existsSync(resolvedDir)) continue;
+
+    const fingerprint = computeDirectoryFingerprint(resolvedDir, extPattern);
+    if (fingerprint && isEnvPathFingerprintCurrent(db, envKey, resolvedDir, fingerprint)) continue;
+
+    count += indexFn(db, resolvedDir);
+    if (fingerprint) {
+      rememberEnvPathFingerprint(db, envKey, resolvedDir, fingerprint);
     }
   }
 
@@ -562,10 +624,10 @@ function populateDetectionsIfEmpty(db) {
       }
     }
 
-    indexEnvPaths(db, 'SIGMA_PATHS', indexSigmaDirectory);
-    indexEnvPaths(db, 'SPLUNK_PATHS', indexEscuDirectory);
-    indexEnvPaths(db, 'ELASTIC_PATHS', indexElasticDirectory);
-    indexEnvPaths(db, 'KQL_PATHS', indexKqlDirectory);
+    indexEnvPaths(db, 'SIGMA_PATHS', indexSigmaDirectory, /\.(yml|yaml)$/i);
+    indexEnvPaths(db, 'SPLUNK_PATHS', indexEscuDirectory, /\.(yml|yaml)$/i);
+    indexEnvPaths(db, 'ELASTIC_PATHS', indexElasticDirectory, /\.toml$/i);
+    indexEnvPaths(db, 'KQL_PATHS', indexKqlDirectory, /\.md$/i);
   });
 
   doPopulate.immediate();

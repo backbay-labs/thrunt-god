@@ -851,6 +851,82 @@ describe('detections.cjs - env var path indexing', () => {
     assert.ok(row, 'custom detection should be indexed even after bundled rules already exist');
   });
 
+  it('skips re-reading unchanged custom env directories on later startups', () => {
+    const customDir = path.join(tmpDir, 'cached-sigma');
+    fs.mkdirSync(customDir, { recursive: true });
+    const rulePath = path.join(customDir, 'cached-rule.yml');
+    const customYaml = sigmaYaml.replace(
+      '3b6ab547-f55a-4d6e-88a1-a6a9f87e1234',
+      'custom-sigma-cached-startup-001'
+    );
+    fs.writeFileSync(rulePath, customYaml);
+
+    process.env.SIGMA_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'cached-env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    const originalReadFileSync = fs.readFileSync;
+    let rereadCount = 0;
+    fs.readFileSync = function(filePath, ...args) {
+      if (path.resolve(filePath) === path.resolve(rulePath)) rereadCount++;
+      return originalReadFileSync.call(this, filePath, ...args);
+    };
+
+    try {
+      populateDetectionsIfEmpty(db);
+    } finally {
+      fs.readFileSync = originalReadFileSync;
+    }
+
+    assert.equal(rereadCount, 0, 'unchanged custom env directories should not be reparsed on every startup');
+  });
+
+  it('re-indexes custom env directories when rule files change', () => {
+    const customDir = path.join(tmpDir, 'updated-sigma');
+    fs.mkdirSync(customDir, { recursive: true });
+    const rulePath = path.join(customDir, 'updated-rule.yml');
+    const customYaml = sigmaYaml.replace(
+      '3b6ab547-f55a-4d6e-88a1-a6a9f87e1234',
+      'custom-sigma-updated-startup-001'
+    );
+    fs.writeFileSync(rulePath, customYaml);
+
+    process.env.SIGMA_PATHS = customDir;
+
+    const { ensureDetectionsSchema, populateDetectionsIfEmpty } = loadDet();
+    const Database = require('better-sqlite3');
+    const dbPath = path.join(tmpDir, 'updated-env-test.db');
+    db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('foreign_keys = ON');
+    ensureDetectionsSchema(db);
+    populateDetectionsIfEmpty(db);
+
+    fs.appendFileSync(rulePath, '\n# touch');
+
+    const originalReadFileSync = fs.readFileSync;
+    let rereadCount = 0;
+    fs.readFileSync = function(filePath, ...args) {
+      if (path.resolve(filePath) === path.resolve(rulePath)) rereadCount++;
+      return originalReadFileSync.call(this, filePath, ...args);
+    };
+
+    try {
+      populateDetectionsIfEmpty(db);
+    } finally {
+      fs.readFileSync = originalReadFileSync;
+    }
+
+    assert.ok(rereadCount > 0, 'changed custom env directories should be reparsed');
+  });
+
   it('nonexistent env var path logs warning but does not throw', () => {
     process.env.SIGMA_PATHS = '/nonexistent/path/that/does/not/exist';
 

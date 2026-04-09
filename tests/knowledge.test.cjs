@@ -355,6 +355,30 @@ describe('knowledge.cjs - searchEntities', () => {
     assert.ok(results.length >= 2);
     assert.ok(results[0].name);
   });
+
+  it('updating an entity removes stale FTS hits', () => {
+    const { addEntity, searchEntities } = loadKnowledge();
+    addEntity(db, {
+      type: 'threat_actor',
+      name: 'APT28',
+      description: 'Beaconing over HTTPS',
+    });
+
+    const oldResults = searchEntities(db, 'beaconing');
+    assert.ok(oldResults.some(result => result.name === 'APT28'));
+
+    addEntity(db, {
+      type: 'threat_actor',
+      name: 'APT28',
+      description: 'Credential theft operations',
+    });
+
+    const staleResults = searchEntities(db, 'beaconing');
+    assert.ok(!staleResults.some(result => result.name === 'APT28'));
+
+    const updatedResults = searchEntities(db, 'credential');
+    assert.ok(updatedResults.some(result => result.name === 'APT28'));
+  });
 });
 
 describe('knowledge.cjs - findEntities', () => {

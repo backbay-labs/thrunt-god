@@ -3429,6 +3429,56 @@ function buildCaseStateBody(title, opts = {}) {
   ].join('\n');
 }
 
+function titleizeSlug(slug) {
+  return String(slug || '')
+    .split(/[-_]+/)
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function extractMissionContext(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  let body = raw.trim();
+  body = body.replace(/^#\s+.+$/m, '').trim();
+  body = body.replace(/^#{2,}\s+/gm, '');
+  body = body.replace(/\*\*/g, '');
+  const paragraphs = body
+    .split(/\n\s*\n/)
+    .map(part => part.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  return paragraphs.slice(0, 2).join('\n\n');
+}
+
+function buildCaseMissionContent(title, openedAt, opts = {}) {
+  const owner = opts.owner || '_unassigned_';
+  const status = opts.status || 'Active';
+  const signal = opts.signal || '_Describe the initial signal or hypothesis._';
+  const desiredOutcome = opts.desiredOutcome || '_What does success look like for this case?_';
+  const scope = opts.scope || '_Define the boundaries of the investigation._';
+  return [
+    `# ${title}`,
+    '',
+    '**Mode:** case',
+    `**Opened:** ${openedAt}`,
+    `**Owner:** ${owner}`,
+    `**Status:** ${status}`,
+    '',
+    '## Signal',
+    '',
+    signal,
+    '',
+    '## Desired Outcome',
+    '',
+    desiredOutcome,
+    '',
+    '## Scope',
+    '',
+    scope,
+    '',
+  ].join('\n');
+}
+
 function parseActivityDate(value) {
   if (!value || typeof value !== 'string') return null;
   const match = value.match(/\d{4}-\d{2}-\d{2}/);
@@ -3516,33 +3566,17 @@ function cmdCaseNew(cwd, name, options, raw) {
   }
 
   const caseDir = path.join(root, 'cases', slug);
+  if (fs.existsSync(caseDir)) {
+    output({ success: false, error: `Case directory already exists: cases/${slug}` }, raw);
+    return;
+  }
   fs.mkdirSync(caseDir, { recursive: true });
 
   const today = new Date().toISOString().split('T')[0];
 
   // Create MISSION.md (required by VS Code store for case discovery).
   // parseMission requires bold metadata fields and ## Signal, ## Desired Outcome, ## Scope sections.
-  const missionContent = [
-    `# ${name}`,
-    '',
-    `**Mode:** case`,
-    `**Opened:** ${today}`,
-    `**Owner:** _unassigned_`,
-    `**Status:** Active`,
-    '',
-    '## Signal',
-    '',
-    '_Describe the initial signal or hypothesis._',
-    '',
-    '## Desired Outcome',
-    '',
-    '_What does success look like for this case?_',
-    '',
-    '## Scope',
-    '',
-    '_Define the boundaries of the investigation._',
-    '',
-  ].join('\n');
+  const missionContent = buildCaseMissionContent(name, today);
   fs.writeFileSync(path.join(caseDir, 'MISSION.md'), missionContent, 'utf-8');
 
   const huntmapFm = `---\ntitle: ${name}\nstatus: active\ncreated: ${today}\n---\n\n`;
@@ -3987,19 +4021,36 @@ function cmdMigrateCase(cwd, slug, raw) {
 
   // Create case-level STATE.md
   const caseStatePath = path.join(caseDir, 'STATE.md');
+  const openedAt = new Date().toISOString().split('T')[0];
+  const caseTitle = titleizeSlug(slug);
   if (!fs.existsSync(caseStatePath)) {
     const caseFm = {
+      title: caseTitle,
       status: 'active',
-      opened_at: new Date().toISOString().split('T')[0],
+      opened_at: openedAt,
       technique_ids: [],
     };
     const caseBody = buildCaseStateBody(slug, {
       activeSignal: `${slug} migrated from flat .planning/ layout`,
       currentFocus: 'Resume triage from migrated artifacts',
-      lastActivity: `Migrated ${caseFm.opened_at}`,
+      lastActivity: `Migrated ${openedAt}`,
       scope: 'Review migrated artifacts and normalize any remaining case state for continued investigation.',
     });
     fs.writeFileSync(caseStatePath, buildStateDocument(caseFm, caseBody), 'utf-8');
+  }
+
+  const caseMissionPath = path.join(caseDir, 'MISSION.md');
+  if (!fs.existsSync(caseMissionPath)) {
+    const rootMissionPath = path.join(baseDir, 'MISSION.md');
+    const missionContext = fs.existsSync(rootMissionPath)
+      ? extractMissionContext(fs.readFileSync(rootMissionPath, 'utf-8'))
+      : '';
+    const signal = missionContext
+      ? `This case was migrated from the flat .planning/ layout.\n\nExisting mission context: ${missionContext}`
+      : 'This case was migrated from the flat .planning/ layout.';
+    const desiredOutcome = 'Resume the migrated investigation without losing existing context or artifacts.';
+    const scope = 'Review the migrated case artifacts, validate current hypotheses, and continue triage from the child case directory.';
+    fs.writeFileSync(caseMissionPath, buildCaseMissionContent(caseTitle, openedAt, { signal, desiredOutcome, scope }), 'utf-8');
   }
 
   // Update program roster

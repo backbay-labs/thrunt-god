@@ -1743,11 +1743,25 @@ describe('cmdMigrateCase', () => {
     assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'ENVIRONMENT.md')), 'ENVIRONMENT.md should stay at root');
     assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'config.json')), 'config.json should stay at root');
 
-    // They should NOT be in the case dir
+    // Shared artifacts should not be moved into the case dir
     const caseDir = path.join(tmpDir, '.planning', 'cases', 'my-hunt');
-    assert.ok(!fs.existsSync(path.join(caseDir, 'MISSION.md')), 'MISSION.md should not be in case dir');
     assert.ok(!fs.existsSync(path.join(caseDir, 'ENVIRONMENT.md')), 'ENVIRONMENT.md should not be in case dir');
     assert.ok(!fs.existsSync(path.join(caseDir, 'config.json')), 'config.json should not be in case dir');
+  });
+
+  test('creates case-level MISSION.md with required sections during migration', () => {
+    const result = runThruntTools('migrate-case my-hunt', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const caseMissionPath = path.join(tmpDir, '.planning', 'cases', 'my-hunt', 'MISSION.md');
+    assert.ok(fs.existsSync(caseMissionPath), 'case MISSION.md should be created');
+
+    const content = fs.readFileSync(caseMissionPath, 'utf-8');
+    assert.ok(content.includes('**Mode:** case'));
+    assert.ok(content.includes('## Signal'));
+    assert.ok(content.includes('## Desired Outcome'));
+    assert.ok(content.includes('## Scope'));
+    assert.ok(content.includes('migrated from the flat .planning/ layout'));
   });
 
   test('creates case-level STATE.md with active status', () => {
@@ -1768,6 +1782,7 @@ describe('cmdMigrateCase', () => {
 
     const caseStatePath = path.join(tmpDir, '.planning', 'cases', 'my-hunt', 'STATE.md');
     const content = fs.readFileSync(caseStatePath, 'utf-8');
+    assert.ok(content.includes('title: My Hunt'));
     assert.ok(content.includes('## Current Position'));
     assert.ok(content.includes('**Active signal:** my-hunt migrated from flat .planning/ layout'));
     assert.ok(content.includes('Status: Active'));
