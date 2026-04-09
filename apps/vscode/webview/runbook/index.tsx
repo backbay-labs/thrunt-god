@@ -7,7 +7,7 @@ import type {
   StepResult,
   RunbookRunRecord,
 } from '../../shared/runbook';
-import { GhostButton } from '../shared/components';
+import { GhostButton, Badge } from '../shared/components';
 import { useTheme, useHostMessage, createVsCodeApi } from '../shared/hooks';
 import '../shared/tokens.css';
 
@@ -249,6 +249,9 @@ function RunbookApp() {
                     <span class="rb-step-desc">
                       {step.description || `Step ${i + 1}: ${step.action}`}
                     </span>
+                    <Badge variant={step.mutating ? 'warning' : 'success'}>
+                      {step.mutating ? 'mutating' : 'read-only'}
+                    </Badge>
                     {result && (
                       <span class="rb-step-duration">
                         {result.durationMs}ms
@@ -483,6 +486,10 @@ const styles = `
   font-size: 0.8em;
   color: var(--vscode-descriptionForeground);
   flex-shrink: 0;
+}
+.rb-step-header .hunt-badge {
+  flex-shrink: 0;
+  font-size: 0.75em;
 }
 .rb-step-output {
   margin: 6px 0 0 26px;

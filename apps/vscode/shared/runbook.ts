@@ -18,6 +18,7 @@ export interface RunbookStep {
   action: StepAction;
   description?: string;
   params: Record<string, string>;
+  mutating?: boolean;
 }
 
 // Full runbook definition (parsed from YAML)

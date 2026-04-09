@@ -4,6 +4,8 @@ import type { MCPStatusManager } from './mcpStatusManager';
 import type { RunbookRegistry } from './runbook';
 import type { ExecutionLogger } from './executionLogger';
 import type { ExecutionEntry } from '../shared/execution-history';
+import type { CommandDef, CommandTemplate } from '../shared/command-deck';
+import { BUILT_IN_COMMANDS } from './commandDeck';
 
 // ---------------------------------------------------------------------------
 // Node types for dispatch in getChildren
@@ -61,6 +63,7 @@ export class AutomationTreeDataProvider
   private mcpStatus: MCPStatusManager | null;
   private runbookRegistry: RunbookRegistry | null;
   private executionLogger: ExecutionLogger | null;
+  private commandTemplates: CommandTemplate[] = [];
 
   constructor(options?: { runbookCount?: number; commandCount?: number; mcpStatus?: MCPStatusManager; runbookRegistry?: RunbookRegistry; executionLogger?: ExecutionLogger }) {
     this.runbookCount = options?.runbookCount ?? 0;
@@ -94,6 +97,11 @@ export class AutomationTreeDataProvider
     this.refresh();
   }
 
+  setCommandTemplates(templates: CommandTemplate[]): void {
+    this.commandTemplates = templates;
+    this.refresh();
+  }
+
   getTreeItem(element: AutomationTreeItem): vscode.TreeItem {
     return element;
   }
@@ -109,6 +117,10 @@ export class AutomationTreeDataProvider
 
     if (element.nodeType === 'runbooks') {
       return this.getRunbookChildren();
+    }
+
+    if (element.nodeType === 'command-deck') {
+      return this.getCommandDeckChildren();
     }
 
     if (element.nodeType === 'recent-runs') {
@@ -185,6 +197,34 @@ export class AutomationTreeDataProvider
         contextValue: 'automationRecentRuns',
       }),
     ];
+  }
+
+  private getCommandDeckChildren(): AutomationTreeItem[] {
+    const items: AutomationTreeItem[] = [];
+
+    // Built-in commands
+    for (const cmd of BUILT_IN_COMMANDS) {
+      items.push(new AutomationTreeItem(cmd.label, vscode.TreeItemCollapsibleState.None, {
+        description: cmd.mutating ? '$(edit) mutating' : '$(eye) read-only',
+        iconPath: new vscode.ThemeIcon(cmd.icon),
+        tooltip: cmd.description,
+        contextValue: 'automationCommandDeckItem',
+        dataId: cmd.id,
+      }));
+    }
+
+    // User templates
+    for (const tmpl of this.commandTemplates) {
+      items.push(new AutomationTreeItem(tmpl.label, vscode.TreeItemCollapsibleState.None, {
+        description: tmpl.mutating ? '$(edit) mutating' : '$(eye) read-only',
+        iconPath: new vscode.ThemeIcon('file-code'),
+        tooltip: tmpl.description,
+        contextValue: 'automationCommandDeckItem',
+        dataId: tmpl.id,
+      }));
+    }
+
+    return items;
   }
 
   private getRecentRunsChildren(): AutomationTreeItem[] {

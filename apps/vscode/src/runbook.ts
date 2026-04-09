@@ -100,6 +100,9 @@ export function validateRunbook(data: unknown): { valid: boolean; errors: string
       if (!step.params || typeof step.params !== 'object' || Array.isArray(step.params)) {
         errors.push(`steps[${i}].params: required object`);
       }
+      if (step.mutating !== undefined && typeof step.mutating !== 'boolean') {
+        errors.push(`steps[${i}].mutating: must be a boolean`);
+      }
     }
   }
 
@@ -179,6 +182,7 @@ export function parseRunbook(yamlContent: string): { runbook: RunbookDef | null;
     action: s.action as StepAction,
     ...(s.description !== undefined ? { description: s.description as string } : {}),
     params: s.params as Record<string, string>,
+    mutating: typeof s.mutating === 'boolean' ? s.mutating : (s.action === 'cli' || s.action === 'mcp'),
   }));
 
   const runbook: RunbookDef = {
