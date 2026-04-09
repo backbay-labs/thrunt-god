@@ -2391,6 +2391,22 @@ describe('cmdCaseClose indexing + cmdCaseNew auto-search', () => {
     assert.strictEqual(status.status, 'closed');
     assert.strictEqual(status.technique_count, '2');
   });
+
+  test('cmdCaseClose rejects traversal slugs before mutating other planning scopes', () => {
+    setupProgramState(tmpDir, []);
+
+    const workstreamDir = path.join(tmpDir, '.planning', 'workstreams', 'ws');
+    fs.mkdirSync(workstreamDir, { recursive: true });
+    const originalState = '---\nstatus: active\n---\n# State\n**Status:** In progress\n';
+    fs.writeFileSync(path.join(workstreamDir, 'STATE.md'), originalState);
+
+    const result = runThruntTools(['case', 'close', '../workstreams/ws'], tmpDir);
+    assert.ok(!result.success, 'case close should fail for traversal slug');
+    assert.ok(result.error.includes('Invalid case slug'), `unexpected error: ${result.error}`);
+
+    const currentState = fs.readFileSync(path.join(workstreamDir, 'STATE.md'), 'utf-8');
+    assert.strictEqual(currentState, originalState, 'workstream STATE.md should remain unchanged');
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

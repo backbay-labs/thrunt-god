@@ -3702,10 +3702,21 @@ function cmdCaseList(cwd, raw) {
   }, raw);
 }
 
-function cmdCaseClose(cwd, slug, raw) {
+function validateCaseSlug(slug, { usageMessage, invalidTraversalMessage = 'Invalid case slug' } = {}) {
   if (!slug) {
-    error('Case slug required. Usage: case close <slug>');
+    error(usageMessage || 'Case slug required.');
   }
+  if (/[/\\]/.test(slug) || slug === '.' || slug === '..') {
+    error(invalidTraversalMessage);
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
+    error('Invalid case slug: must be alphanumeric, hyphens, and underscores only');
+  }
+  return slug;
+}
+
+function cmdCaseClose(cwd, slug, raw) {
+  validateCaseSlug(slug, { usageMessage: 'Case slug required. Usage: case close <slug>' });
 
   const closedAt = new Date().toISOString().split('T')[0];
   const root = planningRoot(cwd);
@@ -4052,15 +4063,10 @@ ${timelineSection}
 
 function cmdMigrateCase(cwd, slug, raw) {
   // Validation
-  if (!slug) {
-    error('Case slug required. Usage: migrate-case <slug>');
-  }
-  if (/[/\\]/.test(slug) || slug === '.' || slug === '..') {
-    error('Invalid case slug for migration');
-  }
-  if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
-    error('Invalid case slug: must be alphanumeric, hyphens, and underscores only');
-  }
+  validateCaseSlug(slug, {
+    usageMessage: 'Case slug required. Usage: migrate-case <slug>',
+    invalidTraversalMessage: 'Invalid case slug for migration',
+  });
 
   // Pre-flight checks
   const baseDir = planningRoot(cwd);
