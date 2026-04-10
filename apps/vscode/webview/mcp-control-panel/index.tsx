@@ -58,11 +58,36 @@ function connectionLabel(connection: McpServerStatus['connection']): string {
 
 function generateInputSkeleton(schema: Record<string, unknown>): string {
   const skeleton: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(schema)) {
-    if (typeof val === 'string' && val.includes('?')) {
-      continue; // Skip optional fields in skeleton
+  const properties = schema.properties as Record<string, Record<string, unknown>> | undefined;
+  if (properties && typeof properties === 'object') {
+    for (const [key, prop] of Object.entries(properties)) {
+      const type = typeof prop === 'object' && prop !== null ? prop.type : undefined;
+      switch (type) {
+        case 'number':
+        case 'integer':
+          skeleton[key] = 0;
+          break;
+        case 'boolean':
+          skeleton[key] = false;
+          break;
+        case 'array':
+          skeleton[key] = [];
+          break;
+        case 'object':
+          skeleton[key] = {};
+          break;
+        default:
+          skeleton[key] = '';
+          break;
+      }
     }
-    skeleton[key] = '';
+  } else {
+    for (const [key, val] of Object.entries(schema)) {
+      if (typeof val === 'string' && val.includes('?')) {
+        continue; // Skip optional fields in skeleton
+      }
+      skeleton[key] = '';
+    }
   }
   return JSON.stringify(skeleton, null, 2);
 }
