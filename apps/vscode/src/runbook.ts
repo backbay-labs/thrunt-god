@@ -178,12 +178,20 @@ export function parseRunbook(yamlContent: string): { runbook: RunbookDef | null;
       }))
     : [];
 
-  const steps: RunbookStep[] = (d.steps as Record<string, unknown>[]).map((s) => ({
-    action: s.action as StepAction,
-    ...(s.description !== undefined ? { description: s.description as string } : {}),
-    params: s.params as Record<string, string>,
-    mutating: typeof s.mutating === 'boolean' ? s.mutating : (s.action === 'cli' || s.action === 'mcp'),
-  }));
+  const steps: RunbookStep[] = (d.steps as Record<string, unknown>[]).map((s) => {
+    const params: Record<string, string> = {};
+    if (s.params && typeof s.params === 'object') {
+      for (const [k, v] of Object.entries(s.params as Record<string, unknown>)) {
+        params[k] = String(v); // coerce to string safely
+      }
+    }
+    return {
+      action: s.action as StepAction,
+      ...(s.description !== undefined ? { description: s.description as string } : {}),
+      params,
+      mutating: typeof s.mutating === 'boolean' ? s.mutating : (s.action === 'cli' || s.action === 'mcp'),
+    };
+  });
 
   const runbook: RunbookDef = {
     name: d.name as string,
