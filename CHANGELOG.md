@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-04-10
+
+### Changed
+- `/hunt:run` now requires real evidence across the execution path for all runtimes, including Copilot, and hard-stops when live telemetry, checked-in artifacts, or operator-provided evidence are unavailable
+- Hunt execution guidance now records blocked runtime attempts as real failures instead of allowing the agent to improvise placeholder results or receipts
+
+### Fixed
+- Closed a prompt-contract gap where hunt execution prompts could still permit model-generated "realistic" telemetry language because the anti-simulation rule was not present in the runtime execution workflow and executor agent
+- Copilot-installed telemetry executor agents now preserve the no-simulation evidence rules during installer conversion, preventing runtime-specific prompt drift
+
 ## [0.3.3] - 2026-04-10
 
 ### Fixed
