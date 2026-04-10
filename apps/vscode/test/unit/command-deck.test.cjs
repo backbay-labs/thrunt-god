@@ -79,11 +79,9 @@ describe('getContextRelevantIds', () => {
     assert.ok(ids.includes('analyze-coverage'), 'should include analyze-coverage');
   });
 
-  it('getContextRelevantIds returns close-case for case context', () => {
+  it('getContextRelevantIds returns empty for removed case context', () => {
     const ids = ext.getContextRelevantIds({ nodeType: 'case' });
-    assert.ok(ids.includes('close-case'), 'should include close-case');
-    assert.ok(ids.includes('publish-findings'), 'should include publish-findings');
-    assert.ok(ids.includes('open-evidence-board'), 'should include open-evidence-board');
+    assert.equal(ids.length, 0);
   });
 
   it('getContextRelevantIds returns correct ids for query context', () => {
@@ -104,10 +102,9 @@ describe('getContextRelevantIds', () => {
     assert.ok(ids.includes('query-knowledge'));
   });
 
-  it('getContextRelevantIds returns correct ids for finding context', () => {
+  it('getContextRelevantIds returns empty for removed finding context', () => {
     const ids = ext.getContextRelevantIds({ nodeType: 'finding' });
-    assert.ok(ids.includes('publish-findings'));
-    assert.equal(ids.length, 1);
+    assert.equal(ids.length, 0);
   });
 
   it('getContextRelevantIds returns correct ids for mission context', () => {
@@ -116,10 +113,9 @@ describe('getContextRelevantIds', () => {
     assert.ok(ids.includes('runtime-doctor'));
   });
 
-  it('getContextRelevantIds returns correct ids for huntmap context', () => {
+  it('getContextRelevantIds returns empty for removed huntmap context', () => {
     const ids = ext.getContextRelevantIds({ nodeType: 'huntmap' });
-    assert.ok(ids.includes('generate-attack-layer'));
-    assert.ok(ids.includes('analyze-coverage'));
+    assert.equal(ids.length, 0);
   });
 
   it('getContextRelevantIds returns empty for unknown context', () => {
