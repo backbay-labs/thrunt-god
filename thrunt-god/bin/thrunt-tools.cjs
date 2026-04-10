@@ -316,17 +316,6 @@ async function main() {
     error(`Invalid --cwd: ${cwd}`);
   }
 
-  // Resolve worktree root: in a linked worktree, .planning/ lives in the main worktree.
-  // However, in monorepo worktrees where the subdirectory itself owns .planning/,
-  // skip worktree resolution — the CWD is already the correct project root.
-  const { resolveWorktreeRoot } = require('./lib/core.cjs');
-  if (!fs.existsSync(path.join(cwd, core.PLANNING_DIR_NAME))) {
-    const worktreeRoot = resolveWorktreeRoot(cwd);
-    if (worktreeRoot !== cwd) {
-      cwd = worktreeRoot;
-    }
-  }
-
   // Optional workstream override for parallel milestone work.
   // Priority: --ws flag > THRUNT_WORKSTREAM env var > active-workstream file > null (flat mode)
   const wsEqArg = args.find(arg => arg.startsWith('--ws='));
@@ -395,6 +384,17 @@ async function main() {
 
   if (!command) {
     error('Usage: thrunt-tools <command> [args] [--raw] [--pick <field>] [--cwd <path>] [--ws <name>] [--case <slug>]\nCommands: state, resolve-model, find-phase, commit, validate-summary, validate, frontmatter, template, generate-slug, current-timestamp, list-todos, check-path-exists, pack, runtime, config-ensure-section, config-new-program, init, workstream, case, migrate-case');
+  }
+
+  // Linked worktrees inherit .planning/ from the main checkout only for commands
+  // that actually depend on planning state. Utility commands should stay anchored
+  // to the current worktree even before any .planning/ exists there.
+  if (shouldResolvePlanningWorktree(command, args) &&
+      !fs.existsSync(path.join(cwd, core.PLANNING_DIR_NAME))) {
+    const worktreeRoot = core.resolveWorktreeRoot(cwd);
+    if (worktreeRoot !== cwd) {
+      cwd = worktreeRoot;
+    }
   }
 
   // Multi-repo guard: resolve project root for commands that read/write .planning/.
@@ -481,6 +481,47 @@ function extractField(obj, fieldPath) {
     }
   }
   return current;
+}
+
+function shouldResolvePlanningWorktree(command, args) {
+  switch (command) {
+    case 'state':
+    case 'find-phase':
+    case 'commit':
+    case 'commit-to-subrepo':
+    case 'template':
+    case 'list-todos':
+    case 'history-digest':
+    case 'phases':
+    case 'huntmap':
+    case 'hypotheses':
+    case 'phase':
+    case 'milestone':
+    case 'validate':
+    case 'progress':
+    case 'audit-evidence':
+    case 'evidence':
+    case 'bundle':
+    case 'detection':
+    case 'metrics':
+    case 'score':
+    case 'feedback':
+    case 'recommend':
+    case 'planning-hints':
+    case 'stats':
+    case 'todo':
+    case 'scaffold':
+    case 'phase-plan-index':
+    case 'state-snapshot':
+    case 'workstream':
+    case 'case':
+    case 'migrate-case':
+      return true;
+    case 'init':
+      return !['connector', 'new-workspace', 'list-workspaces', 'remove-workspace'].includes(args[1]);
+    default:
+      return false;
+  }
 }
 
 async function runCommand(command, args, cwd, raw) {

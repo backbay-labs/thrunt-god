@@ -12,7 +12,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { execFileSync } = require('child_process');
+const { execFileSync, execSync } = require('child_process');
 
 const TOOLS_PATH = path.join(__dirname, '..', 'thrunt-god', 'bin', 'thrunt-tools.cjs');
 const PROJECT_ROOT = path.join(__dirname, '..');
@@ -192,6 +192,55 @@ describe('connectors init', () => {
     const result = runConnectors(['init', 'test_vendor', '--dry-run', '--scoped']);
     assert.strictEqual(result.success, true, `Command failed: ${result.stderr}`);
     assert.strictEqual(result.data.package_name, '@thrunt/connector-test_vendor');
+  });
+
+  test('keeps linked worktree cwd for connector scaffolding before .planning exists', () => {
+    const mainDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-connector-main-'));
+    let worktreeDir = null;
+
+    try {
+      execSync('git init', { cwd: mainDir, stdio: 'pipe' });
+      execSync('git config user.email "test@test.com"', { cwd: mainDir, stdio: 'pipe' });
+      execSync('git config user.name "Test"', { cwd: mainDir, stdio: 'pipe' });
+      execSync('git config commit.gpgsign false', { cwd: mainDir, stdio: 'pipe' });
+      fs.writeFileSync(path.join(mainDir, 'README.md'), '# Main\n');
+      execSync('git add -A', { cwd: mainDir, stdio: 'pipe' });
+      execSync('git commit -m "initial"', { cwd: mainDir, stdio: 'pipe' });
+
+      worktreeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-connector-worktree-'));
+      fs.rmSync(worktreeDir, { recursive: true, force: true });
+      execSync(`git worktree add "${worktreeDir}" -b test-connectors-worktree`, {
+        cwd: mainDir,
+        stdio: 'pipe',
+      });
+
+      const outputBaseDir = path.join(worktreeDir, 'generated');
+      fs.mkdirSync(outputBaseDir, { recursive: true });
+
+      const stdout = execFileSync('node', [
+        TOOLS_PATH,
+        '--cwd', worktreeDir,
+        'connectors', 'init', 'test_vendor',
+        '--output-dir', outputBaseDir,
+        '--dry-run',
+        '--raw',
+      ], {
+        cwd: PROJECT_ROOT,
+        encoding: 'utf8',
+        timeout: 30000,
+      });
+
+      const result = JSON.parse(stdout);
+      assert.strictEqual(result.connector_id, 'test_vendor');
+      assert.strictEqual(result.dry_run, true);
+      assert.ok(Array.isArray(result.files));
+    } finally {
+      if (worktreeDir) {
+        try { execSync(`git worktree remove "${worktreeDir}" --force`, { cwd: mainDir, stdio: 'pipe' }); } catch {}
+        fs.rmSync(worktreeDir, { recursive: true, force: true });
+      }
+      fs.rmSync(mainDir, { recursive: true, force: true });
+    }
   });
 });
 
