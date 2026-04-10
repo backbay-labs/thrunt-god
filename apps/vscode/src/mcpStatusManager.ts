@@ -246,28 +246,37 @@ export class MCPStatusManager implements vscode.Disposable {
   }
 
   async restart(): Promise<void> {
-    this.stop();
+    await this.stop();
     await this.start();
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
     if (!this.serverProcess) return;
 
     this.outputChannel.appendLine('[MCP] Stopping server...');
     const proc = this.serverProcess;
     this.serverProcess = null;
-    proc.kill('SIGTERM');
 
-    setTimeout(() => {
-      try { proc.kill('SIGKILL'); } catch { /* already dead */ }
-    }, KILL_GRACE_MS);
+    return new Promise<void>((resolve) => {
+      const killTimer = setTimeout(() => {
+        try { proc.kill('SIGKILL'); } catch { /* already dead */ }
+        resolve();
+      }, KILL_GRACE_MS);
 
-    this.status.connection = 'disconnected';
-    this._onDidChange.fire(this.getStatus());
+      proc.once('close', () => {
+        clearTimeout(killTimer);
+        resolve();
+      });
+
+      proc.kill('SIGTERM');
+
+      this.status.connection = 'disconnected';
+      this._onDidChange.fire(this.getStatus());
+    });
   }
 
   dispose(): void {
-    this.stop();
+    void this.stop();
     this._onDidChange.dispose();
   }
 
