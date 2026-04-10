@@ -3603,8 +3603,7 @@ function cmdCaseNew(cwd, name, options, raw) {
 
   const caseDir = path.join(root, 'cases', slug);
   if (fs.existsSync(caseDir)) {
-    output({ success: false, error: `Case directory already exists: cases/${slug}` }, raw);
-    return;
+    error(`Case directory already exists: cases/${slug}`);
   }
   fs.mkdirSync(caseDir, { recursive: true });
 
