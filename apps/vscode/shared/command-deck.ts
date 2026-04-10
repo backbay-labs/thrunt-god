@@ -47,13 +47,6 @@ export interface CommandDeckContext {
   dataId?: string;
 }
 
-// Execution result for a single command
-export interface CommandExecResult {
-  commandId: string;
-  success: boolean;
-  message: string;
-}
-
 // Host -> Webview messages
 export type HostToCommandDeckMessage =
   | { type: 'init'; commands: CommandDef[]; templates: CommandTemplate[]; pinned: string[]; recent: RecentCommandEntry[]; context: CommandDeckContext | null; isDark: boolean }
