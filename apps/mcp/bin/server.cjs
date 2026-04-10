@@ -7,6 +7,7 @@ const log = (...args) => console.error('[thrunt-mcp]', ...args);
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { openIntelDb } = require('../lib/intel.cjs');
+const { ensureKnowledgeSchema } = require('../lib/knowledge.cjs');
 const { createShutdownHandler } = require('../lib/lifecycle.cjs');
 const { registerTools } = require('../lib/tools.cjs');
 const { registerPrompts } = require('../lib/prompts.cjs');
@@ -134,6 +135,7 @@ const server = new McpServer({
 
 log('Opening intel database...');
 const db = openIntelDb(dbOpts);
+ensureKnowledgeSchema(db);
 log('Intel database ready');
 
 const shutdown = createShutdownHandler({ server, db, log });
