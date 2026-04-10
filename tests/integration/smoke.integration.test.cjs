@@ -56,6 +56,29 @@ async function runSplunkSearch(statement) {
   return resultsResp.text();
 }
 
+async function waitForSplunkSeedQuery(statement, {
+  timeout = SPLUNK_READY_TIMEOUT_MS,
+  interval = 1000,
+  expectedSubstrings = ['ws-01', 'alice'],
+} = {}) {
+  const start = Date.now();
+
+  while (true) {
+    const text = await runSplunkSearch(statement);
+    if (expectedSubstrings.some((value) => text.includes(value))) {
+      return text;
+    }
+
+    if (Date.now() - start > timeout) {
+      throw new Error(
+        `Splunk search did not return seeded events within ${timeout}ms for query: ${statement}`
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+}
+
 describe('docker infrastructure smoke test', async (t) => {
   if (skipIfNoDocker(t)) return;
 
@@ -82,7 +105,7 @@ describe('docker infrastructure smoke test', async (t) => {
 
   test('splunk seed data is queryable via REST search', async () => {
     await ensureSplunkHostAccess({ timeout: SPLUNK_READY_TIMEOUT_MS });
-    const text = await runSplunkSearch('index=test_sysmon | head 10');
+    const text = await waitForSplunkSeedQuery('index=test_sysmon | head 10');
     assert.ok(
       text.includes('ws-01') || text.includes('alice'),
       'Splunk search should return seeded events with host/user fields'
