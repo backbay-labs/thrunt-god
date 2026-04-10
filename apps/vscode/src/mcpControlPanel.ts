@@ -279,6 +279,16 @@ export class McpControlPanel implements vscode.Disposable {
   }
 
   private async handleToolTest(toolName: string, input: string): Promise<void> {
+    if (!toolName || /^-/.test(toolName) || !/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(toolName)) {
+      this.postMessage({
+        type: 'toolResult',
+        toolName: toolName || '',
+        result: `Invalid tool name: ${toolName}`,
+        isError: true,
+      });
+      return;
+    }
+
     const serverPath = this.mcpStatus.getServerPath();
 
     try {
