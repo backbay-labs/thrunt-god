@@ -1555,9 +1555,8 @@ case_roster: []
     fs.writeFileSync(path.join(caseDir, 'STATE.md'), 'sentinel state');
 
     const result = runThruntTools(['case', 'new', 'Epsilon'], tmpDir);
-    const output = result.success ? JSON.parse(result.output) : null;
-    assert.ok(output && output.success === false, 'should fail when case directory already exists');
-    assert.match(output.error, /Case directory already exists/);
+    assert.ok(!result.success, 'should fail when case directory already exists');
+    assert.match(result.error, /Case directory already exists/);
     assert.strictEqual(fs.readFileSync(path.join(caseDir, 'MISSION.md'), 'utf-8'), 'sentinel mission');
     assert.strictEqual(fs.readFileSync(path.join(caseDir, 'STATE.md'), 'utf-8'), 'sentinel state');
   });
