@@ -509,14 +509,37 @@ export class CommandDeckPanel implements vscode.Disposable {
     });
 
     return new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve, reject) => {
+      let settled = false;
+      let killTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const timeoutTimer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        child.kill('SIGTERM');
+        killTimer = setTimeout(() => {
+          try { child.kill('SIGKILL'); } catch { /* already dead */ }
+        }, 2_000);
+        reject(new Error('CLI execution timed out after 60s'));
+      }, 60_000);
+
       child.on('close', (code) => {
+        clearTimeout(timeoutTimer);
+        if (killTimer) clearTimeout(killTimer);
+        if (settled) return;
+        settled = true;
         if (code === 0) {
           resolve({ stdout, stderr, exitCode: 0 });
         } else {
           reject(new Error(`CLI exited with code ${code}: ${(stdout + stderr).slice(0, 500)}`));
         }
       });
-      child.on('error', reject);
+      child.on('error', (err) => {
+        clearTimeout(timeoutTimer);
+        if (killTimer) clearTimeout(killTimer);
+        if (settled) return;
+        settled = true;
+        reject(err);
+      });
     });
   }
 
