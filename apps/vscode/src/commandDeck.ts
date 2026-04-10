@@ -142,6 +142,9 @@ const TEMPLATES_KEY = 'thruntGod.commandDeck.templates';
 const MAX_RECENT = 20;
 
 export class CommandDeckRegistry {
+  private readonly _onDidChangeTemplates = new vscode.EventEmitter<CommandTemplate[]>();
+  readonly onDidChangeTemplates: vscode.Event<CommandTemplate[]> = this._onDidChangeTemplates.event;
+
   constructor(private readonly workspaceState: vscode.Memento) {}
 
   getCommands(): CommandDef[] {
@@ -202,6 +205,7 @@ export class CommandDeckRegistry {
       current.push(template);
     }
     await this.workspaceState.update(TEMPLATES_KEY, current);
+    this._onDidChangeTemplates.fire(this.getTemplates());
   }
 
   async deleteTemplate(templateId: string): Promise<void> {
@@ -210,6 +214,7 @@ export class CommandDeckRegistry {
       TEMPLATES_KEY,
       current.filter((t) => t.id !== templateId)
     );
+    this._onDidChangeTemplates.fire(this.getTemplates());
   }
 
   static extractPlaceholders(text: string): string[] {

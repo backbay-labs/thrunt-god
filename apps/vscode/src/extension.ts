@@ -1219,6 +1219,14 @@ export function activate(context: vscode.ExtensionContext): void {
     // Command Deck
     const commandDeckRegistry = new CommandDeckRegistry(context.workspaceState);
     automationProvider.setCommandCount(BUILT_IN_COMMANDS.length);
+    automationProvider.setCommandTemplates(commandDeckRegistry.getTemplates());
+
+    // Update automation sidebar whenever templates change
+    context.subscriptions.push(
+      commandDeckRegistry.onDidChangeTemplates((templates) => {
+        automationProvider.setCommandTemplates(templates);
+      })
+    );
 
     context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.openCommandDeck', () => {
