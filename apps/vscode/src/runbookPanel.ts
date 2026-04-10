@@ -306,7 +306,8 @@ export class RunbookPanel implements vscode.Disposable {
     }
 
     let currentStepIndex = 0;
-    let currentStepDescription = '';
+    let currentStepDescription =
+      this.currentRunbook.def.steps[0]?.description || 'Step 1';
 
     const onConfirm = (): Promise<boolean> => {
       return new Promise<boolean>((resolve) => {
@@ -338,11 +339,12 @@ export class RunbookPanel implements vscode.Disposable {
           description: result.description,
         });
 
-        // Update tracking for confirm callback
-        currentStepIndex = result.stepIndex + 1;
+        // Pre-update tracking for the NEXT confirm callback before calling gen.next()
+        const nextIndex = result.stepIndex + 1;
+        currentStepIndex = nextIndex;
         currentStepDescription =
-          this.currentRunbook.def.steps[currentStepIndex]?.description ||
-          `Step ${currentStepIndex + 1}`;
+          this.currentRunbook.def.steps[nextIndex]?.description ||
+          `Step ${nextIndex + 1}`;
 
         // Post stepComplete
         this.postMessage({ type: 'stepComplete', result });
