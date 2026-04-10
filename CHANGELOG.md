@@ -6,6 +6,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-10
+
+### Fixed
+- MCP npm publishing now includes repository metadata required for npm provenance verification, so `@thrunt/mcp` can be released from GitHub Actions without a sigstore repository mismatch
+- The release workflow now validates `apps/mcp/package.json` repository metadata before it reaches the publish step
+
 ## [0.3.2] - 2026-04-10
 
 ### Fixed
