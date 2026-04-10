@@ -42,6 +42,10 @@ export class MCPStatusManager implements vscode.Disposable {
     private readonly mcpServerPath: string
   ) {}
 
+  getServerPath(): string {
+    return this.mcpServerPath;
+  }
+
   getStatus(): MCPStatus {
     return { ...this.status, lastHealthCheck: this.status.lastHealthCheck ? { ...this.status.lastHealthCheck } : null };
   }

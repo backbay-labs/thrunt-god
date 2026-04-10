@@ -279,7 +279,7 @@ export class McpControlPanel implements vscode.Disposable {
   }
 
   private async handleToolTest(toolName: string, input: string): Promise<void> {
-    const serverPath = (this.mcpStatus as unknown as { mcpServerPath: string }).mcpServerPath;
+    const serverPath = this.mcpStatus.getServerPath();
 
     try {
       const result = await new Promise<string>((resolve, reject) => {
