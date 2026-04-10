@@ -11,6 +11,7 @@ const { openIntelDb } = require('../lib/intel.cjs');
 const { createShutdownHandler } = require('../lib/lifecycle.cjs');
 const { registerTools } = require('../lib/tools.cjs');
 const { registerPrompts } = require('../lib/prompts.cjs');
+const { version: SERVER_VERSION } = require('../package.json');
 
 const dbOpts = {};
 if (process.env.THRUNT_INTEL_DB_DIR) {
@@ -58,7 +59,7 @@ if (process.argv.includes('--health')) {
       dbSizeBytes: getMainDbSizeBytes(db),
       dbTableCount: tables.c,
       uptimeMs: Date.now() - startTime,
-      serverVersion: '0.1.0',
+      serverVersion: SERVER_VERSION,
     };
     process.stdout.write(JSON.stringify(result) + '\n');
     safeCloseDb(db);
@@ -154,7 +155,7 @@ if (runToolIdx !== -1) {
 } else {
   const server = new McpServer({
     name: 'thrunt-mcp',
-    version: '0.1.0',
+    version: SERVER_VERSION,
   });
 
   log('Opening intel database...');

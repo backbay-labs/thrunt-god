@@ -52,11 +52,15 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             package-lock.json
+            apps/mcp/package-lock.json
             apps/vscode/package-lock.json
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Install MCP package dependencies
+        run: npm --prefix apps/mcp ci
 
       - name: Install VS Code extension dependencies
         run: npm --prefix apps/vscode ci
@@ -68,6 +72,8 @@ jobs:
           set -euo pipefail
           echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
           echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          echo "mcp_name=$(node -p "require('./apps/mcp/package.json').name")" >> "$GITHUB_OUTPUT"
+          echo "mcp_version=$(node -p "require('./apps/mcp/package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Verify VS Code extension version matches release source
         shell: bash
@@ -77,6 +83,17 @@ jobs:
           VSCODE_VERSION="$(node -p "require('./apps/vscode/package.json').version")"
           if [ "${VSCODE_VERSION}" != "${ROOT_VERSION}" ]; then
             echo "apps/vscode/package.json version ${VSCODE_VERSION} does not match root package version ${ROOT_VERSION}" >&2
+            exit 1
+          fi
+
+      - name: Verify MCP package version matches release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT_VERSION="${{ steps.package_meta.outputs.version }}"
+          MCP_VERSION="${{ steps.package_meta.outputs.mcp_version }}"
+          if [ "${MCP_VERSION}" != "${ROOT_VERSION}" ]; then
+            echo "apps/mcp/package.json version ${MCP_VERSION} does not match root package version ${ROOT_VERSION}" >&2
             exit 1
           fi
 
@@ -118,9 +135,10 @@ jobs:
           npm run build:hooks
           npm --prefix apps/vscode run package
           npm pack --json > pack-output.json
+          npm --prefix apps/mcp pack --json > apps/mcp/pack-output.json
 
-      - name: Check whether version already exists on npm
-        id: npm_state
+      - name: Check whether root package version already exists on npm
+        id: root_npm_state
         shell: bash
         run: |
           set -euo pipefail
@@ -130,11 +148,28 @@ jobs:
             echo "already_published=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish to npm
-        if: steps.npm_state.outputs.already_published != 'true'
+      - name: Check whether MCP package version already exists on npm
+        id: mcp_npm_state
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm view "${{ steps.package_meta.outputs.mcp_name }}@${{ steps.package_meta.outputs.mcp_version }}" version >/dev/null 2>&1; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish root package to npm
+        if: steps.root_npm_state.outputs.already_published != 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public --provenance
+
+      - name: Publish MCP package to npm
+        if: steps.mcp_npm_state.outputs.already_published != 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm --prefix apps/mcp publish --access public --provenance
 
       - name: Create or update GitHub release
         env:
@@ -143,12 +178,13 @@ jobs:
         run: |
           set -euo pipefail
           PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('pack-output.json','utf8')); console.log(output[0].filename)")"
+          MCP_PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('apps/mcp/pack-output.json','utf8')); console.log(output[0].filename)")"
           VSIX_FILE="$(find apps/vscode -maxdepth 1 -name '*.vsix' | head -n 1)"
           TAG="${{ steps.release_tag.outputs.tag }}"
           TITLE="${TAG} - VS Code Extension Alpha"
           if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}"
-            gh release upload "${TAG}" "${PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --clobber
+            gh release upload "${TAG}" "${PACKAGE_FILE}" "${MCP_PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --clobber
           else
-            gh release create "${TAG}" "${PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}" --generate-notes
+            gh release create "${TAG}" "${PACKAGE_FILE}" "${MCP_PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}" --generate-notes
           fi
