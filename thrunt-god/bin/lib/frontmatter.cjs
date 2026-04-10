@@ -66,10 +66,11 @@ function extractFrontmatter(content) {
       const itemRaw = line.trim().slice(2);
       const itemValue = itemRaw.replace(/^["']|["']$/g, '');
 
-      // Detect object items: "- key: value" but NOT URLs (https:), Windows paths (C:\), or bare strings with colons
-      const objKeyMatch = !itemRaw.includes('//') && !itemRaw.includes(':\\')
-        ? itemRaw.match(/^([a-zA-Z_][a-zA-Z0-9_]*):\s(.+)/)
-        : null;
+      // Detect object items: "- key: value" — only when the prefix is a valid
+      // quoted YAML key (word chars + hyphens, no spaces before the colon).
+      // This avoids corrupting URLs (https://...), Windows paths (C:\...),
+      // and bare strings that happen to contain colons.
+      const objKeyMatch = itemRaw.match(/^([a-zA-Z_][a-zA-Z0-9_-]*):\s(.+)/);
 
       // If current context is an empty object, convert to array
       if (typeof current.obj === 'object' && !Array.isArray(current.obj) && Object.keys(current.obj).length === 0) {
