@@ -37,7 +37,7 @@ import { EvidenceBoardPanel, EVIDENCE_BOARD_VIEW_TYPE } from './evidenceBoardPan
 import { QueryAnalysisPanel, QUERY_ANALYSIS_VIEW_TYPE } from './queryAnalysisPanel';
 import { ProgramDashboardPanel, PROGRAM_DASHBOARD_VIEW_TYPE } from './programDashboardPanel';
 import { McpControlPanel, MCP_CONTROL_VIEW_TYPE } from './mcpControlPanel';
-import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE, BUILT_IN_COMMANDS, getContextRelevantIds } from './commandDeck';
+import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE, BUILT_IN_COMMANDS } from './commandDeck';
 import { RunbookPanel } from './runbookPanel';
 import { RunbookRegistry, RunbookEngine, RUNBOOK_PANEL_VIEW_TYPE } from './runbook';
 import { ExecutionLogger } from './executionLogger';
