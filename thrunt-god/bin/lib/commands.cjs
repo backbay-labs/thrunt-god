@@ -3598,8 +3598,7 @@ function cmdCaseNew(cwd, name, options, raw) {
   // Validate program STATE.md exists before creating case artifacts
   const programState = path.join(root, 'STATE.md');
   if (!fs.existsSync(programState)) {
-    output({ success: false, error: 'No program STATE.md found. Run "thrunt new-program" first.' }, raw);
-    return;
+    error('Program not initialized. Run `thrunt new-program` first.');
   }
 
   const caseDir = path.join(root, 'cases', slug);
