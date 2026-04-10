@@ -401,13 +401,13 @@ export class RunbookEngine {
           break;
         }
         case 'open': {
-          await this.executeOpen(resolvedParams.file);
+          const openResult = await this.executeOpen(resolvedParams.file);
           result = {
             stepIndex: i,
             action: 'open',
             description,
-            status: 'success',
-            output: `Opened: ${resolvedParams.file}`,
+            status: openResult.success ? 'success' : 'failure',
+            output: openResult.output,
             durationMs: Date.now() - stepStart,
           };
           break;
@@ -594,13 +594,19 @@ export class RunbookEngine {
     });
   }
 
-  private async executeOpen(filePath: string): Promise<void> {
+  private async executeOpen(filePath: string): Promise<{ success: boolean; output: string }> {
     const resolved = path.isAbsolute(filePath)
       ? filePath
       : path.join(this.workspaceRoot, filePath);
-    const uri = vscode.Uri.file(resolved);
+    const normalizedResolved = path.resolve(resolved);
+    const normalizedRoot = path.resolve(this.workspaceRoot);
+    if (!normalizedResolved.startsWith(normalizedRoot + path.sep) && normalizedResolved !== normalizedRoot) {
+      return { success: false, output: `Path traversal blocked: ${filePath} resolves outside workspace` };
+    }
+    const uri = vscode.Uri.file(normalizedResolved);
     const doc = await vscode.workspace.openTextDocument(uri);
     await vscode.window.showTextDocument(doc);
+    return { success: true, output: `Opened: ${filePath}` };
   }
 
   private async executeNote(
@@ -611,7 +617,12 @@ export class RunbookEngine {
       const resolved = path.isAbsolute(filePath)
         ? filePath
         : path.join(this.workspaceRoot, filePath);
-      fs.appendFileSync(resolved, '\n' + content + '\n');
+      const normalizedResolved = path.resolve(resolved);
+      const normalizedRoot = path.resolve(this.workspaceRoot);
+      if (!normalizedResolved.startsWith(normalizedRoot + path.sep) && normalizedResolved !== normalizedRoot) {
+        return { success: false, output: `Path traversal blocked: ${filePath} resolves outside workspace` };
+      }
+      fs.appendFileSync(normalizedResolved, '\n' + content + '\n');
       return { success: true, output: 'Appended to ' + filePath };
     } catch (err) {
       return {
