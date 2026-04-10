@@ -478,9 +478,6 @@ export class RunbookEngine {
       if (aborted || (result.status === 'failure' && step.action !== 'confirm')) {
         break;
       }
-      if (aborted) {
-        break;
-      }
     }
 
     const endTime = Date.now();
