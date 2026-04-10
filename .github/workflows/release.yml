@@ -194,7 +194,7 @@ jobs:
         run: |
           set -euo pipefail
           PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('pack-output.json','utf8')); console.log(output[0].filename)")"
-          MCP_PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('apps/mcp/pack-output.json','utf8')); console.log(`apps/mcp/${output[0].filename}`)")"
+          MCP_PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('apps/mcp/pack-output.json','utf8')); console.log('apps/mcp/' + output[0].filename)")"
           VSIX_FILE="$(find apps/vscode -maxdepth 1 -name '*.vsix' | head -n 1)"
           TAG="${{ steps.release_tag.outputs.tag }}"
           TITLE="${TAG} - VS Code Extension Alpha"
