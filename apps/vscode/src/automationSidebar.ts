@@ -159,13 +159,17 @@ export class AutomationTreeDataProvider
         ? new vscode.ThemeIcon('notebook')
         : new vscode.ThemeIcon('warning');
 
-      return new AutomationTreeItem(label, vscode.TreeItemCollapsibleState.None, {
+      const item = new AutomationTreeItem(label, vscode.TreeItemCollapsibleState.None, {
         description,
         iconPath: icon,
         tooltip: rb.path,
         contextValue: 'automationRunbookItem',
         dataId: rb.path,
       });
+      if (rb.valid) {
+        item.command = { command: 'thrunt-god.openRunbook', title: label, arguments: [item] };
+      }
+      return item;
     });
   }
 
@@ -204,24 +208,29 @@ export class AutomationTreeDataProvider
 
     // Built-in commands
     for (const cmd of BUILT_IN_COMMANDS) {
-      items.push(new AutomationTreeItem(cmd.label, vscode.TreeItemCollapsibleState.None, {
+      const item = new AutomationTreeItem(cmd.label, vscode.TreeItemCollapsibleState.None, {
         description: cmd.mutating ? 'mutating' : 'read-only',
         iconPath: new vscode.ThemeIcon(cmd.icon, cmd.mutating ? new vscode.ThemeColor('charts.yellow') : undefined),
         tooltip: cmd.description,
         contextValue: 'automationCommandDeckItem',
         dataId: cmd.id,
-      }));
+      });
+      if (cmd.commandId) {
+        item.command = { command: cmd.commandId, title: cmd.label };
+      }
+      items.push(item);
     }
 
     // User templates
     for (const tmpl of this.commandTemplates) {
-      items.push(new AutomationTreeItem(tmpl.label, vscode.TreeItemCollapsibleState.None, {
+      const item = new AutomationTreeItem(tmpl.label, vscode.TreeItemCollapsibleState.None, {
         description: tmpl.mutating ? 'mutating' : 'read-only',
         iconPath: new vscode.ThemeIcon('file-code', tmpl.mutating ? new vscode.ThemeColor('charts.yellow') : undefined),
         tooltip: tmpl.description,
         contextValue: 'automationCommandDeckItem',
         dataId: tmpl.id,
-      }));
+      });
+      items.push(item);
     }
 
     return items;
