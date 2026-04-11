@@ -2,7 +2,7 @@ process.env.THRUNT_TEST_MODE = '1';
 
 const { test, describe, afterEach } = require('node:test');
 const assert = require('node:assert');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -18,6 +18,7 @@ const {
   getObsidianPluginDir,
 } = require('../bin/install.js');
 
+const repoRoot = path.join(__dirname, '..');
 const tempDirs = [];
 const originalCwd = process.cwd();
 
@@ -66,12 +67,16 @@ function captureLogs() {
   return {
     entries,
     logger(message) {
-      entries.push(String(message).replace(/\x1B\[[0-9;]*m/g, ''));
+      entries.push(stripAnsi(String(message)));
     },
     output() {
       return entries.join('\n');
     },
   };
+}
+
+function stripAnsi(value) {
+  return String(value).replace(/\x1B\[[0-9;]*m/g, '');
 }
 
 function assertVaultSymlinks(vaultPath, stageDir) {
@@ -85,6 +90,49 @@ function assertVaultSymlinks(vaultPath, stageDir) {
   }
 
   return pluginDir;
+}
+
+function makeCliFixture(options = {}) {
+  const dir = makeTempDir();
+  const homeDir = path.join(dir, 'home');
+  const pluginSourceDir = path.join(dir, 'plugin-source');
+  const configPath = path.join(dir, 'obsidian.json');
+  const vaultCount = options.vaultCount === undefined ? 1 : options.vaultCount;
+  const vaultPaths = [];
+
+  fs.mkdirSync(homeDir, { recursive: true });
+  writeObsidianAssets(pluginSourceDir, options.assetLabel || 'cli fixture');
+
+  for (let index = 0; index < vaultCount; index += 1) {
+    const vaultPath = path.join(dir, `vault-${index + 1}`);
+    fs.mkdirSync(vaultPath, { recursive: true });
+    vaultPaths.push(vaultPath);
+  }
+
+  if (!options.missingConfig) {
+    writeObsidianConfig(configPath, vaultPaths);
+  }
+
+  return {
+    dir,
+    homeDir,
+    pluginSourceDir,
+    configPath,
+    stageDir: path.join(homeDir, '.thrunt', 'obsidian'),
+    vaultPaths,
+  };
+}
+
+function runInstallCli(args, envOverrides = {}) {
+  return spawnSync(process.execPath, ['bin/install.js', ...args], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      THRUNT_TEST_MODE: '',
+      ...envOverrides,
+    },
+  });
 }
 
 describe('hunt command installation manifest', () => {
@@ -267,5 +315,79 @@ describe('obsidian installer helpers', () => {
     assert.deepStrictEqual(fs.readdirSync(result.stageDir).sort(), [...OBSIDIAN_ASSET_FILES].sort());
     assertVaultSymlinks(vaultPath, result.stageDir);
     assert.match(logs.output(), /Restart Obsidian and enable THRUNT God in Community Plugins\./);
+  });
+});
+
+describe('obsidian installer CLI smoke tests', () => {
+  test('help output documents the --obsidian mode', () => {
+    const result = runInstallCli(['--help']);
+    const output = stripAnsi(`${result.stdout}${result.stderr}`);
+
+    assert.strictEqual(result.status, 0);
+    assert.match(output, /--obsidian/);
+  });
+
+  test('invalid runtime combinations are rejected for --obsidian', () => {
+    const result = runInstallCli(['--obsidian', '--claude']);
+    const output = stripAnsi(`${result.stdout}${result.stderr}`);
+
+    assert.notStrictEqual(result.status, 0);
+    assert.match(output, /--obsidian must be run as a standalone mode/);
+  });
+
+  test('CLI install stages assets and links them into detected vaults', () => {
+    const fixture = makeCliFixture({ assetLabel: 'cli install' });
+    const result = runInstallCli(['--obsidian'], {
+      THRUNT_HOME: fixture.homeDir,
+      THRUNT_OBSIDIAN_CONFIG: fixture.configPath,
+      THRUNT_OBSIDIAN_PLUGIN_SOURCE: fixture.pluginSourceDir,
+      THRUNT_OBSIDIAN_SKIP_BUILD: '1',
+    });
+    const output = stripAnsi(`${result.stdout}${result.stderr}`);
+
+    assert.strictEqual(result.status, 0);
+    assert.deepStrictEqual(fs.readdirSync(fixture.stageDir).sort(), [...OBSIDIAN_ASSET_FILES].sort());
+    assertVaultSymlinks(fixture.vaultPaths[0], fixture.stageDir);
+    assert.match(output, /\binstalled\b/);
+    assert.match(output, /Restart Obsidian and enable THRUNT God in Community Plugins\./);
+  });
+
+  test('CLI reinstall stays idempotent on repeated runs', () => {
+    const fixture = makeCliFixture({ assetLabel: 'cli reinstall' });
+    const env = {
+      THRUNT_HOME: fixture.homeDir,
+      THRUNT_OBSIDIAN_CONFIG: fixture.configPath,
+      THRUNT_OBSIDIAN_PLUGIN_SOURCE: fixture.pluginSourceDir,
+      THRUNT_OBSIDIAN_SKIP_BUILD: '1',
+    };
+
+    const firstRun = runInstallCli(['--obsidian'], env);
+    const secondRun = runInstallCli(['--obsidian'], env);
+    const output = stripAnsi(`${secondRun.stdout}${secondRun.stderr}`);
+
+    assert.strictEqual(firstRun.status, 0);
+    assert.strictEqual(secondRun.status, 0);
+    assert.deepStrictEqual(fs.readdirSync(fixture.stageDir).sort(), [...OBSIDIAN_ASSET_FILES].sort());
+    assertVaultSymlinks(fixture.vaultPaths[0], fixture.stageDir);
+    assert.match(output, /\b(installed|skipped)\b/);
+  });
+
+  test('CLI fallback reports no vaults when Obsidian metadata is missing', () => {
+    const fixture = makeCliFixture({ assetLabel: 'cli fallback', missingConfig: true, vaultCount: 0 });
+    const manualVault = path.join(fixture.dir, 'manual-vault');
+    fs.mkdirSync(manualVault, { recursive: true });
+
+    const result = runInstallCli(['--obsidian'], {
+      THRUNT_HOME: fixture.homeDir,
+      THRUNT_OBSIDIAN_CONFIG: fixture.configPath,
+      THRUNT_OBSIDIAN_PLUGIN_SOURCE: fixture.pluginSourceDir,
+      THRUNT_OBSIDIAN_SKIP_BUILD: '1',
+    });
+    const output = stripAnsi(`${result.stdout}${result.stderr}`);
+
+    assert.strictEqual(result.status, 0);
+    assert.ok(!fs.existsSync(path.join(manualVault, '.obsidian', 'plugins', OBSIDIAN_PLUGIN_ID)));
+    assert.match(output, /No Obsidian vaults detected/);
+    assert.match(output, /Install manually by copying/);
   });
 });
