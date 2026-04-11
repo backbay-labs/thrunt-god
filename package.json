@@ -65,6 +65,7 @@
     "lint:biome": "biome lint .",
     "lint:vscode": "npm --prefix apps/vscode run lint",
     "prepublishOnly": "npm run build:hooks",
+    "sync:obsidian-submission": "node scripts/sync-obsidian-submission-files.cjs",
     "test": "node scripts/run-tests.cjs",
     "test:vscode": "npm --prefix apps/vscode test",
     "test:vscode:unit": "npm --prefix apps/vscode run test:unit",
