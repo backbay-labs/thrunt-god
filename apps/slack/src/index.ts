@@ -141,8 +141,19 @@ export async function start(): Promise<void> {
     logLevel: ({ debug: LogLevel.DEBUG, info: LogLevel.INFO, warn: LogLevel.WARN, error: LogLevel.ERROR } as const)[config.logLevel],
   })
 
+  // Capture local refs for the binding-change callback (TS knows these are non-null here)
+  const localConfig = config
+  const localBindings = bindings
+
   // Register handlers
-  registerCommands(app, config, bindings, () => notifierManager?.sync())
+  registerCommands(app, localConfig, localBindings, () => {
+    // Stop the default watcher if the channel is now covered by a binding
+    if (activeWatcher && localConfig.defaultChannelId && localBindings.resolve(localConfig.defaultChannelId)) {
+      activeWatcher.stop()
+      activeWatcher = null
+    }
+    notifierManager?.sync()
+  })
   registerActions(app, config, approvalStore, bindings)
   registerEvents(app, config, bindings)
   registerShortcuts(app, config)

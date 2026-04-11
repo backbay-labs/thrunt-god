@@ -12,7 +12,7 @@
 import type { App } from "@slack/bolt"
 import type { Config } from "../config.ts"
 import type { ChannelBindings } from "../bindings.ts"
-import { readHuntStatus, readFindings, readReceipts, readMission } from "../hunt/state.ts"
+import { readHuntStatus, readFindings, readReceipts, readMission, resolvePlanningDir } from "../hunt/state.ts"
 import { createCase, extractIocs } from "../hunt/case.ts"
 import { huntStatusBlocks } from "../blocks/status.ts"
 import { findingsBlocks, receiptSummaryBlocks } from "../blocks/findings.ts"
@@ -113,6 +113,20 @@ export function registerCommands(
         }
 
         const bindPath = args.slice(1).join(" ").trim() || config.workspaceRoot
+
+        // Validate the path is a THRUNT workspace or case directory
+        try {
+          const planningDir = await resolvePlanningDir(bindPath)
+          const { access } = await import("node:fs/promises")
+          await access(planningDir)
+        } catch {
+          await respond({
+            response_type: "ephemeral",
+            text: `Invalid workspace path: \`${bindPath}\` does not contain THRUNT planning artifacts (.planning/ or MISSION.md).`,
+          })
+          return
+        }
+
         await bindings.bind(command.channel_id, bindPath)
         onBindingChange?.()
         await respond({

@@ -21,7 +21,10 @@ import { join } from "node:path"
 export function registerActions(app: App, config: Config, approvalStore?: ApprovalStore, bindings?: ChannelBindings): void {
   // ── Approval flow ──────────────────────────────────────────────────────
 
-  app.action<BlockAction<ButtonAction>>("approval_approve", async ({ ack, body, client, action }) => {
+  async function handleApproval(
+    approved: boolean,
+    { ack, body, client, action }: { ack: () => Promise<void>; body: BlockAction<ButtonAction>; client: typeof app.client; action: ButtonAction },
+  ): Promise<void> {
     await ack()
 
     const value = action.value
@@ -39,44 +42,8 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
 
     await approvalStore!.delete(value)
 
-    await client.chat.update({
-      channel: approval.channelId,
-      ts: approval.messageTs,
-      blocks: approvalResponseBlocks(
-        {
-          id: value,
-          action: approval.action,
-          rationale: approval.rationale,
-          phase: approval.phase,
-          requestedAt: approval.requestedAt,
-          status: "approved",
-          respondedBy: body.user.id,
-          respondedAt: new Date().toISOString(),
-        },
-        true,
-        body.user.id,
-      ),
-      text: `Approved by <@${body.user.id}>`,
-    })
-  })
-
-  app.action<BlockAction<ButtonAction>>("approval_deny", async ({ ack, body, client, action }) => {
-    await ack()
-
-    const value = action.value
-    if (!value) return
-
-    const approval = approvalStore?.get(value)
-    if (!approval) {
-      await client.chat.postEphemeral({
-        channel: body.channel?.id ?? "",
-        user: body.user.id,
-        text: "This approval request has expired or was already handled.",
-      })
-      return
-    }
-
-    await approvalStore!.delete(value)
+    const status = approved ? "approved" : "denied"
+    const label = approved ? "Approved" : "Denied"
 
     await client.chat.update({
       channel: approval.channelId,
@@ -88,16 +55,19 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
           rationale: approval.rationale,
           phase: approval.phase,
           requestedAt: approval.requestedAt,
-          status: "denied",
+          status,
           respondedBy: body.user.id,
           respondedAt: new Date().toISOString(),
         },
-        false,
+        approved,
         body.user.id,
       ),
-      text: `Denied by <@${body.user.id}>`,
+      text: `${label} by <@${body.user.id}>`,
     })
-  })
+  }
+
+  app.action<BlockAction<ButtonAction>>("approval_approve", async (args) => handleApproval(true, args))
+  app.action<BlockAction<ButtonAction>>("approval_deny", async (args) => handleApproval(false, args))
 
   // ── Case actions ───────────────────────────────────────────────────────
 

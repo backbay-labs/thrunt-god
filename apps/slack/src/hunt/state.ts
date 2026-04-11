@@ -90,6 +90,20 @@ function parseStateMd(content: string): {
         currentPhase = val
         currentPhaseName = null
       }
+    } else if (/^Phase:\s*/i.test(trimmed)) {
+      // Standard format: "Phase: 3 of 3 (Evidence Correlation)"
+      const val = trimmed.replace(/^Phase:\s*/i, "").trim()
+      const phaseMatch = val.match(/^(\d+(?:\.\d+)?)\s+of\s+\d+\s*(?:\((.+)\))?/)
+      if (phaseMatch) {
+        currentPhase = phaseMatch[1]
+        currentPhaseName = phaseMatch[2]?.trim() ?? null
+      } else {
+        const simpleMatch = val.match(/^(\d+(?:\.\d+)?)/)
+        if (simpleMatch) {
+          currentPhase = simpleMatch[1]
+          currentPhaseName = null
+        }
+      }
     } else if (/^\*\*Last Activity\*\*:\s*/i.test(trimmed)) {
       lastActivity = trimmed.replace(/^\*\*Last Activity\*\*:\s*/i, "").trim()
     } else if (/^##\s*Blockers/i.test(trimmed)) {
@@ -255,14 +269,15 @@ export async function readFindings(workspaceRoot: string): Promise<Findings | nu
     }
 
     // Hypothesis table row: | HYP-01 | Supported | High | RCT-... |
+    // Also handles: | HYP-01: descriptive text | Supported | High | RCT-... |
     if (section === "hypotheses") {
       const match = trimmed.match(
-        /^\|\s*(HYP-\d+)\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$/,
+        /^\|\s*(HYP-\d+)(?:[:\s].*?)?\s*\|\s*(\w+)\s*\|\s*(\w+)\s*\|\s*(.*?)\s*\|$/,
       )
       if (match) {
         hypotheses.push({
           id: match[1],
-          text: match[1],
+          text: trimmed.match(/^\|\s*(.*?)\s*\|/)?.[1]?.trim() ?? match[1],
           verdict: match[2].toLowerCase() as HypothesisVerdict["verdict"],
           confidence: match[3].toLowerCase() as "low" | "medium" | "high",
           evidence: match[4].trim() || undefined,
@@ -314,6 +329,10 @@ function parseReceipt(filename: string, content: string): Receipt | null {
       const val = trimmed.replace(/^claim_status:\s*/i, "").trim()
       if (val === "supports" || val === "contradicts" || val === "neutral") {
         claimStatus = val
+      } else if (val === "disproves") {
+        claimStatus = "contradicts"
+      } else if (val === "context") {
+        claimStatus = "neutral"
       }
       inRelatedHypotheses = false
     }
