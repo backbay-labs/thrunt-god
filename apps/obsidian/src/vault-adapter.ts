@@ -7,6 +7,7 @@ export interface VaultAdapter {
   createFile(path: string, content: string): Promise<void>;
   ensureFolder(path: string): Promise<void>;
   getFile(path: string): TFile | null;
+  listFolders(path: string): Promise<string[]>;
 }
 
 export class ObsidianVaultAdapter implements VaultAdapter {
@@ -60,5 +61,13 @@ export class ObsidianVaultAdapter implements VaultAdapter {
   getFile(path: string): TFile | null {
     const file = this.app.vault.getAbstractFileByPath(path);
     return file instanceof TFile ? file : null;
+  }
+
+  async listFolders(path: string): Promise<string[]> {
+    const folder = this.app.vault.getAbstractFileByPath(path);
+    if (!(folder instanceof TFolder)) return [];
+    return folder.children
+      .filter((child): child is TFolder => child instanceof TFolder)
+      .map((child) => child.name);
   }
 }

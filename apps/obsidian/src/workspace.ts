@@ -7,6 +7,8 @@ import {
   type ArtifactStatus,
   type ViewModel,
 } from './types';
+import { parseState, parseHypotheses } from './parsers';
+import type { StateSnapshot, HypothesisSnapshot, PhaseDirectoryInfo } from './types';
 
 export class WorkspaceService {
   private cachedViewModel: ViewModel | null = null;
@@ -18,7 +20,7 @@ export class WorkspaceService {
     private defaultPlanningDir: string,
   ) {}
 
-  getViewModel(): ViewModel {
+  async getViewModel(): Promise<ViewModel> {
     if (this.cachedViewModel) {
       return this.cachedViewModel;
     }
@@ -51,12 +53,42 @@ export class WorkspaceService {
       workspaceStatus = 'partial';
     }
 
+    // Read and parse STATE.md
+    let stateSnapshot: StateSnapshot | null = null;
+    const stateArtifact = artifacts.find(a => a.definition.fileName === 'STATE.md');
+    if (stateArtifact && stateArtifact.exists) {
+      try {
+        const content = await this.vaultAdapter.readFile(stateArtifact.path);
+        stateSnapshot = parseState(content);
+      } catch {
+        stateSnapshot = null;
+      }
+    }
+
+    // Read and parse HYPOTHESES.md
+    let hypothesisSnapshot: HypothesisSnapshot | null = null;
+    const hypoArtifact = artifacts.find(a => a.definition.fileName === 'HYPOTHESES.md');
+    if (hypoArtifact && hypoArtifact.exists) {
+      try {
+        const content = await this.vaultAdapter.readFile(hypoArtifact.path);
+        hypothesisSnapshot = parseHypotheses(content);
+      } catch {
+        hypothesisSnapshot = null;
+      }
+    }
+
+    // Detect phase directories
+    const phaseDirectories = await this.detectPhaseDirectories();
+
     const viewModel: ViewModel = {
       workspaceStatus,
       planningDir,
       artifactCount,
       artifactTotal,
       artifacts,
+      stateSnapshot,
+      hypothesisSnapshot,
+      phaseDirectories,
     };
 
     this.cachedViewModel = viewModel;
@@ -112,4 +144,63 @@ export class WorkspaceService {
     );
     return getCoreFilePath(planningDir, fileName);
   }
+
+  private async detectPhaseDirectories(): Promise<PhaseDirectoryInfo> {
+    const planningDir = getPlanningDir(
+      this.getSettings().planningDir,
+      this.defaultPlanningDir,
+    );
+    if (!this.vaultAdapter.folderExists(planningDir)) {
+      return { count: 0, highest: null, highestName: null };
+    }
+
+    const children = await this.vaultAdapter.listFolders(planningDir);
+    const phaseRegex = /^phase-(\d+)$/;
+    let count = 0;
+    let highest: number | null = null;
+    let highestName: string | null = null;
+
+    for (const name of children) {
+      const match = name.match(phaseRegex);
+      if (!match) continue;
+      count++;
+      const num = parseInt(match[1]!, 10);
+      if (highest === null || num > highest) {
+        highest = num;
+        highestName = name;
+      }
+    }
+
+    return { count, highest, highestName };
+  }
+}
+
+export function formatStatusBarText(vm: ViewModel): string {
+  if (vm.workspaceStatus === 'missing') {
+    return 'THRUNT not detected';
+  }
+
+  if (vm.workspaceStatus === 'partial') {
+    return `THRUNT ${vm.planningDir} (${vm.artifactCount}/${vm.artifactTotal})`;
+  }
+
+  // healthy
+  if (vm.stateSnapshot && vm.stateSnapshot.currentPhase !== 'unknown') {
+    const parts: string[] = [];
+    parts.push(vm.stateSnapshot.currentPhase);
+
+    if (vm.hypothesisSnapshot && vm.hypothesisSnapshot.total > 0) {
+      const active = vm.hypothesisSnapshot.pending;
+      parts.push(`${active}/${vm.hypothesisSnapshot.total} hypotheses active`);
+    }
+
+    if (vm.stateSnapshot.blockers.length > 0) {
+      parts.push(`${vm.stateSnapshot.blockers.length} blocker${vm.stateSnapshot.blockers.length !== 1 ? 's' : ''}`);
+    }
+
+    return parts.join(' | ');
+  }
+
+  // healthy but STATE.md not parseable
+  return `THRUNT ${vm.planningDir} (${vm.artifactCount}/${vm.artifactTotal})`;
 }

@@ -11,12 +11,19 @@ import { getCoreFilePath } from '../paths';
 class StubVaultAdapter implements VaultAdapter {
   private files = new Map<string, string>();
   private folders = new Set<string>();
+  private folderChildren = new Map<string, string[]>();
 
   addFolder(path: string): void {
     this.folders.add(path);
   }
   addFile(path: string, content: string): void {
     this.files.set(path, content);
+  }
+  addSubFolder(parentPath: string, childName: string): void {
+    this.folders.add(`${parentPath}/${childName}`);
+    const existing = this.folderChildren.get(parentPath) ?? [];
+    existing.push(childName);
+    this.folderChildren.set(parentPath, existing);
   }
 
   fileExists(path: string): boolean {
@@ -38,6 +45,9 @@ class StubVaultAdapter implements VaultAdapter {
   }
   getFile(path: string): any {
     return this.files.has(path) ? ({} as any) : null;
+  }
+  async listFolders(path: string): Promise<string[]> {
+    return this.folderChildren.get(path) ?? [];
   }
 }
 
@@ -78,74 +88,117 @@ describe('WorkspaceService', () => {
   });
 
   describe('getViewModel', () => {
-    it('returns missing when planning folder does not exist', () => {
-      const vm = service.getViewModel();
+    it('returns missing when planning folder does not exist', async () => {
+      const vm = await service.getViewModel();
       expect(vm.workspaceStatus).toBe('missing');
       expect(vm.artifactCount).toBe(0);
       expect(vm.artifactTotal).toBe(5);
     });
 
-    it('returns partial when folder exists but no artifacts', () => {
+    it('returns partial when folder exists but no artifacts', async () => {
       adapter.addFolder(PLANNING_DIR);
-      const vm = service.getViewModel();
+      const vm = await service.getViewModel();
       expect(vm.workspaceStatus).toBe('partial');
       expect(vm.artifactCount).toBe(0);
     });
 
-    it('returns partial when folder exists with some artifacts', () => {
+    it('returns partial when folder exists with some artifacts', async () => {
       adapter.addFolder(PLANNING_DIR);
       adapter.addFile(getCoreFilePath(PLANNING_DIR, 'MISSION.md'), '# Mission');
       adapter.addFile(getCoreFilePath(PLANNING_DIR, 'STATE.md'), '# State');
-      const vm = service.getViewModel();
+      const vm = await service.getViewModel();
       expect(vm.workspaceStatus).toBe('partial');
       expect(vm.artifactCount).toBe(2);
       expect(vm.artifactTotal).toBe(5);
     });
 
-    it('returns healthy when all artifacts exist', () => {
+    it('returns healthy when all artifacts exist', async () => {
       adapter.addFolder(PLANNING_DIR);
       addAllArtifacts(adapter);
-      const vm = service.getViewModel();
+      const vm = await service.getViewModel();
       expect(vm.workspaceStatus).toBe('healthy');
       expect(vm.artifactCount).toBe(5);
       expect(vm.artifactTotal).toBe(5);
     });
 
-    it('caches the view model until invalidated', () => {
+    it('caches the view model until invalidated', async () => {
       adapter.addFolder(PLANNING_DIR);
-      const vm1 = service.getViewModel();
+      const vm1 = await service.getViewModel();
       expect(vm1.artifactCount).toBe(0);
 
       // Add a file after caching -- should NOT be reflected yet
       adapter.addFile(getCoreFilePath(PLANNING_DIR, 'MISSION.md'), '# Mission');
-      const vm2 = service.getViewModel();
+      const vm2 = await service.getViewModel();
       expect(vm2.artifactCount).toBe(0);
       expect(vm2).toBe(vm1); // same reference
 
       // Invalidate -- should now reflect the change
       service.invalidate();
-      const vm3 = service.getViewModel();
+      const vm3 = await service.getViewModel();
       expect(vm3.artifactCount).toBe(1);
       expect(vm3).not.toBe(vm1); // different reference
     });
 
-    it('artifacts array has correct length', () => {
-      const vm = service.getViewModel();
+    it('artifacts array has correct length', async () => {
+      const vm = await service.getViewModel();
       expect(vm.artifacts).toHaveLength(5);
     });
 
-    it('artifact paths are correctly resolved', () => {
-      const vm = service.getViewModel();
+    it('artifact paths are correctly resolved', async () => {
+      const vm = await service.getViewModel();
       expect(vm.artifacts[0]!.path).toBe('.planning/MISSION.md');
       expect(vm.artifacts[3]!.path).toBe('.planning/STATE.md');
+    });
+
+    it('populates stateSnapshot when STATE.md exists', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile(getCoreFilePath(PLANNING_DIR, 'STATE.md'), '## Current phase\nLateral movement\n\n## Blockers\n- Need EDR access\n\n## Next actions\n- Query logs');
+      const vm = await service.getViewModel();
+      expect(vm.stateSnapshot).not.toBeNull();
+      expect(vm.stateSnapshot!.currentPhase).toBe('Lateral movement');
+      expect(vm.stateSnapshot!.blockers).toEqual(['Need EDR access']);
+      expect(vm.stateSnapshot!.nextActions).toEqual(['Query logs']);
+    });
+
+    it('populates hypothesisSnapshot when HYPOTHESES.md exists', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile(getCoreFilePath(PLANNING_DIR, 'HYPOTHESES.md'), '| ID | Hypothesis | Status |\n|---|---|---|\n| H1 | Lateral movement | validated |\n| H2 | Data exfil | pending |\n| H3 | Persistence | rejected |');
+      const vm = await service.getViewModel();
+      expect(vm.hypothesisSnapshot).not.toBeNull();
+      expect(vm.hypothesisSnapshot!.total).toBe(3);
+      expect(vm.hypothesisSnapshot!.validated).toBe(1);
+      expect(vm.hypothesisSnapshot!.pending).toBe(1);
+      expect(vm.hypothesisSnapshot!.rejected).toBe(1);
+    });
+
+    it('detects phase directories', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addSubFolder(PLANNING_DIR, 'phase-01');
+      adapter.addSubFolder(PLANNING_DIR, 'phase-02');
+      adapter.addSubFolder(PLANNING_DIR, 'phase-03');
+      adapter.addSubFolder(PLANNING_DIR, 'notes'); // non-phase directory
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories.count).toBe(3);
+      expect(vm.phaseDirectories.highest).toBe(3);
+      expect(vm.phaseDirectories.highestName).toBe('phase-03');
+    });
+
+    it('returns null snapshots when artifacts do not exist', async () => {
+      const vm = await service.getViewModel();
+      expect(vm.stateSnapshot).toBeNull();
+      expect(vm.hypothesisSnapshot).toBeNull();
+      expect(vm.phaseDirectories.count).toBe(0);
     });
   });
 
   describe('invalidate', () => {
-    it('clears the cached view model', () => {
-      const vm1 = service.getViewModel();
+    it('clears the cached view model', async () => {
+      const vm1 = await service.getViewModel();
       service.invalidate();
-      const vm2 = service.getViewModel();
+      const vm2 = await service.getViewModel();
       expect(vm2).not.toBe(vm1);
     });
   });
@@ -169,10 +222,10 @@ describe('WorkspaceService', () => {
     });
 
     it('invalidates cache after bootstrap', async () => {
-      const vm1 = service.getViewModel();
+      const vm1 = await service.getViewModel();
       expect(vm1.workspaceStatus).toBe('missing');
       await service.bootstrap();
-      const vm2 = service.getViewModel();
+      const vm2 = await service.getViewModel();
       expect(vm2.workspaceStatus).toBe('healthy');
     });
   });
