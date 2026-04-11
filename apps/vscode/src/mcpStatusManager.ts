@@ -3,6 +3,7 @@ import * as path from 'path';
 import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
 import * as vscode from 'vscode';
 import type { McpToolInfo } from '../shared/mcp-control';
+import { resolveNodeExecutable, type NodeExecutableResolver } from './nodeRuntime';
 
 export interface MCPHealthResult {
   status: 'healthy' | 'unhealthy' | 'timeout';
@@ -46,7 +47,8 @@ export class MCPStatusManager implements vscode.Disposable {
 
   constructor(
     private readonly outputChannel: vscode.OutputChannel,
-    private readonly mcpServerPath: MCPServerPathResolver
+    private readonly mcpServerPath: MCPServerPathResolver,
+    private readonly mcpNodeExecutable: NodeExecutableResolver = 'node'
   ) {}
 
   getServerPath(): string {
@@ -55,14 +57,20 @@ export class MCPStatusManager implements vscode.Disposable {
       : this.mcpServerPath;
   }
 
+  getNodeExecutable(): string {
+    return resolveNodeExecutable(this.mcpNodeExecutable);
+  }
+
   getStatus(): MCPStatus {
     return { ...this.status, lastHealthCheck: this.status.lastHealthCheck ? { ...this.status.lastHealthCheck } : null };
   }
 
   async runHealthCheck(): Promise<MCPHealthResult> {
     let serverPath: string;
+    let nodeExecutable: string;
     try {
       serverPath = this.resolveServerPath();
+      nodeExecutable = this.getNodeExecutable();
     } catch (err) {
       const result = this.buildInvalidPathHealthResult(err);
       this.applyHealthResult(result);
@@ -78,7 +86,7 @@ export class MCPStatusManager implements vscode.Disposable {
       let settled = false;
       let killTimer: ReturnType<typeof setTimeout> | null = null;
 
-      const child = spawn(process.execPath, [serverPath, '--health'], {
+      const child = spawn(nodeExecutable, [serverPath, '--health'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 
@@ -168,8 +176,10 @@ export class MCPStatusManager implements vscode.Disposable {
 
   async listTools(): Promise<McpToolInfo[]> {
     let serverPath: string;
+    let nodeExecutable: string;
     try {
       serverPath = this.resolveServerPath();
+      nodeExecutable = this.getNodeExecutable();
     } catch (err) {
       this.outputChannel.appendLine(
         `[MCP] List tools failed: ${err instanceof Error ? err.message : String(err)}`
@@ -182,7 +192,7 @@ export class MCPStatusManager implements vscode.Disposable {
       let settled = false;
       let killTimer: ReturnType<typeof setTimeout> | null = null;
 
-      const child = spawn(process.execPath, [serverPath, '--list-tools'], {
+      const child = spawn(nodeExecutable, [serverPath, '--list-tools'], {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
 
@@ -239,12 +249,13 @@ export class MCPStatusManager implements vscode.Disposable {
     }
 
     const serverPath = this.resolveServerPath();
-    this.outputChannel.appendLine(`[MCP] Starting server from ${serverPath}...`);
+    const nodeExecutable = this.getNodeExecutable();
+    this.outputChannel.appendLine(`[MCP] Starting server from ${serverPath} with ${nodeExecutable}...`);
     this.status.connection = 'checking';
     this.status.hasError = false;
     this._onDidChange.fire(this.getStatus());
 
-    const child = spawn(process.execPath, [serverPath], {
+    const child = spawn(nodeExecutable, [serverPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 

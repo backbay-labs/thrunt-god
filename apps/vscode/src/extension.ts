@@ -615,6 +615,18 @@ function resolveConfiguredPath(candidate: string, workspaceRoot?: string): strin
   return workspaceRoot ? path.resolve(workspaceRoot, candidate) : path.resolve(candidate);
 }
 
+function resolveConfiguredCommand(candidate: string, workspaceRoot?: string): string {
+  if (
+    path.isAbsolute(candidate)
+    || candidate.startsWith('.')
+    || candidate.includes('/')
+    || candidate.includes('\\')
+  ) {
+    return resolveConfiguredPath(candidate, workspaceRoot);
+  }
+  return candidate;
+}
+
 function getManagedMcpInstallRoot(context: vscode.ExtensionContext): string {
   return path.join(context.globalStorageUri.fsPath, MANAGED_MCP_DIRNAME);
 }
@@ -670,6 +682,26 @@ function resolveMcpServerPath(
   }
 
   return configuredCandidate;
+}
+
+function resolveMcpNodeExecutable(workspaceRoot?: string): string {
+  const override = process.env.THRUNT_TEST_MCP_NODE_PATH?.trim();
+  if (override) {
+    return resolveConfiguredCommand(override, workspaceRoot);
+  }
+
+  const configuredPath =
+    vscode.workspace.getConfiguration('thruntGod').get<string>('mcp.nodePath')?.trim() || '';
+  if (configuredPath) {
+    return resolveConfiguredCommand(configuredPath, workspaceRoot);
+  }
+
+  const npmNodeExecPath = process.env.npm_node_execpath?.trim();
+  if (npmNodeExecPath) {
+    return resolveConfiguredCommand(npmNodeExecPath, workspaceRoot);
+  }
+
+  return 'node';
 }
 
 function hasResolvedMcpServer(
@@ -1409,9 +1441,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const resolveCurrentMcpServerPath = () => resolveMcpServerPath(context, workspaceRoot);
+    const resolveCurrentMcpNodeExecutable = () => resolveMcpNodeExecutable(workspaceRoot);
     void updateMcpAvailabilityContext(context, workspaceRoot);
 
-    const mcpStatus = new MCPStatusManager(mcpOutputChannel, resolveCurrentMcpServerPath);
+    const mcpStatus = new MCPStatusManager(
+      mcpOutputChannel,
+      resolveCurrentMcpServerPath,
+      resolveCurrentMcpNodeExecutable,
+    );
     context.subscriptions.push(mcpStatus);
 
     // Execution history logger
@@ -1440,6 +1477,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const runbookEngine = new RunbookEngine(
       workspaceRoot || '',
       resolveCurrentMcpServerPath,
+      resolveCurrentMcpNodeExecutable,
     );
 
     // Watch .planning/runbooks/ for YAML runbook files

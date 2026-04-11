@@ -305,11 +305,12 @@ export class McpControlPanel implements vscode.Disposable {
     }
 
     try {
+      const nodeExecutable = this.mcpStatus.getNodeExecutable();
       const result = await new Promise<string>((resolve, reject) => {
         let stdout = '';
         let settled = false;
 
-        const child = spawn(process.execPath, [resolvedServerPath, '--run-tool', toolName, '--input', input], {
+        const child = spawn(nodeExecutable, [resolvedServerPath, '--run-tool', toolName, '--input', input], {
           stdio: ['pipe', 'pipe', 'pipe'],
         });
 

@@ -566,6 +566,11 @@
           "default": "",
           "description": "Absolute or workspace-relative path to the MCP server entry point. Leave empty to use the managed MCP runtime installed from the sidebar."
         },
+        "thruntGod.mcp.nodePath": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Node.js executable used to launch the MCP runtime. Leave empty to use node from PATH instead of VS Code's embedded Electron runtime."
+        },
         "thruntGod.mcp.installPackage": {
           "type": "string",
           "default": "@thrunt/mcp",

@@ -206,6 +206,13 @@ describe('MCP commands', () => {
     assert.equal(cmd.title, 'Install MCP Runtime');
   });
 
+  it('contributes mcp.nodePath setting', () => {
+    const setting = manifest.contributes.configuration.properties['thruntGod.mcp.nodePath'];
+    assert.ok(setting, 'thruntGod.mcp.nodePath setting exists');
+    assert.equal(setting.type, 'string');
+    assert.equal(setting.default, '');
+  });
+
   it('shows mcpInstall only when no MCP runtime is available', () => {
     const entry = findMenuEntry('view/item/context', 'thrunt-god.mcpInstall');
     assert.ok(entry, 'mcpInstall context menu entry exists');

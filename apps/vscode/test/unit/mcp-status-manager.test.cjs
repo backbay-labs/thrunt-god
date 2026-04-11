@@ -86,6 +86,18 @@ describe('MCPStatusManager', () => {
     assert.equal(manager.getServerPath(), '/tmp/two.cjs');
   });
 
+  it('getNodeExecutable defaults to node from PATH', () => {
+    assert.equal(manager.getNodeExecutable(), 'node');
+  });
+
+  it('getNodeExecutable resolves from a live callback', () => {
+    let currentPath = process.execPath;
+    manager = new ext.MCPStatusManager(mockChannel, mockServerPath, () => currentPath);
+    assert.equal(manager.getNodeExecutable(), process.execPath);
+    currentPath = 'node-alt';
+    assert.equal(manager.getNodeExecutable(), 'node-alt');
+  });
+
   it('onDidChange is an event', () => {
     assert.equal(typeof manager.onDidChange, 'function');
   });

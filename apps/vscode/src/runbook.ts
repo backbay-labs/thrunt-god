@@ -4,6 +4,7 @@ import * as yaml from 'js-yaml';
 import { spawn } from 'child_process';
 import * as vscode from 'vscode';
 import type { StepAction, RunbookDef, RunbookInput, RunbookStep, StepResult, RunbookRunRecord } from '../shared/runbook';
+import { resolveNodeExecutable, type NodeExecutableResolver } from './nodeRuntime';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -390,6 +391,7 @@ export class RunbookEngine {
   constructor(
     private readonly workspaceRoot: string,
     private readonly mcpServerPath: string | (() => string),
+    private readonly mcpNodeExecutable: NodeExecutableResolver = 'node',
   ) {}
 
   async *executeRunbook(
@@ -642,9 +644,20 @@ export class RunbookEngine {
       let stdout = '';
       let settled = false;
       let killTimer: ReturnType<typeof setTimeout> | null = null;
+      let nodeExecutable: string;
+
+      try {
+        nodeExecutable = resolveNodeExecutable(this.mcpNodeExecutable);
+      } catch (err) {
+        resolve({
+          output: err instanceof Error ? err.message : String(err),
+          success: false,
+        });
+        return;
+      }
 
       const child = spawn(
-        process.execPath,
+        nodeExecutable,
         [serverPath, '--run-tool', toolName, '--input', input],
         { stdio: ['pipe', 'pipe', 'pipe'] },
       );
