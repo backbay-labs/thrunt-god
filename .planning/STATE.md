@@ -1,17 +1,18 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.2
-milestone_name: Obsidian Workspace Companion
-status: completed
-stopped_at: Completed 64-05-PLAN.md
-last_updated: "2026-04-11T18:12:03.567Z"
-last_activity: 2026-04-11 -- Completed 64-05 test coverage and acceptance verification
+milestone: v3.3
+milestone_name: Zero-Friction Distribution
+current_plan: 2
+status: executing
+stopped_at: Completed 65-01-PLAN.md
+last_updated: "2026-04-11T19:41:12.604Z"
+last_activity: 2026-04-11 -- Executed 65-01-PLAN.md
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
-  percent: 100
+  total_phases: 39
+  completed_phases: 22
+  total_plans: 74
+  completed_plans: 59
+  percent: 33
 ---
 
 # Project State
@@ -21,20 +22,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 64 complete (plan 5/5 complete)
+**Current focus:** v3.3 Zero-Friction Distribution -- Phase 65 Plan 02 ready for execution
 
-## Current Milestone: v3.2 Obsidian Workspace Companion
+## Current Milestone: v3.3 Zero-Friction Distribution
 
-**Goal:** Ship a vault-native Obsidian plugin that surfaces THRUNT hunt state from markdown files. Two-phase approach: structural foundation (Phase 63) then live hunt dashboard (Phase 64).
+**Goal:** Make the Obsidian plugin installable and releasable without building from source or manually managing vault symlinks. Three-phase approach: CLI install channel (Phase 65), release artifact pipeline (Phase 66), and community directory readiness (Phase 67).
 
 ## Current Position
 
-Phase: 64 of 64 (Live Hunt Dashboard)
-Plan: 5 of 5 complete
-Status: Complete
-Last activity: 2026-04-11 -- Completed 64-05 test coverage and acceptance verification
+Phase: 65 of 67 (Obsidian CLI Install Channel)
+Plan: 2 of 3
+Current Plan: 2
+Total Plans in Phase: 3
+Status: In Progress
+Last activity: 2026-04-11 -- Executed 65-01-PLAN.md
 
-Progress: [██████████] 100%
+Progress: [###-------] 33%
 
 ## Accumulated Context
 
@@ -75,13 +78,21 @@ Progress: [██████████] 100%
 - [Phase 64]: All parser edge cases already covered by Plan 02 -- no additional parser test modifications needed in Plan 05
 - [Phase 64]: detectPhaseDirectories tested via getViewModel integration (private method)
 - [Phase 64]: setFolderChildren added alongside addSubFolder for direct test folder configuration
+- [Phase 65]: --obsidian is a standalone install mode and rejects runtime, location, uninstall, and config-dir flag mixing
+- [Phase 65]: Obsidian installer staging uses the exact main.js, manifest.json, and styles.css bundle contract under ~/.thrunt/obsidian
 
 ### Blockers/Concerns
 
 None.
 
+## Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files | Date |
+|-------|------|----------|-------|-------|------|
+| Phase 65 | 01 | 106s | 2 tasks | 1 files | 2026-04-11 |
+
 ## Session Continuity
 
-Last session: 2026-04-11T18:04:04.333Z
-Stopped at: Completed 64-05-PLAN.md
+Last session: 2026-04-11T19:39:36.729Z
+Stopped at: Completed 65-01-PLAN.md
 Resume file: None
