@@ -34,7 +34,7 @@ Describe the threat-hunting objective for this workspace.
 -
 `,
     commandId: 'open-thrunt-mission',
-    commandName: 'Open THRUNT mission',
+    commandName: 'Open mission',
   },
   {
     fileName: 'HYPOTHESES.md',
@@ -51,7 +51,7 @@ updated: ""
 | --- | --- | --- |
 `,
     commandId: 'open-thrunt-hypotheses',
-    commandName: 'Open THRUNT hypotheses',
+    commandName: 'Open hypotheses',
   },
   {
     fileName: 'HUNTMAP.md',
@@ -71,7 +71,7 @@ See [[STATE]] for current phase status and [[HYPOTHESES]] for hypothesis trackin
 1.
 `,
     commandId: 'open-thrunt-huntmap',
-    commandName: 'Open THRUNT huntmap',
+    commandName: 'Open huntmap',
   },
   {
     fileName: 'STATE.md',
@@ -99,7 +99,7 @@ See [[HUNTMAP]] for phase breakdown and [[FINDINGS]] for validated results.
 -
 `,
     commandId: 'open-thrunt-state',
-    commandName: 'Open THRUNT state',
+    commandName: 'Open state',
   },
   {
     fileName: 'FINDINGS.md',
@@ -119,6 +119,6 @@ See [[HYPOTHESES]] for hypothesis validation status.
 -
 `,
     commandId: 'open-thrunt-findings',
-    commandName: 'Open THRUNT findings',
+    commandName: 'Open findings',
   },
 ]);

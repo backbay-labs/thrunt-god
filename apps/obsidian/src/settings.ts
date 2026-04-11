@@ -21,8 +21,6 @@ export class ThruntGodSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'THRUNT God' });
-
     new Setting(containerEl)
       .setName('Planning directory')
       .setDesc('Vault-relative THRUNT artifact directory, such as .planning or .hunt.')
@@ -37,4 +35,3 @@ export class ThruntGodSettingTab extends PluginSettingTab {
       );
   }
 }
-

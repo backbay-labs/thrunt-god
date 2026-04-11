@@ -33,13 +33,13 @@ export default class ThruntGodPlugin extends Plugin {
     this.statusBarItemEl = this.addStatusBarItem();
     void this.updateStatusBar();
 
-    this.addRibbonIcon('shield', 'Open THRUNT workspace', () => {
+    this.addRibbonIcon('shield', 'Open workspace', () => {
       void this.activateView();
     });
 
     this.addCommand({
       id: 'open-thrunt-workspace',
-      name: 'Open THRUNT workspace',
+      name: 'Open workspace',
       callback: () => {
         void this.activateView();
       },
@@ -58,7 +58,7 @@ export default class ThruntGodPlugin extends Plugin {
 
     this.addCommand({
       id: 'create-thrunt-workspace',
-      name: 'Create THRUNT mission scaffold',
+      name: 'Create mission scaffold',
       callback: () => {
         void this.bootstrapWorkspace();
       },
