@@ -106,6 +106,7 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
           channelId: body.channel?.id,
           messageTs,
           threadTs,
+          origin: "ioc_paste",
         }),
         title: { type: "plain_text", text: "Open Hunt Case" },
         submit: { type: "plain_text", text: "Open Case" },

@@ -23,6 +23,7 @@ export function registerViews(app: App, config: Config, bindings?: ChannelBindin
       messageTs?: string
       threadTs?: string
       rawText?: string
+      origin?: CaseSource["origin"]
     }
 
     // If there's a thread, fetch the full thread for richer context
@@ -57,7 +58,7 @@ export function registerViews(app: App, config: Config, bindings?: ChannelBindin
     const iocs = extractIocs(rawText)
 
     const source: CaseSource = {
-      origin: meta.threadTs ? "message_shortcut" : "slash_command",
+      origin: meta.origin ?? "slash_command",
       channelId: meta.channelId ?? "",
       threadTs: meta.threadTs,
       userId: body.user.id,

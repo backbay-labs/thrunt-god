@@ -30,6 +30,7 @@ export function registerShortcuts(app: App, _config: Config): void {
           messageTs: shortcut.message.ts,
           threadTs: shortcut.message.thread_ts,
           rawText: messageText,
+          origin: "message_shortcut",
         }),
         title: { type: "plain_text", text: "Open Hunt Case" },
         submit: { type: "plain_text", text: "Open Case" },

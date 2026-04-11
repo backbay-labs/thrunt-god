@@ -8,8 +8,7 @@
 
 import { watch, type FSWatcher } from "node:fs"
 import { access } from "node:fs/promises"
-import { join } from "node:path"
-import { readHuntStatus, readReceipts, readFindings } from "./hunt/state.ts"
+import { readHuntStatus, readReceipts, readFindings, resolvePlanningDir } from "./hunt/state.ts"
 import type { HuntStatus } from "./types.ts"
 
 // =============================================================================
@@ -256,11 +255,9 @@ export function createPlanningWatcher(
     debounceTimer = setTimeout(onDebouncedChange, debounceMs)
   }
 
-  function attachWatcher(): boolean {
-    const planningDir = join(workspaceRoot, ".planning")
-
+  function attachWatcher(watchDir: string): boolean {
     try {
-      fsWatcher = watch(planningDir, { recursive: true }, (_eventType, _filename) => {
+      fsWatcher = watch(watchDir, { recursive: true }, (_eventType, _filename) => {
         scheduleDiff()
       })
 
@@ -302,9 +299,10 @@ export function createPlanningWatcher(
       retryTimer = null
       if (stopped) return
 
-      const planningDir = join(workspaceRoot, ".planning")
+      let watchDir: string
       try {
-        await access(planningDir)
+        watchDir = await resolvePlanningDir(workspaceRoot)
+        await access(watchDir)
       } catch {
         // Still doesn't exist — schedule the next retry
         scheduleRetry()
@@ -312,7 +310,7 @@ export function createPlanningWatcher(
       }
 
       // Directory appeared — attach watcher
-      if (attachWatcher()) {
+      if (attachWatcher(watchDir)) {
         previousSnapshot = await takeSnapshot(workspaceRoot)
         console.log("[watcher] .planning/ appeared, watching started")
       } else {
@@ -327,15 +325,18 @@ export function createPlanningWatcher(
       stopped = false
 
       // Try to attach immediately
-      const planningDir = join(workspaceRoot, ".planning")
-      access(planningDir)
-        .then(async () => {
+      resolvePlanningDir(workspaceRoot)
+        .then(async (watchDir) => {
+          await access(watchDir)
+          return watchDir
+        })
+        .then(async (watchDir) => {
           if (stopped) return
 
-          if (attachWatcher()) {
+          if (attachWatcher(watchDir)) {
             // Take initial snapshot so first diff has a baseline
             previousSnapshot = await takeSnapshot(workspaceRoot)
-            console.log("[watcher] Watching", planningDir)
+            console.log("[watcher] Watching", watchDir)
           } else {
             scheduleRetry()
           }

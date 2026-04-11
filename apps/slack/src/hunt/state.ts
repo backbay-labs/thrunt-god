@@ -179,7 +179,7 @@ async function countPhaseArtifacts(
  * Otherwise assume it's a workspace root and join `.planning/`.
  * This handles both workspace roots and child case directories.
  */
-async function resolvePlanningDir(root: string): Promise<string> {
+export async function resolvePlanningDir(root: string): Promise<string> {
   const direct = await fileExists(join(root, "STATE.md")) ||
     await fileExists(join(root, "MISSION.md")) ||
     await fileExists(join(root, "HUNTMAP.md"))
