@@ -29,7 +29,7 @@ export function registerCommands(
     await ack()
 
     const args = command.text.trim().split(/\s+/)
-    const subcommand = args[0]?.toLowerCase() ?? "status"
+    const subcommand = args[0]?.toLowerCase() || "status"
 
     switch (subcommand) {
       case "status": {

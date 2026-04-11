@@ -22,7 +22,7 @@ const SAFE_SLUG = /^[a-z0-9][a-z0-9-]*$/
 
 /** Validate a slug is safe for use in file paths */
 function validateSlug(slug: string): string {
-  const sanitized = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^-+|-+$/g, "").slice(0, 60)
+  const sanitized = slug.toLowerCase().replace(/[^a-z0-9-]/g, "-").slice(0, 60).replace(/^-+|-+$/g, "")
   if (!SAFE_SLUG.test(sanitized)) {
     throw new Error(`Invalid case slug: ${slug}`)
   }

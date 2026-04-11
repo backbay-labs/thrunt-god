@@ -27,7 +27,7 @@ const app = new App({
   appToken: config.slackAppToken,
   signingSecret: config.slackSigningSecret,
   socketMode: true,
-  logLevel: config.logLevel === "debug" ? LogLevel.DEBUG : LogLevel.INFO,
+  logLevel: ({ debug: LogLevel.DEBUG, info: LogLevel.INFO, warn: LogLevel.WARN, error: LogLevel.ERROR } as const)[config.logLevel],
 })
 
 // Channel bindings — persistent channel-to-workspace mapping
@@ -39,8 +39,8 @@ const approvalStore = createApprovalStore(config.workspaceRoot)
 // Register all handler modules
 // notifierManager is late-initialized in start(), so pass a lazy sync callback
 registerCommands(app, config, bindings, () => notifierManager?.sync())
-registerActions(app, config, approvalStore)
-registerEvents(app, config)
+registerActions(app, config, approvalStore, bindings)
+registerEvents(app, config, bindings)
 registerShortcuts(app, config)
 registerViews(app, config, bindings)
 

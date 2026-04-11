@@ -11,13 +11,14 @@ import type { App } from "@slack/bolt"
 import type { BlockAction, ButtonAction } from "@slack/bolt/dist/types/actions/block-action"
 import type { Config } from "../config.ts"
 import type { ApprovalStore } from "../approvals.ts"
+import type { ChannelBindings } from "../bindings.ts"
 import { readHuntStatus, readMission } from "../hunt/state.ts"
 import { createDispatch } from "../hunt/orchestrate.ts"
 import { huntStatusBlocks } from "../blocks/status.ts"
 import { approvalResponseBlocks } from "../blocks/approval.ts"
 import { join } from "node:path"
 
-export function registerActions(app: App, config: Config, approvalStore?: ApprovalStore): void {
+export function registerActions(app: App, config: Config, approvalStore?: ApprovalStore, bindings?: ChannelBindings): void {
   // ── Approval flow ──────────────────────────────────────────────────────
 
   app.action<BlockAction<ButtonAction>>("approval_approve", async ({ ack, body, client, action }) => {
@@ -106,7 +107,8 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
     const slug = action.value
     if (!slug) return
 
-    const caseRoot = join(config.workspaceRoot, ".planning", "cases", slug)
+    const root = bindings?.resolve(body.channel?.id ?? "") ?? config.workspaceRoot
+    const caseRoot = join(root, ".planning", "cases", slug)
     const [status, mission] = await Promise.all([
       readHuntStatus(caseRoot),
       readMission(caseRoot),
@@ -128,10 +130,11 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
 
     const channelId = body.channel?.id ?? ""
     const threadTs = body.message?.ts
-    const caseDir = join(config.workspaceRoot, ".planning", "cases", slug)
+    const dispatchRoot = bindings?.resolve(channelId) ?? config.workspaceRoot
+    const caseDir = join(dispatchRoot, ".planning", "cases", slug)
 
     // Create a dispatch marker for operators/automation
-    await createDispatch(config.workspaceRoot, {
+    await createDispatch(dispatchRoot, {
       caseSlug: slug,
       caseDir,
       channelId,

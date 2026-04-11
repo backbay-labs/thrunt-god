@@ -8,12 +8,13 @@
 import type { App } from "@slack/bolt"
 import type { BlockAction, ButtonAction } from "@slack/bolt/dist/types/actions/block-action"
 import type { Config } from "../config.ts"
+import type { ChannelBindings } from "../bindings.ts"
 import { extractIocs } from "../hunt/case.ts"
 import { readHuntStatus, readMission } from "../hunt/state.ts"
 import { huntStatusOneliner } from "../blocks/status.ts"
 import { actions, section } from "../blocks/common.ts"
 
-export function registerEvents(app: App, config: Config): void {
+export function registerEvents(app: App, config: Config, bindings?: ChannelBindings): void {
   // ── IOC detection in messages ──────────────────────────────────────────
 
   app.event("message", async ({ event, client }) => {
@@ -68,9 +69,10 @@ export function registerEvents(app: App, config: Config): void {
   // ── App mention → status reply ─────────────────────────────────────────
 
   app.event("app_mention", async ({ event, client }) => {
+    const root = bindings?.resolve(event.channel) ?? config.workspaceRoot
     const [status, mission] = await Promise.all([
-      readHuntStatus(config.workspaceRoot),
-      readMission(config.workspaceRoot),
+      readHuntStatus(root),
+      readMission(root),
     ])
 
     const title = mission?.title ? `*${mission.title}*\n` : ""

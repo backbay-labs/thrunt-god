@@ -2,7 +2,7 @@
  * Case creation from Slack messages — extract IOCs, scaffold .planning/ artifacts.
  */
 
-import { mkdir, writeFile } from "node:fs/promises"
+import { access, mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { IOC_PATTERNS, type CaseSource, type IocType } from "../types.ts"
 
@@ -33,8 +33,8 @@ function slugify(text: string): string {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
     .slice(0, 60)
+    .replace(/^-+|-+$/g, "")
 }
 
 /** Generate MISSION.md content from a Slack case source */
@@ -113,7 +113,20 @@ export async function createCase(
   source: CaseSource,
 ): Promise<CreateCaseResult> {
   const slug = slugify(title)
+  if (!slug) {
+    throw new Error(`Cannot create case: title "${title}" produces an empty slug`)
+  }
   const caseDir = join(workspaceRoot, ".planning", "cases", slug)
+
+  // Refuse to overwrite an existing case
+  try {
+    await access(join(caseDir, "MISSION.md"))
+    throw new Error(`Case "${slug}" already exists`)
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("Case ")) throw err
+    // MISSION.md doesn't exist — proceed with creation
+  }
+
   const receiptsDir = join(caseDir, "RECEIPTS")
   const queriesDir = join(caseDir, "QUERIES")
 
