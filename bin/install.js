@@ -6,6 +6,7 @@ const os = require('os');
 const readline = require('readline');
 const crypto = require('crypto');
 const { execFileSync } = require('node:child_process');
+const { OBSIDIAN_INSTALL_ASSETS } = require('../scripts/lib/obsidian-artifacts.cjs');
 
 // Colors
 const cyan = '\x1b[36m';
@@ -322,7 +323,7 @@ const explicitConfigDir = parseConfigDirArg();
 const hasHelp = args.includes('--help') || args.includes('-h');
 const forceStatusline = args.includes('--force-statusline');
 const OBSIDIAN_PLUGIN_ID = 'thrunt-god';
-const OBSIDIAN_ASSET_FILES = ['main.js', 'manifest.json', 'styles.css'];
+const OBSIDIAN_ASSET_FILES = OBSIDIAN_INSTALL_ASSETS;
 
 function getObsidianConflictFlags() {
   const conflictFlags = new Set();
@@ -5175,6 +5176,7 @@ if (process.env.THRUNT_TEST_MODE) {
     convertClaudeAgentToWindsurfAgent,
     copyCommandsAsWindsurfSkills,
     OBSIDIAN_PLUGIN_ID,
+    OBSIDIAN_INSTALL_ASSETS,
     OBSIDIAN_ASSET_FILES,
     getObsidianStageDir,
     getObsidianConfigPath,
