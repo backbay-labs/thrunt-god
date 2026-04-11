@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Obsidian Workspace Companion
 status: executing
-stopped_at: Completed 64-03-PLAN.md
-last_updated: "2026-04-11T17:50:20.747Z"
-last_activity: 2026-04-11 -- Completed 64-03 workspace integration (async getViewModel, formatStatusBarText)
+stopped_at: Completed 64-04-PLAN.md
+last_updated: "2026-04-11T17:57:09.516Z"
+last_activity: 2026-04-11 -- Completed 64-04 view and templates (hunt status card, frontmatter, wiki-links)
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
-  percent: 70
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 64 in progress (plan 2/5 complete)
+**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 64 in progress (plan 4/5 complete)
 
 ## Current Milestone: v3.2 Obsidian Workspace Companion
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 ## Current Position
 
 Phase: 64 of 64 (Live Hunt Dashboard)
-Plan: 3 of 5 complete
+Plan: 4 of 5 complete
 Status: In Progress
-Last activity: 2026-04-11 -- Completed 64-03 workspace integration (async getViewModel, formatStatusBarText)
+Last activity: 2026-04-11 -- Completed 64-04 view and templates (hunt status card, frontmatter, wiki-links)
 
-Progress: [███████░░░] 70%
+Progress: [█████████░] 90%
 
 ## Accumulated Context
 
@@ -69,6 +69,9 @@ Progress: [███████░░░] 70%
 - [Phase 64]: formatStatusBarText is standalone exported function, not class method -- pure and testable
 - [Phase 64]: detectPhaseDirectories is private to WorkspaceService -- exposed only via ViewModel
 - [Phase 64]: Async getViewModel with sync cache fast-path pattern established
+- [Phase 64]: Error boundary uses hunt-status card layout instead of old hero layout
+- [Phase 64]: Refresh button calls invalidate() before render() to ensure fresh ViewModel data
+- [Phase 64]: Next action truncation at 57 chars with ellipsis for >60 char values
 
 ### Blockers/Concerns
 
@@ -76,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-11T17:50:20.745Z
-Stopped at: Completed 64-03-PLAN.md
+Last session: 2026-04-11T17:57:09.514Z
+Stopped at: Completed 64-04-PLAN.md
 Resume file: None

@@ -43,12 +43,12 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 
 ### View & Templates
 
-- [ ] **VIEW-01**: Sidebar displays a compact hunt status card with phase, blockers, next action, and hypothesis scoreboard
+- [x] **VIEW-01**: Sidebar displays a compact hunt status card with phase, blockers, next action, and hypothesis scoreboard
 - [x] **VIEW-02**: Status bar shows live hunt state when STATE.md is parseable (e.g., "Phase 3 | 2/5 hypotheses active | 1 blocker")
 - [x] **VIEW-03**: Rendering errors show an error state with retry button, never a blank panel
-- [ ] **VIEW-04**: Starter templates include YAML frontmatter with thrunt-artifact, hunt-id, and updated properties
-- [ ] **VIEW-05**: Starter templates include wiki-links between related artifacts (e.g., HUNTMAP links to STATE and HYPOTHESES)
-- [ ] **VIEW-06**: Hero marketing card is replaced with data-dense hunt status display
+- [x] **VIEW-04**: Starter templates include YAML frontmatter with thrunt-artifact, hunt-id, and updated properties
+- [x] **VIEW-05**: Starter templates include wiki-links between related artifacts (e.g., HUNTMAP links to STATE and HYPOTHESES)
+- [x] **VIEW-06**: Hero marketing card is replaced with data-dense hunt status display
 
 ## Future Requirements
 
@@ -107,12 +107,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PARSE-04 | Phase 64 | Complete |
 | PARSE-05 | Phase 64 | Complete |
 | PARSE-06 | Phase 64 | Complete |
-| VIEW-01 | Phase 64 | Pending |
+| VIEW-01 | Phase 64 | Complete |
 | VIEW-02 | Phase 64 | Complete |
 | VIEW-03 | Phase 63 | Complete |
-| VIEW-04 | Phase 64 | Pending |
-| VIEW-05 | Phase 64 | Pending |
-| VIEW-06 | Phase 64 | Pending |
+| VIEW-04 | Phase 64 | Complete |
+| VIEW-05 | Phase 64 | Complete |
+| VIEW-06 | Phase 64 | Complete |
 
 **Coverage:**
 - v3.2 requirements: 28 total
