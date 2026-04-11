@@ -5,6 +5,7 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 const crypto = require('crypto');
+const { execFileSync } = require('node:child_process');
 
 // Colors
 const cyan = '\x1b[36m';
@@ -320,6 +321,8 @@ function parseConfigDirArg() {
 const explicitConfigDir = parseConfigDirArg();
 const hasHelp = args.includes('--help') || args.includes('-h');
 const forceStatusline = args.includes('--force-statusline');
+const OBSIDIAN_PLUGIN_ID = 'thrunt-god';
+const OBSIDIAN_ASSET_FILES = ['main.js', 'manifest.json', 'styles.css'];
 
 function getObsidianConflictFlags() {
   const conflictFlags = new Set();
@@ -357,9 +360,55 @@ function getObsidianConflictFlags() {
   return [...conflictFlags];
 }
 
+function getObsidianStageDir(homeDir = os.homedir()) {
+  return path.join(homeDir, '.thrunt', 'obsidian');
+}
+
+function buildObsidianBundle(repoRoot, runBuild = execFileSync) {
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  runBuild(npmCommand, ['run', 'build:obsidian'], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+}
+
+function stageObsidianBundle(options = {}) {
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const stageDir = options.stageDir || getObsidianStageDir();
+  const pluginDir = options.pluginDir || path.join(repoRoot, 'apps', 'obsidian');
+
+  fs.mkdirSync(stageDir, { recursive: true });
+
+  for (const assetFile of OBSIDIAN_ASSET_FILES) {
+    const sourcePath = path.join(pluginDir, assetFile);
+    const destinationPath = path.join(stageDir, assetFile);
+
+    if (!fs.existsSync(sourcePath)) {
+      throw new Error(`Missing Obsidian bundle asset: ${sourcePath}`);
+    }
+
+    fs.rmSync(destinationPath, { force: true, recursive: true });
+    fs.copyFileSync(sourcePath, destinationPath);
+
+    if (!fs.existsSync(destinationPath)) {
+      throw new Error(`Failed to stage Obsidian asset: ${destinationPath}`);
+    }
+  }
+
+  return {
+    stageDir,
+    stagedFiles: [...OBSIDIAN_ASSET_FILES],
+  };
+}
+
 function installObsidian() {
-  console.error(`  ${yellow}Obsidian bundle staging is not implemented yet.${reset}`);
-  process.exit(1);
+  const repoRoot = path.join(__dirname, '..');
+  const stageDir = getObsidianStageDir();
+  const locationLabel = stageDir.replace(os.homedir(), '~');
+
+  console.log(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
+  buildObsidianBundle(repoRoot);
+  return stageObsidianBundle({ repoRoot, stageDir });
 }
 
 console.log(banner);
@@ -4876,6 +4925,11 @@ if (process.env.THRUNT_TEST_MODE) {
     convertClaudeCommandToWindsurfSkill,
     convertClaudeAgentToWindsurfAgent,
     copyCommandsAsWindsurfSkills,
+    OBSIDIAN_PLUGIN_ID,
+    OBSIDIAN_ASSET_FILES,
+    getObsidianStageDir,
+    buildObsidianBundle,
+    stageObsidianBundle,
     writeManifest,
     reportLocalPatches,
     validateHookFields,
