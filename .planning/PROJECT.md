@@ -27,26 +27,13 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - v3.0 Hunt Program Intelligence (Phases 50-57) — shipped 2026-04-08
 - v3.1 Sidebar Automation & Operations (Phases 58-62) — shipped 2026-04-09
 
+- ✓ v3.2 Obsidian Workspace Companion (Phases 63-64) — shipped 2026-04-11
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-v3.2 Obsidian Workspace Companion (Phases 63+)
-
-## Current Milestone: v3.2 Obsidian Workspace Companion
-
-**Goal:** Ship a vault-native Obsidian plugin that surfaces THRUNT hunt state from markdown files, with a two-phase approach: structural foundation (module decomposition, honest workspace detection, testable architecture) then live hunt dashboard (STATE.md/HYPOTHESES.md parsing, hypothesis scoreboard, meaningful status bar).
-
-**Target features:**
-- Testable module architecture (artifacts.ts, paths.ts, vault-adapter.ts, workspace.ts, types.ts)
-- Three-state workspace detection (healthy/partial/missing)
-- Commands for all 5 core artifacts
-- STATE.md parsing with phase, blockers, next actions
-- HYPOTHESES.md parsing with hypothesis scoreboard
-- Phase directory awareness
-- Live status bar with hunt state
-- Compact hunt status card replacing hero marketing copy
-- Frontmatter-friendly templates with wiki-links
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -71,6 +58,8 @@ v3.2 Obsidian Workspace Companion (Phases 63+)
 - Knowledge graph in program.db with entity/relation storage, decision logging, STIX auto-population
 - Shipped v3.0: 8 phases, 17 plans, 214 new tests, 34 requirements satisfied
 - Shipped v3.1: 5 phases, 14 plans, 168 new tests, 26 requirements satisfied (432 total tests)
+- Shipped v3.2: 2 phases, 10 plans, 84 tests, 28 requirements satisfied — Obsidian plugin with 16 TypeScript source files (2,024 LOC)
+- Obsidian plugin at apps/obsidian/ — vault-native workspace companion with hunt state parsing, hypothesis scoreboard, three-state detection
 
 ## Constraints
 
@@ -108,6 +97,11 @@ v3.2 Obsidian Workspace Companion (Phases 63+)
 | Runbooks as YAML in .planning/runbooks/ | Tree for discovery, webview for execution; 5 step types (cli, mcp, open, note, confirm) | Good |
 | Command deck with curated 10 built-in | Not every CLI command; parameterized templates for custom commands | Good |
 | ExecutionLogger with .run-history.json | File-based persistence with atomic writes; avoids workspaceState size limits | Good |
+| Obsidian plugin two-phase strategy | Structural plumbing first, visible value second — earns trust before features | Good |
+| CLI handoff cut from Obsidian plugin | Obsidian is knowledge tool, not process launcher; security risk from shell injection | Good |
+| vitest for Obsidian plugin testing | Pure modules testable without Obsidian runtime; VaultAdapter stub pattern | Good |
+| Frontmatter additive, never required | Phase 1 files work in Phase 2; backward-compatible template evolution | Good |
+| getViewModel() async in Phase 64 | Breaking change managed — all call sites documented and updated | Good |
 
 ---
-*Last updated: 2026-04-11 after v3.2 milestone start*
+*Last updated: 2026-04-11 after v3.2 milestone completion*
