@@ -37,7 +37,7 @@ export class ThruntWorkspaceView extends ItemView {
     contentEl.addClass('thrunt-god-view');
 
     try {
-      const vm = this.plugin.workspaceService.getViewModel();
+      const vm = await this.plugin.workspaceService.getViewModel();
       this.renderContent(vm);
       this.consecutiveErrors = 0;
       this.lastErrorMessage = null;
@@ -55,10 +55,9 @@ export class ThruntWorkspaceView extends ItemView {
 
   private renderError(err: unknown, showRetry: boolean): void {
     const { contentEl } = this;
-    const card = contentEl.createDiv({ cls: 'thrunt-god-card thrunt-god-hero' });
-    card.createEl('h2', { text: 'Rendering error' });
+    const card = contentEl.createDiv({ cls: 'thrunt-god-card thrunt-god-hunt-status' });
+    card.createEl('h3', { text: 'Rendering error' });
     card.createEl('p', {
-      cls: 'thrunt-god-copy',
       text: err instanceof Error ? err.message : String(err),
     });
 
@@ -68,7 +67,6 @@ export class ThruntWorkspaceView extends ItemView {
       });
     } else {
       card.createEl('p', {
-        cls: 'thrunt-god-copy',
         text: 'Rendering failed repeatedly. Check the developer console for details.',
       });
     }
@@ -77,62 +75,8 @@ export class ThruntWorkspaceView extends ItemView {
   private renderContent(vm: ViewModel): void {
     const { contentEl } = this;
 
-    // Hero card
-    const hero = contentEl.createDiv({ cls: 'thrunt-god-card thrunt-god-hero' });
-    hero.createEl('p', {
-      cls: 'thrunt-god-eyebrow',
-      text: 'Threat-hunting workspace',
-    });
-    hero.createEl('h2', { text: 'THRUNT God' });
-
-    // Three-state status row
-    const statusRow = hero.createDiv({ cls: 'thrunt-god-status-row' });
-
-    let badgeClass: string;
-    let badgeText: string;
-    switch (vm.workspaceStatus) {
-      case 'healthy':
-        badgeClass = 'thrunt-god-status is-healthy';
-        badgeText = `Workspace healthy (${vm.artifactCount}/${vm.artifactTotal})`;
-        break;
-      case 'partial':
-        badgeClass = 'thrunt-god-status is-partial';
-        badgeText = `Workspace partial (${vm.artifactCount}/${vm.artifactTotal})`;
-        break;
-      case 'missing':
-        badgeClass = 'thrunt-god-status is-missing';
-        badgeText = 'Workspace not detected';
-        break;
-    }
-
-    statusRow.createSpan({ cls: badgeClass, text: badgeText });
-    statusRow.createSpan({ cls: 'thrunt-god-path', text: vm.planningDir });
-
-    // Guidance text
-    let guidance: string;
-    switch (vm.workspaceStatus) {
-      case 'healthy':
-        guidance = 'All core artifacts present. Use actions below to open them.';
-        break;
-      case 'partial':
-        guidance = `${vm.artifactCount} of ${vm.artifactTotal} artifacts found. Create missing files below.`;
-        break;
-      case 'missing':
-        guidance =
-          'No THRUNT folder was found at the configured path. Open the repo root as your vault or change the planning directory setting.';
-        break;
-    }
-    hero.createEl('p', { cls: 'thrunt-god-copy', text: guidance });
-
-    // Hero actions
-    const heroActions = hero.createDiv({ cls: 'thrunt-god-actions' });
-    this.createActionButton(heroActions, 'Open mission', async () => {
-      await this.plugin.openCoreFile('MISSION.md');
-    });
-    this.createActionButton(heroActions, 'Refresh', async () => {
-      this.plugin.workspaceService.invalidate();
-      await this.render();
-    });
+    // Hunt status card (replaces old hero marketing card)
+    this.renderHuntStatusCard(contentEl, vm);
 
     // Artifact list
     const artifactCard = contentEl.createDiv({ cls: 'thrunt-god-card' });
@@ -161,6 +105,80 @@ export class ThruntWorkspaceView extends ItemView {
             });
         });
     }
+  }
+
+  private renderHuntStatusCard(container: HTMLElement, vm: ViewModel): void {
+    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-hunt-status' });
+
+    // Header row: status badge + path
+    const header = card.createDiv({ cls: 'thrunt-god-hunt-header' });
+    const statusCls = vm.workspaceStatus === 'healthy' ? 'is-healthy'
+      : vm.workspaceStatus === 'partial' ? 'is-partial'
+      : 'is-missing';
+    const statusText = vm.workspaceStatus === 'healthy' ? 'Healthy'
+      : vm.workspaceStatus === 'partial' ? `Partial (${vm.artifactCount}/${vm.artifactTotal})`
+      : 'Not detected';
+    header.createSpan({ cls: `thrunt-god-status ${statusCls}`, text: statusText });
+    header.createSpan({ cls: 'thrunt-god-path', text: vm.planningDir });
+
+    // Hunt fields (skip if missing)
+    if (vm.workspaceStatus !== 'missing') {
+      const fields = card.createDiv({ cls: 'thrunt-god-hunt-fields' });
+
+      // Phase
+      const phaseLabel = vm.stateSnapshot?.currentPhase ?? 'unknown';
+      this.renderField(fields, 'Phase', phaseLabel);
+
+      // Blockers
+      const blockerCount = vm.stateSnapshot?.blockers.length ?? 0;
+      this.renderField(fields, 'Blockers', String(blockerCount));
+
+      // Next action (only if nextActions is non-empty)
+      const nextActions = vm.stateSnapshot?.nextActions ?? [];
+      if (nextActions.length > 0) {
+        const first = nextActions[0]!;
+        const nextText = first.length > 60
+          ? first.slice(0, 57) + '...'
+          : first;
+        this.renderField(fields, 'Next', nextText);
+      }
+
+      // Hypotheses scoreboard
+      if (vm.hypothesisSnapshot && vm.hypothesisSnapshot.total > 0) {
+        const hypoField = fields.createDiv({ cls: 'thrunt-god-hunt-field' });
+        hypoField.createSpan({ cls: 'thrunt-god-field-label', text: 'Hypotheses' });
+        const scoreboard = hypoField.createSpan({ cls: 'thrunt-god-field-value thrunt-god-scoreboard' });
+        scoreboard.createSpan({ cls: 'thrunt-god-score is-validated', text: `${vm.hypothesisSnapshot.validated} validated` });
+        scoreboard.createSpan({ cls: 'thrunt-god-score-sep', text: ' / ' });
+        scoreboard.createSpan({ cls: 'thrunt-god-score is-pending', text: `${vm.hypothesisSnapshot.pending} pending` });
+        scoreboard.createSpan({ cls: 'thrunt-god-score-sep', text: ' / ' });
+        scoreboard.createSpan({ cls: 'thrunt-god-score is-rejected', text: `${vm.hypothesisSnapshot.rejected} rejected` });
+      } else {
+        this.renderField(fields, 'Hypotheses', 'none');
+      }
+
+      // Phase directories
+      const pd = vm.phaseDirectories;
+      if (pd.count > 0) {
+        this.renderField(fields, 'Phases', `${pd.count} directories (latest: ${pd.highestName})`);
+      }
+    }
+
+    // Actions row
+    const actions = card.createDiv({ cls: 'thrunt-god-actions' });
+    this.createActionButton(actions, 'Open mission', async () => {
+      await this.plugin.openCoreFile('MISSION.md');
+    });
+    this.createActionButton(actions, 'Refresh', async () => {
+      this.plugin.workspaceService.invalidate();
+      await this.render();
+    });
+  }
+
+  private renderField(container: HTMLElement, label: string, value: string): void {
+    const field = container.createDiv({ cls: 'thrunt-god-hunt-field' });
+    field.createSpan({ cls: 'thrunt-god-field-label', text: label });
+    field.createSpan({ cls: 'thrunt-god-field-value', text: value });
   }
 
   private createActionButton(
