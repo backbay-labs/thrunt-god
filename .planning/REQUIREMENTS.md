@@ -36,7 +36,7 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 
 - [x] **PARSE-01**: Plugin parses STATE.md to extract current phase, blockers, and next actions
 - [x] **PARSE-02**: Plugin parses HYPOTHESES.md table to extract validated, pending, and rejected hypothesis counts
-- [ ] **PARSE-03**: Plugin detects phase-XX/ directories under the planning directory and reports count and latest
+- [x] **PARSE-03**: Plugin detects phase-XX/ directories under the planning directory and reports count and latest
 - [x] **PARSE-04**: Malformed or missing STATE.md/HYPOTHESES.md degrades to "unknown" / zero counts, never crashes
 - [x] **PARSE-05**: Parsers strip YAML frontmatter before scanning to prevent false positives
 - [x] **PARSE-06**: Parsers are pure functions testable without Obsidian runtime
@@ -44,7 +44,7 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 ### View & Templates
 
 - [ ] **VIEW-01**: Sidebar displays a compact hunt status card with phase, blockers, next action, and hypothesis scoreboard
-- [ ] **VIEW-02**: Status bar shows live hunt state when STATE.md is parseable (e.g., "Phase 3 | 2/5 hypotheses active | 1 blocker")
+- [x] **VIEW-02**: Status bar shows live hunt state when STATE.md is parseable (e.g., "Phase 3 | 2/5 hypotheses active | 1 blocker")
 - [x] **VIEW-03**: Rendering errors show an error state with retry button, never a blank panel
 - [ ] **VIEW-04**: Starter templates include YAML frontmatter with thrunt-artifact, hunt-id, and updated properties
 - [ ] **VIEW-05**: Starter templates include wiki-links between related artifacts (e.g., HUNTMAP links to STATE and HYPOTHESES)
@@ -103,12 +103,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-05 | Phase 63 | Complete |
 | PARSE-01 | Phase 64 | Complete |
 | PARSE-02 | Phase 64 | Complete |
-| PARSE-03 | Phase 64 | Pending |
+| PARSE-03 | Phase 64 | Complete |
 | PARSE-04 | Phase 64 | Complete |
 | PARSE-05 | Phase 64 | Complete |
 | PARSE-06 | Phase 64 | Complete |
 | VIEW-01 | Phase 64 | Pending |
-| VIEW-02 | Phase 64 | Pending |
+| VIEW-02 | Phase 64 | Complete |
 | VIEW-03 | Phase 63 | Complete |
 | VIEW-04 | Phase 64 | Pending |
 | VIEW-05 | Phase 64 | Pending |
