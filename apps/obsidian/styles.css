@@ -1,0 +1,82 @@
+.thrunt-god-view {
+  padding: 1rem;
+}
+
+.thrunt-god-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.thrunt-god-hero h2,
+.thrunt-god-card h3 {
+  margin-top: 0;
+}
+
+.thrunt-god-eyebrow {
+  color: var(--text-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.thrunt-god-copy {
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0.5rem 0 0;
+}
+
+.thrunt-god-status-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.thrunt-god-status {
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.22rem 0.65rem;
+}
+
+.thrunt-god-status.is-healthy {
+  background: color-mix(in srgb, var(--color-green) 18%, transparent);
+  color: var(--color-green);
+}
+
+.thrunt-god-status.is-partial {
+  background: color-mix(in srgb, var(--color-orange) 18%, transparent);
+  color: var(--color-orange);
+}
+
+.thrunt-god-status.is-missing {
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  color: var(--text-muted);
+}
+
+.thrunt-god-path {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 0.85rem;
+}
+
+.thrunt-god-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.thrunt-god-action-button {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+}
+
