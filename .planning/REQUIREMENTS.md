@@ -9,8 +9,8 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 
 ### Architecture
 
-- [ ] **ARCH-01**: Plugin codebase uses a single canonical artifact registry (artifacts.ts) with no duplicate definitions
-- [ ] **ARCH-02**: Path resolution is extracted into pure functions testable without Obsidian runtime
+- [x] **ARCH-01**: Plugin codebase uses a single canonical artifact registry (artifacts.ts) with no duplicate definitions
+- [x] **ARCH-02**: Path resolution is extracted into pure functions testable without Obsidian runtime
 - [ ] **ARCH-03**: Vault operations are abstracted behind a VaultAdapter interface with a testable stub
 - [ ] **ARCH-04**: Plugin class (main.ts) contains only lifecycle, registration, and event wiring
 - [ ] **ARCH-05**: View receives a ViewModel and renders it without direct vault calls
@@ -85,8 +85,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | Phase 63 | Pending |
-| ARCH-02 | Phase 63 | Pending |
+| ARCH-01 | Phase 63 | Complete |
+| ARCH-02 | Phase 63 | Complete |
 | ARCH-03 | Phase 63 | Pending |
 | ARCH-04 | Phase 63 | Pending |
 | ARCH-05 | Phase 63 | Pending |
