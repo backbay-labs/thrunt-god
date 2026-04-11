@@ -360,16 +360,35 @@ function getObsidianConflictFlags() {
   return [...conflictFlags];
 }
 
-function getObsidianStageDir(homeDir = os.homedir()) {
+function getDefaultObsidianHomeDir() {
+  return expandTilde(process.env.THRUNT_HOME || os.homedir());
+}
+
+function getObsidianStageDir(homeDir = getDefaultObsidianHomeDir()) {
   return path.join(homeDir, '.thrunt', 'obsidian');
 }
 
-function getObsidianConfigPath(homeDir = os.homedir()) {
+function getObsidianConfigPath(homeDir = getDefaultObsidianHomeDir()) {
+  if (process.env.THRUNT_OBSIDIAN_CONFIG) {
+    return expandTilde(process.env.THRUNT_OBSIDIAN_CONFIG);
+  }
   return path.join(homeDir, 'Library', 'Application Support', 'obsidian', 'obsidian.json');
 }
 
+function getObsidianPluginSourceDir(repoRoot = path.join(__dirname, '..')) {
+  if (process.env.THRUNT_OBSIDIAN_PLUGIN_SOURCE) {
+    return expandTilde(process.env.THRUNT_OBSIDIAN_PLUGIN_SOURCE);
+  }
+  return path.join(repoRoot, 'apps', 'obsidian');
+}
+
+function shouldSkipObsidianBuild(options = {}) {
+  return options.skipBuild === true || process.env.THRUNT_OBSIDIAN_SKIP_BUILD === '1';
+}
+
 function discoverObsidianVaults(options = {}) {
-  const configPath = options.configPath || getObsidianConfigPath();
+  const homeDir = options.homeDir || getDefaultObsidianHomeDir();
+  const configPath = options.configPath || getObsidianConfigPath(homeDir);
 
   if (!fs.existsSync(configPath)) {
     return [];
@@ -416,18 +435,31 @@ function discoverObsidianVaults(options = {}) {
   return vaultPaths;
 }
 
-function buildObsidianBundle(repoRoot, runBuild = execFileSync) {
+function buildObsidianBundle(repoRootOrOptions, runBuild = execFileSync) {
+  const options = typeof repoRootOrOptions === 'object' && repoRootOrOptions !== null
+    ? repoRootOrOptions
+    : { repoRoot: repoRootOrOptions, runBuild };
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const buildRunner = options.runBuild || execFileSync;
+
+  if (shouldSkipObsidianBuild(options)) {
+    return { skipped: true };
+  }
+
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  runBuild(npmCommand, ['run', 'build:obsidian'], {
+  buildRunner(npmCommand, ['run', 'build:obsidian'], {
     cwd: repoRoot,
     stdio: 'inherit',
   });
+
+  return { skipped: false };
 }
 
 function stageObsidianBundle(options = {}) {
   const repoRoot = options.repoRoot || path.join(__dirname, '..');
-  const stageDir = options.stageDir || getObsidianStageDir();
-  const pluginDir = options.pluginDir || path.join(repoRoot, 'apps', 'obsidian');
+  const homeDir = options.homeDir || getDefaultObsidianHomeDir();
+  const stageDir = options.stageDir || getObsidianStageDir(homeDir);
+  const pluginDir = options.pluginDir || getObsidianPluginSourceDir(repoRoot);
 
   fs.mkdirSync(stageDir, { recursive: true });
 
@@ -553,26 +585,40 @@ function linkObsidianBundleIntoVault(vaultPath, stageDir) {
 }
 
 function installObsidian(options = {}) {
-  const homeDir = options.homeDir || os.homedir();
+  const homeDir = options.homeDir || getDefaultObsidianHomeDir();
   const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const pluginDir = options.pluginDir || getObsidianPluginSourceDir(repoRoot);
   const stageDir = options.stageDir || getObsidianStageDir(homeDir);
   const configPath = options.configPath || getObsidianConfigPath(homeDir);
   const buildBundle = options.buildBundle || buildObsidianBundle;
   const stageBundle = options.stageBundle || stageObsidianBundle;
   const discoverVaults = options.discoverVaults || discoverObsidianVaults;
-  const log = options.log || console.log;
+  const linkBundle = options.linkBundle || linkObsidianBundleIntoVault;
+  const runBuild = options.runBuild || execFileSync;
+  const logger = options.logger || options.log || console.log;
   const locationLabel = stageDir.startsWith(homeDir) ? stageDir.replace(homeDir, '~') : stageDir;
   const configLabel = configPath.startsWith(homeDir) ? configPath.replace(homeDir, '~') : configPath;
 
-  log(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
-  buildBundle(repoRoot);
+  logger(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
+  buildBundle({
+    repoRoot,
+    runBuild,
+    logger,
+    skipBuild: options.skipBuild,
+  });
 
-  const stagedBundle = stageBundle({ repoRoot, stageDir });
-  const vaultPaths = discoverVaults({ configPath });
+  const stagedBundle = stageBundle({
+    homeDir,
+    repoRoot,
+    stageDir,
+    pluginDir,
+    logger,
+  });
+  const vaultPaths = discoverVaults({ homeDir, configPath });
 
   if (vaultPaths.length === 0) {
-    log(`  No Obsidian vaults detected from ${cyan}obsidian.json${reset} (${dim}${configLabel}${reset}).`);
-    log(`  Install manually by copying ${cyan}main.js${reset}, ${cyan}manifest.json${reset}, and ${cyan}styles.css${reset} into ${cyan}VaultFolder/.obsidian/plugins/${OBSIDIAN_PLUGIN_ID}/${reset}.\n`);
+    logger(`  No Obsidian vaults detected from ${cyan}obsidian.json${reset} (${dim}${configLabel}${reset}).`);
+    logger(`  Install manually by copying ${cyan}main.js${reset}, ${cyan}manifest.json${reset}, and ${cyan}styles.css${reset} into ${cyan}VaultFolder/.obsidian/plugins/${OBSIDIAN_PLUGIN_ID}/${reset}.\n`);
     return {
       ...stagedBundle,
       configPath,
@@ -581,25 +627,25 @@ function installObsidian(options = {}) {
     };
   }
 
-  const vaultResults = vaultPaths.map((vaultPath) => linkObsidianBundleIntoVault(vaultPath, stagedBundle.stageDir));
+  const vaultResults = vaultPaths.map((vaultPath) => linkBundle(vaultPath, stagedBundle.stageDir));
 
   for (const result of vaultResults) {
     if (result.status === 'success') {
-      log(`  ${green}installed${reset} ${result.vaultPath}`);
+      logger(`  ${green}installed${reset} ${result.vaultPath}`);
       continue;
     }
 
     if (result.status === 'skip') {
-      log(`  ${dim}skipped${reset} ${result.vaultPath}`);
+      logger(`  ${dim}skipped${reset} ${result.vaultPath}`);
       continue;
     }
 
-    log(`  ${yellow}failed${reset} ${result.vaultPath}`);
+    logger(`  ${yellow}failed${reset} ${result.vaultPath}`);
   }
 
   const hadFailure = vaultResults.some((result) => result.status === 'failure');
   if (!hadFailure) {
-    log(`\n  Restart Obsidian and enable THRUNT God in Community Plugins.`);
+    logger(`\n  Restart Obsidian and enable THRUNT God in Community Plugins.`);
   }
 
   return {
