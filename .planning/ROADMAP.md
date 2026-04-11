@@ -106,6 +106,6 @@ Phases execute in numeric order: 65 -> 66 -> 67
 | 62. Execution History & Guardrails | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 63. Structural Foundation | v3.2 | 5/5 | Complete | 2026-04-11 |
 | 64. Live Hunt Dashboard | v3.2 | 5/5 | Complete | 2026-04-11 |
-| 65. Obsidian CLI Install Channel | v3.3 | 3/3 | Complete | 2026-04-11 |
+| 65. Obsidian CLI Install Channel | v3.3 | Complete    | 2026-04-11 | 2026-04-11 |
 | 66. Release Artifact Pipeline | v3.3 | 0/3 | Pending | - |
 | 67. Community Directory Submission Readiness | v3.3 | 0/3 | Pending | - |
