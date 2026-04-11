@@ -12,11 +12,26 @@ export const CORE_ARTIFACTS: readonly ArtifactDefinition[] = Object.freeze([
     fileName: 'MISSION.md',
     label: 'Mission',
     description: 'Program charter, scope, and constraints.',
-    starterTemplate: `# Mission
+    starterTemplate: `---
+thrunt-artifact: mission
+hunt-id: ""
+updated: ""
+---
+# Mission
 
 ## Objective
 
 Describe the threat-hunting objective for this workspace.
+
+## Scope
+
+- Data sources:
+- Time range:
+- Constraints:
+
+## Success criteria
+
+-
 `,
     commandId: 'open-thrunt-mission',
     commandName: 'Open THRUNT mission',
@@ -25,7 +40,12 @@ Describe the threat-hunting objective for this workspace.
     fileName: 'HYPOTHESES.md',
     label: 'Hypotheses',
     description: 'Testable hunt ideas and current validation state.',
-    starterTemplate: `# Hypotheses
+    starterTemplate: `---
+thrunt-artifact: hypotheses
+hunt-id: ""
+updated: ""
+---
+# Hypotheses
 
 | Hypothesis | Status | Notes |
 | --- | --- | --- |
@@ -37,7 +57,14 @@ Describe the threat-hunting objective for this workspace.
     fileName: 'HUNTMAP.md',
     label: 'Huntmap',
     description: 'Phase breakdown and execution plan.',
-    starterTemplate: `# Huntmap
+    starterTemplate: `---
+thrunt-artifact: huntmap
+hunt-id: ""
+updated: ""
+---
+# Huntmap
+
+See [[STATE]] for current phase status and [[HYPOTHESES]] for hypothesis tracking.
 
 ## Phases
 
@@ -50,7 +77,14 @@ Describe the threat-hunting objective for this workspace.
     fileName: 'STATE.md',
     label: 'State',
     description: 'Current phase, blockers, and next actions.',
-    starterTemplate: `# State
+    starterTemplate: `---
+thrunt-artifact: state
+hunt-id: ""
+updated: ""
+---
+# State
+
+See [[HUNTMAP]] for phase breakdown and [[FINDINGS]] for validated results.
 
 ## Current phase
 
@@ -71,7 +105,14 @@ Describe the threat-hunting objective for this workspace.
     fileName: 'FINDINGS.md',
     label: 'Findings',
     description: 'Validated findings only.',
-    starterTemplate: `# Findings
+    starterTemplate: `---
+thrunt-artifact: findings
+hunt-id: ""
+updated: ""
+---
+# Findings
+
+See [[HYPOTHESES]] for hypothesis validation status.
 
 ## Summary
 

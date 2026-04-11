@@ -10,32 +10,8 @@
   padding: 1rem;
 }
 
-.thrunt-god-hero h2,
 .thrunt-god-card h3 {
   margin-top: 0;
-}
-
-.thrunt-god-eyebrow {
-  color: var(--text-accent);
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.25rem;
-  text-transform: uppercase;
-}
-
-.thrunt-god-copy {
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin: 0.5rem 0 0;
-}
-
-.thrunt-god-status-row {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
 }
 
 .thrunt-god-status {
@@ -80,3 +56,67 @@
   padding: 0.45rem 0.9rem;
 }
 
+/* Hunt status card */
+.thrunt-god-hunt-status {
+  padding: 0.75rem 1rem;
+}
+
+.thrunt-god-hunt-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Hunt fields */
+.thrunt-god-hunt-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.thrunt-god-hunt-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.thrunt-god-field-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 5.5rem;
+  flex-shrink: 0;
+}
+
+.thrunt-god-field-label::after {
+  content: ':';
+}
+
+.thrunt-god-field-value {
+  color: var(--text-normal);
+}
+
+/* Hypothesis scoreboard */
+.thrunt-god-scoreboard {
+  display: inline;
+}
+
+.thrunt-god-score.is-validated {
+  color: var(--color-green);
+}
+
+.thrunt-god-score.is-pending {
+  color: var(--color-orange);
+}
+
+.thrunt-god-score.is-rejected {
+  color: var(--color-red);
+}
+
+.thrunt-god-score-sep {
+  color: var(--text-muted);
+}
