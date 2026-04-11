@@ -542,7 +542,11 @@ function linkObsidianBundleIntoVault(vaultPath, stageDir) {
       }
 
       if (targetStat) {
-        fs.rmSync(targetPath, { force: true, recursive: true });
+        if (targetStat.isDirectory() && !targetStat.isSymbolicLink()) {
+          fs.rmSync(targetPath, { force: true, recursive: true });
+        } else {
+          fs.unlinkSync(targetPath);
+        }
       }
 
       fs.symlinkSync(sourcePath, targetPath);
