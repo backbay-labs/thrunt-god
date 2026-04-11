@@ -15,7 +15,7 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 - [x] **ARCH-04**: Plugin class (main.ts) contains only lifecycle, registration, and event wiring
 - [x] **ARCH-05**: View receives a ViewModel and renders it without direct vault calls
 - [ ] **ARCH-06**: Pure modules (artifacts.ts, paths.ts, types.ts) have unit tests via vitest
-- [ ] **ARCH-07**: Obsidian dependency is pinned to a compatible range in package.json
+- [x] **ARCH-07**: Obsidian dependency is pinned to a compatible range in package.json
 
 ### Workspace Detection
 
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-04 | Phase 63 | Complete |
 | ARCH-05 | Phase 63 | Complete |
 | ARCH-06 | Phase 63 | Pending |
-| ARCH-07 | Phase 63 | Pending |
+| ARCH-07 | Phase 63 | Complete |
 | DETECT-01 | Phase 63 | Complete |
 | DETECT-02 | Phase 63 | Complete |
 | DETECT-03 | Phase 63 | Complete |

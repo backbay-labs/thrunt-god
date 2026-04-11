@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Obsidian Workspace Companion
 status: executing
-stopped_at: Completed 63-03-PLAN.md
-last_updated: "2026-04-11T17:05:18.160Z"
-last_activity: 2026-04-11 -- Completed 63-03 core integration (main.ts + view.ts rewrite)
+stopped_at: Completed 63-04-PLAN.md
+last_updated: "2026-04-11T17:11:23.539Z"
+last_activity: 2026-04-11 -- Completed 63-04 package config and CSS three-state badges
 progress:
   total_phases: 2
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 63 executing (plan 3/5 complete)
+**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 63 executing (plan 4/5 complete)
 
 ## Current Milestone: v3.2 Obsidian Workspace Companion
 
@@ -30,11 +30,11 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 ## Current Position
 
 Phase: 63 of 64 (Structural Foundation)
-Plan: 3 of 5 complete
+Plan: 4 of 5 complete
 Status: Executing
-Last activity: 2026-04-11 -- Completed 63-03 core integration (main.ts + view.ts rewrite)
+Last activity: 2026-04-11 -- Completed 63-04 package config and CSS three-state badges
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Accumulated Context
 
@@ -57,6 +57,8 @@ Progress: [██████░░░░] 60%
 - [Phase 63]: refreshViews always calls invalidate() first -- safe for all callers (vault events, saveSettings, activateView)
 - [Phase 63]: bootstrapWorkspace uses guarded index access on CORE_ARTIFACTS[0] for noUncheckedIndexedAccess compliance
 - [Phase 63]: Error boundary disables retry after consecutive same-error to prevent infinite retry loops
+- [Phase 63]: obsidian moved to devDependencies (never bundled, marked external in esbuild config)
+- [Phase 63]: vitest 3.x chosen for test runner (ESM-native, fast)
 
 ### Blockers/Concerns
 
@@ -64,6 +66,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-11T17:05:18.158Z
-Stopped at: Completed 63-03-PLAN.md
+Last session: 2026-04-11T17:11:23.537Z
+Stopped at: Completed 63-04-PLAN.md
 Resume file: None
