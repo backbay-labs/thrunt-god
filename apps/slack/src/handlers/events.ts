@@ -12,6 +12,7 @@ import type { ChannelBindings } from "../bindings.ts"
 import { extractIocs } from "../hunt/case.ts"
 import { readHuntStatus, readMission } from "../hunt/state.ts"
 import { huntStatusOneliner } from "../blocks/status.ts"
+import { caseModalBlocks } from "../blocks/case.ts"
 import { actions, section } from "../blocks/common.ts"
 
 export function registerEvents(app: App, config: Config, bindings?: ChannelBindings): void {
@@ -99,6 +100,23 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
     // If the IOC detection was posted in a thread, include the thread_ts
     // so the case creation modal can pull full thread context
     const threadTs = body.message?.thread_ts ?? body.message?.ts
+    const channelId = body.channel?.id ?? ""
+
+    // Fetch the original message to show signal/IOC preview
+    let rawText = ""
+    try {
+      const result = await client.conversations.history({
+        channel: channelId,
+        latest: messageTs,
+        inclusive: true,
+        limit: 1,
+      })
+      rawText = result.messages?.[0]?.text ?? ""
+    } catch {
+      // fall through with empty text
+    }
+
+    const iocs = extractIocs(rawText)
 
     await client.views.open({
       trigger_id: body.trigger_id,
@@ -106,9 +124,10 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
         type: "modal",
         callback_id: "create_case_modal",
         private_metadata: JSON.stringify({
-          channelId: body.channel?.id,
+          channelId,
           messageTs,
           threadTs,
+          rawText,
           origin: "ioc_paste",
         }),
         title: { type: "plain_text", text: "Open Hunt Case" },
@@ -128,6 +147,7 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
               },
             },
           },
+          ...caseModalBlocks(rawText, iocs),
         ],
       },
     })

@@ -317,20 +317,38 @@ function parseReceipt(filename: string, content: string): Receipt | null {
   const idMatch = filename.match(/(RCT-\d{8}-\d{3})/)
   if (!idMatch) return null
 
-  const lines = content.split("\n")
   let title = ""
   let source = ""
   let claimStatus: Receipt["claimStatus"] = "neutral"
   const relatedHypotheses: string[] = []
   let contentHash: string | undefined
   let createdAt: string | undefined
+
+  // Determine which lines contain metadata (frontmatter vs entire file)
+  const lines = content.split("\n")
+  let metaLines: string[]
+  let bodyLines: string[]
+
+  const hasFrontmatter = lines[0]?.trim() === "---"
+  if (hasFrontmatter) {
+    const endIdx = lines.findIndex((l, i) => i > 0 && l.trim() === "---")
+    if (endIdx > 0) {
+      metaLines = lines.slice(1, endIdx)
+      bodyLines = lines.slice(endIdx + 1)
+    } else {
+      metaLines = lines
+      bodyLines = []
+    }
+  } else {
+    // No frontmatter — scan all lines for metadata (legacy format)
+    metaLines = lines
+    bodyLines = []
+  }
+
+  // Parse metadata fields from frontmatter (or all lines if no frontmatter)
   let inRelatedHypotheses = false
-
-  for (let i = 0; i < lines.length; i++) {
-    const trimmed = lines[i].trim()
-
-    const titleMatch = trimmed.match(/^#\s+Receipt:\s*(.+)/i)
-    if (titleMatch) title = titleMatch[1]
+  for (const line of metaLines) {
+    const trimmed = line.trim()
 
     if (/^source:\s*/i.test(trimmed)) {
       source = trimmed.replace(/^source:\s*/i, "").replace(/^["']|["']$/g, "")
@@ -350,12 +368,10 @@ function parseReceipt(filename: string, content: string): Receipt | null {
     if (/^related_hypotheses:\s*/i.test(trimmed)) {
       const val = trimmed.replace(/^related_hypotheses:\s*/i, "").trim()
       if (val) {
-        // Inline format: related_hypotheses: [HYP-01, HYP-02] or HYP-01, HYP-02
         const matches = val.match(/HYP-\d+/g)
         if (matches) relatedHypotheses.push(...matches)
         inRelatedHypotheses = false
       } else {
-        // YAML-list format follows on subsequent lines
         inRelatedHypotheses = true
       }
       continue
@@ -377,6 +393,13 @@ function parseReceipt(filename: string, content: string): Receipt | null {
       createdAt = trimmed.replace(/^created_at:\s*/i, "").trim()
       inRelatedHypotheses = false
     }
+  }
+
+  // Scan body (or all lines if no frontmatter) for the title heading
+  const scanLines = hasFrontmatter ? bodyLines : lines
+  for (const line of scanLines) {
+    const titleMatch = line.trim().match(/^#\s+Receipt:\s*(.+)/i)
+    if (titleMatch) { title = titleMatch[1]; break }
   }
 
   return {
