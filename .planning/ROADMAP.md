@@ -41,7 +41,7 @@
 ### v3.3 Zero-Friction Distribution (In Progress)
 
 - [x] **Phase 65: Obsidian CLI Install Channel** - `--obsidian` installer, canonical bundle staging, macOS vault detection, symlink-based install/update (completed 2026-04-11)
-- [ ] **Phase 66: Release Artifact Pipeline** - release workflow builds Obsidian assets, validates version alignment, uploads plugin artifacts
+- [x] **Phase 66: Release Artifact Pipeline** - release workflow builds Obsidian assets, validates version alignment, uploads plugin artifacts (completed 2026-04-11)
 - [ ] **Phase 67: Community Directory Submission Readiness** - review-safe package, public docs/screenshots, and tracked submission metadata for `obsidianmd/obsidian-releases`
 
 ## Phase Details
@@ -71,7 +71,7 @@ Plans:
   2. `release.yml` installs Obsidian dependencies, builds the plugin, and fails if `apps/obsidian/package.json`, `manifest.json`, or the release tag drift from the root version
   3. GitHub releases upload `main.js`, `manifest.json`, `styles.css`, and `versions.json` alongside the npm package tarballs and VSIX
   4. Release automation and the CLI installer both target the same canonical bundle contract, preventing channel drift between local installs and published assets
-**Plans:** 0/3 plans complete
+**Plans:** 3/3 plans complete
 Plans:
 - [ ] 66-01-PLAN.md — Define the shared Obsidian bundle contract and local build entrypoints
 - [ ] 66-02-PLAN.md — Extend `release.yml` with version checks, Obsidian build steps, and GitHub release uploads
@@ -107,5 +107,5 @@ Phases execute in numeric order: 65 -> 66 -> 67
 | 63. Structural Foundation | v3.2 | 5/5 | Complete | 2026-04-11 |
 | 64. Live Hunt Dashboard | v3.2 | 5/5 | Complete | 2026-04-11 |
 | 65. Obsidian CLI Install Channel | v3.3 | Complete    | 2026-04-11 | 2026-04-11 |
-| 66. Release Artifact Pipeline | v3.3 | 0/3 | Pending | - |
+| 66. Release Artifact Pipeline | v3.3 | Complete    | 2026-04-11 | - |
 | 67. Community Directory Submission Readiness | v3.3 | 0/3 | Pending | - |

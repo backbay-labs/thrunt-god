@@ -18,10 +18,10 @@ Requirements for v3.3 Zero-Friction Distribution. Each maps to exactly one roadm
 
 ### Release Pipeline
 
-- [ ] **RELEASE-01**: Maintainer can produce the same production Obsidian bundle locally via repo scripts without hand-copying files from `apps/obsidian/`
-- [ ] **RELEASE-02**: Tag-based GitHub releases build the Obsidian plugin and fail if Obsidian package or manifest versions drift from the root release version
-- [ ] **RELEASE-03**: GitHub releases upload `main.js`, `manifest.json`, `styles.css`, and `versions.json` alongside existing npm and VSIX artifacts
-- [ ] **RELEASE-04**: CLI installer and GitHub release automation use the same canonical asset contract so both channels ship identical plugin contents
+- [x] **RELEASE-01**: Maintainer can produce the same production Obsidian bundle locally via repo scripts without hand-copying files from `apps/obsidian/`
+- [x] **RELEASE-02**: Tag-based GitHub releases build the Obsidian plugin and fail if Obsidian package or manifest versions drift from the root release version
+- [x] **RELEASE-03**: GitHub releases upload `main.js`, `manifest.json`, `styles.css`, and `versions.json` alongside existing npm and VSIX artifacts
+- [x] **RELEASE-04**: CLI installer and GitHub release automation use the same canonical asset contract so both channels ship identical plugin contents
 
 ### Community Directory
 
@@ -67,10 +67,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INST-04 | Phase 65 | Complete |
 | INST-05 | Phase 65 | Complete |
 | INST-06 | Phase 65 | Complete |
-| RELEASE-01 | Phase 66 | Pending |
-| RELEASE-02 | Phase 66 | Pending |
-| RELEASE-03 | Phase 66 | Pending |
-| RELEASE-04 | Phase 66 | Pending |
+| RELEASE-01 | Phase 66 | Complete |
+| RELEASE-02 | Phase 66 | Complete |
+| RELEASE-03 | Phase 66 | Complete |
+| RELEASE-04 | Phase 66 | Complete |
 | COMM-01 | Phase 67 | Pending |
 | COMM-02 | Phase 67 | Pending |
 | COMM-03 | Phase 67 | Pending |
