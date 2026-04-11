@@ -11,7 +11,7 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 
 - [x] **ARCH-01**: Plugin codebase uses a single canonical artifact registry (artifacts.ts) with no duplicate definitions
 - [x] **ARCH-02**: Path resolution is extracted into pure functions testable without Obsidian runtime
-- [ ] **ARCH-03**: Vault operations are abstracted behind a VaultAdapter interface with a testable stub
+- [x] **ARCH-03**: Vault operations are abstracted behind a VaultAdapter interface with a testable stub
 - [ ] **ARCH-04**: Plugin class (main.ts) contains only lifecycle, registration, and event wiring
 - [ ] **ARCH-05**: View receives a ViewModel and renders it without direct vault calls
 - [ ] **ARCH-06**: Pure modules (artifacts.ts, paths.ts, types.ts) have unit tests via vitest
@@ -19,7 +19,7 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 
 ### Workspace Detection
 
-- [ ] **DETECT-01**: Plugin distinguishes healthy (5/5 artifacts), partial (1-4 artifacts), and missing (no folder) workspace states
+- [x] **DETECT-01**: Plugin distinguishes healthy (5/5 artifacts), partial (1-4 artifacts), and missing (no folder) workspace states
 - [ ] **DETECT-02**: Status bar displays workspace state with artifact count (e.g., "THRUNT .planning (3/5)")
 - [ ] **DETECT-03**: Sidebar view reflects all three workspace states with appropriate guidance text
 - [ ] **DETECT-04**: Workspace status updates reactively on vault events (create, delete, rename) without requiring reload
@@ -29,7 +29,7 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 - [ ] **NAV-01**: All 5 core artifacts (MISSION, HYPOTHESES, HUNTMAP, STATE, FINDINGS) have command palette entries
 - [ ] **NAV-02**: User can open any existing artifact from the sidebar with one click
 - [ ] **NAV-03**: User can create a missing artifact from the sidebar, which opens the new file after creation
-- [ ] **NAV-04**: Idempotent bootstrap command creates all 5 missing artifacts without overwriting existing files
+- [x] **NAV-04**: Idempotent bootstrap command creates all 5 missing artifacts without overwriting existing files
 - [ ] **NAV-05**: Commands show a Notice with guidance when the target file does not exist
 
 ### Hunt State Parsing
@@ -87,19 +87,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | ARCH-01 | Phase 63 | Complete |
 | ARCH-02 | Phase 63 | Complete |
-| ARCH-03 | Phase 63 | Pending |
+| ARCH-03 | Phase 63 | Complete |
 | ARCH-04 | Phase 63 | Pending |
 | ARCH-05 | Phase 63 | Pending |
 | ARCH-06 | Phase 63 | Pending |
 | ARCH-07 | Phase 63 | Pending |
-| DETECT-01 | Phase 63 | Pending |
+| DETECT-01 | Phase 63 | Complete |
 | DETECT-02 | Phase 63 | Pending |
 | DETECT-03 | Phase 63 | Pending |
 | DETECT-04 | Phase 63 | Pending |
 | NAV-01 | Phase 63 | Pending |
 | NAV-02 | Phase 63 | Pending |
 | NAV-03 | Phase 63 | Pending |
-| NAV-04 | Phase 63 | Pending |
+| NAV-04 | Phase 63 | Complete |
 | NAV-05 | Phase 63 | Pending |
 | PARSE-01 | Phase 64 | Pending |
 | PARSE-02 | Phase 64 | Pending |

@@ -46,7 +46,7 @@
   3. All 5 core artifacts (MISSION, HYPOTHESES, HUNTMAP, STATE, FINDINGS) are reachable via command palette, openable/creatable from the sidebar, and bootstrappable via a single idempotent command
   4. A rendering error in the sidebar shows an error state with retry button instead of a blank panel
   5. Pure module tests (paths.ts, artifacts.ts, workspace.ts) pass via vitest with no Obsidian runtime dependency
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 Plans:
 - [ ] 63-01-PLAN.md — Pure modules: types.ts, artifacts.ts, paths.ts
 - [ ] 63-02-PLAN.md — Vault adapter and workspace service
@@ -78,5 +78,5 @@ Phases execute in numeric order: 63 -> 64
 | 60. Command Deck Webview | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 61. Runbook Engine & Editor | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 62. Execution History & Guardrails | v3.1 | 3/3 | Complete | 2026-04-09 |
-| 63. Structural Foundation | 1/5 | In Progress|  | - |
+| 63. Structural Foundation | 2/5 | In Progress|  | - |
 | 64. Live Hunt Dashboard | v3.2 | 0/0 | Not started | - |
