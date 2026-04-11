@@ -176,28 +176,18 @@ export async function start(): Promise<void> {
   if (config.defaultChannelId && !bindings.resolve(config.defaultChannelId)) {
     activeWatcher = startNotifier(app, config.defaultChannelId, config.workspaceRoot)
   }
-}
 
-// Clean up watchers and stop app on process exit
-async function cleanup(): Promise<void> {
-  if (activeWatcher) {
-    activeWatcher.stop()
-    activeWatcher = null
+  // Register signal handlers only when running as the main process
+  const localApp = app
+  const cleanup = async () => {
+    if (activeWatcher) { activeWatcher.stop(); activeWatcher = null }
+    if (notifierManager) { notifierManager.stopAll(); notifierManager = null }
+    try { await localApp.stop() } catch { /* may not have started */ }
+    process.exit(0)
   }
-  if (notifierManager) {
-    notifierManager.stopAll()
-    notifierManager = null
-  }
-  try {
-    if (app) await app.stop()
-  } catch {
-    // app may not have started yet
-  }
-  process.exit(0)
+  process.on("SIGINT", () => void cleanup())
+  process.on("SIGTERM", () => void cleanup())
 }
-
-process.on("SIGINT", () => void cleanup())
-process.on("SIGTERM", () => void cleanup())
 
 if (import.meta.main) {
   start().catch((err) => {

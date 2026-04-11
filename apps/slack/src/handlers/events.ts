@@ -47,7 +47,7 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
       thread_ts: event.ts,
       blocks: [
         section(
-          `:mag: Detected ${iocs.length} IOC(s) in this message: ${iocSummary}`,
+          `:mag: Detected ${meaningful.length} IOC(s) in this message: ${iocSummary}`,
         ),
         actions("ioc_actions", [
           {
@@ -62,7 +62,7 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
           },
         ]),
       ],
-      text: `Detected ${iocs.length} IOC(s): ${iocSummary}`,
+      text: `Detected ${meaningful.length} IOC(s): ${iocSummary}`,
     })
   })
 
