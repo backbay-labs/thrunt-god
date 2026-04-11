@@ -453,14 +453,161 @@ function stageObsidianBundle(options = {}) {
   };
 }
 
-function installObsidian() {
-  const repoRoot = path.join(__dirname, '..');
-  const stageDir = getObsidianStageDir();
-  const locationLabel = stageDir.replace(os.homedir(), '~');
+function getObsidianPluginDir(vaultPath) {
+  return path.join(vaultPath, '.obsidian', 'plugins', OBSIDIAN_PLUGIN_ID);
+}
 
-  console.log(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
-  buildObsidianBundle(repoRoot);
-  return stageObsidianBundle({ repoRoot, stageDir });
+function linkObsidianBundleIntoVault(vaultPath, stageDir) {
+  const pluginDir = getObsidianPluginDir(vaultPath);
+  const assetResults = [];
+
+  try {
+    fs.mkdirSync(pluginDir, { recursive: true });
+  } catch (error) {
+    return {
+      vaultPath,
+      pluginDir,
+      status: 'failure',
+      assetResults,
+      error: error.message,
+    };
+  }
+
+  for (const assetFile of OBSIDIAN_ASSET_FILES) {
+    const sourcePath = path.join(stageDir, assetFile);
+    const targetPath = path.join(pluginDir, assetFile);
+
+    try {
+      if (!fs.existsSync(sourcePath)) {
+        throw new Error(`Missing staged Obsidian asset: ${sourcePath}`);
+      }
+
+      let targetStat = null;
+      try {
+        targetStat = fs.lstatSync(targetPath);
+      } catch (error) {
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+      }
+
+      if (targetStat && targetStat.isSymbolicLink()) {
+        try {
+          if (fs.realpathSync(targetPath) === fs.realpathSync(sourcePath)) {
+            assetResults.push({
+              asset: assetFile,
+              sourcePath,
+              targetPath,
+              status: 'skip',
+            });
+            continue;
+          }
+        } catch (error) {
+          if (error.code !== 'ENOENT') {
+            throw error;
+          }
+        }
+      }
+
+      if (targetStat) {
+        fs.rmSync(targetPath, { force: true, recursive: true });
+      }
+
+      fs.symlinkSync(sourcePath, targetPath);
+
+      if (!fs.lstatSync(targetPath).isSymbolicLink()) {
+        throw new Error(`Failed to create Obsidian symlink: ${targetPath}`);
+      }
+
+      assetResults.push({
+        asset: assetFile,
+        sourcePath,
+        targetPath,
+        status: 'success',
+      });
+    } catch (error) {
+      assetResults.push({
+        asset: assetFile,
+        sourcePath,
+        targetPath,
+        status: 'failure',
+        error: error.message,
+      });
+
+      return {
+        vaultPath,
+        pluginDir,
+        status: 'failure',
+        assetResults,
+        error: error.message,
+      };
+    }
+  }
+
+  return {
+    vaultPath,
+    pluginDir,
+    status: assetResults.every((result) => result.status === 'skip') ? 'skip' : 'success',
+    assetResults,
+  };
+}
+
+function installObsidian(options = {}) {
+  const homeDir = options.homeDir || os.homedir();
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const stageDir = options.stageDir || getObsidianStageDir(homeDir);
+  const configPath = options.configPath || getObsidianConfigPath(homeDir);
+  const buildBundle = options.buildBundle || buildObsidianBundle;
+  const stageBundle = options.stageBundle || stageObsidianBundle;
+  const discoverVaults = options.discoverVaults || discoverObsidianVaults;
+  const log = options.log || console.log;
+  const locationLabel = stageDir.startsWith(homeDir) ? stageDir.replace(homeDir, '~') : stageDir;
+  const configLabel = configPath.startsWith(homeDir) ? configPath.replace(homeDir, '~') : configPath;
+
+  log(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
+  buildBundle(repoRoot);
+
+  const stagedBundle = stageBundle({ repoRoot, stageDir });
+  const vaultPaths = discoverVaults({ configPath });
+
+  if (vaultPaths.length === 0) {
+    log(`  No Obsidian vaults detected from ${cyan}obsidian.json${reset} (${dim}${configLabel}${reset}).`);
+    log(`  Install manually by copying ${cyan}main.js${reset}, ${cyan}manifest.json${reset}, and ${cyan}styles.css${reset} into ${cyan}VaultFolder/.obsidian/plugins/${OBSIDIAN_PLUGIN_ID}/${reset}.\n`);
+    return {
+      ...stagedBundle,
+      configPath,
+      vaultResults: [],
+      status: 'no_vaults',
+    };
+  }
+
+  const vaultResults = vaultPaths.map((vaultPath) => linkObsidianBundleIntoVault(vaultPath, stagedBundle.stageDir));
+
+  for (const result of vaultResults) {
+    if (result.status === 'success') {
+      log(`  ${green}installed${reset} ${result.vaultPath}`);
+      continue;
+    }
+
+    if (result.status === 'skip') {
+      log(`  ${dim}skipped${reset} ${result.vaultPath}`);
+      continue;
+    }
+
+    log(`  ${yellow}failed${reset} ${result.vaultPath}`);
+  }
+
+  const hadFailure = vaultResults.some((result) => result.status === 'failure');
+  if (!hadFailure) {
+    log(`\n  Restart Obsidian and enable THRUNT God in Community Plugins.`);
+  }
+
+  return {
+    ...stagedBundle,
+    configPath,
+    vaultResults,
+    status: hadFailure ? 'failure' : 'success',
+  };
 }
 
 console.log(banner);
@@ -4982,8 +5129,11 @@ if (process.env.THRUNT_TEST_MODE) {
     getObsidianStageDir,
     getObsidianConfigPath,
     discoverObsidianVaults,
+    getObsidianPluginDir,
+    linkObsidianBundleIntoVault,
     buildObsidianBundle,
     stageObsidianBundle,
+    installObsidian,
     writeManifest,
     reportLocalPatches,
     validateHookFields,
