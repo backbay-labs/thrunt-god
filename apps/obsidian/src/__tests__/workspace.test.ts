@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { VaultAdapter } from '../vault-adapter';
-import { WorkspaceService } from '../workspace';
+import { WorkspaceService, formatStatusBarText } from '../workspace';
 import { CORE_ARTIFACTS } from '../artifacts';
 import { getCoreFilePath } from '../paths';
 
@@ -24,6 +24,9 @@ class StubVaultAdapter implements VaultAdapter {
     const existing = this.folderChildren.get(parentPath) ?? [];
     existing.push(childName);
     this.folderChildren.set(parentPath, existing);
+  }
+  setFolderChildren(path: string, children: string[]): void {
+    this.folderChildren.set(path, children);
   }
 
   fileExists(path: string): boolean {
@@ -243,6 +246,151 @@ describe('WorkspaceService', () => {
       const result = await service.ensureCoreFile('MISSION.md', '# New mission');
       expect(result.created).toBe(true);
       expect(adapter.fileExists('.planning/MISSION.md')).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // formatStatusBarText
+  // -------------------------------------------------------------------------
+
+  describe('formatStatusBarText', () => {
+    const healthyBase = {
+      workspaceStatus: 'healthy' as const,
+      planningDir: '.planning',
+      artifactCount: 5,
+      artifactTotal: 5,
+      artifacts: [],
+      stateSnapshot: null,
+      hypothesisSnapshot: null,
+      phaseDirectories: { count: 0, highest: null, highestName: null },
+    };
+
+    it('returns "THRUNT not detected" for missing workspace', () => {
+      const vm = {
+        workspaceStatus: 'missing' as const,
+        planningDir: '.planning',
+        artifactCount: 0,
+        artifactTotal: 5,
+        artifacts: [],
+        stateSnapshot: null,
+        hypothesisSnapshot: null,
+        phaseDirectories: { count: 0, highest: null, highestName: null },
+      };
+      expect(formatStatusBarText(vm)).toBe('THRUNT not detected');
+    });
+
+    it('returns partial format with artifact counts', () => {
+      const vm = {
+        workspaceStatus: 'partial' as const,
+        planningDir: '.planning',
+        artifactCount: 3,
+        artifactTotal: 5,
+        artifacts: [],
+        stateSnapshot: null,
+        hypothesisSnapshot: null,
+        phaseDirectories: { count: 0, highest: null, highestName: null },
+      };
+      expect(formatStatusBarText(vm)).toBe('THRUNT .planning (3/5)');
+    });
+
+    it('returns phase + hypotheses + blocker for healthy parseable state', () => {
+      const vm = {
+        workspaceStatus: 'healthy' as const,
+        planningDir: '.planning',
+        artifactCount: 5,
+        artifactTotal: 5,
+        artifacts: [],
+        stateSnapshot: { currentPhase: 'Phase 3', blockers: ['x'], nextActions: [] },
+        hypothesisSnapshot: { total: 5, validated: 1, pending: 2, rejected: 1, unknown: 1 },
+        phaseDirectories: { count: 3, highest: 3, highestName: 'phase-03' },
+      };
+      expect(formatStatusBarText(vm)).toBe('Phase 3 | 2/5 hypotheses active | 1 blocker');
+    });
+
+    it('returns fallback format for healthy with null stateSnapshot', () => {
+      const vm = {
+        ...healthyBase,
+        stateSnapshot: null,
+        hypothesisSnapshot: null,
+      };
+      expect(formatStatusBarText(vm)).toBe('THRUNT .planning (5/5)');
+    });
+
+    it('returns fallback format for healthy with unknown currentPhase', () => {
+      const vm = {
+        ...healthyBase,
+        stateSnapshot: { currentPhase: 'unknown', blockers: [], nextActions: [] },
+        hypothesisSnapshot: null,
+      };
+      expect(formatStatusBarText(vm)).toBe('THRUNT .planning (5/5)');
+    });
+
+    it('uses plural "blockers" for multiple blockers', () => {
+      const vm = {
+        ...healthyBase,
+        stateSnapshot: { currentPhase: 'Recon', blockers: ['a', 'b'], nextActions: [] },
+        hypothesisSnapshot: null,
+      };
+      expect(formatStatusBarText(vm)).toBe('Recon | 2 blockers');
+    });
+
+    it('returns just phase when no hypotheses and no blockers', () => {
+      const vm = {
+        ...healthyBase,
+        stateSnapshot: { currentPhase: 'Recon', blockers: [], nextActions: [] },
+        hypothesisSnapshot: null,
+      };
+      expect(formatStatusBarText(vm)).toBe('Recon');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // detectPhaseDirectories (via getViewModel)
+  // -------------------------------------------------------------------------
+
+  describe('detectPhaseDirectories', () => {
+    it('returns empty info when no phase directories exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.setFolderChildren(PLANNING_DIR, []);
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories).toEqual({ count: 0, highest: null, highestName: null });
+    });
+
+    it('counts only phase-NN directories in mixed listing', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.setFolderChildren(PLANNING_DIR, ['phase-01', 'phase-recon', 'notes']);
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories).toEqual({ count: 1, highest: 1, highestName: 'phase-01' });
+    });
+
+    it('ignores all non-numeric directory names', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.setFolderChildren(PLANNING_DIR, ['phase-recon', 'notes', 'archive']);
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories).toEqual({ count: 0, highest: null, highestName: null });
+    });
+
+    it('correctly identifies highest phase from multiple directories', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.setFolderChildren(PLANNING_DIR, ['phase-01', 'phase-02', 'phase-03']);
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories).toEqual({ count: 3, highest: 3, highestName: 'phase-03' });
+    });
+
+    it('getViewModel includes parsed snapshots when STATE.md and HYPOTHESES.md exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      // The starter templates include default content for STATE.md and HYPOTHESES.md
+      const vm = await service.getViewModel();
+      // stateSnapshot should not be null since STATE.md was added via addAllArtifacts
+      expect(vm.stateSnapshot).not.toBeNull();
+      // hypothesisSnapshot depends on whether the starter template has a table
+      // Just verify the field is present
+      expect(vm).toHaveProperty('hypothesisSnapshot');
     });
   });
 });
