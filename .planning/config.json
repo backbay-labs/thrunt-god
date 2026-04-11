@@ -1,0 +1,75 @@
+{
+  "workflow": {
+    "_auto_chain_active": false
+  },
+  "models": {
+    "executor": "opus",
+    "verifier": "opus",
+    "researcher": "opus",
+    "planner": "opus",
+    "checker": "opus"
+  },
+  "milestones": {
+    "v2.0": {
+      "name": "Developer Experience & CI",
+      "phases": [
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "status": "active",
+      "research": [
+        "research/cicd-pipeline-spec.md",
+        "research/thrunt-init-spec.md",
+        "research/pack-authoring-cli-spec.md"
+      ]
+    },
+    "v2.1": {
+      "name": "Advanced Hunt Features",
+      "phases": [
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "status": "planned",
+      "research": [
+        "research/hunt-replay-spec.md",
+        "research/multi-tenant-coordination-spec.md"
+      ]
+    },
+    "v2.2": {
+      "name": "Connector Ecosystem",
+      "phases": [
+        45,
+        46,
+        47,
+        48,
+        49
+      ],
+      "status": "planned",
+      "research": [
+        "research/connector-plugin-sdk-spec.md"
+      ]
+    },
+    "v3.2": {
+      "name": "Obsidian Workspace Companion",
+      "phases": [
+        63,
+        64
+      ],
+      "status": "active",
+      "research": [
+        "apps/obsidian/SPEC.md"
+      ]
+    }
+  },
+  "model_profile": "quality"
+}
