@@ -42,7 +42,7 @@
 
 - [x] **Phase 65: Obsidian CLI Install Channel** - `--obsidian` installer, canonical bundle staging, macOS vault detection, symlink-based install/update (completed 2026-04-11)
 - [x] **Phase 66: Release Artifact Pipeline** - release workflow builds Obsidian assets, validates version alignment, uploads plugin artifacts (completed 2026-04-11)
-- [ ] **Phase 67: Community Directory Submission Readiness** - review-safe package, public docs/screenshots, and tracked submission metadata for `obsidianmd/obsidian-releases`
+- [x] **Phase 67: Community Directory Submission Readiness** - review-safe package, public docs/screenshots, and tracked submission metadata for `obsidianmd/obsidian-releases` (completed 2026-04-11)
 
 ## Phase Details
 
@@ -86,7 +86,7 @@ Plans:
   2. Public Obsidian documentation explains value, install options, configuration, and includes screenshots or GIFs aimed at first-time Obsidian users
   3. `versions.json`, submission metadata, and release notes stay synchronized through one documented maintainer flow
   4. Repository contains the checklist and submission notes needed to open or update the `obsidianmd/obsidian-releases` PR without tribal knowledge
-**Plans:** 0/3 plans complete
+**Plans:** 3/3 plans complete
 Plans:
 - [ ] 67-01-PLAN.md — Audit plugin code/package against Obsidian review requirements and close any compliance gaps
 - [ ] 67-02-PLAN.md — Upgrade public Obsidian docs with screenshots and distribution guidance for community-plugin users
@@ -108,4 +108,4 @@ Phases execute in numeric order: 65 -> 66 -> 67
 | 64. Live Hunt Dashboard | v3.2 | 5/5 | Complete | 2026-04-11 |
 | 65. Obsidian CLI Install Channel | v3.3 | Complete    | 2026-04-11 | 2026-04-11 |
 | 66. Release Artifact Pipeline | v3.3 | Complete    | 2026-04-11 | - |
-| 67. Community Directory Submission Readiness | v3.3 | 0/3 | Pending | - |
+| 67. Community Directory Submission Readiness | v3.3 | Complete    | 2026-04-11 | - |

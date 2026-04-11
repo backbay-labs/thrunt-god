@@ -25,10 +25,10 @@ Requirements for v3.3 Zero-Friction Distribution. Each maps to exactly one roadm
 
 ### Community Directory
 
-- [ ] **COMM-01**: Plugin package meets baseline Obsidian community review expectations: safe DOM usage, proper event cleanup, theme-safe styling, and mobile-safe manifest metadata
-- [ ] **COMM-02**: Obsidian-first users can understand install and use value from a public README with screenshots and community-plugin-oriented setup guidance
-- [ ] **COMM-03**: Repository keeps `versions.json` and release metadata in sync through a documented release flow for each plugin version
-- [ ] **COMM-04**: Repository contains the metadata, checklist, and submission notes needed to open and maintain an `obsidianmd/obsidian-releases` entry for THRUNT God
+- [x] **COMM-01**: Plugin package meets baseline Obsidian community review expectations: safe DOM usage, proper event cleanup, theme-safe styling, and mobile-safe manifest metadata
+- [x] **COMM-02**: Obsidian-first users can understand install and use value from a public README with screenshots and community-plugin-oriented setup guidance
+- [x] **COMM-03**: Repository keeps `versions.json` and release metadata in sync through a documented release flow for each plugin version
+- [x] **COMM-04**: Repository contains the metadata, checklist, and submission notes needed to open and maintain an `obsidianmd/obsidian-releases` entry for THRUNT God
 
 ## Future Requirements
 
@@ -71,10 +71,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RELEASE-02 | Phase 66 | Complete |
 | RELEASE-03 | Phase 66 | Complete |
 | RELEASE-04 | Phase 66 | Complete |
-| COMM-01 | Phase 67 | Pending |
-| COMM-02 | Phase 67 | Pending |
-| COMM-03 | Phase 67 | Pending |
-| COMM-04 | Phase 67 | Pending |
+| COMM-01 | Phase 67 | Complete |
+| COMM-02 | Phase 67 | Complete |
+| COMM-03 | Phase 67 | Complete |
+| COMM-04 | Phase 67 | Complete |
 
 **Coverage:**
 - v3.3 requirements: 14 total
