@@ -88,6 +88,7 @@ function parseStateMd(content: string): {
         currentPhaseName = match[2]
       } else {
         currentPhase = val
+        currentPhaseName = null
       }
     } else if (/^\*\*Last Activity\*\*:\s*/i.test(trimmed)) {
       lastActivity = trimmed.replace(/^\*\*Last Activity\*\*:\s*/i, "").trim()

@@ -134,5 +134,5 @@ export const IOC_PATTERNS: Record<IocType, RegExp> = {
   url: /https?:\/\/[^\s<>\"']+/g,
   email: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
   file_path: /(?:\/(?:tmp|var|etc|usr|home|opt|proc|sys|dev|mnt|root|Windows|Users|Program Files)[^\s;|&"']*)/g,
-  command: /(?:powershell|cmd\.exe|bash|sh|python|curl|wget|certutil|bitsadmin|mshta|regsvr32|rundll32)\s+[^\n]{5,}/gi,
+  command: /\b(?:powershell|cmd\.exe|bash|sh|python|curl|wget|certutil|bitsadmin|mshta|regsvr32|rundll32)\s+[^\n]{5,}/gi,
 }

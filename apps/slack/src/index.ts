@@ -3,57 +3,61 @@
  *
  * Surfaces for coordinating hunts, approvals, and handoff in Slack.
  * Runs in socket mode by default (no public URL needed).
+ *
+ * Module-level imports are side-effect-free. The Bolt App and handler
+ * registration happen inside `start()` so external callers can import
+ * utility exports (readHuntStatus, createBindings, etc.) without
+ * requiring Slack environment variables.
  */
 
 import { App, LogLevel } from "@slack/bolt"
 import type { KnownBlock } from "@slack/types"
-import { loadConfig } from "./config.ts"
-import { createBindings } from "./bindings.ts"
-import { createApprovalStore } from "./approvals.ts"
-import { registerCommands } from "./handlers/commands.ts"
-import { registerActions } from "./handlers/actions.ts"
-import { registerEvents } from "./handlers/events.ts"
-import { registerShortcuts } from "./handlers/shortcuts.ts"
-import { registerViews } from "./handlers/views.ts"
-import { startNotifier, createNotifierManager } from "./notify.ts"
+import type { Config } from "./config.ts"
+import type { ChannelBindings } from "./bindings.ts"
+import type { ApprovalStore } from "./approvals.ts"
 import type { NotifierManager } from "./notify.ts"
 import type { PlanningWatcher } from "./watcher.ts"
 import { approvalRequestBlocks } from "./blocks/approval.ts"
 
-const config = loadConfig()
+// ── Lazy runtime state ─────────────────────────────────────────────────
 
-const app = new App({
-  token: config.slackBotToken,
-  appToken: config.slackAppToken,
-  signingSecret: config.slackSigningSecret,
-  socketMode: true,
-  logLevel: ({ debug: LogLevel.DEBUG, info: LogLevel.INFO, warn: LogLevel.WARN, error: LogLevel.ERROR } as const)[config.logLevel],
-})
+let app: App | null = null
+let config: Config | null = null
+let bindings: ChannelBindings | null = null
+let approvalStore: ApprovalStore | null = null
+let activeWatcher: PlanningWatcher | null = null
+let notifierManager: NotifierManager | null = null
 
-// Channel bindings — persistent channel-to-workspace mapping
-const bindings = createBindings(config.workspaceRoot)
+function requireApp(): App {
+  if (!app) throw new Error("Slack bot not started. Call start() first.")
+  return app
+}
 
-// Approval store — persistent pending approval state
-const approvalStore = createApprovalStore(config.workspaceRoot)
+// ── Side-effect-free exports (safe to import without env vars) ─────────
 
-// Register all handler modules
-// notifierManager is late-initialized in start(), so pass a lazy sync callback
-registerCommands(app, config, bindings, () => notifierManager?.sync())
-registerActions(app, config, approvalStore, bindings)
-registerEvents(app, config, bindings)
-registerShortcuts(app, config)
-registerViews(app, config, bindings)
-
-// ── Publish API (for external callers) ─────────────────────────────────
-
-export { app, config, bindings, approvalStore }
-export { readHuntStatus, readFindings, readReceipts, readMission } from "./hunt/state.ts"
-export { startNotifier } from "./notify.ts"
+export { loadConfig } from "./config.ts"
 export { createBindings } from "./bindings.ts"
 export { createApprovalStore } from "./approvals.ts"
+export { startNotifier } from "./notify.ts"
+export { readHuntStatus, readFindings, readReceipts, readMission } from "./hunt/state.ts"
+
+export type { Config } from "./config.ts"
 export type { ChannelBindings } from "./bindings.ts"
 export type { ApprovalStore, PendingApproval } from "./approvals.ts"
 export type { PlanningWatcher, WatcherEvent, WatcherCallback } from "./watcher.ts"
+
+/** Access the running App instance (throws if not started) */
+export function getApp(): App { return requireApp() }
+export function getConfig(): Config {
+  if (!config) throw new Error("Slack bot not started. Call start() first.")
+  return config
+}
+export function getBindings(): ChannelBindings {
+  if (!bindings) throw new Error("Slack bot not started. Call start() first.")
+  return bindings
+}
+
+// ── Runtime API (requires start() to have been called) ─────────────────
 
 /**
  * Post a hunt summary to a channel. Called by external systems
@@ -65,7 +69,7 @@ export async function publishToChannel(
   text: string,
   threadTs?: string,
 ): Promise<void> {
-  await app.client.chat.postMessage({
+  await requireApp().client.chat.postMessage({
     channel: channelId,
     blocks,
     text,
@@ -86,13 +90,15 @@ export async function requestApproval(
     phase: string
   },
 ): Promise<string> {
+  if (!approvalStore) throw new Error("Slack bot not started. Call start() first.")
+
   const req = {
     ...approval,
     requestedAt: new Date().toISOString(),
     status: "pending" as const,
   }
 
-  const result = await app.client.chat.postMessage({
+  const result = await requireApp().client.chat.postMessage({
     channel: channelId,
     blocks: approvalRequestBlocks(req),
     text: `Approval required: ${req.action}`,
@@ -112,10 +118,36 @@ export async function requestApproval(
 
 // ── Start ──────────────────────────────────────────────────────────────
 
-let activeWatcher: PlanningWatcher | null = null
-let notifierManager: NotifierManager | null = null
+export async function start(): Promise<void> {
+  const { loadConfig } = await import("./config.ts")
+  const { createBindings } = await import("./bindings.ts")
+  const { createApprovalStore } = await import("./approvals.ts")
+  const { registerCommands } = await import("./handlers/commands.ts")
+  const { registerActions } = await import("./handlers/actions.ts")
+  const { registerEvents } = await import("./handlers/events.ts")
+  const { registerShortcuts } = await import("./handlers/shortcuts.ts")
+  const { registerViews } = await import("./handlers/views.ts")
+  const { startNotifier, createNotifierManager } = await import("./notify.ts")
 
-async function start(): Promise<void> {
+  config = loadConfig()
+  bindings = createBindings(config.workspaceRoot)
+  approvalStore = createApprovalStore(config.workspaceRoot)
+
+  app = new App({
+    token: config.slackBotToken,
+    appToken: config.slackAppToken,
+    signingSecret: config.slackSigningSecret,
+    socketMode: true,
+    logLevel: ({ debug: LogLevel.DEBUG, info: LogLevel.INFO, warn: LogLevel.WARN, error: LogLevel.ERROR } as const)[config.logLevel],
+  })
+
+  // Register handlers
+  registerCommands(app, config, bindings, () => notifierManager?.sync())
+  registerActions(app, config, approvalStore, bindings)
+  registerEvents(app, config, bindings)
+  registerShortcuts(app, config)
+  registerViews(app, config, bindings)
+
   // Load persisted state
   await bindings.load()
   await approvalStore.load()
@@ -146,7 +178,7 @@ async function cleanup(): Promise<void> {
     notifierManager = null
   }
   try {
-    await app.stop()
+    if (app) await app.stop()
   } catch {
     // app may not have started yet
   }
