@@ -40,7 +40,7 @@
 
 ### v3.3 Zero-Friction Distribution (In Progress)
 
-- [ ] **Phase 65: Obsidian CLI Install Channel** - `--obsidian` installer, canonical bundle staging, macOS vault detection, symlink-based install/update
+- [x] **Phase 65: Obsidian CLI Install Channel** - `--obsidian` installer, canonical bundle staging, macOS vault detection, symlink-based install/update (completed 2026-04-11)
 - [ ] **Phase 66: Release Artifact Pipeline** - release workflow builds Obsidian assets, validates version alignment, uploads plugin artifacts
 - [ ] **Phase 67: Community Directory Submission Readiness** - review-safe package, public docs/screenshots, and tracked submission metadata for `obsidianmd/obsidian-releases`
 
@@ -56,11 +56,11 @@
   3. Re-running the installer after local changes or release updates refreshes staged assets and repairs broken plugin links without manual cleanup
   4. Missing vault metadata or no detected vaults exits cleanly with explicit manual-install guidance and no partial vault changes
   5. Installer output reports per-vault results and tells the user to restart Obsidian and enable THRUNT God in Community Plugins
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 65-01-PLAN.md — Parse `--obsidian`, build or stage the production plugin bundle, and define the managed install location
 - [x] 65-02-PLAN.md — Detect macOS vaults, create/update symlinked plugin directories, and surface clear install output
-- [ ] 65-03-PLAN.md — Add installer tests plus manual verification for clean install, reinstall, and no-vault fallback flows
+- [x] 65-03-PLAN.md — Add installer tests plus manual verification for clean install, reinstall, and no-vault fallback flows
 
 ### Phase 66: Release Artifact Pipeline
 **Goal**: Extend the existing release workflow so Obsidian assets ship as first-class release artifacts with strict version alignment
@@ -106,6 +106,6 @@ Phases execute in numeric order: 65 -> 66 -> 67
 | 62. Execution History & Guardrails | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 63. Structural Foundation | v3.2 | 5/5 | Complete | 2026-04-11 |
 | 64. Live Hunt Dashboard | v3.2 | 5/5 | Complete | 2026-04-11 |
-| 65. Obsidian CLI Install Channel | 2/3 | In Progress|  | - |
+| 65. Obsidian CLI Install Channel | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 66. Release Artifact Pipeline | v3.3 | 0/3 | Pending | - |
 | 67. Community Directory Submission Readiness | v3.3 | 0/3 | Pending | - |

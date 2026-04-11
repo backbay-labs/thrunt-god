@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v3.3
 milestone_name: Zero-Friction Distribution
 current_plan: 3
-status: executing
-stopped_at: Completed 65-02-PLAN.md
-last_updated: "2026-04-11T19:50:40.042Z"
-last_activity: 2026-04-11 -- Executed 65-02-PLAN.md
+status: ready_for_verification
+stopped_at: Completed 65-03-PLAN.md
+last_updated: "2026-04-11T20:03:40.925Z"
+last_activity: 2026-04-11 -- Executed 65-03-PLAN.md
 progress:
   total_phases: 39
-  completed_phases: 22
+  completed_phases: 23
   total_plans: 74
-  completed_plans: 60
-  percent: 81
+  completed_plans: 61
+  percent: 82
 ---
 
 # Project State
@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.3 Zero-Friction Distribution -- Phase 65 Plan 03 ready for execution
+**Current focus:** v3.3 Zero-Friction Distribution -- Phase 65 complete, Phase 66 is next
 
 ## Current Milestone: v3.3 Zero-Friction Distribution
 
@@ -34,10 +34,10 @@ Phase: 65 of 67 (Obsidian CLI Install Channel)
 Plan: 3 of 3
 Current Plan: 3
 Total Plans in Phase: 3
-Status: In Progress
-Last activity: 2026-04-11 -- Executed 65-02-PLAN.md
+Status: Complete
+Last activity: 2026-04-11 -- Executed 65-03-PLAN.md
 
-Progress: [#######---] 67%
+Progress: [##########] 100%
 
 ## Accumulated Context
 
@@ -82,6 +82,9 @@ Progress: [#######---] 67%
 - [Phase 65]: Obsidian installer staging uses the exact main.js, manifest.json, and styles.css bundle contract under ~/.thrunt/obsidian
 - [Phase 65]: Vault autodiscovery is macOS-only for this phase and reads only obsidian.json .vaults[*].path entries
 - [Phase 65]: Per-vault install status is derived from asset-level link outcomes: all skips => skipped, any fresh or repaired link => installed
+- [Phase 65]: Disposable THRUNT_HOME/THRUNT_OBSIDIAN_CONFIG/THRUNT_OBSIDIAN_PLUGIN_SOURCE/THRUNT_OBSIDIAN_SKIP_BUILD overrides are the CLI-safe fixture surface while production defaults remain unchanged.
+- [Phase 65]: Obsidian reinstall repair unlinks files and symlinks directly, using recursive deletion only for real directories.
+- [Phase 65]: CLI smoke coverage clears THRUNT_TEST_MODE and executes bin/install.js in child processes so the real operator path is tested.
 
 ### Blockers/Concerns
 
@@ -93,9 +96,10 @@ None.
 |-------|------|----------|-------|-------|------|
 | Phase 65 | 01 | 106s | 2 tasks | 1 files | 2026-04-11 |
 | Phase 65 | 02 | 325s | 2 tasks | 1 files | 2026-04-11 |
+| Phase 65 | 03 | 487s | 3 tasks | 2 files | 2026-04-11 |
 
 ## Session Continuity
 
-Last session: 2026-04-11T19:50:40.038Z
-Stopped at: Completed 65-02-PLAN.md
+Last session: 2026-04-11T20:03:40.920Z
+Stopped at: Completed 65-03-PLAN.md
 Resume file: None
