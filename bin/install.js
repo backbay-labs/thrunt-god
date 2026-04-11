@@ -364,6 +364,58 @@ function getObsidianStageDir(homeDir = os.homedir()) {
   return path.join(homeDir, '.thrunt', 'obsidian');
 }
 
+function getObsidianConfigPath(homeDir = os.homedir()) {
+  return path.join(homeDir, 'Library', 'Application Support', 'obsidian', 'obsidian.json');
+}
+
+function discoverObsidianVaults(options = {}) {
+  const configPath = options.configPath || getObsidianConfigPath();
+
+  if (!fs.existsSync(configPath)) {
+    return [];
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch {
+    return [];
+  }
+
+  if (!parsed || typeof parsed !== 'object' || !parsed.vaults || typeof parsed.vaults !== 'object') {
+    return [];
+  }
+
+  const vaultEntries = Array.isArray(parsed.vaults) ? parsed.vaults : Object.values(parsed.vaults);
+  const seenVaultPaths = new Set();
+  const vaultPaths = [];
+
+  for (const entry of vaultEntries) {
+    if (!entry || typeof entry !== 'object' || typeof entry.path !== 'string' || entry.path.trim() === '') {
+      continue;
+    }
+
+    const resolvedPath = path.resolve(entry.path);
+
+    if (seenVaultPaths.has(resolvedPath)) {
+      continue;
+    }
+
+    try {
+      if (!fs.statSync(resolvedPath).isDirectory()) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+
+    seenVaultPaths.add(resolvedPath);
+    vaultPaths.push(resolvedPath);
+  }
+
+  return vaultPaths;
+}
+
 function buildObsidianBundle(repoRoot, runBuild = execFileSync) {
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   runBuild(npmCommand, ['run', 'build:obsidian'], {
@@ -4928,6 +4980,8 @@ if (process.env.THRUNT_TEST_MODE) {
     OBSIDIAN_PLUGIN_ID,
     OBSIDIAN_ASSET_FILES,
     getObsidianStageDir,
+    getObsidianConfigPath,
+    discoverObsidianVaults,
     buildObsidianBundle,
     stageObsidianBundle,
     writeManifest,
