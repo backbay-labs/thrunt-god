@@ -68,6 +68,7 @@ const hasCopilot = args.includes('--copilot');
 const hasAntigravity = args.includes('--antigravity');
 const hasCursor = args.includes('--cursor');
 const hasWindsurf = args.includes('--windsurf');
+const hasObsidian = args.includes('--obsidian');
 const hasBoth = args.includes('--both'); // Legacy flag, keeps working
 const hasAll = args.includes('--all');
 const hasUninstall = args.includes('--uninstall') || args.includes('-u');
@@ -320,6 +321,47 @@ const explicitConfigDir = parseConfigDirArg();
 const hasHelp = args.includes('--help') || args.includes('-h');
 const forceStatusline = args.includes('--force-statusline');
 
+function getObsidianConflictFlags() {
+  const conflictFlags = new Set();
+  const obsidianIncompatibleFlags = new Set([
+    '--claude',
+    '--opencode',
+    '--gemini',
+    '--codex',
+    '--copilot',
+    '--antigravity',
+    '--cursor',
+    '--windsurf',
+    '--both',
+    '--all',
+    '--global',
+    '-g',
+    '--local',
+    '-l',
+    '--uninstall',
+    '-u',
+    '--config-dir',
+    '-c',
+  ]);
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (index > 0 && (args[index - 1] === '--config-dir' || args[index - 1] === '-c')) {
+      continue;
+    }
+    if (obsidianIncompatibleFlags.has(arg) || arg.startsWith('--config-dir=') || arg.startsWith('-c=')) {
+      conflictFlags.add(arg);
+    }
+  }
+
+  return [...conflictFlags];
+}
+
+function installObsidian() {
+  console.error(`  ${yellow}Obsidian bundle staging is not implemented yet.${reset}`);
+  process.exit(1);
+}
+
 console.log(banner);
 
 if (hasUninstall) {
@@ -328,7 +370,7 @@ if (hasUninstall) {
 
 // Show help if requested
 if (hasHelp) {
-  console.log(`  ${yellow}Usage:${reset} npx ${PACKAGE_COMMAND} [options]\n\n  ${yellow}Options:${reset}\n    ${cyan}-g, --global${reset}              Install globally (to config directory)\n    ${cyan}-l, --local${reset}               Install locally (to current directory)\n    ${cyan}--claude${reset}                  Install for Claude Code only\n    ${cyan}--opencode${reset}                Install for OpenCode only\n    ${cyan}--gemini${reset}                  Install for Gemini only\n    ${cyan}--codex${reset}                   Install for Codex only\n    ${cyan}--copilot${reset}                 Install for Copilot only\n    ${cyan}--antigravity${reset}             Install for Antigravity only\n    ${cyan}--cursor${reset}                  Install for Cursor only\n    ${cyan}--windsurf${reset}                Install for Windsurf only\n    ${cyan}--all${reset}                     Install for all runtimes\n    ${cyan}-u, --uninstall${reset}           Uninstall THRUNT assets\n    ${cyan}-c, --config-dir <path>${reset}   Specify custom config directory\n    ${cyan}-h, --help${reset}                Show this help message\n    ${cyan}--force-statusline${reset}        Replace existing statusline config\n\n  ${yellow}Examples:${reset}\n    ${dim}# Interactive install (prompts for runtime and location)${reset}\n    npx ${PACKAGE_COMMAND}\n\n    ${dim}# Install for Claude Code globally${reset}\n    npx ${PACKAGE_COMMAND} --claude --global\n\n    ${dim}# Install for Gemini globally${reset}\n    npx ${PACKAGE_COMMAND} --gemini --global\n\n    ${dim}# Install for Codex globally${reset}\n    npx ${PACKAGE_COMMAND} --codex --global\n\n    ${dim}# Install for Copilot globally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --global\n\n    ${dim}# Install for Copilot locally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --local\n\n    ${dim}# Install for Antigravity globally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --global\n\n    ${dim}# Install for Antigravity locally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --local\n\n    ${dim}# Install for Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global\n\n    ${dim}# Install for Cursor locally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --local\n\n    ${dim}# Install for Windsurf globally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --global\n\n    ${dim}# Install for Windsurf locally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --local\n\n    ${dim}# Install for all runtimes globally${reset}\n    npx ${PACKAGE_COMMAND} --all --global\n\n    ${dim}# Install to custom config directory${reset}\n    npx ${PACKAGE_COMMAND} --codex --global --config-dir ~/.codex-work\n\n    ${dim}# Install to current project only${reset}\n    npx ${PACKAGE_COMMAND} --claude --local\n\n    ${dim}# Uninstall from Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global --uninstall\n\n  ${yellow}Notes:${reset}\n    The --config-dir option is useful when you have multiple configurations.\n    It takes priority over CLAUDE_CONFIG_DIR / GEMINI_CONFIG_DIR / CODEX_HOME / COPILOT_CONFIG_DIR / ANTIGRAVITY_CONFIG_DIR / CURSOR_CONFIG_DIR / WINDSURF_CONFIG_DIR environment variables.\n`);
+  console.log(`  ${yellow}Usage:${reset} npx ${PACKAGE_COMMAND} [options]\n\n  ${yellow}Options:${reset}\n    ${cyan}-g, --global${reset}              Install globally (to config directory)\n    ${cyan}-l, --local${reset}               Install locally (to current directory)\n    ${cyan}--claude${reset}                  Install for Claude Code only\n    ${cyan}--opencode${reset}                Install for OpenCode only\n    ${cyan}--gemini${reset}                  Install for Gemini only\n    ${cyan}--codex${reset}                   Install for Codex only\n    ${cyan}--copilot${reset}                 Install for Copilot only\n    ${cyan}--antigravity${reset}             Install for Antigravity only\n    ${cyan}--cursor${reset}                  Install for Cursor only\n    ${cyan}--windsurf${reset}                Install for Windsurf only\n    ${cyan}--obsidian${reset}                Install the Obsidian plugin bundle\n    ${cyan}--all${reset}                     Install for all runtimes\n    ${cyan}-u, --uninstall${reset}           Uninstall THRUNT assets\n    ${cyan}-c, --config-dir <path>${reset}   Specify custom config directory\n    ${cyan}-h, --help${reset}                Show this help message\n    ${cyan}--force-statusline${reset}        Replace existing statusline config\n\n  ${yellow}Examples:${reset}\n    ${dim}# Interactive install (prompts for runtime and location)${reset}\n    npx ${PACKAGE_COMMAND}\n\n    ${dim}# Install for Claude Code globally${reset}\n    npx ${PACKAGE_COMMAND} --claude --global\n\n    ${dim}# Install for Gemini globally${reset}\n    npx ${PACKAGE_COMMAND} --gemini --global\n\n    ${dim}# Install for Codex globally${reset}\n    npx ${PACKAGE_COMMAND} --codex --global\n\n    ${dim}# Install for Copilot globally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --global\n\n    ${dim}# Install for Copilot locally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --local\n\n    ${dim}# Install for Antigravity globally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --global\n\n    ${dim}# Install for Antigravity locally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --local\n\n    ${dim}# Install for Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global\n\n    ${dim}# Install for Cursor locally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --local\n\n    ${dim}# Install for Windsurf globally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --global\n\n    ${dim}# Install for Windsurf locally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --local\n\n    ${dim}# Install the Obsidian plugin bundle${reset}\n    npx ${PACKAGE_COMMAND} --obsidian\n\n    ${dim}# Install for all runtimes globally${reset}\n    npx ${PACKAGE_COMMAND} --all --global\n\n    ${dim}# Install to custom config directory${reset}\n    npx ${PACKAGE_COMMAND} --codex --global --config-dir ~/.codex-work\n\n    ${dim}# Install to current project only${reset}\n    npx ${PACKAGE_COMMAND} --claude --local\n\n    ${dim}# Uninstall from Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global --uninstall\n\n  ${yellow}Notes:${reset}\n    The --config-dir option is useful when you have multiple configurations.\n    It takes priority over CLAUDE_CONFIG_DIR / GEMINI_CONFIG_DIR / CODEX_HOME / COPILOT_CONFIG_DIR / ANTIGRAVITY_CONFIG_DIR / CURSOR_CONFIG_DIR / WINDSURF_CONFIG_DIR environment variables.\n`);
   process.exit(0);
 }
 
@@ -4841,7 +4883,14 @@ if (process.env.THRUNT_TEST_MODE) {
 } else {
 
 // Main logic
-if (hasGlobal && hasLocal) {
+if (hasObsidian) {
+  const obsidianConflictFlags = getObsidianConflictFlags();
+  if (obsidianConflictFlags.length > 0) {
+    console.error(`  ${yellow}--obsidian must be run as a standalone mode. Remove ${obsidianConflictFlags.join(', ')} and try again.${reset}`);
+    process.exit(1);
+  }
+  installObsidian();
+} else if (hasGlobal && hasLocal) {
   console.error(`  ${yellow}Cannot specify both --global and --local${reset}`);
   process.exit(1);
 } else if (explicitConfigDir && hasLocal) {
