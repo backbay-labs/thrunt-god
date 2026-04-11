@@ -11,10 +11,10 @@ Requirements for v3.3 Zero-Friction Distribution. Each maps to exactly one roadm
 
 - [x] **INST-01**: User can run `npx thrunt-god@latest --obsidian` on macOS to install or update the Obsidian plugin without manual symlink steps
 - [x] **INST-02**: Installer stages a production plugin bundle (`main.js`, `manifest.json`, `styles.css`) under `~/.thrunt/obsidian/` before touching any vault
-- [ ] **INST-03**: Installer detects Obsidian vaults from `~/Library/Application Support/obsidian/obsidian.json` and installs THRUNT God into each detected vault's `.obsidian/plugins/thrunt-god/` directory
-- [ ] **INST-04**: Re-running `--obsidian` refreshes the staged build and repairs broken or stale symlinks without duplicating plugin directories
-- [ ] **INST-05**: Installer reports per-vault success or failure and prints explicit next-step guidance to restart Obsidian and enable THRUNT God in Community Plugins
-- [ ] **INST-06**: If no vaults or Obsidian metadata are found, installer exits without partial writes and explains the manual install fallback
+- [x] **INST-03**: Installer detects Obsidian vaults from `~/Library/Application Support/obsidian/obsidian.json` and installs THRUNT God into each detected vault's `.obsidian/plugins/thrunt-god/` directory
+- [x] **INST-04**: Re-running `--obsidian` refreshes the staged build and repairs broken or stale symlinks without duplicating plugin directories
+- [x] **INST-05**: Installer reports per-vault success or failure and prints explicit next-step guidance to restart Obsidian and enable THRUNT God in Community Plugins
+- [x] **INST-06**: If no vaults or Obsidian metadata are found, installer exits without partial writes and explains the manual install fallback
 
 ### Release Pipeline
 
@@ -63,10 +63,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | INST-01 | Phase 65 | Complete |
 | INST-02 | Phase 65 | Complete |
-| INST-03 | Phase 65 | Pending |
-| INST-04 | Phase 65 | Pending |
-| INST-05 | Phase 65 | Pending |
-| INST-06 | Phase 65 | Pending |
+| INST-03 | Phase 65 | Complete |
+| INST-04 | Phase 65 | Complete |
+| INST-05 | Phase 65 | Complete |
+| INST-06 | Phase 65 | Complete |
 | RELEASE-01 | Phase 66 | Pending |
 | RELEASE-02 | Phase 66 | Pending |
 | RELEASE-03 | Phase 66 | Pending |

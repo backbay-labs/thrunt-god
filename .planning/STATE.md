@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v3.3
 milestone_name: Zero-Friction Distribution
-current_plan: 2
+current_plan: 3
 status: executing
-stopped_at: Completed 65-01-PLAN.md
-last_updated: "2026-04-11T19:41:12.604Z"
-last_activity: 2026-04-11 -- Executed 65-01-PLAN.md
+stopped_at: Completed 65-02-PLAN.md
+last_updated: "2026-04-11T19:50:40.042Z"
+last_activity: 2026-04-11 -- Executed 65-02-PLAN.md
 progress:
   total_phases: 39
   completed_phases: 22
   total_plans: 74
-  completed_plans: 59
-  percent: 33
+  completed_plans: 60
+  percent: 81
 ---
 
 # Project State
@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.3 Zero-Friction Distribution -- Phase 65 Plan 02 ready for execution
+**Current focus:** v3.3 Zero-Friction Distribution -- Phase 65 Plan 03 ready for execution
 
 ## Current Milestone: v3.3 Zero-Friction Distribution
 
@@ -31,13 +31,13 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 ## Current Position
 
 Phase: 65 of 67 (Obsidian CLI Install Channel)
-Plan: 2 of 3
-Current Plan: 2
+Plan: 3 of 3
+Current Plan: 3
 Total Plans in Phase: 3
 Status: In Progress
-Last activity: 2026-04-11 -- Executed 65-01-PLAN.md
+Last activity: 2026-04-11 -- Executed 65-02-PLAN.md
 
-Progress: [###-------] 33%
+Progress: [#######---] 67%
 
 ## Accumulated Context
 
@@ -80,6 +80,8 @@ Progress: [###-------] 33%
 - [Phase 64]: setFolderChildren added alongside addSubFolder for direct test folder configuration
 - [Phase 65]: --obsidian is a standalone install mode and rejects runtime, location, uninstall, and config-dir flag mixing
 - [Phase 65]: Obsidian installer staging uses the exact main.js, manifest.json, and styles.css bundle contract under ~/.thrunt/obsidian
+- [Phase 65]: Vault autodiscovery is macOS-only for this phase and reads only obsidian.json .vaults[*].path entries
+- [Phase 65]: Per-vault install status is derived from asset-level link outcomes: all skips => skipped, any fresh or repaired link => installed
 
 ### Blockers/Concerns
 
@@ -90,9 +92,10 @@ None.
 | Phase | Plan | Duration | Tasks | Files | Date |
 |-------|------|----------|-------|-------|------|
 | Phase 65 | 01 | 106s | 2 tasks | 1 files | 2026-04-11 |
+| Phase 65 | 02 | 325s | 2 tasks | 1 files | 2026-04-11 |
 
 ## Session Continuity
 
-Last session: 2026-04-11T19:39:36.729Z
-Stopped at: Completed 65-01-PLAN.md
+Last session: 2026-04-11T19:50:40.038Z
+Stopped at: Completed 65-02-PLAN.md
 Resume file: None
