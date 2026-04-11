@@ -172,9 +172,22 @@ async function countPhaseArtifacts(
   }
 }
 
-/** Read full hunt status from a workspace directory */
+/**
+ * Resolve the planning directory. If the given path already contains
+ * planning artifacts (STATE.md, MISSION.md, HUNTMAP.md), use it directly.
+ * Otherwise assume it's a workspace root and join `.planning/`.
+ * This handles both workspace roots and child case directories.
+ */
+async function resolvePlanningDir(root: string): Promise<string> {
+  const direct = await fileExists(join(root, "STATE.md")) ||
+    await fileExists(join(root, "MISSION.md")) ||
+    await fileExists(join(root, "HUNTMAP.md"))
+  return direct ? root : join(root, ".planning")
+}
+
+/** Read full hunt status from a workspace or case directory */
 export async function readHuntStatus(workspaceRoot: string): Promise<HuntStatus> {
-  const planningDir = join(workspaceRoot, ".planning")
+  const planningDir = await resolvePlanningDir(workspaceRoot)
 
   const [stateRaw, huntmapRaw] = await Promise.all([
     readOptional(join(planningDir, "STATE.md")),
@@ -211,7 +224,8 @@ export async function readHuntStatus(workspaceRoot: string): Promise<HuntStatus>
 
 /** Parse FINDINGS.md for hypothesis verdicts and recommendations */
 export async function readFindings(workspaceRoot: string): Promise<Findings | null> {
-  const raw = await readOptional(join(workspaceRoot, ".planning", "FINDINGS.md"))
+  const planningDir = await resolvePlanningDir(workspaceRoot)
+  const raw = await readOptional(join(planningDir, "FINDINGS.md"))
   if (!raw) return null
 
   const hypotheses: HypothesisVerdict[] = []
@@ -345,9 +359,10 @@ function parseReceipt(filename: string, content: string): Receipt | null {
   }
 }
 
-/** Read all receipts from .planning/RECEIPTS/ */
+/** Read all receipts from RECEIPTS/ */
 export async function readReceipts(workspaceRoot: string): Promise<Receipt[]> {
-  const receiptsDir = join(workspaceRoot, ".planning", "RECEIPTS")
+  const planningDir = await resolvePlanningDir(workspaceRoot)
+  const receiptsDir = join(planningDir, "RECEIPTS")
   if (!(await fileExists(receiptsDir))) return []
 
   try {
@@ -380,7 +395,8 @@ export interface MissionSummary {
 
 /** Parse MISSION.md for case title and scope */
 export async function readMission(workspaceRoot: string): Promise<MissionSummary | null> {
-  const raw = await readOptional(join(workspaceRoot, ".planning", "MISSION.md"))
+  const planningDir = await resolvePlanningDir(workspaceRoot)
+  const raw = await readOptional(join(planningDir, "MISSION.md"))
   if (!raw) return null
 
   let title = ""
@@ -418,9 +434,10 @@ export async function readMission(workspaceRoot: string): Promise<MissionSummary
 // CHILD CASES (program mode)
 // =============================================================================
 
-/** List child case directories under .planning/cases/ */
+/** List child case directories under cases/ */
 export async function listCases(workspaceRoot: string): Promise<string[]> {
-  const casesDir = join(workspaceRoot, ".planning", "cases")
+  const planningDir = await resolvePlanningDir(workspaceRoot)
+  const casesDir = join(planningDir, "cases")
   if (!(await fileExists(casesDir))) return []
 
   try {

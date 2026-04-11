@@ -315,6 +315,9 @@ export function createPlanningWatcher(
       if (attachWatcher()) {
         previousSnapshot = await takeSnapshot(workspaceRoot)
         console.log("[watcher] .planning/ appeared, watching started")
+      } else {
+        // Attach failed transiently — keep retrying
+        scheduleRetry()
       }
     }, retryIntervalMs)
   }
