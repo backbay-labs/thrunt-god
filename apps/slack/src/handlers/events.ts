@@ -42,9 +42,12 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
       .map((i) => `\`${i.value}\``)
       .join(", ")
 
+    // Reply in the parent thread if the message is in a thread, otherwise start a new thread
+    const replyTs = ("thread_ts" in event && event.thread_ts) ? event.thread_ts : event.ts
+
     await client.chat.postMessage({
       channel: event.channel,
-      thread_ts: event.ts,
+      thread_ts: replyTs,
       blocks: [
         section(
           `:mag: Detected ${meaningful.length} IOC(s) in this message: ${iocSummary}`,

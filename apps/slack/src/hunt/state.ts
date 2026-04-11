@@ -237,6 +237,17 @@ export async function readHuntStatus(workspaceRoot: string): Promise<HuntStatus>
 // FINDINGS
 // =============================================================================
 
+/** Normalize verdict strings to the supported set */
+function normalizeVerdict(raw: string): HypothesisVerdict["verdict"] {
+  switch (raw) {
+    case "supported": case "confirmed": return "supported"
+    case "refuted": case "disproved": case "disproven": return "refuted"
+    case "inconclusive": return "inconclusive"
+    case "not_tested": return "not_tested"
+    default: return "inconclusive"
+  }
+}
+
 /** Parse FINDINGS.md for hypothesis verdicts and recommendations */
 export async function readFindings(workspaceRoot: string): Promise<Findings | null> {
   const planningDir = await resolvePlanningDir(workspaceRoot)
@@ -278,7 +289,7 @@ export async function readFindings(workspaceRoot: string): Promise<Findings | nu
         hypotheses.push({
           id: match[1],
           text: trimmed.match(/^\|\s*(.*?)\s*\|/)?.[1]?.trim() ?? match[1],
-          verdict: match[2].toLowerCase() as HypothesisVerdict["verdict"],
+          verdict: normalizeVerdict(match[2].toLowerCase()),
           confidence: match[3].toLowerCase() as "low" | "medium" | "high",
           evidence: match[4].trim() || undefined,
         })
