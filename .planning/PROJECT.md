@@ -26,14 +26,14 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - v2.2 Connector Ecosystem (Phases 45-49) — shipped 2026-03-31
 - v3.0 Hunt Program Intelligence (Phases 50-57) — shipped 2026-04-08
 - v3.1 Sidebar Automation & Operations (Phases 58-62) — shipped 2026-04-09
-
 - ✓ v3.2 Obsidian Workspace Companion (Phases 63-64) — shipped 2026-04-11
+- ✓ v3.3 Zero-Friction Distribution (Phases 65-67) — shipped 2026-04-11
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-(None — planning next milestone)
+(None yet — run `$gsd-new-milestone` to define the next milestone.)
 
 ### Out of Scope
 
@@ -43,6 +43,17 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - Live NATS event streaming — no supporting infrastructure
 - Defender XDR via Graph API — Microsoft's forward path but different OAuth scope; v1.6 uses direct API
 - Cross-language query translation (SPL to ES|QL) — too error-prone; retargeting via packs only
+
+## Current Milestone
+
+No active milestone. v3.3 Zero-Friction Distribution shipped on 2026-04-11.
+
+**Next step:** Run `$gsd-new-milestone` to define the next roadmap slice.
+
+**Last shipped milestone:**
+- Standalone `--obsidian` installer path that stages canonical plugin assets under `~/.thrunt/obsidian/` and links them into detected macOS vaults
+- Release automation that builds the Obsidian plugin and uploads `main.js`, `manifest.json`, `styles.css`, and `versions.json`
+- Community-plugin readiness: review-safe package, public docs/visuals, and tracked submission metadata for `obsidianmd/obsidian-releases`
 
 ## Context
 
@@ -59,7 +70,10 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - Shipped v3.0: 8 phases, 17 plans, 214 new tests, 34 requirements satisfied
 - Shipped v3.1: 5 phases, 14 plans, 168 new tests, 26 requirements satisfied (432 total tests)
 - Shipped v3.2: 2 phases, 10 plans, 84 tests, 28 requirements satisfied — Obsidian plugin with 16 TypeScript source files (2,024 LOC)
-- Obsidian plugin at apps/obsidian/ — vault-native workspace companion with hunt state parsing, hypothesis scoreboard, three-state detection
+- Shipped v3.3: 3 phases, 9 plans, 21 tasks — Obsidian distribution now works across CLI install, GitHub release assets, and community-directory submission readiness
+- Obsidian plugin at `apps/obsidian/` is now a vault-native workspace companion with a canonical distribution contract shared by the installer and release pipeline
+- `release.yml` now builds and uploads Obsidian plugin assets and enforces version alignment across root/package/manifest metadata
+- Root `manifest.json` and `versions.json` are synced from `apps/obsidian/` through `npm run sync:obsidian-submission` for community-directory maintenance
 
 ## Constraints
 
@@ -102,6 +116,9 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 | vitest for Obsidian plugin testing | Pure modules testable without Obsidian runtime; VaultAdapter stub pattern | Good |
 | Frontmatter additive, never required | Phase 1 files work in Phase 2; backward-compatible template evolution | Good |
 | getViewModel() async in Phase 64 | Breaking change managed — all call sites documented and updated | Good |
+| Same Obsidian bundle for CLI install and community release | One artifact contract avoids channel drift and duplicate QA surfaces | Good |
+| macOS vault autodiscovery first | Existing install note targets local Obsidian users and `obsidian.json` gives a stable first implementation path | Good |
+| Root submission metadata sync | Community-facing `manifest.json` and `versions.json` stay derived from `apps/obsidian/` instead of becoming a second source of truth | Good |
 
 ---
-*Last updated: 2026-04-11 after v3.2 milestone completion*
+*Last updated: 2026-04-11 after v3.3 milestone completion*

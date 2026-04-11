@@ -15,7 +15,7 @@
 - v3.0 Hunt Program Intelligence (Phases 50-57) -- shipped 2026-04-08
 - v3.1 Sidebar Automation & Operations (Phases 58-62) -- shipped 2026-04-09
 - v3.2 Obsidian Workspace Companion (Phases 63-64) -- shipped 2026-04-11
-- v3.3 Zero-Friction Distribution (Phases 65-67) -- in progress
+- v3.3 Zero-Friction Distribution (Phases 65-67) -- shipped 2026-04-11
 
 ## Phases
 
@@ -38,74 +38,30 @@
 
 </details>
 
-### v3.3 Zero-Friction Distribution (In Progress)
+<details>
+<summary>v3.3 Zero-Friction Distribution (Phases 65-67) — SHIPPED 2026-04-11</summary>
 
 - [x] **Phase 65: Obsidian CLI Install Channel** - `--obsidian` installer, canonical bundle staging, macOS vault detection, symlink-based install/update (completed 2026-04-11)
 - [x] **Phase 66: Release Artifact Pipeline** - release workflow builds Obsidian assets, validates version alignment, uploads plugin artifacts (completed 2026-04-11)
 - [x] **Phase 67: Community Directory Submission Readiness** - review-safe package, public docs/screenshots, and tracked submission metadata for `obsidianmd/obsidian-releases` (completed 2026-04-11)
 
-## Phase Details
+Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 
-### Phase 65: Obsidian CLI Install Channel
-**Goal**: Add a first-class `--obsidian` installer path that stages canonical plugin assets and links them into detected macOS vaults without manual symlink work
-**Depends on**: Nothing (first phase in v3.3)
-**Requirements**: INST-01, INST-02, INST-03, INST-04, INST-05, INST-06
-**Success Criteria** (what must be TRUE):
-  1. Running `npx thrunt-god --obsidian` stages `main.js`, `manifest.json`, and `styles.css` under `~/.thrunt/obsidian/` using a production build from `apps/obsidian/`
-  2. Installer reads `~/Library/Application Support/obsidian/obsidian.json`, detects registered vault paths, and creates or refreshes `.obsidian/plugins/thrunt-god/` symlinks without copying duplicate artifacts into each vault
-  3. Re-running the installer after local changes or release updates refreshes staged assets and repairs broken plugin links without manual cleanup
-  4. Missing vault metadata or no detected vaults exits cleanly with explicit manual-install guidance and no partial vault changes
-  5. Installer output reports per-vault results and tells the user to restart Obsidian and enable THRUNT God in Community Plugins
-**Plans:** 3/3 plans complete
-Plans:
-- [x] 65-01-PLAN.md — Parse `--obsidian`, build or stage the production plugin bundle, and define the managed install location
-- [x] 65-02-PLAN.md — Detect macOS vaults, create/update symlinked plugin directories, and surface clear install output
-- [x] 65-03-PLAN.md — Add installer tests plus manual verification for clean install, reinstall, and no-vault fallback flows
-
-### Phase 66: Release Artifact Pipeline
-**Goal**: Extend the existing release workflow so Obsidian assets ship as first-class release artifacts with strict version alignment
-**Depends on**: Phase 65
-**Requirements**: RELEASE-01, RELEASE-02, RELEASE-03, RELEASE-04
-**Success Criteria** (what must be TRUE):
-  1. Repository scripts produce the Obsidian production bundle locally from a repeatable command path that matches release automation
-  2. `release.yml` installs Obsidian dependencies, builds the plugin, and fails if `apps/obsidian/package.json`, `manifest.json`, or the release tag drift from the root version
-  3. GitHub releases upload `main.js`, `manifest.json`, `styles.css`, and `versions.json` alongside the npm package tarballs and VSIX
-  4. Release automation and the CLI installer both target the same canonical bundle contract, preventing channel drift between local installs and published assets
-**Plans:** 3/3 plans complete
-Plans:
-- [ ] 66-01-PLAN.md — Define the shared Obsidian bundle contract and local build entrypoints
-- [ ] 66-02-PLAN.md — Extend `release.yml` with version checks, Obsidian build steps, and GitHub release uploads
-- [ ] 66-03-PLAN.md — Verify local and CI release flows against the same asset outputs and documented maintainer steps
-
-### Phase 67: Community Directory Submission Readiness
-**Goal**: Harden the plugin package and public-facing materials so THRUNT God is submission-ready for the Obsidian community plugin directory
-**Depends on**: Phase 66
-**Requirements**: COMM-01, COMM-02, COMM-03, COMM-04
-**Success Criteria** (what must be TRUE):
-  1. Plugin code and manifest satisfy the explicit review checklist tracked in repo: safe DOM usage, proper cleanup, theme-safe CSS, and mobile-safe metadata
-  2. Public Obsidian documentation explains value, install options, configuration, and includes screenshots or GIFs aimed at first-time Obsidian users
-  3. `versions.json`, submission metadata, and release notes stay synchronized through one documented maintainer flow
-  4. Repository contains the checklist and submission notes needed to open or update the `obsidianmd/obsidian-releases` PR without tribal knowledge
-**Plans:** 3/3 plans complete
-Plans:
-- [ ] 67-01-PLAN.md — Audit plugin code/package against Obsidian review requirements and close any compliance gaps
-- [ ] 67-02-PLAN.md — Upgrade public Obsidian docs with screenshots and distribution guidance for community-plugin users
-- [ ] 67-03-PLAN.md — Add submission metadata, checklist, and a documented release-to-directory handoff flow
+</details>
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 65 -> 66 -> 67
+All roadmap phases through v3.3 are complete. Start the next milestone with `$gsd-new-milestone`.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 58. Sidebar Automation Foundation | v3.1 | 2/2 | Complete | 2026-04-09 |
+| 58. Sidebar Automation Section Foundation | v3.1 | 2/2 | Complete | 2026-04-09 |
 | 59. MCP Runtime Control Panel | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 60. Command Deck Webview | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 61. Runbook Engine & Editor | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 62. Execution History & Guardrails | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 63. Structural Foundation | v3.2 | 5/5 | Complete | 2026-04-11 |
 | 64. Live Hunt Dashboard | v3.2 | 5/5 | Complete | 2026-04-11 |
-| 65. Obsidian CLI Install Channel | v3.3 | Complete    | 2026-04-11 | 2026-04-11 |
-| 66. Release Artifact Pipeline | v3.3 | Complete    | 2026-04-11 | - |
-| 67. Community Directory Submission Readiness | v3.3 | Complete    | 2026-04-11 | - |
+| 65. Obsidian CLI Install Channel | v3.3 | 3/3 | Complete | 2026-04-11 |
+| 66. Release Artifact Pipeline | v3.3 | 3/3 | Complete | 2026-04-11 |
+| 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |

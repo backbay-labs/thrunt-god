@@ -1,5 +1,18 @@
 # Milestones
 
+## v3.3 Zero-Friction Distribution (Shipped: 2026-04-11)
+
+**Phases completed:** 3 phases, 9 plans, 21 tasks
+
+**Key accomplishments:**
+- Added a standalone `npx thrunt-god@latest --obsidian` install path with canonical bundle staging and macOS vault linking.
+- Unified the Obsidian installer and release workflow behind one shared asset contract.
+- Extended GitHub releases to publish `main.js`, `manifest.json`, `styles.css`, and `versions.json`.
+- Aligned the Obsidian package and public docs with community review and onboarding expectations.
+- Added root metadata sync plus a documented `obsidianmd/obsidian-releases` submission handoff.
+
+---
+
 ## v3.2 Obsidian Workspace Companion (Shipped: 2026-04-11)
 
 **Phases completed:** 2 phases, 10 plans, 0 tasks
@@ -24,15 +37,6 @@
 
 **Key accomplishments:**
 - (none recorded)
-
----
-
-## v3.0 Hunt Program Intelligence (Active)
-
-**Phases:** 50-57
-**Goal:** Restructure program/case hierarchy, build unified @thrunt/mcp-hunt-intel MCP server for ATT&CK + Sigma + detection intelligence, enable cross-case memory and knowledge graph persistence.
-**Research:** STACK.md, FEATURES.md, ARCHITECTURE.md, PITFALLS.md, SUMMARY.md
-**Requirements:** HIER-01 through HIER-05, INTEL-01 through INTEL-04, MCP-01 through MCP-06, DET-01 through DET-09, KNOW-01 through KNOW-04, DASH-01 through DASH-03, WIRE-01 through WIRE-03
 
 ---
 
