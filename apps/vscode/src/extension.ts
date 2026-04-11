@@ -41,6 +41,11 @@ import { CommandDeckRegistry, CommandDeckPanel, COMMAND_DECK_VIEW_TYPE, BUILT_IN
 import { RunbookPanel } from './runbookPanel';
 import { RunbookRegistry, RunbookEngine, RUNBOOK_PANEL_VIEW_TYPE } from './runbook';
 import { ExecutionLogger } from './executionLogger';
+import { resolveNodeExecutable } from './nodeRuntime';
+import {
+  buildThruntWorkspaceMcpServerConfig,
+  upsertWorkspaceMcpConfiguration,
+} from './mcpWorkspaceConfig';
 import type { CommandDeckContext } from '../shared/command-deck';
 import type { SessionDiff } from '../shared/hunt-overview';
 import { resolveArtifactType } from './watcher';
@@ -821,6 +826,44 @@ async function installManagedMcpRuntime(
 
   outputChannel.appendLine(`[MCP] Managed runtime ready at ${serverPath}`);
   return serverPath;
+}
+
+function getManagedMcpEnvironment(): Record<string, string> | undefined {
+  const dbDir = process.env.THRUNT_INTEL_DB_DIR?.trim();
+  if (!dbDir) {
+    return undefined;
+  }
+
+  return {
+    THRUNT_INTEL_DB_DIR: dbDir,
+  };
+}
+
+async function registerWorkspaceMcpWithCopilot(
+  context: vscode.ExtensionContext,
+  workspaceRoot: string | undefined,
+  outputChannel: vscode.OutputChannel,
+): Promise<{ configPath: string; changed: boolean } | null> {
+  if (!workspaceRoot) {
+    return null;
+  }
+
+  const serverPath = resolveMcpServerPath(context, workspaceRoot);
+  if (!serverPath || !fs.existsSync(serverPath)) {
+    throw new Error('MCP server path is not configured');
+  }
+
+  const nodeExecutable = resolveNodeExecutable(resolveMcpNodeExecutable(workspaceRoot));
+  const serverConfig = buildThruntWorkspaceMcpServerConfig(
+    nodeExecutable,
+    serverPath,
+    getManagedMcpEnvironment(),
+  );
+  const result = upsertWorkspaceMcpConfiguration(workspaceRoot, serverConfig);
+  outputChannel.appendLine(
+    `[MCP] ${result.changed ? 'Updated' : 'Verified'} Copilot MCP registration at ${result.configPath}`
+  );
+  return result;
 }
 
 async function runThruntCli(
@@ -2089,11 +2132,21 @@ export function activate(context: vscode.ExtensionContext): void {
             async () => installManagedMcpRuntime(context, mcpOutputChannel)
           );
           await updateMcpAvailabilityContext(context, workspaceRoot);
+          let registrationResult: { configPath: string; changed: boolean } | null = null;
+          try {
+            registrationResult = await registerWorkspaceMcpWithCopilot(context, workspaceRoot, mcpOutputChannel);
+          } catch (err) {
+            mcpOutputChannel.appendLine(
+              `[MCP] Failed to register workspace MCP for Copilot: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
           const result = await mcpStatus.runHealthCheck();
           automationProvider.refresh();
           if (result.status === 'healthy') {
             vscode.window.showInformationMessage(
-              `MCP runtime installed and verified at ${serverPath}`
+              registrationResult
+                ? `MCP runtime installed and verified at ${serverPath}. Copilot registration ${registrationResult.changed ? 'updated' : 'verified'} in ${registrationResult.configPath}. Run "MCP: Reset Cached Tools" if Copilot still shows stale tools.`
+                : `MCP runtime installed and verified at ${serverPath}`
             );
           } else {
             vscode.window.showWarningMessage(
@@ -2109,12 +2162,43 @@ export function activate(context: vscode.ExtensionContext): void {
     );
 
     context.subscriptions.push(
+      vscode.commands.registerCommand('thrunt-god.mcpRegisterWorkspace', async () => {
+        try {
+          const result = await registerWorkspaceMcpWithCopilot(context, workspaceRoot, mcpOutputChannel);
+          if (!result) {
+            vscode.window.showWarningMessage('Open a workspace folder before registering MCP for Copilot.');
+            return;
+          }
+          vscode.window.showInformationMessage(
+            `Registered THRUNT MCP for Copilot in ${result.configPath}. Run "MCP: Reset Cached Tools" if Copilot still does not see the tools.`
+          );
+        } catch (err) {
+          vscode.window.showErrorMessage(
+            `Failed to register MCP for Copilot: ${err instanceof Error ? err.message : String(err)}`
+          );
+        }
+      })
+    );
+
+    context.subscriptions.push(
       vscode.commands.registerCommand('thrunt-god.mcpStart', async () => {
         try {
           await mcpStatus.start();
+          let registrationResult: { configPath: string; changed: boolean } | null = null;
+          try {
+            registrationResult = await registerWorkspaceMcpWithCopilot(context, workspaceRoot, mcpOutputChannel);
+          } catch (err) {
+            mcpOutputChannel.appendLine(
+              `[MCP] Failed to register workspace MCP for Copilot: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
           const result = await mcpStatus.runHealthCheck();
           if (result.status === 'healthy') {
-            vscode.window.showInformationMessage('MCP server started and is healthy');
+            vscode.window.showInformationMessage(
+              registrationResult
+                ? `MCP server started and is healthy. Copilot registration ${registrationResult.changed ? 'updated' : 'verified'} in ${registrationResult.configPath}.`
+                : 'MCP server started and is healthy'
+            );
           } else {
             vscode.window.showWarningMessage(
               `MCP server started, but health check ${result.status}: ${result.error || 'Unknown error'}`
@@ -2130,9 +2214,21 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.registerCommand('thrunt-god.mcpRestart', async () => {
         try {
           await mcpStatus.restart();
+          let registrationResult: { configPath: string; changed: boolean } | null = null;
+          try {
+            registrationResult = await registerWorkspaceMcpWithCopilot(context, workspaceRoot, mcpOutputChannel);
+          } catch (err) {
+            mcpOutputChannel.appendLine(
+              `[MCP] Failed to register workspace MCP for Copilot: ${err instanceof Error ? err.message : String(err)}`
+            );
+          }
           const result = await mcpStatus.runHealthCheck();
           if (result.status === 'healthy') {
-            vscode.window.showInformationMessage('MCP server restarted and is healthy');
+            vscode.window.showInformationMessage(
+              registrationResult
+                ? `MCP server restarted and is healthy. Copilot registration ${registrationResult.changed ? 'updated' : 'verified'} in ${registrationResult.configPath}.`
+                : 'MCP server restarted and is healthy'
+            );
           } else {
             vscode.window.showWarningMessage(
               `MCP server restarted, but health check ${result.status}: ${result.error || 'Unknown error'}`
@@ -2435,3 +2531,9 @@ export {
 export { validateRunbook, parseRunbook, RunbookRegistry, RunbookEngine, resolveParams, tokenizeRunbookCommand, RUNBOOK_PANEL_VIEW_TYPE, VALID_STEP_ACTIONS } from './runbook';
 export { RunbookPanel } from './runbookPanel';
 export { ExecutionLogger, confirmMutatingAction, buildCommandEntry, buildRunbookEntry } from './executionLogger';
+export {
+  THRUNT_MCP_SERVER_NAME,
+  buildThruntWorkspaceMcpServerConfig,
+  mergeWorkspaceMcpConfiguration,
+  upsertWorkspaceMcpConfiguration,
+} from './mcpWorkspaceConfig';

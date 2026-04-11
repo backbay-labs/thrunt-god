@@ -6,6 +6,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-04-10
+
+### Fixed
+- VS Code now registers the managed THRUNT MCP runtime into workspace MCP configuration so GitHub Copilot Chat can actually discover and invoke THRUNT tools instead of only showing MCP as healthy in the extension sidebar
+- Added an explicit `Register MCP for Copilot Chat` action in the Automation sidebar for cases where users need to refresh or repair Copilot MCP registration after changing runtimes or workspace settings
+- Managed MCP install, start, and restart flows now verify or update `.vscode/mcp.json` with the resolved external Node executable and THRUNT server path, preventing the "running in the extension but invisible to Copilot" failure mode
+
 ## [0.3.5] - 2026-04-10
 
 ### Fixed

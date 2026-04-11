@@ -8,6 +8,8 @@
 
 const { describe, it } = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('path');
 
 const BUNDLE_PATH = path.join(__dirname, '..', '..', 'dist', 'extension.js');
@@ -93,5 +95,82 @@ describe('CLI parsing helpers', () => {
         args: ['runtime', 'execute', '--phase', '4'],
       }
     );
+  });
+});
+
+describe('workspace MCP registration helpers', () => {
+  it('builds a stdio MCP config for Copilot', () => {
+    const ext = require(BUNDLE_PATH);
+    assert.deepEqual(
+      ext.buildThruntWorkspaceMcpServerConfig('/usr/local/bin/node', '/tmp/server.cjs', {
+        THRUNT_INTEL_DB_DIR: '/tmp/thrunt-db',
+      }),
+      {
+        type: 'stdio',
+        command: '/usr/local/bin/node',
+        args: ['/tmp/server.cjs'],
+        env: {
+          THRUNT_INTEL_DB_DIR: '/tmp/thrunt-db',
+        },
+      }
+    );
+  });
+
+  it('merges the THRUNT MCP server into an existing workspace config', () => {
+    const ext = require(BUNDLE_PATH);
+    const merged = ext.mergeWorkspaceMcpConfiguration(
+      {
+        inputs: [{ id: 'api-token' }],
+        servers: {
+          github: {
+            type: 'http',
+            url: 'https://api.githubcopilot.com/mcp/',
+          },
+        },
+      },
+      ext.buildThruntWorkspaceMcpServerConfig('node', '/tmp/server.cjs')
+    );
+
+    assert.deepEqual(merged.inputs, [{ id: 'api-token' }]);
+    assert.deepEqual(merged.servers.github, {
+      type: 'http',
+      url: 'https://api.githubcopilot.com/mcp/',
+    });
+    assert.deepEqual(merged.servers.thruntGod, {
+      type: 'stdio',
+      command: 'node',
+      args: ['/tmp/server.cjs'],
+    });
+  });
+
+  it('writes .vscode/mcp.json with a THRUNT server entry', () => {
+    const ext = require(BUNDLE_PATH);
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-vscode-mcp-'));
+
+    try {
+      const result = ext.upsertWorkspaceMcpConfiguration(
+        tmpRoot,
+        ext.buildThruntWorkspaceMcpServerConfig('node', '/tmp/server.cjs')
+      );
+
+      assert.equal(result.changed, true);
+      assert.equal(
+        result.configPath,
+        path.join(tmpRoot, '.vscode', 'mcp.json')
+      );
+
+      const written = JSON.parse(fs.readFileSync(result.configPath, 'utf8'));
+      assert.deepEqual(written, {
+        servers: {
+          thruntGod: {
+            type: 'stdio',
+            command: 'node',
+            args: ['/tmp/server.cjs'],
+          },
+        },
+      });
+    } finally {
+      fs.rmSync(tmpRoot, { recursive: true, force: true });
+    }
   });
 });

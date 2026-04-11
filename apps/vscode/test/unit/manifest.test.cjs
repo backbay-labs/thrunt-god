@@ -180,11 +180,11 @@ describe('Runbook manifest', () => {
 });
 
 describe('MCP commands', () => {
-  it('registers 7 MCP commands in package.json', () => {
+  it('registers 8 MCP commands in package.json', () => {
     const mcpCommands = manifest.contributes.commands.filter(
       (c) => c.command.startsWith('thrunt-god.mcp')
     );
-    assert.equal(mcpCommands.length, 7);
+    assert.equal(mcpCommands.length, 8);
   });
 
   it('registers mcpStart command with THRUNT category', () => {
@@ -206,6 +206,12 @@ describe('MCP commands', () => {
     assert.equal(cmd.title, 'Install MCP Runtime');
   });
 
+  it('registers mcpRegisterWorkspace command', () => {
+    const cmd = manifest.contributes.commands.find(c => c.command === 'thrunt-god.mcpRegisterWorkspace');
+    assert.ok(cmd, 'mcpRegisterWorkspace command exists');
+    assert.equal(cmd.title, 'Register MCP for Copilot Chat');
+  });
+
   it('contributes mcp.nodePath setting', () => {
     const setting = manifest.contributes.configuration.properties['thruntGod.mcp.nodePath'];
     assert.ok(setting, 'thruntGod.mcp.nodePath setting exists');
@@ -219,10 +225,10 @@ describe('MCP commands', () => {
     assert.ok(entry.when.includes('!thruntGod.mcpAvailable'));
   });
 
-  it('registers 7 MCP context menu entries gated by automationMcp', () => {
+  it('registers 8 MCP context menu entries gated by automationMcp', () => {
     const ctx = manifest.contributes.menus['view/item/context'];
     const mcpMenus = ctx.filter(m => m.command.startsWith('thrunt-god.mcp'));
-    assert.equal(mcpMenus.length, 7);
+    assert.equal(mcpMenus.length, 8);
     for (const menu of mcpMenus) {
       assert.ok(
         menu.when.includes('viewItem == automationMcp'),
@@ -239,7 +245,7 @@ describe('MCP commands', () => {
     const ctx = manifest.contributes.menus['view/item/context'];
     const mcpMenus = ctx.filter(m => m.command.startsWith('thrunt-god.mcp'));
     const groups = mcpMenus.map(m => m.group).sort();
-    assert.deepEqual(groups, ['mcp@1', 'mcp@2', 'mcp@3', 'mcp@4', 'mcp@5', 'mcp@6', 'mcp@7']);
+    assert.deepEqual(groups, ['mcp@1', 'mcp@2', 'mcp@3', 'mcp@4', 'mcp@5', 'mcp@6', 'mcp@7', 'mcp@8']);
   });
 
   it('has mcpControlPanel activation event', () => {

@@ -1,6 +1,6 @@
 {
   "name": "thrunt-god",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Threat-hunting orchestration system for Claude Code, OpenCode, Gemini, Codex, Copilot, Cursor, and Windsurf.",
   "bin": {
     "thrunt-god": "bin/install.js"

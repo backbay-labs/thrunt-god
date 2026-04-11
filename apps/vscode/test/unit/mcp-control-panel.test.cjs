@@ -47,10 +47,10 @@ describe('MCP Control Panel manifest', () => {
     assert.ok(entry.when.includes('view == thruntGod.automationTree'));
   });
 
-  it('has mcpOpenPanel context menu in mcp@7 group', () => {
+  it('has mcpOpenPanel context menu in mcp@8 group', () => {
     const ctx = pkg.contributes.menus['view/item/context'];
     const entry = ctx.find(m => m.command === 'thrunt-god.mcpOpenPanel');
-    assert.equal(entry.group, 'mcp@7');
+    assert.equal(entry.group, 'mcp@8');
   });
 
   it('has mcpControlPanel activation event', () => {
@@ -75,17 +75,17 @@ describe('MCP Control Panel manifest', () => {
     assert.equal(fs.existsSync(distPath), false);
   });
 
-  it('registers 7 MCP commands total', () => {
+  it('registers 8 MCP commands total', () => {
     const mcpCommands = pkg.contributes.commands.filter(
       c => c.command.startsWith('thrunt-god.mcp')
     );
-    assert.equal(mcpCommands.length, 7);
+    assert.equal(mcpCommands.length, 8);
   });
 
-  it('registers 7 MCP context menu entries gated by automationMcp', () => {
+  it('registers 8 MCP context menu entries gated by automationMcp', () => {
     const ctx = pkg.contributes.menus['view/item/context'];
     const mcpMenus = ctx.filter(m => m.command.startsWith('thrunt-god.mcp'));
-    assert.equal(mcpMenus.length, 7);
+    assert.equal(mcpMenus.length, 8);
     for (const menu of mcpMenus) {
       assert.ok(
         menu.when.includes('viewItem == automationMcp'),

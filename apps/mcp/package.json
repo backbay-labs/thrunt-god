@@ -1,6 +1,6 @@
 {
   "name": "@thrunt/mcp",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "MCP server for ATT&CK intelligence, detection coverage, knowledge graph, and hunt workflow prompts",
   "author": "TACHES",
   "bin": {
