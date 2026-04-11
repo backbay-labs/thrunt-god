@@ -1,0 +1,149 @@
+/**
+ * Interactive action handlers — button clicks from Block Kit surfaces.
+ *
+ * Handles:
+ * - approval_approve / approval_deny — operator approval flow
+ * - case_view_status — show case status in thread
+ * - case_start_hunt — kick off autonomous hunt for a case
+ */
+
+import type { App } from "@slack/bolt"
+import type { BlockAction, ButtonAction } from "@slack/bolt/dist/types/actions/block-action"
+import type { Config } from "../config.ts"
+import type { ApprovalStore } from "../approvals.ts"
+import { readHuntStatus, readMission } from "../hunt/state.ts"
+import { createDispatch } from "../hunt/orchestrate.ts"
+import { huntStatusBlocks } from "../blocks/status.ts"
+import { approvalResponseBlocks } from "../blocks/approval.ts"
+import { join } from "node:path"
+
+export function registerActions(app: App, config: Config, approvalStore?: ApprovalStore): void {
+  // ── Approval flow ──────────────────────────────────────────────────────
+
+  app.action<BlockAction<ButtonAction>>("approval_approve", async ({ ack, body, client, action }) => {
+    await ack()
+
+    const value = action.value
+    if (!value) return
+
+    const approval = approvalStore?.get(value)
+    if (!approval) {
+      await client.chat.postEphemeral({
+        channel: body.channel?.id ?? "",
+        user: body.user.id,
+        text: "This approval request has expired or was already handled.",
+      })
+      return
+    }
+
+    await approvalStore!.delete(value)
+
+    await client.chat.update({
+      channel: approval.channelId,
+      ts: approval.messageTs,
+      blocks: approvalResponseBlocks(
+        {
+          id: value,
+          action: approval.action,
+          rationale: approval.rationale,
+          phase: approval.phase,
+          requestedAt: approval.requestedAt,
+          status: "approved",
+          respondedBy: body.user.id,
+          respondedAt: new Date().toISOString(),
+        },
+        true,
+        body.user.id,
+      ),
+      text: `Approved by <@${body.user.id}>`,
+    })
+  })
+
+  app.action<BlockAction<ButtonAction>>("approval_deny", async ({ ack, body, client, action }) => {
+    await ack()
+
+    const value = action.value
+    if (!value) return
+
+    const approval = approvalStore?.get(value)
+    if (!approval) {
+      await client.chat.postEphemeral({
+        channel: body.channel?.id ?? "",
+        user: body.user.id,
+        text: "This approval request has expired or was already handled.",
+      })
+      return
+    }
+
+    await approvalStore!.delete(value)
+
+    await client.chat.update({
+      channel: approval.channelId,
+      ts: approval.messageTs,
+      blocks: approvalResponseBlocks(
+        {
+          id: value,
+          action: approval.action,
+          rationale: approval.rationale,
+          phase: approval.phase,
+          requestedAt: approval.requestedAt,
+          status: "denied",
+          respondedBy: body.user.id,
+          respondedAt: new Date().toISOString(),
+        },
+        false,
+        body.user.id,
+      ),
+      text: `Denied by <@${body.user.id}>`,
+    })
+  })
+
+  // ── Case actions ───────────────────────────────────────────────────────
+
+  app.action<BlockAction<ButtonAction>>("case_view_status", async ({ ack, body, client, action }) => {
+    await ack()
+
+    const slug = action.value
+    if (!slug) return
+
+    const caseRoot = join(config.workspaceRoot, ".planning", "cases", slug)
+    const [status, mission] = await Promise.all([
+      readHuntStatus(caseRoot),
+      readMission(caseRoot),
+    ])
+
+    await client.chat.postEphemeral({
+      channel: body.channel?.id ?? "",
+      user: body.user.id,
+      blocks: huntStatusBlocks(status, mission),
+      text: `Status for case: ${slug}`,
+    })
+  })
+
+  app.action<BlockAction<ButtonAction>>("case_start_hunt", async ({ ack, body, client, action }) => {
+    await ack()
+
+    const slug = action.value
+    if (!slug) return
+
+    const channelId = body.channel?.id ?? ""
+    const threadTs = body.message?.ts
+    const caseDir = join(config.workspaceRoot, ".planning", "cases", slug)
+
+    // Create a dispatch marker for operators/automation
+    await createDispatch(config.workspaceRoot, {
+      caseSlug: slug,
+      caseDir,
+      channelId,
+      threadTs,
+      requestedBy: body.user.id,
+      requestedAt: new Date().toISOString(),
+    })
+
+    await client.chat.postMessage({
+      channel: channelId,
+      thread_ts: threadTs,
+      text: `:rocket: Hunt dispatched for case \`${slug}\`.\n\nOperator — run:\n\`\`\`cd "${caseDir}" && thrunt-god\`\`\``,
+    })
+  })
+}
