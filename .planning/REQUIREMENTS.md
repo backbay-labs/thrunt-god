@@ -34,12 +34,12 @@ Requirements for v3.2 Obsidian Workspace Companion. Each maps to roadmap phases.
 
 ### Hunt State Parsing
 
-- [ ] **PARSE-01**: Plugin parses STATE.md to extract current phase, blockers, and next actions
-- [ ] **PARSE-02**: Plugin parses HYPOTHESES.md table to extract validated, pending, and rejected hypothesis counts
+- [x] **PARSE-01**: Plugin parses STATE.md to extract current phase, blockers, and next actions
+- [x] **PARSE-02**: Plugin parses HYPOTHESES.md table to extract validated, pending, and rejected hypothesis counts
 - [ ] **PARSE-03**: Plugin detects phase-XX/ directories under the planning directory and reports count and latest
-- [ ] **PARSE-04**: Malformed or missing STATE.md/HYPOTHESES.md degrades to "unknown" / zero counts, never crashes
-- [ ] **PARSE-05**: Parsers strip YAML frontmatter before scanning to prevent false positives
-- [ ] **PARSE-06**: Parsers are pure functions testable without Obsidian runtime
+- [x] **PARSE-04**: Malformed or missing STATE.md/HYPOTHESES.md degrades to "unknown" / zero counts, never crashes
+- [x] **PARSE-05**: Parsers strip YAML frontmatter before scanning to prevent false positives
+- [x] **PARSE-06**: Parsers are pure functions testable without Obsidian runtime
 
 ### View & Templates
 
@@ -101,12 +101,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | NAV-03 | Phase 63 | Complete |
 | NAV-04 | Phase 63 | Complete |
 | NAV-05 | Phase 63 | Complete |
-| PARSE-01 | Phase 64 | Pending |
-| PARSE-02 | Phase 64 | Pending |
+| PARSE-01 | Phase 64 | Complete |
+| PARSE-02 | Phase 64 | Complete |
 | PARSE-03 | Phase 64 | Pending |
-| PARSE-04 | Phase 64 | Pending |
-| PARSE-05 | Phase 64 | Pending |
-| PARSE-06 | Phase 64 | Pending |
+| PARSE-04 | Phase 64 | Complete |
+| PARSE-05 | Phase 64 | Complete |
+| PARSE-06 | Phase 64 | Complete |
 | VIEW-01 | Phase 64 | Pending |
 | VIEW-02 | Phase 64 | Pending |
 | VIEW-03 | Phase 63 | Complete |

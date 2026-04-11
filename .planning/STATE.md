@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v3.2
 milestone_name: Obsidian Workspace Companion
-status: completed
-stopped_at: Completed 63-05-PLAN.md
-last_updated: "2026-04-11T17:20:59.053Z"
-last_activity: 2026-04-11 -- Completed 63-05 unit tests for paths, artifacts, workspace
+status: executing
+stopped_at: Completed 64-01-PLAN.md
+last_updated: "2026-04-11T17:42:03.223Z"
+last_activity: 2026-04-11 -- Completed 64-01 snapshot types and markdown parsers
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 10
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 63 complete (plan 5/5 complete)
+**Current focus:** v3.2 Obsidian Workspace Companion -- Phase 64 in progress (plan 1/5 complete)
 
 ## Current Milestone: v3.2 Obsidian Workspace Companion
 
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 ## Current Position
 
-Phase: 63 of 64 (Structural Foundation)
-Plan: 5 of 5 complete
-Status: Phase Complete
-Last activity: 2026-04-11 -- Completed 63-05 unit tests for paths, artifacts, workspace
+Phase: 64 of 64 (Live Hunt Dashboard)
+Plan: 1 of 5 complete
+Status: In Progress
+Last activity: 2026-04-11 -- Completed 64-01 snapshot types and markdown parsers
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 60%
 
 ## Accumulated Context
 
@@ -61,6 +61,9 @@ Progress: [██████████] 100%
 - [Phase 63]: vitest 3.x chosen for test runner (ESM-native, fast)
 - [Phase 63]: null as any for App parameter in WorkspaceService tests -- App not used in pure logic paths
 - [Phase 63]: StubVaultAdapter uses in-memory Map/Set for files/folders -- minimal test dependency
+- [Phase 64]: stripFrontmatter lives in state.ts, exported for reuse by hypotheses.ts and barrel
+- [Phase 64]: extractListItems refactored to named helper for noUncheckedIndexedAccess compliance
+- [Phase 64]: ZERO snapshot spread-copied on return to prevent shared mutation
 
 ### Blockers/Concerns
 
@@ -68,6 +71,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-11T17:16:47.059Z
-Stopped at: Completed 63-05-PLAN.md
+Last session: 2026-04-11T17:42:03.220Z
+Stopped at: Completed 64-01-PLAN.md
 Resume file: None
