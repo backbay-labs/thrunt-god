@@ -7,7 +7,7 @@ import {
 import { THRUNT_WORKSPACE_VIEW_TYPE, ThruntWorkspaceView } from './view';
 import { CORE_ARTIFACTS } from './artifacts';
 import { ObsidianVaultAdapter } from './vault-adapter';
-import { WorkspaceService } from './workspace';
+import { WorkspaceService, formatStatusBarText } from './workspace';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -31,7 +31,7 @@ export default class ThruntGodPlugin extends Plugin {
     );
 
     this.statusBarItemEl = this.addStatusBarItem();
-    this.updateStatusBar();
+    void this.updateStatusBar();
 
     this.addRibbonIcon('shield', 'Open THRUNT workspace', () => {
       void this.activateView();
@@ -129,7 +129,7 @@ export default class ThruntGodPlugin extends Plugin {
 
   async refreshViews(): Promise<void> {
     this.workspaceService.invalidate();
-    this.updateStatusBar();
+    await this.updateStatusBar();
 
     for (const leaf of this.app.workspace.getLeavesOfType(
       THRUNT_WORKSPACE_VIEW_TYPE,
@@ -151,25 +151,9 @@ export default class ThruntGodPlugin extends Plugin {
     await this.refreshViews();
   }
 
-  private updateStatusBar(): void {
+  private async updateStatusBar(): Promise<void> {
     if (!this.statusBarItemEl) return;
-
-    const vm = this.workspaceService.getViewModel();
-
-    switch (vm.workspaceStatus) {
-      case 'healthy':
-        this.statusBarItemEl.setText(
-          `THRUNT ${vm.planningDir} (${vm.artifactCount}/${vm.artifactTotal})`,
-        );
-        break;
-      case 'partial':
-        this.statusBarItemEl.setText(
-          `THRUNT ${vm.planningDir} (${vm.artifactCount}/${vm.artifactTotal})`,
-        );
-        break;
-      case 'missing':
-        this.statusBarItemEl.setText('THRUNT not detected');
-        break;
-    }
+    const vm = await this.workspaceService.getViewModel();
+    this.statusBarItemEl.setText(formatStatusBarText(vm));
   }
 }

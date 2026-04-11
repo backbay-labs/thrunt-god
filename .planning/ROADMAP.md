@@ -64,7 +64,7 @@ Plans:
   3. Malformed or missing STATE.md/HYPOTHESES.md degrades to "unknown" or zero counts -- never crashes the sidebar or status bar
   4. New artifact templates include YAML frontmatter (thrunt-artifact, hunt-id, updated) and wiki-links between related artifacts
   5. The hero marketing card is replaced with a compact, data-dense hunt status display showing phase, blockers, hypothesis scoreboard, and phase directory count
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 Plans:
 - [ ] 64-01-PLAN.md — Types + STATE.md/HYPOTHESES.md parsers (pure functions)
 - [ ] 64-02-PLAN.md — Parser unit tests (state + hypotheses)
@@ -85,4 +85,4 @@ Phases execute in numeric order: 63 -> 64
 | 61. Runbook Engine & Editor | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 62. Execution History & Guardrails | v3.1 | 3/3 | Complete | 2026-04-09 |
 | 63. Structural Foundation | 5/5 | Complete    | 2026-04-11 | - |
-| 64. Live Hunt Dashboard | 1/5 | In Progress|  | - |
+| 64. Live Hunt Dashboard | 2/5 | In Progress|  | - |
