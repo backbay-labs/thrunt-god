@@ -14,6 +14,11 @@ export interface ThruntGodPluginSettings {
   halfLifeDays: number;
   staleCoverageDays: number;
   liveCanvasEnabled: boolean;
+  autoIngestionEnabled: boolean;
+  autoIngestDebounceMs: number;
+  huntPulseEnabled: boolean;
+  mcpEventPollingEnabled: boolean;     // Phase 88 placeholder
+  priorHuntSuggestionsEnabled: boolean; // Phase 88 placeholder
 }
 
 export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
@@ -24,6 +29,11 @@ export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
   halfLifeDays: 90,
   staleCoverageDays: 90,
   liveCanvasEnabled: true,
+  autoIngestionEnabled: true,
+  autoIngestDebounceMs: 2000,
+  huntPulseEnabled: true,
+  mcpEventPollingEnabled: false,
+  priorHuntSuggestionsEnabled: false,
 };
 
 export class ThruntGodSettingTab extends PluginSettingTab {
@@ -146,6 +156,84 @@ export class ThruntGodSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.liveCanvasEnabled)
           .onChange(async (value) => {
             this.plugin.settings.liveCanvasEnabled = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    // --- Live Hunt ---
+
+    containerEl.createEl('h3', { text: 'Live Hunt' });
+
+    new Setting(containerEl)
+      .setName('Auto-ingestion')
+      .setDesc('Automatically ingest new receipts and queries when they appear.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.autoIngestionEnabled)
+          .onChange(async (value) => {
+            this.plugin.settings.autoIngestionEnabled = value;
+            if (value) {
+              this.plugin.enableAutoIngestion();
+            } else {
+              this.plugin.disableAutoIngestion();
+            }
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Auto-ingest debounce (ms)')
+      .setDesc('Debounce interval for auto-ingestion. Default: 2000.')
+      .addText((text) =>
+        text
+          .setPlaceholder('2000')
+          .setValue(String(this.plugin.settings.autoIngestDebounceMs))
+          .onChange(async (value) => {
+            const parsed = parseInt(value, 10);
+            this.plugin.settings.autoIngestDebounceMs = parsed > 0 ? parsed : DEFAULT_SETTINGS.autoIngestDebounceMs;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Hunt pulse')
+      .setDesc('Show hunt activity indicator in the status bar.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.huntPulseEnabled)
+          .onChange(async (value) => {
+            this.plugin.settings.huntPulseEnabled = value;
+            if (value) {
+              this.plugin.enableHuntPulse();
+            } else {
+              this.plugin.disableHuntPulse();
+            }
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('MCP event polling')
+      .setDesc('Poll MCP server for CLI events. (Coming in Phase 88)')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.mcpEventPollingEnabled)
+          .setDisabled(true)
+          .onChange(async (value) => {
+            this.plugin.settings.mcpEventPollingEnabled = value;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Prior-hunt suggestions')
+      .setDesc('Show suggestions when entities match past hunts. (Coming in Phase 88)')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.priorHuntSuggestionsEnabled)
+          .setDisabled(true)
+          .onChange(async (value) => {
+            this.plugin.settings.priorHuntSuggestionsEnabled = value;
             await this.plugin.saveSettings();
           }),
       );

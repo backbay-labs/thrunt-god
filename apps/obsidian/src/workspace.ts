@@ -30,12 +30,14 @@ import { EventBus } from './services/event-bus';
 import { IntelligenceService } from './services/intelligence-service';
 import { CanvasService } from './services/canvas-service';
 import { McpBridgeService } from './services/mcp-bridge-service';
+import { WatcherService } from './services/watcher-service';
 
 export class WorkspaceService {
   private cachedViewModel: ViewModel | null = null;
   private intelligenceService!: IntelligenceService;
   private canvasService!: CanvasService;
   private mcpBridgeService!: McpBridgeService;
+  private watcherService!: WatcherService;
 
   constructor(
     private app: App,
@@ -54,6 +56,11 @@ export class WorkspaceService {
     this.intelligenceService = new IntelligenceService(vaultAdapter, planningDirGetter, bus);
     this.canvasService = new CanvasService(vaultAdapter, planningDirGetter, bus);
     this.mcpBridgeService = new McpBridgeService(vaultAdapter, planningDirGetter, mcpClient, bus);
+    this.watcherService = new WatcherService(vaultAdapter, planningDirGetter, this.intelligenceService, bus);
+  }
+
+  get watcher(): WatcherService {
+    return this.watcherService;
   }
 
   getMcpClient(): McpClient | undefined {
