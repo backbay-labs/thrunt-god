@@ -42,8 +42,8 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 
 - [x] **LIVE-01**: New receipts/queries in RECEIPTS/ and QUERIES/ directories trigger auto-ingestion within configurable interval
 - [x] **LIVE-02**: Status bar shows "hunt pulse" indicator when recent agent activity is detected
-- [ ] **LIVE-03**: Bidirectional MCP event bridge: CLI lifecycle events flow to Obsidian and create/update vault artifacts
-- [ ] **LIVE-04**: Vault changes in Obsidian publish events consumable by CLI and VS Code
+- [x] **LIVE-03**: Bidirectional MCP event bridge: CLI lifecycle events flow to Obsidian and create/update vault artifacts
+- [x] **LIVE-04**: Vault changes in Obsidian publish events consumable by CLI and VS Code
 - [ ] **LIVE-05**: Prior-hunt suggestions appear as dismissable sidebar callouts when newly ingested entities match historical knowledge
 - [x] **LIVE-06**: All live features can be disabled via settings (graceful opt-out)
 
@@ -108,8 +108,8 @@ Deferred beyond v5.0.
 | CANVAS-11 | Phase 85 | Complete |
 | LIVE-01 | Phase 87 | Complete |
 | LIVE-02 | Phase 87 | Complete |
-| LIVE-03 | Phase 88 | Pending |
-| LIVE-04 | Phase 88 | Pending |
+| LIVE-03 | Phase 88 | Complete |
+| LIVE-04 | Phase 88 | Complete |
 | LIVE-05 | Phase 88 | Pending |
 | LIVE-06 | Phase 87 | Complete |
 | JOURNAL-01 | Phase 89 | Pending |

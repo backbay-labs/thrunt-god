@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 87-02-PLAN.md
-last_updated: "2026-04-12T21:25:57.549Z"
+stopped_at: Completed 88-01-PLAN.md
+last_updated: "2026-04-12T22:27:32Z"
 progress:
   total_phases: 12
   completed_phases: 9
-  total_plans: 20
-  completed_plans: 20
-  percent: 100
+  total_plans: 22
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 87 (Filesystem Watcher + Hunt Pulse)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 88 (Bidirectional MCP Event Bridge + Prior Hunt Suggester)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** In progress
-**Phase:** 87 of 90 (Filesystem Watcher + Hunt Pulse)
-**Plan:** 2 of 2 in current phase complete
+**Status:** Executing
+**Phase:** 88 of 90 (Bidirectional MCP Event Bridge + Prior Hunt Suggester)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (20/20 v5.0 plans)
+Progress: [█████████░] 95% (21/22 v5.0 plans)
 
 ## Recently Completed
 
@@ -116,6 +116,12 @@ Progress: [██████████] 100% (20/20 v5.0 plans)
 - [Phase 87]: enableAutoIngestion/disableAutoIngestion are idempotent with guard checks
 - [Phase 87]: huntPulseEl is separate from existing statusBarItemEl (workspace status)
 - [Phase 87]: MCP event polling and prior-hunt suggestions are disabled placeholder toggles for Phase 88
+- [Phase 88]: mapCliEventToAction is pure function with switch dispatch, no side effects
+- [Phase 88]: pollEvents uses cursor-based since parameter to avoid duplicate events
+- [Phase 88]: publishEvent/publishEvents are fire-and-forget: swallow all errors per locked decision
+- [Phase 88]: Outbound events batched in 500ms debounce window before publishing as array
+- [Phase 88]: Hunt pulse shows MCP online/offline only when mcpEventPollingEnabled is true
+- [Phase 88]: WorkspaceService exposes mcpBridge as public getter for lifecycle access
 
 ### Blockers/Concerns
 
@@ -123,6 +129,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:25:57.538Z
-Stopped at: Completed 87-02-PLAN.md
+Last session: 2026-04-12T22:27:32Z
+Stopped at: Completed 88-01-PLAN.md
 Resume file: None
