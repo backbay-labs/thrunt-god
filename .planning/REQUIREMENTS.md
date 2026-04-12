@@ -9,11 +9,11 @@ Requirements for v5.0 Hunt Ecosystem: Evidence In, Detections Out. Each maps to 
 
 ### Sidepanel UI
 
-- [ ] **SIDE-01**: Hunter opens the browser extension sidepanel and sees current case identity (signal, owner, phase, status) derived from `.planning/` artifacts via the bridge
+- [x] **SIDE-01**: Hunter opens the browser extension sidepanel and sees current case identity (signal, owner, phase, status) derived from `.planning/` artifacts via the bridge
 - [ ] **SIDE-02**: Hunter sees a scrollable evidence timeline showing captured clips, receipts, and queries in chronological order with vendor badges
-- [ ] **SIDE-03**: Hunter sees vendor connection status showing which adapters are active, certified, and extracting on the current page
-- [ ] **SIDE-04**: Hunter sees hypothesis cards with verdict badges (Supported/Disproved/Inconclusive/Open) and linked evidence counts
-- [ ] **SIDE-05**: Hunter sees recommended next actions derived from case state (e.g., "3 hypotheses have no evidence", "Phase 2 ready for execution")
+- [x] **SIDE-03**: Hunter sees vendor connection status showing which adapters are active, certified, and extracting on the current page
+- [x] **SIDE-04**: Hunter sees hypothesis cards with verdict badges (Supported/Disproved/Inconclusive/Open) and linked evidence counts
+- [x] **SIDE-05**: Hunter sees recommended next actions derived from case state (e.g., "3 hypotheses have no evidence", "Phase 2 ready for execution")
 - [ ] **SIDE-06**: Hunter can click any evidence item or hypothesis to navigate to the corresponding artifact in the source vendor console or open it in the bridge
 
 ### Adapter Coverage
@@ -139,11 +139,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADPT-02 | Phase 23 | Complete |
 | ADPT-03 | Phase 23 | Complete |
 | ADPT-04 | Phase 23 | Complete |
-| SIDE-01 | Phase 24 | Pending |
+| SIDE-01 | Phase 24 | Complete |
 | SIDE-02 | Phase 24 | Pending |
-| SIDE-03 | Phase 24 | Pending |
-| SIDE-04 | Phase 24 | Pending |
-| SIDE-05 | Phase 24 | Pending |
+| SIDE-03 | Phase 24 | Complete |
+| SIDE-04 | Phase 24 | Complete |
+| SIDE-05 | Phase 24 | Complete |
 | SIDE-06 | Phase 24 | Pending |
 | ADPT-05 | Phase 25 | Pending |
 | ADPT-06 | Phase 25 | Pending |

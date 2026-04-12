@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
-status: in-progress
-stopped_at: Completed 23-03-PLAN.md
-last_updated: "2026-04-12T14:56:46Z"
-last_activity: 2026-04-12 — Completed Phase 23 Plan 03 (Content script consolidation + certification redaction)
+status: in_progress
+stopped_at: Completed 24-01-PLAN.md
+last_updated: "2026-04-12T16:57:42Z"
+last_activity: 2026-04-12 — Completed Phase 24 Plan 01 (Sidepanel data model enrichments and core UI sections)
 progress:
   total_phases: 16
   completed_phases: 9
-  total_plans: 25
-  completed_plans: 25
+  total_plans: 27
+  completed_plans: 26
   percent: 100
 ---
 
@@ -21,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Close the loop from evidence capture to detection deployment — every hunt produces evidence chains, intelligence updates, and deployable detection rules
-**Current focus:** v5.0 Phase 23 — Certified Adapters (in progress)
+**Current focus:** v5.0 Phase 24 — Sidepanel UI (in progress)
 
 ## Current Position
 
-Phase: 23 of 26 (Certified Adapters)
-Plan: 3 of 3 complete
-Status: Phase Complete
-Last activity: 2026-04-12 — Completed Phase 23 Plan 03 (Content script consolidation + certification redaction)
+Phase: 24 of 26 (Sidepanel UI)
+Plan: 1 of 2 complete
+Status: In Progress
+Last activity: 2026-04-12 — Completed Phase 24 Plan 01 (Sidepanel data model enrichments and core UI sections)
 
-Progress: [██████████] 100%
+Progress: [██████████] 96%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40 (v1.0: 12, v2.0: 12, v3.0: 14, v4.0: 5, v5.0: 8)
+- Total plans completed: 41 (v1.0: 12, v2.0: 12, v3.0: 14, v4.0: 5, v5.0: 9)
 
 ## Accumulated Context
 
@@ -70,6 +70,9 @@ Recent decisions affecting current work:
 - [23-01]: Alert detail pages without query editor get failure reason for partial completeness, following sentinel incident pattern
 - [23-02]: CrowdStrike alert_detail pages without query editor get failure reason for partial completeness, matching sentinel incident pattern
 - [Phase 23]: Used /browser sub-export instead of root package import for content scripts to avoid Node.js-only certification dependencies in browser bundle
+- [24-01]: Adapter display names derived by capitalizing vendorId segments rather than separate display name registry
+- [24-01]: Evidence timeline capped at 20 entries, recommended actions capped at 5 with priority sorting
+- [24-01]: Legacy single recommendedAction string preserved as fallback when recommendedActions array is empty
 
 ### Pending Todos
 
@@ -91,9 +94,10 @@ Recent decisions affecting current work:
 | 23    | 01   | 5min     | 3     | 7     |
 | 23    | 02   | 3min     | 3     | 7     |
 | 23    | 03   | 3min     | 2     | 3     |
+| 24    | 01   | 3min     | 2     | 5     |
 
 ## Session Continuity
 
-Last session: 2026-04-12T14:56:46.409Z
-Stopped at: Completed 23-03-PLAN.md
+Last session: 2026-04-12T16:57:42Z
+Stopped at: Completed 24-01-PLAN.md
 Resume file: None
