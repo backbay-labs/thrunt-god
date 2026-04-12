@@ -5,8 +5,8 @@ import {
   generateLateralMovementCanvas,
   generateHuntProgressionCanvas,
   TACTIC_ORDER,
-  ENTITY_COLORS,
 } from '../canvas-generator';
+import { ENTITY_TYPE_COLORS } from '../canvas-adapter';
 import type { CanvasEntity } from '../types';
 
 describe('canvas-generator', () => {
@@ -18,12 +18,12 @@ describe('canvas-generator', () => {
     });
   });
 
-  describe('ENTITY_COLORS constant', () => {
+  describe('ENTITY_TYPE_COLORS constant (canonical from canvas-adapter)', () => {
     it('maps entity type prefixes to hex colors', () => {
-      expect(ENTITY_COLORS['ioc']).toBe('#4a90d9');
-      expect(ENTITY_COLORS['ttp']).toBe('#d94a4a');
-      expect(ENTITY_COLORS['actor']).toBe('#9b59b6');
-      expect(ENTITY_COLORS['tool']).toBe('#e67e22');
+      expect(ENTITY_TYPE_COLORS['ioc']).toBe('#e53935');
+      expect(ENTITY_TYPE_COLORS['ttp']).toBe('#fb8c00');
+      expect(ENTITY_TYPE_COLORS['actor']).toBe('#8e24aa');
+      expect(ENTITY_TYPE_COLORS['tool']).toBe('#1e88e5');
     });
   });
 
@@ -49,7 +49,7 @@ describe('canvas-generator', () => {
       expect(node.y).toBe(0);
       expect(node.width).toBe(200);
       expect(node.height).toBe(100);
-      expect(node.color).toBe('#d94a4a');
+      expect(node.color).toBe('#fb8c00');
     });
 
     it('places two IOC entities at column 0 with IOC color and dimensions', () => {
@@ -60,11 +60,11 @@ describe('canvas-generator', () => {
       const result = generateKillChainCanvas(entities);
       expect(result.nodes).toHaveLength(2);
       expect(result.nodes[0]!.x).toBe(0);
-      expect(result.nodes[0]!.color).toBe('#4a90d9');
+      expect(result.nodes[0]!.color).toBe('#e53935');
       expect(result.nodes[0]!.width).toBe(150);
       expect(result.nodes[0]!.height).toBe(80);
       expect(result.nodes[1]!.x).toBe(0);
-      expect(result.nodes[1]!.color).toBe('#4a90d9');
+      expect(result.nodes[1]!.color).toBe('#e53935');
     });
 
     it('creates edges between entities in the same edge group', () => {

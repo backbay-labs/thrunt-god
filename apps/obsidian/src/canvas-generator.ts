@@ -13,6 +13,7 @@
  */
 
 import type { CanvasEntity, CanvasNode, CanvasEdge, CanvasData } from './types';
+import { resolveEntityColor } from './canvas-adapter';
 
 // --- Public types ---
 
@@ -44,18 +45,8 @@ export const TACTIC_ORDER: readonly string[] = Object.freeze([
   'Impact',
 ]);
 
-/**
- * Entity type prefix to hex color mapping.
- * IOC subtypes (ioc/ip, ioc/domain, ioc/hash) all match via "ioc" prefix.
- */
-export const ENTITY_COLORS: Record<string, string> = {
-  ioc: '#4a90d9',
-  ttp: '#d94a4a',
-  actor: '#9b59b6',
-  tool: '#e67e22',
-  infrastructure: '#95a5a6',
-  datasource: '#27ae60',
-};
+// ENTITY_COLORS removed -- canonical colors now live in canvas-adapter.ts
+// Use resolveEntityColor() or ENTITY_TYPE_COLORS from './canvas-adapter'.
 
 // --- Card dimensions by entity type ---
 
@@ -70,11 +61,10 @@ const DEFAULT_DIMENSIONS = { width: 180, height: 90 };
 
 /**
  * Resolve color for an entity type string.
- * IOC subtypes (ioc/ip, ioc/domain, ioc/hash) match via startsWith('ioc').
+ * Delegates to resolveEntityColor from canvas-adapter (single source of truth).
  */
 export function getEntityColor(entityType: string): string {
-  if (entityType.startsWith('ioc')) return ENTITY_COLORS['ioc']!;
-  return ENTITY_COLORS[entityType] ?? '#7f8c8d';
+  return resolveEntityColor(entityType);
 }
 
 /**

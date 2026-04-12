@@ -369,3 +369,32 @@
 .thrunt-result-action {
   margin-left: 8px;
 }
+
+/* Canvas entity node styling -- Phase 85 */
+/* Verdict borders via :has() selector on cssclasses frontmatter */
+.canvas-node:has(.thrunt-verdict-unknown) .canvas-node-container {
+  border: 1px solid var(--text-muted);
+}
+.canvas-node:has(.thrunt-verdict-suspicious) .canvas-node-container {
+  border: 2px dashed var(--color-orange);
+}
+.canvas-node:has(.thrunt-verdict-confirmed-malicious) .canvas-node-container {
+  border: 3px solid var(--color-red);
+}
+.canvas-node:has(.thrunt-verdict-remediated) .canvas-node-container {
+  border: 2px solid var(--color-green);
+}
+.canvas-node:has(.thrunt-verdict-resurfaced) .canvas-node-container {
+  border: 3px double var(--color-red);
+}
+
+/* Confidence opacity tiers */
+.canvas-node:has(.thrunt-confidence-low) {
+  opacity: 0.45;
+}
+.canvas-node:has(.thrunt-confidence-medium) {
+  opacity: 0.7;
+}
+.canvas-node:has(.thrunt-confidence-high) {
+  opacity: 1.0;
+}
