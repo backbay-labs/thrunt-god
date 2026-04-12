@@ -46,6 +46,13 @@ export interface PhaseDirectoryInfo {
   highestName: string | null; // directory name of highest phase, e.g. "phase-04"
 }
 
+// --- Entity counts ---
+
+/** Entity file counts per folder, keyed by folder path (e.g. "entities/iocs") */
+export interface EntityCounts {
+  [folderPath: string]: number;
+}
+
 // --- View model consumed by view.ts ---
 
 export interface ViewModel {
@@ -58,6 +65,7 @@ export interface ViewModel {
   stateSnapshot: StateSnapshot | null;       // null if STATE.md does not exist
   hypothesisSnapshot: HypothesisSnapshot | null; // null if HYPOTHESES.md does not exist
   phaseDirectories: PhaseDirectoryInfo;
+  entityCounts: EntityCounts;
 }
 
 // --- Error types ---

@@ -3,6 +3,7 @@ import type { VaultAdapter } from '../vault-adapter';
 import { WorkspaceService, formatStatusBarText } from '../workspace';
 import { CORE_ARTIFACTS, KNOWLEDGE_BASE_TEMPLATE } from '../artifacts';
 import { getCoreFilePath } from '../paths';
+import { ENTITY_FOLDERS } from '../entity-schema';
 
 // ---------------------------------------------------------------------------
 // StubVaultAdapter -- in-memory implementation for testing without Obsidian
@@ -336,6 +337,7 @@ describe('WorkspaceService', () => {
       stateSnapshot: null,
       hypothesisSnapshot: null,
       phaseDirectories: { count: 0, highest: null, highestName: null },
+      entityCounts: {},
     };
 
     it('returns "THRUNT not detected" for missing workspace', () => {
@@ -348,6 +350,7 @@ describe('WorkspaceService', () => {
         stateSnapshot: null,
         hypothesisSnapshot: null,
         phaseDirectories: { count: 0, highest: null, highestName: null },
+        entityCounts: {},
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT not detected');
     });
@@ -362,6 +365,7 @@ describe('WorkspaceService', () => {
         stateSnapshot: null,
         hypothesisSnapshot: null,
         phaseDirectories: { count: 0, highest: null, highestName: null },
+        entityCounts: {},
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT .planning (3/5)');
     });
@@ -376,6 +380,7 @@ describe('WorkspaceService', () => {
         stateSnapshot: { currentPhase: 'Phase 3', blockers: ['x'], nextActions: [] },
         hypothesisSnapshot: { total: 5, validated: 1, pending: 2, rejected: 1, unknown: 1 },
         phaseDirectories: { count: 3, highest: 3, highestName: 'phase-03' },
+        entityCounts: {},
       };
       expect(formatStatusBarText(vm)).toBe('Phase 3 | 2/5 hypotheses active | 1 blocker');
     });
@@ -464,6 +469,52 @@ describe('WorkspaceService', () => {
       // hypothesisSnapshot depends on whether the starter template has a table
       // Just verify the field is present
       expect(vm).toHaveProperty('hypothesisSnapshot');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // entityCounts in getViewModel
+  // -------------------------------------------------------------------------
+
+  describe('entityCounts', () => {
+    it('shows 0 for all folders when workspace is missing', async () => {
+      const vm = await service.getViewModel();
+      for (const folder of ENTITY_FOLDERS) {
+        expect(vm.entityCounts[folder]).toBe(0);
+      }
+    });
+
+    it('counts .md files in entity folders', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/entities/iocs');
+      adapter.addFileToFolder('.planning/entities/iocs', 'ip-1.md');
+      adapter.addFileToFolder('.planning/entities/iocs', 'ip-2.md');
+      const vm = await service.getViewModel();
+      expect(vm.entityCounts['entities/iocs']).toBe(2);
+    });
+
+    it('updates after invalidate when files are added', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/entities/ttps');
+      const vm1 = await service.getViewModel();
+      expect(vm1.entityCounts['entities/ttps']).toBe(0);
+
+      adapter.addFileToFolder('.planning/entities/ttps', 'lateral-movement.md');
+      service.invalidate();
+      const vm2 = await service.getViewModel();
+      expect(vm2.entityCounts['entities/ttps']).toBe(1);
+    });
+
+    it('only counts .md files', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/entities/actors');
+      adapter.addFileToFolder('.planning/entities/actors', 'apt28.md');
+      adapter.addFileToFolder('.planning/entities/actors', 'image.png');
+      const vm = await service.getViewModel();
+      expect(vm.entityCounts['entities/actors']).toBe(1);
     });
   });
 
