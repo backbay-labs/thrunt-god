@@ -33,7 +33,7 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 
 <!-- Current scope. Building toward these. -->
 
-(None yet — run `$gsd-new-milestone` to define the next milestone.)
+- v4.0 Obsidian Knowledge Weapon — Transform the Obsidian plugin from a vault-native workspace companion into the intelligence preparation and knowledge compounding surface for the THRUNT God ecosystem. Entity note schema, ATT&CK ontology scaffold, agent artifact ingestion, MCP bridge, hyper copy agent-ready export, canvas kill chain visualization, cross-hunt intelligence.
 
 ### Out of Scope
 
@@ -44,16 +44,26 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - Defender XDR via Graph API — Microsoft's forward path but different OAuth scope; v1.6 uses direct API
 - Cross-language query translation (SPL to ES|QL) — too error-prone; retargeting via packs only
 
-## Current Milestone
+## Current Milestone: v4.0 Obsidian Knowledge Weapon
 
-No active milestone. v3.3 Zero-Friction Distribution shipped on 2026-04-11.
+**Goal:** Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting -- where every hunt makes the next one smarter, analysts prepare context that makes agents more effective, and the knowledge graph grows organically from structured markdown.
 
-**Next step:** Run `$gsd-new-milestone` to define the next roadmap slice.
+**Target features:**
+- Entity note schema with typed frontmatter (IOCs, TTPs, actors, tools, infrastructure, data sources)
+- ATT&CK technique ontology scaffold (~200 auto-generated technique stubs)
+- Agent artifact awareness (RECEIPTS/, QUERIES/, evidence reviews, cases) with parsers and timeline view
+- Entity extraction and ingestion from agent output into the knowledge graph
+- MCP bridge connecting to the THRUNT MCP server's 11 tools for live intelligence enrichment
+- Agent-ready export with hyper copy -- one-click context assembly for agent handoff
+- Canvas kill chain generator with 4 templates (ATT&CK, diamond model, lateral movement, hunt progression)
+- Cross-hunt intelligence queries (recurring IOCs, coverage gaps, actor convergence, stale coverage)
 
-**Last shipped milestone:**
-- Standalone `--obsidian` installer path that stages canonical plugin assets under `~/.thrunt/obsidian/` and links them into detected macOS vaults
-- Release automation that builds the Obsidian plugin and uploads `main.js`, `manifest.json`, `styles.css`, and `versions.json`
-- Community-plugin readiness: review-safe package, public docs/visuals, and tracked submission metadata for `obsidianmd/obsidian-releases`
+**Design principles:**
+1. The vault IS the knowledge graph -- leverage Obsidian's native graph/Dataview/Canvas
+2. Agents populate, analysts curate
+3. Prepare context for agents, don't orchestrate them
+4. MCP enriches, vault owns
+5. Every note earns its existence
 
 ## Context
 
@@ -120,5 +130,11 @@ No active milestone. v3.3 Zero-Friction Distribution shipped on 2026-04-11.
 | macOS vault autodiscovery first | Existing install note targets local Obsidian users and `obsidian.json` gives a stable first implementation path | Good |
 | Root submission metadata sync | Community-facing `manifest.json` and `versions.json` stay derived from `apps/obsidian/` instead of becoming a second source of truth | Good |
 
+| Vault IS the knowledge graph | Don't build custom graph renderers; structure vault so Obsidian's native graph/Dataview/Canvas visualize for free | Planned |
+| Agents populate, analysts curate | Plugin ingests agent output automatically; analysts link, annotate, promote | Planned |
+| Prepare, don't orchestrate | Obsidian prepares context for agents (hyper copy, export templates); terminal runs them | Planned |
+| MCP enriches, vault owns | MCP server provides intelligence lookups; vault files are source of truth; MCP unavailability degrades enrichment, not core | Planned |
+| Entity notes as typed frontmatter | IOCs, TTPs, actors, tools, infra, datasources — each with canonical folder and YAML schema | Planned |
+
 ---
-*Last updated: 2026-04-11 after v3.3 milestone completion*
+*Last updated: 2026-04-11 after v4.0 milestone start*
