@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 79-01-PLAN.md
-last_updated: "2026-04-12T12:57:41.103Z"
+stopped_at: Completed 79-02-PLAN.md
+last_updated: "2026-04-12T13:09:30.000Z"
 progress:
   total_phases: 12
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 4
+  completed_plans: 2
+  percent: 8
 ---
 
 # Project State
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** Executing Phase 79
 **Phase:** 79 of 90 (Service Decomposition + EventBus)
-**Plan:** 1 of 3 in current phase complete
+**Plan:** 2 of 3 in current phase complete
 
-Progress: [#░░░░░░░░░░░] 4% (1/26 v5.0 plans)
+Progress: [##░░░░░░░░░░] 8% (2/26 v5.0 plans)
 
 ## Recently Completed
 
@@ -52,6 +52,8 @@ Progress: [#░░░░░░░░░░░] 4% (1/26 v5.0 plans)
 - Filesystem watcher uses Obsidian vault events, not raw fs.watch (macOS unreliable, breaks mobile)
 - Journal tags use #thrunt/ namespace prefix for Dataview compatibility
 - [Phase 79]: EventBus uses Map<string, Set<Function>> for zero-dep typed event handling
+- Plan 79-02: WorkspaceService decomposed to 493 LOC facade delegating 10 methods to 3 domain services
+- Plan 79-02: Domain services receive planningDirGetter closure for settings independence
 
 ### Blockers/Concerns
 
@@ -60,5 +62,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-12T12:57:36.728Z
-Stopped at: Completed 79-01-PLAN.md
+Stopped at: Completed 79-02-PLAN.md
 Resume file: None
