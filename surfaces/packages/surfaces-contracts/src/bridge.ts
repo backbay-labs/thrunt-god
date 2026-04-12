@@ -395,6 +395,99 @@ export interface JournalOverflowPayload {
   message: string;
 }
 
+// --- Mutation protocol types (Phase 22, Plan 03) ---
+
+export type MutationMethod = 'evidence.attach' | 'verdict.update' | 'ioc.add' | 'case.open';
+
+export interface MutationRequest {
+  jsonrpc: '2.0';
+  method: MutationMethod;
+  params: MutationParams;
+  id: string;
+}
+
+export type MutationParams =
+  | EvidenceAttachParams
+  | VerdictUpdateParams
+  | IocAddParams
+  | CaseOpenParams;
+
+export interface EvidenceAttachParams {
+  /** Raw content or URL to attach */
+  content: string;
+  /** Source surface identifier */
+  surfaceId: string;
+  /** Optional vendor context */
+  vendorContext?: VendorContext;
+  /** Optional artifact classification hint */
+  classificationHint?: 'query_candidate' | 'receipt_candidate' | 'plain_evidence';
+}
+
+export interface VerdictUpdateParams {
+  /** Hypothesis identifier (e.g., "HYP-001") */
+  hypothesisId: string;
+  /** New verdict value */
+  verdict: 'supported' | 'disproved' | 'inconclusive' | 'open';
+  /** Rationale for the verdict change */
+  rationale?: string;
+}
+
+export interface IocAddParams {
+  /** IOC value (IP, hash, domain, email, etc.) */
+  value: string;
+  /** IOC type if known (auto-classified if omitted) */
+  type?: 'ipv4' | 'ipv6' | 'md5' | 'sha1' | 'sha256' | 'domain' | 'email' | 'url' | 'hostname';
+  /** Source context */
+  source?: string;
+}
+
+export interface CaseOpenParams {
+  /** Signal text to initialize the case */
+  signal: string;
+  /** Hunt mode */
+  mode?: 'case' | 'patrol' | 'program';
+  /** Operator name */
+  owner?: string;
+}
+
+export interface MutationResponse {
+  jsonrpc: '2.0';
+  id: string;
+  result?: MutationResult;
+  error?: MutationError;
+}
+
+export interface MutationResult {
+  success: true;
+  method: MutationMethod;
+  message: string;
+  /** Artifacts created or modified by the mutation */
+  artifacts?: Array<{ type: string; id: string; path?: string }>;
+}
+
+export interface MutationError {
+  code: number;
+  message: string;
+  data?: {
+    class: 'auth' | 'timeout' | 'subprocess' | 'file-system' | 'validation';
+    bridgeCode: string;
+  };
+}
+
+// JSON-RPC error codes
+export const MUTATION_ERROR_CODES = {
+  PARSE_ERROR: -32700,
+  INVALID_REQUEST: -32600,
+  METHOD_NOT_FOUND: -32601,
+  INVALID_PARAMS: -32602,
+  INTERNAL_ERROR: -32603,
+  // Custom codes
+  VALIDATION_FAILED: -32001,
+  SUBPROCESS_UNAVAILABLE: -32002,
+  CASE_NOT_OPEN: -32003,
+  HYPOTHESIS_NOT_FOUND: -32004,
+} as const;
+
 // --- Vendor context (from browser extension) ---
 
 export interface VendorContext {
