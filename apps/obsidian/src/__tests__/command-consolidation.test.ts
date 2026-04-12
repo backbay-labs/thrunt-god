@@ -50,6 +50,7 @@ function createMockPlugin() {
       getAvailableProfiles: () => [],
       getFilePath: () => '',
       vaultAdapter: { getFile: () => null },
+      openLiveHuntCanvas: vi.fn().mockResolvedValue({ success: true, message: 'ready', canvasPath: 'test' }),
     },
     mcpClient: { isConnected: () => false },
     addCommand: (cmd: any) => {
@@ -72,9 +73,9 @@ describe('command consolidation', () => {
   // Visible top-level commands
   // -----------------------------------------------------------------------
 
-  it('registers exactly 14 visible top-level commands (non-empty name)', () => {
+  it('registers exactly 15 visible top-level commands (non-empty name)', () => {
     const visible = commands.filter((c) => c.name !== '');
-    expect(visible).toHaveLength(14);
+    expect(visible).toHaveLength(15);
   });
 
   it('visible commands include the expected IDs', () => {
@@ -90,6 +91,7 @@ describe('command consolidation', () => {
       'ingest-agent-output',
       'intelligence-chooser',
       'migrate-entity-schema',
+      'open-live-hunt-canvas',
       'open-thrunt-workspace',
       'refresh-canvas-nodes',
       'refresh-entity-intelligence',

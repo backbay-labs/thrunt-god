@@ -371,6 +371,32 @@ export class WorkspaceService {
     return this.canvasService.refreshAllCanvasNodes();
   }
 
+  async handleLiveCanvasEntityCreated(event: { name: string; entityType: string; sourcePath: string }): Promise<void> {
+    await this.canvasService.handleEntityCreated(event);
+  }
+
+  async refreshDashboardCanvas(): Promise<void> {
+    await this.canvasService.refreshDashboardCanvas();
+  }
+
+  async openLiveHuntCanvas(): Promise<{ success: boolean; message: string; canvasPath?: string }> {
+    try {
+      const planningDir = getPlanningDir(
+        this.getSettings().planningDir,
+        this.defaultPlanningDir,
+      );
+      const canvasPath = normalizePath(`${planningDir}/live-hunt.canvas`);
+      if (!this.vaultAdapter.fileExists(canvasPath)) {
+        await this.vaultAdapter.ensureFolder(planningDir);
+        await this.vaultAdapter.createFile(canvasPath, JSON.stringify({ nodes: [], edges: [] }, null, '\t'));
+      }
+      return { success: true, message: 'Live hunt canvas ready', canvasPath };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, message: `Failed to open live hunt canvas: ${message}` };
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Cross-hunt intelligence methods (Phase 77 Plan 02) -- facade delegations
   // ---------------------------------------------------------------------------

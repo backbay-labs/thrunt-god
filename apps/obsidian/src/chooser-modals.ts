@@ -155,6 +155,7 @@ const CANVAS_ITEMS: readonly ChooserItem[] = [
   { id: 'generate-hunt-canvas', name: 'Generate hunt canvas', description: 'Create a new canvas from ATT&CK template' },
   { id: 'canvas-from-current-hunt', name: 'Canvas from current hunt', description: 'Build canvas from active hunt entities' },
   { id: 'generate-knowledge-dashboard', name: 'Knowledge dashboard', description: 'Generate knowledge base dashboard canvas' },
+  { id: 'open-live-hunt-canvas', name: 'Open live hunt canvas', description: 'Create or open a canvas that auto-populates during hunts' },
   { id: 'refresh-canvas-nodes', name: 'Refresh canvas nodes', description: 'Update all canvas node colors from entity data' },
 ];
 
@@ -207,6 +208,14 @@ export class CanvasChooserModal extends FuzzySuggestModal<ChooserItem> {
           await this.plugin.app.workspace.openLinkText(result.canvasPath, '', true);
         }
         await this.plugin.refreshViews();
+      })();
+    } else if (item.id === 'open-live-hunt-canvas') {
+      void (async () => {
+        const result = await this.plugin.workspaceService.openLiveHuntCanvas();
+        new Notice(result.message);
+        if (result.success && result.canvasPath) {
+          await this.plugin.app.workspace.openLinkText(result.canvasPath, '', true);
+        }
       })();
     } else if (item.id === 'refresh-canvas-nodes') {
       void (async () => {

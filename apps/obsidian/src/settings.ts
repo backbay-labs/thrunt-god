@@ -13,6 +13,7 @@ export interface ThruntGodPluginSettings {
   sidebarState: SidebarState;
   halfLifeDays: number;
   staleCoverageDays: number;
+  liveCanvasEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
   sidebarState: DEFAULT_SIDEBAR_STATE,
   halfLifeDays: 90,
   staleCoverageDays: 90,
+  liveCanvasEnabled: true,
 };
 
 export class ThruntGodSettingTab extends PluginSettingTab {
@@ -128,6 +130,22 @@ export class ThruntGodSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             const parsed = parseInt(value, 10);
             this.plugin.settings.staleCoverageDays = parsed > 0 ? parsed : DEFAULT_SETTINGS.staleCoverageDays;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    // --- Canvas ---
+
+    containerEl.createEl('h3', { text: 'Canvas' });
+
+    new Setting(containerEl)
+      .setName('Live canvas updates')
+      .setDesc('Auto-populate live hunt canvas and reactively update dashboard canvas.')
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.liveCanvasEnabled)
+          .onChange(async (value) => {
+            this.plugin.settings.liveCanvasEnabled = value;
             await this.plugin.saveSettings();
           }),
       );

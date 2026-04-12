@@ -61,6 +61,8 @@ function createMockPlugin() {
       analyzeCoverage: vi.fn().mockResolvedValue({ success: true, message: 'done' }),
       logDecision: vi.fn().mockResolvedValue({ success: true, message: 'done' }),
       logLearning: vi.fn().mockResolvedValue({ success: true, message: 'done' }),
+      refreshAllCanvasNodes: vi.fn().mockResolvedValue({ totalPatched: 0 }),
+      openLiveHuntCanvas: vi.fn().mockResolvedValue({ success: true, message: 'Live hunt canvas ready', canvasPath: '.planning/live-hunt.canvas' }),
     },
     mcpClient: { isConnected: () => true },
     refreshViews: vi.fn(),
@@ -145,14 +147,15 @@ describe('CanvasChooserModal', () => {
     expect(modal).toBeInstanceOf(FuzzySuggestModal);
   });
 
-  it('getItems() returns 4 items with correct ids', () => {
+  it('getItems() returns 5 items with correct ids', () => {
     const items = modal.getItems();
-    expect(items).toHaveLength(4);
+    expect(items).toHaveLength(5);
     const ids = items.map((i: ChooserItem) => i.id);
     expect(ids).toEqual([
       'generate-hunt-canvas',
       'canvas-from-current-hunt',
       'generate-knowledge-dashboard',
+      'open-live-hunt-canvas',
       'refresh-canvas-nodes',
     ]);
   });

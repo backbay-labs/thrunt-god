@@ -179,6 +179,22 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     },
   });
 
+  // --- Open live hunt canvas command (Phase 86-02) ---
+
+  plugin.addCommand({
+    id: 'open-live-hunt-canvas',
+    name: 'Open live hunt canvas',
+    callback: () => {
+      void (async () => {
+        const result = await plugin.workspaceService.openLiveHuntCanvas();
+        if (result.success && result.canvasPath) {
+          await plugin.app.workspace.openLinkText(result.canvasPath, '', true);
+        }
+        new Notice(result.message);
+      })();
+    },
+  });
+
   // --- Schema migration command (Phase 82-03) ---
 
   plugin.addCommand({
