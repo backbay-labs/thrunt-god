@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
 status: executing
-stopped_at: Completed 72-01-PLAN.md
-last_updated: "2026-04-12T06:15:16.022Z"
+stopped_at: Completed 72-02-PLAN.md
+last_updated: "2026-04-12T06:21:48.793Z"
 progress:
   total_phases: 10
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 72 in progress (1/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 72 complete (2/2 plans)
 
 ## Current Milestone
 
@@ -28,9 +28,9 @@ v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelli
 
 **Status:** Executing
 **Phase:** 72 of 77 (MCP Client Adapter + Connection Infrastructure)
-**Plan:** 1 of 2 complete
+**Plan:** 2 of 2 complete
 
-Progress: [█████████░] 91% (10/11 v4.0 plans)
+Progress: [██████████] 100% (11/11 v4.0 plans)
 
 ## Recently Completed
 
@@ -76,6 +76,9 @@ Progress: [█████████░] 91% (10/11 v4.0 plans)
 - [Phase 71]: [Phase 71-02]: Receipt timeline renders between Extended Artifacts and Core Artifacts in sidebar order
 - [Phase 72]: [Phase 72-01]: Injectable requestFn parameter enables testing HttpMcpClient without real HTTP calls
 - [Phase 72]: [Phase 72-01]: McpClient property accessed via type cast in settings.ts -- will be typed properly in Plan 02 wiring
+- [Phase 72]: [Phase 72-02]: McpClient passed as optional 5th parameter to WorkspaceService -- backward-compatible with all existing tests
+- [Phase 72]: [Phase 72-02]: MCP status dot is purely informational with no click handlers -- connection management stays in settings
+- [Phase 72]: [Phase 72-02]: Obsidian requestUrl used as HTTP adapter via injectable requestFn pattern from Plan 01
 
 ### Blockers/Concerns
 
@@ -83,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T06:15:16.019Z
-Stopped at: Completed 72-01-PLAN.md
+Last session: 2026-04-12T06:21:48.790Z
+Stopped at: Completed 72-02-PLAN.md
 Resume file: None

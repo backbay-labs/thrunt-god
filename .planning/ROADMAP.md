@@ -58,7 +58,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 - [x] **Phase 69: Knowledge Base Dashboard + Sidebar Entity Summary** - Ship KNOWLEDGE_BASE.md with embedded Dataview queries and add collapsible Knowledge Base section to sidebar with entity counts (completed 2026-04-12)
 - [x] **Phase 70: Artifact Registry + Parsers** - Extend artifact recognition to RECEIPTS/, QUERIES/, evidence reviews, cases; build receipt and query log parsers with entity extraction (completed 2026-04-12)
 - [x] **Phase 71: Ingestion Engine + Agent Activity Timeline** - "Ingest agent output" command with idempotent entity creation/update, ingestion logging, and receipt timeline sidebar view (completed 2026-04-12)
-- [ ] **Phase 72: MCP Client Adapter + Connection Infrastructure** - MCP client interface with configurable URL, enable toggle, connection status indicator, and graceful degradation for all MCP-dependent features
+- [x] **Phase 72: MCP Client Adapter + Connection Infrastructure** - MCP client interface with configurable URL, enable toggle, connection status indicator, and graceful degradation for all MCP-dependent features (completed 2026-04-12)
 - [ ] **Phase 73: MCP Enrichment + Intelligence Features** - Technique enrichment action, detection coverage analysis command, decision/learning logging, and knowledge graph search modal
 - [ ] **Phase 74: Export Profile Registry + Context Assembly Engine** - Define per-agent export profiles, build wiki-link-following context assembler with configurable depth and provenance markers
 - [ ] **Phase 75: Hyper Copy Commands + Export UX** - "Hyper Copy for Agent" modal with preview and token estimate, quick export shortcuts, extensible profile config, and export audit log
@@ -135,7 +135,7 @@ Plans:
   1. MCP client adapter connects to a configurable MCP server URL with an explicit enable toggle (default: disabled)
   2. Sidebar header shows a connection status indicator -- green dot when connected, grey dot when disabled, red dot with error tooltip when enabled but unreachable
   3. When MCP is unreachable or disabled, all enrichment features show informative messages instead of errors, and all non-MCP plugin features continue working normally
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 72-01-PLAN.md -- McpClient interface/implementation with TDD, settings extension with MCP fields
@@ -215,7 +215,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete    | 2026-04-12 | - |
 | 70. Artifact Registry + Parsers | 2/2 | Complete    | 2026-04-12 | - |
 | 71. Ingestion Engine + Agent Activity Timeline | 2/2 | Complete    | 2026-04-12 | - |
-| 72. MCP Client Adapter + Connection Infrastructure | 1/2 | In Progress|  | - |
+| 72. MCP Client Adapter + Connection Infrastructure | 2/2 | Complete   | 2026-04-12 | - |
 | 73. MCP Enrichment + Intelligence Features | v4.0 | 0/0 | Not started | - |
 | 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |
 | 75. Hyper Copy Commands + Export UX | v4.0 | 0/0 | Not started | - |
