@@ -51,6 +51,11 @@ chrome.runtime.onMessage.addListener((message) => {
       render();
       break;
 
+    case 'vendor:loading':
+      detectedVendor = null;
+      render();
+      break;
+
     case 'vendor:detected':
       detectedVendor = message.context;
       render();
@@ -403,7 +408,38 @@ function renderControlDeck(cv: CaseViewModel): string {
 
 function renderVendorContext(): string {
   const vendor = detectedVendor;
-  if (!vendor) return '';
+  if (!vendor) {
+    return `
+    <div class="section">
+      <div class="section-title">Active Console</div>
+      <div class="card">
+        <div class="card-meta" style="text-align:center;padding:12px 0">
+          <strong>No adapter detected</strong><br/>
+          This page is not yet supported for evidence extraction.
+          Navigate to a supported SIEM, EDR, or identity console.
+        </div>
+      </div>
+    </div>`;
+  }
+  if (vendor.extraction && !vendor.extraction.supported) {
+    const reasons = vendor.extraction.failureReasons?.length
+      ? vendor.extraction.failureReasons.map((r: string) => `<li>${esc(r)}</li>`).join('')
+      : '<li>This page type is not supported for structured extraction</li>';
+    return `
+    <div class="section">
+      <div class="section-title">Active Console</div>
+      <div class="card">
+        <div class="split-header">
+          <div class="card-title">${esc(vendor.consoleName)}</div>
+          ${renderBadge('unsupported page', 'badge-warning')}
+        </div>
+        <div class="card-meta">
+          Adapter detected ${esc(vendor.consoleName)} but this specific page is not yet supported for evidence extraction.
+        </div>
+        <ul class="card-meta" style="margin-top:4px;padding-left:18px">${reasons}</ul>
+      </div>
+    </div>`;
+  }
   const extraction = vendor.extraction;
   const certification = caseView?.certification.find((item) => item.vendorId === vendor.vendorId);
   const campaign = caseView?.certificationCampaigns.find((item) => item.vendorId === vendor.vendorId);
