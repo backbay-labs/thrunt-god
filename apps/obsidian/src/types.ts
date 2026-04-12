@@ -253,3 +253,41 @@ export interface ProvenanceSection {
   content: string;           // markdown content
   sourcePath: string;        // vault-relative path of source file
 }
+
+// --- Canvas types ---
+
+/** Entity input for canvas generators */
+export interface CanvasEntity {
+  id: string;
+  name: string;
+  entityType: string;        // matches entity-schema types (e.g. 'ioc/ip', 'ttp', 'actor')
+  tactic?: string;           // ATT&CK tactic for TTPs
+  notePath?: string;         // vault-relative path for wiki-link
+}
+
+/** Node in an Obsidian Canvas JSON file */
+export interface CanvasNode {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  type: 'text' | 'file';
+  text?: string;             // content for text-type nodes
+  file?: string;             // vault path for file-type nodes
+  color: string;
+}
+
+/** Edge connecting two nodes in an Obsidian Canvas */
+export interface CanvasEdge {
+  id: string;
+  fromNode: string;
+  toNode: string;
+  label?: string;
+}
+
+/** Complete Obsidian Canvas JSON structure */
+export interface CanvasData {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+}

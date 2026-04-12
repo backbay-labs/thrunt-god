@@ -20,10 +20,10 @@ describe('canvas-generator', () => {
 
   describe('ENTITY_COLORS constant', () => {
     it('maps entity type prefixes to hex colors', () => {
-      expect(ENTITY_COLORS.ioc).toBe('#4a90d9');
-      expect(ENTITY_COLORS.ttp).toBe('#d94a4a');
-      expect(ENTITY_COLORS.actor).toBe('#9b59b6');
-      expect(ENTITY_COLORS.tool).toBe('#e67e22');
+      expect(ENTITY_COLORS['ioc']).toBe('#4a90d9');
+      expect(ENTITY_COLORS['ttp']).toBe('#d94a4a');
+      expect(ENTITY_COLORS['actor']).toBe('#9b59b6');
+      expect(ENTITY_COLORS['tool']).toBe('#e67e22');
     });
   });
 
@@ -43,7 +43,7 @@ describe('canvas-generator', () => {
       };
       const result = generateKillChainCanvas([entity]);
       expect(result.nodes).toHaveLength(1);
-      const node = result.nodes[0];
+      const node = result.nodes[0]!;
       // Execution is index 3 in TACTIC_ORDER
       expect(node.x).toBe(3 * 250);
       expect(node.y).toBe(0);
@@ -59,12 +59,12 @@ describe('canvas-generator', () => {
       ];
       const result = generateKillChainCanvas(entities);
       expect(result.nodes).toHaveLength(2);
-      expect(result.nodes[0].x).toBe(0);
-      expect(result.nodes[0].color).toBe('#4a90d9');
-      expect(result.nodes[0].width).toBe(150);
-      expect(result.nodes[0].height).toBe(80);
-      expect(result.nodes[1].x).toBe(0);
-      expect(result.nodes[1].color).toBe('#4a90d9');
+      expect(result.nodes[0]!.x).toBe(0);
+      expect(result.nodes[0]!.color).toBe('#4a90d9');
+      expect(result.nodes[0]!.width).toBe(150);
+      expect(result.nodes[0]!.height).toBe(80);
+      expect(result.nodes[1]!.x).toBe(0);
+      expect(result.nodes[1]!.color).toBe('#4a90d9');
     });
 
     it('creates edges between entities in the same edge group', () => {
@@ -75,8 +75,8 @@ describe('canvas-generator', () => {
       const edgeGroups = [{ entities: ['ttp-1', 'ioc-1'] }];
       const result = generateKillChainCanvas(entities, edgeGroups);
       expect(result.edges).toHaveLength(1);
-      expect(result.edges[0].fromNode).toBe('ttp-1');
-      expect(result.edges[0].toNode).toBe('ioc-1');
+      expect(result.edges[0]!.fromNode).toBe('ttp-1');
+      expect(result.edges[0]!.toNode).toBe('ioc-1');
     });
   });
 
@@ -136,8 +136,8 @@ describe('canvas-generator', () => {
       const result = generateLateralMovementCanvas(entities, edgeGroups);
       expect(result.nodes).toHaveLength(2);
       expect(result.edges).toHaveLength(1);
-      expect(result.edges[0].fromNode).toBe('ioc-1');
-      expect(result.edges[0].toNode).toBe('ioc-2');
+      expect(result.edges[0]!.fromNode).toBe('ioc-1');
+      expect(result.edges[0]!.toNode).toBe('ioc-2');
     });
 
     it('renders non-IOC entities in different positions than IOCs', () => {
@@ -166,8 +166,8 @@ describe('canvas-generator', () => {
       for (const node of result.nodes) {
         expect(node.x).toBe(200);
       }
-      expect(result.nodes[0].y).toBeLessThan(result.nodes[1].y);
-      expect(result.nodes[1].y).toBeLessThan(result.nodes[2].y);
+      expect(result.nodes[0]!.y).toBeLessThan(result.nodes[1]!.y);
+      expect(result.nodes[1]!.y).toBeLessThan(result.nodes[2]!.y);
     });
 
     it('creates sequential edges forming a timeline chain', () => {
@@ -178,10 +178,10 @@ describe('canvas-generator', () => {
       ];
       const result = generateHuntProgressionCanvas(entities);
       expect(result.edges).toHaveLength(2);
-      expect(result.edges[0].fromNode).toBe('e-1');
-      expect(result.edges[0].toNode).toBe('e-2');
-      expect(result.edges[1].fromNode).toBe('e-2');
-      expect(result.edges[1].toNode).toBe('e-3');
+      expect(result.edges[0]!.fromNode).toBe('e-1');
+      expect(result.edges[0]!.toNode).toBe('e-2');
+      expect(result.edges[1]!.fromNode).toBe('e-2');
+      expect(result.edges[1]!.toNode).toBe('e-3');
     });
   });
 });
