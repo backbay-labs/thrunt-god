@@ -10,6 +10,7 @@ import type { BlockAction, ButtonAction } from "@slack/bolt/dist/types/actions/b
 import type { Config } from "../config.ts"
 import type { ChannelBindings } from "../bindings.ts"
 import { extractIocs } from "../hunt/case.ts"
+import { fetchMessageText } from "../hunt/thread.ts"
 import { readHuntStatus, readMission } from "../hunt/state.ts"
 import { huntStatusOneliner } from "../blocks/status.ts"
 import { caseModalBlocks } from "../blocks/case.ts"
@@ -105,13 +106,7 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
     // Fetch the original message to show signal/IOC preview
     let rawText = ""
     try {
-      const result = await client.conversations.history({
-        channel: channelId,
-        latest: messageTs,
-        inclusive: true,
-        limit: 1,
-      })
-      rawText = result.messages?.[0]?.text ?? ""
+      rawText = await fetchMessageText(client, channelId, messageTs, threadTs)
     } catch {
       // fall through with empty text
     }

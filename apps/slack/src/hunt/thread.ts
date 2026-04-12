@@ -45,6 +45,29 @@ export async function fetchThread(
   return messages
 }
 
+/** Fetch one message's text, using thread APIs when the message is inside a thread. */
+export async function fetchMessageText(
+  client: WebClient,
+  channelId: string,
+  messageTs: string,
+  threadTs?: string,
+): Promise<string> {
+  if (threadTs) {
+    const threadMessages = await fetchThread(client, channelId, threadTs)
+    const message = threadMessages.find((msg) => msg.timestamp === messageTs)
+    if (message?.text) return message.text
+  }
+
+  const result = await client.conversations.history({
+    channel: channelId,
+    latest: messageTs,
+    inclusive: true,
+    limit: 1,
+  })
+
+  return result.messages?.[0]?.text ?? ""
+}
+
 /** Format thread messages as markdown for MISSION.md signal section */
 export function formatThreadAsSignal(messages: ThreadMessage[]): string {
   if (messages.length === 0) return ""

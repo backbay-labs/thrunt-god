@@ -1,5 +1,6 @@
-import { describe, test, expect } from "bun:test"
-import { formatThreadAsSignal, type ThreadMessage } from "../hunt/thread.ts"
+import { describe, test, expect, mock } from "bun:test"
+import { fetchMessageText, formatThreadAsSignal, type ThreadMessage } from "../hunt/thread.ts"
+import type { WebClient } from "@slack/web-api"
 
 // =============================================================================
 // formatThreadAsSignal
@@ -68,5 +69,76 @@ describe("formatThreadAsSignal", () => {
     const result = formatThreadAsSignal(messages)
 
     expect(result).not.toContain("truncated")
+  })
+})
+
+// =============================================================================
+// fetchMessageText
+// =============================================================================
+
+describe("fetchMessageText", () => {
+  test("uses thread replies to fetch a reply message when threadTs is provided", async () => {
+    const replies = mock(async () => ({
+      messages: [
+        { user: "U001", text: "Parent", ts: "1711633800.000100" },
+        { user: "U002", text: "Reply with IOC 10.0.0.5", ts: "1711633920.000200" },
+      ],
+    }))
+    const history = mock(async () => ({ messages: [] }))
+    const client = {
+      conversations: { replies, history },
+    } as unknown as WebClient
+
+    const text = await fetchMessageText(
+      client,
+      "C001",
+      "1711633920.000200",
+      "1711633800.000100",
+    )
+
+    expect(text).toBe("Reply with IOC 10.0.0.5")
+    expect(replies).toHaveBeenCalledTimes(1)
+    expect(history).not.toHaveBeenCalled()
+  })
+
+  test("falls back to history when no threadTs is provided", async () => {
+    const replies = mock(async () => ({ messages: [] }))
+    const history = mock(async () => ({
+      messages: [{ text: "Top-level IOC message" }],
+    }))
+    const client = {
+      conversations: { replies, history },
+    } as unknown as WebClient
+
+    const text = await fetchMessageText(client, "C001", "1711633800.000100")
+
+    expect(text).toBe("Top-level IOC message")
+    expect(replies).not.toHaveBeenCalled()
+    expect(history).toHaveBeenCalledTimes(1)
+  })
+
+  test("falls back to history when thread lookup does not find the target message", async () => {
+    const replies = mock(async () => ({
+      messages: [
+        { user: "U001", text: "Parent", ts: "1711633800.000100" },
+      ],
+    }))
+    const history = mock(async () => ({
+      messages: [{ text: "Recovered from history" }],
+    }))
+    const client = {
+      conversations: { replies, history },
+    } as unknown as WebClient
+
+    const text = await fetchMessageText(
+      client,
+      "C001",
+      "1711633920.000200",
+      "1711633800.000100",
+    )
+
+    expect(text).toBe("Recovered from history")
+    expect(replies).toHaveBeenCalledTimes(1)
+    expect(history).toHaveBeenCalledTimes(1)
   })
 })

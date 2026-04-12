@@ -7,7 +7,7 @@ import type { Config } from "../config.ts"
 import type { ChannelBindings } from "../bindings.ts"
 import { createCase, extractIocs } from "../hunt/case.ts"
 import { caseCreatedBlocks } from "../blocks/case.ts"
-import { fetchThread, formatThreadAsSignal } from "../hunt/thread.ts"
+import { fetchThread, fetchMessageText, formatThreadAsSignal } from "../hunt/thread.ts"
 import type { CaseSource } from "../types.ts"
 
 export function registerViews(app: App, config: Config, bindings?: ChannelBindings): void {
@@ -43,13 +43,12 @@ export function registerViews(app: App, config: Config, bindings?: ChannelBindin
     if (!rawText) rawText = meta.rawText ?? ""
     if (!rawText && meta.channelId && meta.messageTs) {
       try {
-        const result = await client.conversations.history({
-          channel: meta.channelId,
-          latest: meta.messageTs,
-          inclusive: true,
-          limit: 1,
-        })
-        rawText = result.messages?.[0]?.text ?? title
+        rawText = await fetchMessageText(
+          client,
+          meta.channelId,
+          meta.messageTs,
+          meta.threadTs,
+        ) || title
       } catch {
         rawText = title
       }
