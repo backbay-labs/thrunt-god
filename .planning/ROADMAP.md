@@ -76,7 +76,12 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
   2. Each of the 8 entity types (IOC/IP, IOC/domain, IOC/hash, TTP, actor, tool, infrastructure, data source) has a defined folder and YAML frontmatter schema, and creating a note from template produces well-structured output
   3. Running "Create THRUNT workspace" (bootstrap) generates the entity folder structure (entities/iocs/, entities/ttps/, entities/actors/, entities/tools/, entities/infra/, entities/datasources/) alongside existing core artifacts
   4. Scaffold command is idempotent -- running twice does not overwrite user-added content in existing technique notes
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 68-01-PLAN.md -- Entity type registry with 8 types, frontmatter schemas, path helpers
+- [ ] 68-02-PLAN.md -- ATT&CK scaffold command generating ~161 technique notes from bundled JSON
+- [ ] 68-03-PLAN.md -- Bootstrap extension creating entity folder structure
 
 ### Phase 69: Knowledge Base Dashboard + Sidebar Entity Summary
 **Goal**: Analysts can see what their knowledge graph contains at a glance -- both through Dataview queries and sidebar counts
@@ -190,7 +195,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 65. Obsidian CLI Install Channel | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 66. Release Artifact Pipeline | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |
-| 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 0/0 | Not started | - |
+| 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 0/3 | In progress | - |
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | v4.0 | 0/0 | Not started | - |
 | 70. Artifact Registry + Parsers | v4.0 | 0/0 | Not started | - |
 | 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
