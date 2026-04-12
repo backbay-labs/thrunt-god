@@ -62,7 +62,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 - [x] **Phase 73: MCP Enrichment + Intelligence Features** - Technique enrichment action, detection coverage analysis command, decision/learning logging, and knowledge graph search modal (completed 2026-04-12)
 - [x] **Phase 74: Export Profile Registry + Context Assembly Engine** - Define per-agent export profiles, build wiki-link-following context assembler with configurable depth and provenance markers (completed 2026-04-12)
 - [x] **Phase 75: Hyper Copy Commands + Export UX** - "Hyper Copy for Agent" modal with preview and token estimate, quick export shortcuts, extensible profile config, and export audit log (completed 2026-04-12)
-- [ ] **Phase 76: Canvas Kill Chain Generator + Templates** - Canvas generation engine with entity cards positioned by ATT&CK tactic, 4 canvas templates, and auto-generation from hunt findings
+- [x] **Phase 76: Canvas Kill Chain Generator + Templates** - Canvas generation engine with entity cards positioned by ATT&CK tactic, 4 canvas templates, and auto-generation from hunt findings (completed 2026-04-12)
 - [ ] **Phase 77: Cross-Hunt Intelligence + Knowledge Dashboard** - Cross-hunt analytical queries, hunt comparison command, and knowledge dashboard canvas for program overview
 
 ## Phase Details
@@ -194,7 +194,7 @@ Plans:
   2. At least 4 canvas templates ship: ATT&CK kill chain (horizontal tactic timeline), diamond model (adversary/capability/infrastructure/victim quadrants), lateral movement map (network topology with IOC nodes), and hunt progression (vertical investigation timeline)
   3. "Canvas from current hunt" reads FINDINGS.md and RECEIPTS/ to auto-extract validated techniques and associated IOCs, then generates a kill chain canvas with connection arrows based on receipt linkage
   4. All generated canvases are standard Obsidian .canvas files that the analyst can rearrange and annotate after generation
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 76-01-PLAN.md -- Canvas generation engine with TDD: 4 template generators, entity color mapping, edge groups
@@ -235,5 +235,5 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 73. MCP Enrichment + Intelligence Features | 2/2 | Complete    | 2026-04-12 | - |
 | 74. Export Profile Registry + Context Assembly Engine | 2/2 | Complete    | 2026-04-12 | - |
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
-| 76. Canvas Kill Chain Generator + Templates | 1/2 | In Progress|  | - |
+| 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete   | 2026-04-12 | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/0 | Not started | - |

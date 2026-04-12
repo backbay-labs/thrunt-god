@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
 status: executing
-stopped_at: Completed 76-01-PLAN.md
-last_updated: "2026-04-12T07:46:04.689Z"
+stopped_at: Completed 76-02-PLAN.md
+last_updated: "2026-04-12T07:53:03.623Z"
 progress:
   total_phases: 10
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 19
-  completed_plans: 18
-  percent: 95
+  completed_plans: 19
+  percent: 100
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 76 in progress (1/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 76 complete (2/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
 **Status:** In Progress
-**Phase:** 76 of 77 (Canvas Kill Chain Generator Templates -- IN PROGRESS)
-**Plan:** 1 of 2 complete
+**Phase:** 76 of 77 (Canvas Kill Chain Generator Templates -- COMPLETE)
+**Plan:** 2 of 2 complete
 
-Progress: [██████████] 95% (18/19 v4.0 plans)
+Progress: [██████████] 100% (19/19 v4.0 plans)
 
 ## Recently Completed
 
@@ -99,6 +99,10 @@ Progress: [██████████] 95% (18/19 v4.0 plans)
 - [Phase 76]: [Phase 76-01]: Pure data module pattern for canvas-generator.ts -- zero Obsidian imports, consistent with entity-schema.ts and ingestion.ts
 - [Phase 76]: [Phase 76-01]: Entity type color resolution uses startsWith('ioc') prefix matching for IOC subtypes (ioc/ip, ioc/domain, ioc/hash)
 - [Phase 76]: [Phase 76-01]: EdgeGroup interface for co-occurrence edges rather than requiring callers to build edge pairs
+- [Phase 76]: [Phase 76-02]: Manual YAML frontmatter parsing for type/tactic fields -- no library dependency, consistent with existing parser pattern
+- [Phase 76]: [Phase 76-02]: canvasFromCurrentHunt filters receipts by claim_status === "supports" to only include validated evidence
+- [Phase 76]: [Phase 76-02]: CanvasTemplateModal as inline class in main.ts -- lightweight, consistent with PromptModal pattern
+- [Phase 76]: [Phase 76-02]: Entity deduplication by Map key in canvasFromCurrentHunt prevents duplicate nodes from findings+receipts overlap
 
 ### Blockers/Concerns
 
@@ -106,6 +110,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T07:46:04.683Z
-Stopped at: Completed 76-01-PLAN.md
+Last session: 2026-04-12T07:53:03.619Z
+Stopped at: Completed 76-02-PLAN.md
 Resume file: None
