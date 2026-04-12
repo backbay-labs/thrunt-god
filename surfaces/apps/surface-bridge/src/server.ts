@@ -42,6 +42,8 @@ import {
 } from '@thrunt-surfaces/site-adapters';
 import { createMockProvider, createArtifactProvider, type CaseDataProvider } from './providers.ts';
 import { checkCertificationPrerequisites } from './certification-ops.ts';
+import { createLogger } from './logger.ts';
+import { classifyError, errorResponse, type ErrorClass } from './errors.ts';
 
 const VERSION = '0.2.0';
 
@@ -57,13 +59,14 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     projectRoot: config.projectRoot ?? process.cwd(),
     ...config,
   };
+  const logger = createLogger();
   const provider: CaseDataProvider = cfg.mockMode
     ? createMockProvider()
-    : createArtifactProvider(cfg.projectRoot, { toolsPath: cfg.toolsPath });
-
+    : createArtifactProvider(cfg.projectRoot, { toolsPath: cfg.toolsPath, logger });
   const startTime = Date.now();
   const wsClients = new Set<{ send(data: string): void }>();
   let watcher: fs.FSWatcher | null = null;
+  let lastFileWatcherEvent: string | null = null;
 
   // ─── Auth: session nonce ─────────────────────────────────────────────
   const sessionToken = crypto.randomBytes(16).toString('hex');
@@ -105,6 +108,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       try {
         watcher = fs.watch(paths.programRoot, { recursive: true }, () => {
           if (watchDebounce) clearTimeout(watchDebounce);
+          lastFileWatcherEvent = new Date().toISOString();
+          logger.info('file-watcher', 'change detected', {});
           watchDebounce = setTimeout(() => {
             provider.invalidate();
             const view = provider.getCaseView();
@@ -123,6 +128,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
   // ─── Broadcasting ────────────────────────────────────────────────────
 
   function broadcast(event: BridgeEvent) {
+    logger.debug('ws', 'broadcast', { type: event.type, clients: wsClients.size });
     const data = JSON.stringify(event);
     for (const client of wsClients) {
       try { client.send(data); } catch { wsClients.delete(client); }
@@ -150,8 +156,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     });
   }
 
-  function error(message: string, status = 400): Response {
-    return json({ error: message }, status);
+  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR'): Response {
+    return errorResponse(message, errorClass, code, status);
   }
 
   // ─── Request handler ─────────────────────────────────────────────────
@@ -160,16 +166,32 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     const url = new URL(req.url);
     const reqPath = url.pathname;
     const method = req.method;
+    const reqStart = Date.now();
 
     if (method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
     }
 
+    try {
+    return await handleRequestInner(req, url, reqPath, method);
+    } catch (err) {
+      const classified = classifyError(err);
+      logger.error('http', 'unhandled', { path: reqPath, error: String(err) });
+      return error(classified.message, 500, classified.class, classified.code);
+    } finally {
+      const durationMs = Date.now() - reqStart;
+      logger.info('http', `${method} ${reqPath}`, { durationMs });
+    }
+  }
+
+  async function handleRequestInner(_req: Request, _url: URL, reqPath: string, method: string): Promise<Response> {
+    const req = _req;
+
     // Auth check — health and handshake are public, everything else requires token
     const isWrite = method === 'POST';
     const isPublic = reqPath === '/api/health' || reqPath === '/api/handshake';
     if (!checkAuth(req, isWrite) && !isPublic) {
-      return error('Unauthorized — provide X-Bridge-Token header', 401);
+      return error('Unauthorized — provide X-Bridge-Token header', 401, 'auth', 'AUTH_MISSING_TOKEN');
     }
 
     // ─── GET routes ────────────────────────────────────────────────
@@ -185,7 +207,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         uptime: Math.floor((Date.now() - startTime) / 1000),
         wsClients: wsClients.size,
         activeCaseId: null,
-        lastFileWatcherEvent: null,
+        lastFileWatcherEvent,
         subprocessAvailable: !!cfg.toolsPath || !cfg.mockMode,
       };
       return json(health);
@@ -542,8 +564,14 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       return handleRequest(req);
     },
     websocket: {
-      open(ws) { wsClients.add(ws); },
-      close(ws) { wsClients.delete(ws); },
+      open(ws) {
+        wsClients.add(ws);
+        logger.info('ws', 'client connected', { clients: wsClients.size });
+      },
+      close(ws) {
+        wsClients.delete(ws);
+        logger.info('ws', 'client disconnected', { clients: wsClients.size });
+      },
       message(_ws, _message) {},
     },
   });
