@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 84-01-PLAN.md
-last_updated: "2026-04-12T18:12:28.206Z"
+stopped_at: Completed 84-02-PLAN.md
+last_updated: "2026-04-12T18:22:00.000Z"
 progress:
   total_phases: 12
   completed_phases: 5
   total_plans: 14
-  completed_plans: 13
-  percent: 93
+  completed_plans: 14
+  percent: 100
 ---
 
 # Project State
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** Executing
 **Phase:** 84 of 90 (ATT&CK Institutional Memory)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [█████████░] 93% (13/14 v5.0 plans)
+Progress: [██████████] 100% (14/14 v5.0 plans)
 
 ## Recently Completed
 
@@ -86,6 +86,11 @@ Progress: [█████████░] 93% (13/14 v5.0 plans)
 - [Phase 84]: FP append is single-entry (not bulk replace) matching append-only requirement
 - [Phase 84]: Coordinator extracts lastHuntedDate BEFORE replacing Hunt History section to handle empty-entries fallback
 - [Phase 84]: FP counting uses regex /^- \*\*pattern\*\*:/ for locked format detection
+- [Phase 84]: TechniqueSuggestModal follows VerdictSuggestModal pattern for consistent fuzzy UI
+- [Phase 84]: add-false-positive chooser item delegates via executeCommandById for consistent command routing
+- [Phase 84]: Technique refresh runs after entity refresh on TTP notes (additive, not replacing)
+- [Phase 84]: WorkspaceService.refreshTechniqueIntelligence forwards to IntelligenceService (consistent facade pattern)
+- [Phase 84]: mapClaimStatusToOutcome: supports->TP, disproves->FP, else->inconclusive per RESEARCH.md heuristic
 
 ### Blockers/Concerns
 
@@ -93,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T18:12:28.199Z
-Stopped at: Completed 84-01-PLAN.md
+Last session: 2026-04-12T18:22:00Z
+Stopped at: Completed 84-02-PLAN.md
 Resume file: None
