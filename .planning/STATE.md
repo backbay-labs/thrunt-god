@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
-status: completed
-stopped_at: Completed 24-02-PLAN.md
-last_updated: "2026-04-12T17:04:13.271Z"
-last_activity: 2026-04-12 — Completed Phase 24 Plan 02 (Evidence timeline and click-to-navigate)
+status: executing
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-04-12T17:23:53.980Z"
+last_activity: 2026-04-12 — Completed Phase 25 Plan 01 (M365 Defender adapter)
 progress:
   total_phases: 16
   completed_phases: 10
-  total_plans: 27
-  completed_plans: 27
-  percent: 100
+  total_plans: 29
+  completed_plans: 28
+  percent: 97
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Close the loop from evidence capture to detection deployment — every hunt produces evidence chains, intelligence updates, and deployable detection rules
-**Current focus:** v5.0 Phase 24 — Sidepanel UI (in progress)
+**Current focus:** v5.0 Phase 25 — Extraction Adapters (in progress)
 
 ## Current Position
 
-Phase: 24 of 26 (Sidepanel UI)
-Plan: 2 of 2 complete
-Status: Phase Complete
-Last activity: 2026-04-12 — Completed Phase 24 Plan 02 (Evidence timeline and click-to-navigate)
+Phase: 25 of 26 (Extraction Adapters)
+Plan: 1 of 2 complete
+Status: In Progress
+Last activity: 2026-04-12 — Completed Phase 25 Plan 01 (M365 Defender adapter)
 
-Progress: [██████████] 100%
+Progress: [██████████] 97%
 
 ## Performance Metrics
 
@@ -75,6 +75,8 @@ Recent decisions affecting current work:
 - [24-01]: Legacy single recommendedAction string preserved as fallback when recommendedActions array is empty
 - [Phase 24]: Navigation sends chrome.runtime messages (navigate:artifact, navigate:action) rather than directly opening URLs -- background handler deferred
 - [Phase 24]: Click-to-navigate uses data-* attributes on rendered HTML + querySelectorAll delegation in bindActions()
+- [Phase 25]: M365 detect() uses hasAnySelector for app selectors plus hostname+o365cs-base combo for generic portal detection
+- [Phase 25]: Incident pages without query editor get failure reason for partial completeness, following CrowdStrike/Elastic alert_detail pattern
 
 ### Pending Todos
 
@@ -98,9 +100,10 @@ Recent decisions affecting current work:
 | 23    | 03   | 3min     | 2     | 3     |
 | 24    | 01   | 3min     | 2     | 5     |
 | Phase 24 P02 | 2min | 2 tasks | 1 files |
+| Phase 25 P01 | 3min | 3 tasks | 7 files |
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:04:13.268Z
-Stopped at: Completed 24-02-PLAN.md
+Last session: 2026-04-12T17:23:53.977Z
+Stopped at: Completed 25-01-PLAN.md
 Resume file: None

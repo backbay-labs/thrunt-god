@@ -24,9 +24,9 @@ Requirements for v5.0 Hunt Ecosystem: Evidence In, Detections Out. Each maps to 
 - [x] **ADPT-04**: Elastic and CrowdStrike adapters support certification campaigns (capture, replay, drift detection, reviewer approval)
 - [ ] **ADPT-05**: AWS CloudTrail adapter extracts event queries, result tables, and resource entities from the AWS Console with real DOM selectors
 - [ ] **ADPT-06**: Okta adapter extracts System Log queries, event details, and user/app entities from the Okta Admin Console with real DOM selectors
-- [ ] **ADPT-07**: M365 Defender adapter extracts KQL queries, incident details, and device/user entities from the Microsoft Security portal with real DOM selectors
+- [x] **ADPT-07**: M365 Defender adapter extracts KQL queries, incident details, and device/user entities from the Microsoft Security portal with real DOM selectors
 - [ ] **ADPT-08**: All stub vendors display a clear "adapter loading" or "not yet supported" message in the sidepanel rather than returning empty data silently
-- [ ] **ADPT-09**: AWS, Okta, and M365 adapters have fixture-backed extraction tests (certification campaigns deferred to v6)
+- [x] **ADPT-09**: AWS, Okta, and M365 adapters have fixture-backed extraction tests (certification campaigns deferred to v6)
 
 ### Detection Promotion
 
@@ -147,9 +147,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIDE-06 | Phase 24 | Complete |
 | ADPT-05 | Phase 25 | Pending |
 | ADPT-06 | Phase 25 | Pending |
-| ADPT-07 | Phase 25 | Pending |
+| ADPT-07 | Phase 25 | Complete |
 | ADPT-08 | Phase 25 | Pending |
-| ADPT-09 | Phase 25 | Pending |
+| ADPT-09 | Phase 25 | Complete |
 | DTCT-01 | Phase 26 | Pending |
 | DTCT-02 | Phase 26 | Pending |
 | DTCT-03 | Phase 26 | Pending |
