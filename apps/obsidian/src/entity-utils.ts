@@ -69,6 +69,31 @@ export function parseEntityNote(content: string, fileName: string): EntityNote {
         if (huntRefsMatch && huntRefsMatch[1]) {
           result.huntRefs = huntRefsMatch[1].split(',').map(r => r.trim().replace(/^["']|["']$/g, ''));
         }
+
+        const sourceCountMatch = line.match(/^source_count:\s*(\d+)$/);
+        if (sourceCountMatch && sourceCountMatch[1]) {
+          result.frontmatter['source_count'] = parseInt(sourceCountMatch[1], 10);
+        }
+
+        const reliabilityMatch = line.match(/^reliability:\s*([\d.]+)$/);
+        if (reliabilityMatch && reliabilityMatch[1]) {
+          result.frontmatter['reliability'] = parseFloat(reliabilityMatch[1]);
+        }
+
+        const corroborationMatch = line.match(/^corroboration:\s*(\d+)$/);
+        if (corroborationMatch && corroborationMatch[1]) {
+          result.frontmatter['corroboration'] = parseInt(corroborationMatch[1], 10);
+        }
+
+        const daysValidationMatch = line.match(/^days_since_validation:\s*(\d+)$/);
+        if (daysValidationMatch && daysValidationMatch[1]) {
+          result.frontmatter['days_since_validation'] = parseInt(daysValidationMatch[1], 10);
+        }
+
+        const confScoreMatch = line.match(/^confidence_score:\s*([\d.]+)$/);
+        if (confScoreMatch && confScoreMatch[1]) {
+          result.frontmatter['confidence_score'] = parseFloat(confScoreMatch[1]);
+        }
       }
     }
   }

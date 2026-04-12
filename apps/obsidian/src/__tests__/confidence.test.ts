@@ -85,14 +85,15 @@ describe('computeDecayFactor', () => {
 // ---------------------------------------------------------------------------
 
 describe('computeConfidence', () => {
-  it('returns 0 for all-zero factors', () => {
+  it('returns 0.2 for all-zero factors (recency = 1.0 contributes 0.20 weight)', () => {
     const factors: ConfidenceFactors = {
       source_count: 0,
       reliability: 0,
       corroboration: 0,
       days_since_validation: 0,
     };
-    expect(computeConfidence(factors)).toBe(0);
+    // recency = 1 - 0/(0+90) = 1.0, weight 0.20 => baseScore = 0.20, decay = 1.0
+    expect(computeConfidence(factors)).toBe(0.2);
   });
 
   it('returns high value (~0.8+) for strong factors with 0 decay', () => {
