@@ -1,5 +1,19 @@
 # Milestones
 
+## v4.0 Obsidian Knowledge Weapon (Shipped: 2026-04-12)
+
+**Phases completed:** 11 phases, 23 plans, 0 tasks
+
+**Key accomplishments:**
+- Defined 8 entity types with typed YAML frontmatter schemas and scaffolded ~161 MITRE ATT&CK technique notes from bundled enterprise data.
+- Built receipt and query log parsers that extract structured data from agent-produced artifacts, plus an ingestion engine that populates entity notes with sightings and backlinks.
+- Connected to the THRUNT MCP server via HTTP client adapter with technique enrichment, coverage analysis, decision/learning logging, and knowledge graph search.
+- Created a hyper copy system with 5 per-agent export profiles, wiki-link context assembly with provenance markers, and one-click clipboard export for agent handoff.
+- Shipped canvas kill chain generator with 4 templates (ATT&CK, diamond model, lateral movement, hunt progression) and auto-generation from hunt findings.
+- Added cross-hunt intelligence queries surfacing recurring IOCs, TTP coverage gaps, actor convergence, hunt comparison, and a knowledge dashboard canvas.
+
+---
+
 ## v3.3 Zero-Friction Distribution (Shipped: 2026-04-11)
 
 **Phases completed:** 3 phases, 9 plans, 21 tasks

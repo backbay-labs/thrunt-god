@@ -28,12 +28,13 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - v3.1 Sidebar Automation & Operations (Phases 58-62) — shipped 2026-04-09
 - ✓ v3.2 Obsidian Workspace Companion (Phases 63-64) — shipped 2026-04-11
 - ✓ v3.3 Zero-Friction Distribution (Phases 65-67) — shipped 2026-04-11
+- ✓ v4.0 Obsidian Knowledge Weapon (Phases 68-78) — shipped 2026-04-12
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- v4.0 Obsidian Knowledge Weapon — Transform the Obsidian plugin from a vault-native workspace companion into the intelligence preparation and knowledge compounding surface for the THRUNT God ecosystem. Entity note schema, ATT&CK ontology scaffold, agent artifact ingestion, MCP bridge, hyper copy agent-ready export, canvas kill chain visualization, cross-hunt intelligence.
+(None yet — run `$gsd-new-milestone` to define the next milestone.)
 
 ### Out of Scope
 
@@ -44,26 +45,20 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - Defender XDR via Graph API — Microsoft's forward path but different OAuth scope; v1.6 uses direct API
 - Cross-language query translation (SPL to ES|QL) — too error-prone; retargeting via packs only
 
-## Current Milestone: v4.0 Obsidian Knowledge Weapon
+## Current Milestone
 
-**Goal:** Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting -- where every hunt makes the next one smarter, analysts prepare context that makes agents more effective, and the knowledge graph grows organically from structured markdown.
+No active milestone. v4.0 Obsidian Knowledge Weapon shipped on 2026-04-12.
 
-**Target features:**
-- Entity note schema with typed frontmatter (IOCs, TTPs, actors, tools, infrastructure, data sources)
-- ATT&CK technique ontology scaffold (~200 auto-generated technique stubs)
-- Agent artifact awareness (RECEIPTS/, QUERIES/, evidence reviews, cases) with parsers and timeline view
-- Entity extraction and ingestion from agent output into the knowledge graph
-- MCP bridge connecting to the THRUNT MCP server's 11 tools for live intelligence enrichment
-- Agent-ready export with hyper copy -- one-click context assembly for agent handoff
-- Canvas kill chain generator with 4 templates (ATT&CK, diamond model, lateral movement, hunt progression)
-- Cross-hunt intelligence queries (recurring IOCs, coverage gaps, actor convergence, stale coverage)
+**Next step:** Run `$gsd-new-milestone` to define the next roadmap slice.
 
-**Design principles:**
-1. The vault IS the knowledge graph -- leverage Obsidian's native graph/Dataview/Canvas
-2. Agents populate, analysts curate
-3. Prepare context for agents, don't orchestrate them
-4. MCP enriches, vault owns
-5. Every note earns its existence
+**Last shipped milestone (v4.0):**
+- Obsidian plugin transformed from vault-native workspace companion into intelligence preparation and knowledge compounding surface
+- 8 entity types with typed frontmatter, ~161 ATT&CK technique stubs, entity folder bootstrap
+- Agent artifact ingestion: receipt/query parsers, entity extraction, sighting dedup, ingestion log
+- MCP bridge with 11 tools: technique enrichment, coverage analysis, decision/learning logging, knowledge graph search
+- Hyper copy: 5 export profiles, wiki-link context assembly, provenance markers, quick export commands
+- Canvas kill chain generator with 4 templates, cross-hunt intelligence queries, hunt comparison, knowledge dashboard
+- 369 tests passing, 12,193 LOC TypeScript across 25+ source files
 
 ## Context
 
@@ -81,7 +76,8 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - Shipped v3.1: 5 phases, 14 plans, 168 new tests, 26 requirements satisfied (432 total tests)
 - Shipped v3.2: 2 phases, 10 plans, 84 tests, 28 requirements satisfied — Obsidian plugin with 16 TypeScript source files (2,024 LOC)
 - Shipped v3.3: 3 phases, 9 plans, 21 tasks — Obsidian distribution now works across CLI install, GitHub release assets, and community-directory submission readiness
-- Obsidian plugin at `apps/obsidian/` is now a vault-native workspace companion with a canonical distribution contract shared by the installer and release pipeline
+- Shipped v4.0: 11 phases, 23 plans, 369 tests — Obsidian plugin at 12,193 LOC across 25+ TypeScript source files
+- Obsidian plugin at `apps/obsidian/` is now an intelligence preparation and knowledge compounding surface with entity schema, ATT&CK ontology, agent ingestion, MCP bridge, hyper copy, canvas visualization, and cross-hunt intelligence
 - `release.yml` now builds and uploads Obsidian plugin assets and enforces version alignment across root/package/manifest metadata
 - Root `manifest.json` and `versions.json` are synced from `apps/obsidian/` through `npm run sync:obsidian-submission` for community-directory maintenance
 
@@ -137,4 +133,4 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 | Entity notes as typed frontmatter | IOCs, TTPs, actors, tools, infra, datasources — each with canonical folder and YAML schema | Planned |
 
 ---
-*Last updated: 2026-04-11 after v4.0 milestone start*
+*Last updated: 2026-04-12 after v4.0 milestone completion*
