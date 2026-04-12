@@ -244,7 +244,12 @@ Plans:
   2. With the CrowdStrike adapter active on a Falcon console page, the extension extracts FQL queries, detection details, and endpoint entities from the live DOM
   3. Both adapters have Playwright test suites that run extraction against saved HTML fixture snapshots, catching regressions without needing live vendor access
   4. Both adapters support a certification campaign workflow: capture baseline fixtures, replay extraction, detect drift from baseline, and surface drift for reviewer approval before updating
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 23-01-PLAN.md -- Elastic adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
+- [ ] 23-02-PLAN.md -- CrowdStrike adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
+- [ ] 23-03-PLAN.md -- Content script consolidation and certification campaign wiring
 
 ### Phase 24: Sidepanel UI
 **Goal**: Hunters have a persistent browser extension sidepanel that shows live case state, evidence captured so far, vendor connection health, hypothesis status, and recommended next actions — making the extension a full investigation companion rather than just a capture tool
@@ -299,8 +304,8 @@ Plans:
 | 19. IOC Quick-Entry | v4.0 | 1/1 | Complete | 2026-04-03 |
 | 20. CLI Bridge | v4.0 | 2/2 | Complete | 2026-04-03 |
 | 21. Bridge Hardening | v5.0 | 2/2 | Complete | 2026-04-12 |
-| 22. MCP Event Bridge | 3/3 | Complete   | 2026-04-12 | - |
-| 23. Certified Adapters (Elastic + CrowdStrike) | v5.0 | 0/? | Not started | - |
+| 22. MCP Event Bridge | v5.0 | 3/3 | Complete | 2026-04-12 |
+| 23. Certified Adapters (Elastic + CrowdStrike) | 1/3 | In Progress|  | - |
 | 24. Sidepanel UI | v5.0 | 0/? | Not started | - |
 | 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/? | Not started | - |
 | 26. Detection Promotion | v5.0 | 0/? | Not started | - |

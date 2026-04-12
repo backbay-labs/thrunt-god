@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
 status: in-progress
-stopped_at: Completed 22-03-PLAN.md
-last_updated: "2026-04-12T14:09:00.000Z"
-last_activity: 2026-04-12 — Completed Phase 22 Plan 03 (phase complete)
+stopped_at: Completed 23-01-PLAN.md
+last_updated: "2026-04-12T14:43:00Z"
+last_activity: 2026-04-12 — Completed Phase 23 Plan 01 (Elastic adapter)
 progress:
   total_phases: 16
   completed_phases: 8
-  total_plans: 22
-  completed_plans: 22
-  percent: 91
+  total_plans: 25
+  completed_plans: 23
+  percent: 92
 ---
 
 # Project State
@@ -21,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Close the loop from evidence capture to detection deployment — every hunt produces evidence chains, intelligence updates, and deployable detection rules
-**Current focus:** v5.0 Phase 22 — MCP Event Bridge (in progress)
+**Current focus:** v5.0 Phase 23 — Certified Adapters (in progress)
 
 ## Current Position
 
-Phase: 22 of 26 (MCP Event Bridge)
-Plan: 3 of 3 complete
-Status: Phase Complete
-Last activity: 2026-04-12 — Completed Phase 22 Plan 03 (phase complete)
+Phase: 23 of 26 (Certified Adapters)
+Plan: 1 of 3 complete
+Status: In Progress
+Last activity: 2026-04-12 — Completed Phase 23 Plan 01 (Elastic adapter)
 
-Progress: [██████████] 100%
+Progress: [█████████▒] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37 (v1.0: 12, v2.0: 12, v3.0: 14, v4.0: 5)
+- Total plans completed: 38 (v1.0: 12, v2.0: 12, v3.0: 14, v4.0: 5, v5.0: 6)
 
 ## Accumulated Context
 
@@ -66,6 +66,8 @@ Recent decisions affecting current work:
 - [22-03]: ErrorClass literal union duplicated in contracts to avoid cross-package import for type-only concern
 - [22-03]: evidence.attach maps to manual_note EvidenceAttachment for content-based mutation attach
 - [22-03]: Custom error classes (ParamValidationError, HypothesisNotFoundError) for distinct JSON-RPC error codes
+- [23-01]: PageType overridden to 'unknown' when detect() is false -- prevents URL-based classification on non-Kibana pages
+- [23-01]: Alert detail pages without query editor get failure reason for partial completeness, following sentinel incident pattern
 
 ### Pending Todos
 
@@ -84,9 +86,10 @@ Recent decisions affecting current work:
 | 22    | 01   | 3min     | 3     | 4     |
 | 22    | 02   | 7min     | 2     | 3     |
 | 22    | 03   | 6min     | 3     | 4     |
+| 23    | 01   | 5min     | 3     | 7     |
 
 ## Session Continuity
 
-Last session: 2026-04-12T14:09:00Z
-Stopped at: Completed 22-03-PLAN.md
+Last session: 2026-04-12T14:43:00Z
+Stopped at: Completed 23-01-PLAN.md
 Resume file: None
