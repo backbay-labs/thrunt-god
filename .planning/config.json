@@ -69,6 +69,25 @@
       "research": [
         "apps/obsidian/SPEC.md"
       ]
+    },
+    "v4.0": {
+      "name": "Obsidian Knowledge Weapon",
+      "phases": [
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77
+      ],
+      "status": "active",
+      "research": [
+        "apps/obsidian/MILESTONES-v2.md"
+      ]
     }
   },
   "model_profile": "quality"

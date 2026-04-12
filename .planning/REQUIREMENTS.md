@@ -60,7 +60,7 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 
 ### Advanced Integrations
 
-- **ADV-01**: Agent-initiated note creation via MCP (right-click IOC → "Analyze with THRUNT")
+- **ADV-01**: Agent-initiated note creation via MCP (right-click IOC -> "Analyze with THRUNT")
 - **ADV-02**: Swarm visualization dashboard polling MCP lifecycle endpoints
 - **ADV-03**: Hunt journal mode with structured reasoning capture and inline hypothesis references
 - **ADV-04**: Post-hunt review templates with playbook generation
@@ -80,44 +80,44 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ONTO-01 | Pending | Pending |
-| ONTO-02 | Pending | Pending |
-| ONTO-03 | Pending | Pending |
-| ONTO-04 | Pending | Pending |
-| ONTO-05 | Pending | Pending |
-| INGEST-01 | Pending | Pending |
-| INGEST-02 | Pending | Pending |
-| INGEST-03 | Pending | Pending |
-| INGEST-04 | Pending | Pending |
-| INGEST-05 | Pending | Pending |
-| INGEST-06 | Pending | Pending |
-| INGEST-07 | Pending | Pending |
-| MCP-01 | Pending | Pending |
-| MCP-02 | Pending | Pending |
-| MCP-03 | Pending | Pending |
-| MCP-04 | Pending | Pending |
-| MCP-05 | Pending | Pending |
-| MCP-06 | Pending | Pending |
-| MCP-07 | Pending | Pending |
-| HCOPY-01 | Pending | Pending |
-| HCOPY-02 | Pending | Pending |
-| HCOPY-03 | Pending | Pending |
-| HCOPY-04 | Pending | Pending |
-| HCOPY-05 | Pending | Pending |
-| HCOPY-06 | Pending | Pending |
-| HCOPY-07 | Pending | Pending |
-| CANVAS-01 | Pending | Pending |
-| CANVAS-02 | Pending | Pending |
-| CANVAS-03 | Pending | Pending |
-| CANVAS-04 | Pending | Pending |
-| CANVAS-05 | Pending | Pending |
-| CANVAS-06 | Pending | Pending |
+| ONTO-01 | Phase 68 | Pending |
+| ONTO-02 | Phase 68 | Pending |
+| ONTO-03 | Phase 68 | Pending |
+| ONTO-04 | Phase 69 | Pending |
+| ONTO-05 | Phase 69 | Pending |
+| INGEST-01 | Phase 70 | Pending |
+| INGEST-02 | Phase 70 | Pending |
+| INGEST-03 | Phase 70 | Pending |
+| INGEST-04 | Phase 71 | Pending |
+| INGEST-05 | Phase 71 | Pending |
+| INGEST-06 | Phase 71 | Pending |
+| INGEST-07 | Phase 71 | Pending |
+| MCP-01 | Phase 72 | Pending |
+| MCP-02 | Phase 72 | Pending |
+| MCP-07 | Phase 72 | Pending |
+| MCP-03 | Phase 73 | Pending |
+| MCP-04 | Phase 73 | Pending |
+| MCP-05 | Phase 73 | Pending |
+| MCP-06 | Phase 73 | Pending |
+| HCOPY-01 | Phase 74 | Pending |
+| HCOPY-03 | Phase 74 | Pending |
+| HCOPY-04 | Phase 74 | Pending |
+| HCOPY-06 | Phase 74 | Pending |
+| HCOPY-02 | Phase 75 | Pending |
+| HCOPY-05 | Phase 75 | Pending |
+| HCOPY-07 | Phase 75 | Pending |
+| CANVAS-01 | Phase 76 | Pending |
+| CANVAS-02 | Phase 76 | Pending |
+| CANVAS-03 | Phase 76 | Pending |
+| CANVAS-04 | Phase 77 | Pending |
+| CANVAS-05 | Phase 77 | Pending |
+| CANVAS-06 | Phase 77 | Pending |
 
 **Coverage:**
 - v4.0 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32
+- Mapped to phases: 32
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-11*
-*Last updated: 2026-04-11 after initial definition*
+*Last updated: 2026-04-11 after roadmap creation*
