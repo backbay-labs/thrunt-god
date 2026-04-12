@@ -21,7 +21,7 @@ Requirements for v5.0 Hunt Ecosystem: Evidence In, Detections Out. Each maps to 
 - [x] **ADPT-01**: Elastic/Kibana adapter extracts KQL queries, result tables, and entities from Kibana Discover, Dashboard, and Security pages with real DOM selectors
 - [x] **ADPT-02**: CrowdStrike Falcon adapter extracts FQL queries, detection details, and endpoint entities from Falcon console pages with real DOM selectors
 - [x] **ADPT-03**: Elastic and CrowdStrike adapters have fixture-backed Playwright tests validating extraction against saved HTML snapshots
-- [ ] **ADPT-04**: Elastic and CrowdStrike adapters support certification campaigns (capture, replay, drift detection, reviewer approval)
+- [x] **ADPT-04**: Elastic and CrowdStrike adapters support certification campaigns (capture, replay, drift detection, reviewer approval)
 - [ ] **ADPT-05**: AWS CloudTrail adapter extracts event queries, result tables, and resource entities from the AWS Console with real DOM selectors
 - [ ] **ADPT-06**: Okta adapter extracts System Log queries, event details, and user/app entities from the Okta Admin Console with real DOM selectors
 - [ ] **ADPT-07**: M365 Defender adapter extracts KQL queries, incident details, and device/user entities from the Microsoft Security portal with real DOM selectors
@@ -138,7 +138,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADPT-01 | Phase 23 | Complete |
 | ADPT-02 | Phase 23 | Complete |
 | ADPT-03 | Phase 23 | Complete |
-| ADPT-04 | Phase 23 | Pending |
+| ADPT-04 | Phase 23 | Complete |
 | SIDE-01 | Phase 24 | Pending |
 | SIDE-02 | Phase 24 | Pending |
 | SIDE-03 | Phase 24 | Pending |

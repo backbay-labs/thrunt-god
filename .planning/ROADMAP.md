@@ -34,7 +34,7 @@
 
 - [x] **Phase 21: Bridge Hardening** - Subprocess timeouts, structured JSON logging, health endpoint, error classification, graceful degradation (completed 2026-04-12)
 - [x] **Phase 22: MCP Event Bridge** - File watcher events, schema contract, WebSocket broadcast, bidirectional mutations, reconnection with catch-up (completed 2026-04-12)
-- [ ] **Phase 23: Certified Adapters (Elastic + CrowdStrike)** - DOM extraction, fixture-backed tests, certification campaigns for the top-3 SIEM/EDR stack
+- [x] **Phase 23: Certified Adapters (Elastic + CrowdStrike)** - DOM extraction, fixture-backed tests, certification campaigns for the top-3 SIEM/EDR stack (completed 2026-04-12)
 - [ ] **Phase 24: Sidepanel UI** - Live case state, evidence timeline, vendor status, hypothesis cards, recommended actions, artifact navigation
 - [ ] **Phase 25: Extraction Adapters (AWS, Okta, M365)** - DOM extraction with fixture tests for CloudTrail, Okta Admin Console, and M365 Defender; stub vendor messaging
 - [ ] **Phase 26: Detection Promotion** - CLI command generating Sigma/SPL/KQL rules from findings with ATT&CK mappings, confidence tags, and versioned artifacts
@@ -305,7 +305,7 @@ Plans:
 | 20. CLI Bridge | v4.0 | 2/2 | Complete | 2026-04-03 |
 | 21. Bridge Hardening | v5.0 | 2/2 | Complete | 2026-04-12 |
 | 22. MCP Event Bridge | v5.0 | 3/3 | Complete | 2026-04-12 |
-| 23. Certified Adapters (Elastic + CrowdStrike) | 2/3 | In Progress|  | - |
+| 23. Certified Adapters (Elastic + CrowdStrike) | 3/3 | Complete   | 2026-04-12 | - |
 | 24. Sidepanel UI | v5.0 | 0/? | Not started | - |
 | 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/? | Not started | - |
 | 26. Detection Promotion | v5.0 | 0/? | Not started | - |
