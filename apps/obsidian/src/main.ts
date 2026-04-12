@@ -8,6 +8,7 @@ import { THRUNT_WORKSPACE_VIEW_TYPE, ThruntWorkspaceView } from './view';
 import { CORE_ARTIFACTS } from './artifacts';
 import { ObsidianVaultAdapter } from './vault-adapter';
 import { WorkspaceService, formatStatusBarText } from './workspace';
+import { normalizePath, getEntityFolder, getPlanningDir } from './paths';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -64,6 +65,14 @@ export default class ThruntGodPlugin extends Plugin {
       },
     });
 
+    this.addCommand({
+      id: 'scaffold-attack-ontology',
+      name: 'Scaffold ATT&CK ontology',
+      callback: () => {
+        void this.scaffoldAttack();
+      },
+    });
+
     this.addSettingTab(new ThruntGodSettingTab(this.app, this));
 
     // Event wiring: vault events invalidate cache and refresh views
@@ -104,6 +113,40 @@ export default class ThruntGodPlugin extends Plugin {
     }
     await this.refreshViews();
     new Notice('THRUNT workspace scaffold created.');
+  }
+
+  private async scaffoldAttack(): Promise<void> {
+    const { getParentTechniques, getTechniqueFileName, generateTechniqueNote } =
+      await import('./scaffold');
+
+    const planningDir = getPlanningDir(
+      this.settings.planningDir,
+      DEFAULT_SETTINGS.planningDir,
+    );
+    const ttpsFolder = getEntityFolder(planningDir, 'entities/ttps');
+    await this.workspaceService.vaultAdapter.ensureFolder(ttpsFolder);
+
+    const techniques = getParentTechniques();
+    let created = 0;
+    let skipped = 0;
+
+    for (const technique of techniques) {
+      const fileName = getTechniqueFileName(technique);
+      const path = normalizePath(`${ttpsFolder}/${fileName}`);
+      if (this.workspaceService.vaultAdapter.fileExists(path)) {
+        skipped++;
+        continue;
+      }
+      const content = generateTechniqueNote(technique);
+      await this.workspaceService.vaultAdapter.createFile(path, content);
+      created++;
+    }
+
+    this.workspaceService.invalidate();
+    await this.refreshViews();
+    new Notice(
+      `ATT&CK ontology scaffolded: ${created} created, ${skipped} skipped.`,
+    );
   }
 
   async activateView(): Promise<void> {

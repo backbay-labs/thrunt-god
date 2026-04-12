@@ -28,7 +28,7 @@ describe('sanitizeFileName', () => {
 
   it('replaces backslashes, colons, and other OS-unsafe chars', () => {
     expect(sanitizeFileName('A\\B:C*D?"E<F>G|H')).toBe(
-      'A-B-C-D---E-F-G-H',
+      'A-B-C-D--E-F-G-H',
     );
   });
 });

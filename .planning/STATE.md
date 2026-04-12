@@ -2,17 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-current_plan: 2
 status: executing
-stopped_at: "Completed 68-01-PLAN.md"
-last_updated: "2026-04-12T04:32:26Z"
-last_activity: 2026-04-12 -- Completed 68-01 entity type registry (8 types, 22 tests)
+stopped_at: Completed 68-03-PLAN.md
+last_updated: "2026-04-12T04:37:53.366Z"
 progress:
-  total_phases: 77
-  completed_phases: 67
+  total_phases: 10
+  completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -28,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Executing Phase 68 -- Plan 01 complete, Plan 02 next
+**Status:** Executing Phase 68 -- Plans 01 and 03 complete, Plan 02 remaining
 **Phase:** 68 of 77 (Entity Note Schema + ATT&CK Ontology Scaffold)
-**Plan:** 1 of 3 complete
+**Plan:** 2 of 3 complete
 
-Progress: [###░░░░░░░] 33% (1/3 phase 68 plans)
+Progress: [███████░░░] 67% (2/3 phase 68 plans)
 
 ## Recently Completed
 
@@ -57,6 +55,7 @@ Progress: [###░░░░░░░] 33% (1/3 phase 68 plans)
 - Full milestone spec at apps/obsidian/MILESTONES-v2.md
 - Pure data module pattern for entity-schema.ts -- zero Obsidian imports, safe for testing and CLI
 - IOC subtypes share entities/iocs folder, differentiated by frontmatter type field
+- [Phase 68]: Entity folders created after core artifacts, before cache invalidation in bootstrap()
 
 ### Blockers/Concerns
 
@@ -64,6 +63,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Completed 68-01-PLAN.md (entity type registry)
-Resume file: .planning/phases/68-entity-note-schema-att-ck-ontology-scaffold/68-02-PLAN.md
+Last session: 2026-04-12T04:37:53.364Z
+Stopped at: Completed 68-03-PLAN.md
+Resume file: None
