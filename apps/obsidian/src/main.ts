@@ -66,6 +66,14 @@ export default class ThruntGodPlugin extends Plugin {
     });
 
     this.addCommand({
+      id: 'ingest-agent-output',
+      name: 'Ingest agent output',
+      callback: () => {
+        void this.runIngestion();
+      },
+    });
+
+    this.addCommand({
       id: 'scaffold-attack-ontology',
       name: 'Scaffold ATT&CK ontology',
       callback: () => {
@@ -113,6 +121,14 @@ export default class ThruntGodPlugin extends Plugin {
     }
     await this.refreshViews();
     new Notice('THRUNT workspace scaffold created.');
+  }
+
+  private async runIngestion(): Promise<void> {
+    const result = await this.workspaceService.runIngestion();
+    await this.refreshViews();
+    new Notice(
+      `Ingestion complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`,
+    );
   }
 
   private async scaffoldAttack(): Promise<void> {

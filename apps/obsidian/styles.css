@@ -220,3 +220,124 @@
 .thrunt-god-ea-details > .thrunt-god-hunt-fields {
   padding: 0.5rem 1rem;
 }
+
+.thrunt-god-ea-details > .thrunt-god-actions {
+  padding: 0.25rem 1rem 0.75rem;
+}
+
+/* Receipt Timeline section */
+.thrunt-god-receipt-timeline {
+  padding: 0;
+}
+
+.thrunt-god-rt-details {
+  padding: 0;
+}
+
+.thrunt-god-rt-details[open] > .thrunt-god-rt-summary {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.thrunt-god-rt-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.75rem 1rem;
+  user-select: none;
+}
+
+.thrunt-god-rt-summary::-webkit-details-marker {
+  display: none;
+}
+
+.thrunt-god-rt-summary::before {
+  content: '\25B6';
+  display: inline-block;
+  font-size: 0.65rem;
+  margin-right: 0.5rem;
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.thrunt-god-rt-details[open] > .thrunt-god-rt-summary::before {
+  transform: rotate(90deg);
+}
+
+.thrunt-god-rt-title {
+  display: inline;
+  font-size: 0.95rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.thrunt-god-rt-content {
+  padding: 0.5rem 1rem;
+}
+
+.thrunt-god-rt-hypothesis {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0.25rem;
+}
+
+.thrunt-god-rt-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.thrunt-god-rt-entry:hover {
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
+}
+
+.thrunt-god-rt-status {
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  flex-shrink: 0;
+}
+
+.thrunt-god-rt-status.is-validated {
+  background: color-mix(in srgb, var(--color-green) 18%, transparent);
+  color: var(--color-green);
+}
+
+.thrunt-god-rt-status.is-pending {
+  background: color-mix(in srgb, var(--color-orange) 18%, transparent);
+  color: var(--color-orange);
+}
+
+.thrunt-god-rt-status.is-rejected {
+  background: color-mix(in srgb, var(--color-red) 18%, transparent);
+  color: var(--color-red);
+}
+
+.thrunt-god-rt-id {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 0.78rem;
+}
+
+.thrunt-god-rt-claim {
+  color: var(--text-normal);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thrunt-god-rt-technique {
+  font-family: var(--font-monospace);
+  font-size: 0.7rem;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+.thrunt-god-rt-details > .thrunt-god-actions {
+  padding: 0.25rem 1rem 0.75rem;
+}

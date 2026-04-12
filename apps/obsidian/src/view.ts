@@ -1,4 +1,4 @@
-import { ItemView, Setting, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, Setting, type WorkspaceLeaf } from 'obsidian';
 import type ThruntGodPlugin from './main';
 import type { ViewModel } from './types';
 import { ENTITY_FOLDERS } from './entity-schema';
@@ -84,6 +84,9 @@ export class ThruntWorkspaceView extends ItemView {
 
     // Extended artifacts (agent-produced)
     this.renderExtendedArtifactsSection(contentEl, vm);
+
+    // Receipt Timeline
+    this.renderReceiptTimelineSection(contentEl, vm);
 
     // Artifact list
     const artifactCard = contentEl.createDiv({ cls: 'thrunt-god-card' });
@@ -240,6 +243,75 @@ export class ThruntWorkspaceView extends ItemView {
     const actions = details.createDiv({ cls: 'thrunt-god-actions' });
     this.createActionButton(actions, 'Open dashboard', async () => {
       await this.plugin.openCoreFile('KNOWLEDGE_BASE.md');
+    });
+  }
+
+  private renderReceiptTimelineSection(container: HTMLElement, vm: ViewModel): void {
+    if (vm.workspaceStatus === 'missing' || vm.receiptTimeline.length === 0) return;
+
+    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-receipt-timeline' });
+    const details = card.createEl('details', { cls: 'thrunt-god-rt-details' });
+    details.setAttribute('open', '');
+
+    const summary = details.createEl('summary', { cls: 'thrunt-god-rt-summary' });
+    summary.createEl('h3', { text: 'Receipt Timeline', cls: 'thrunt-god-rt-title' });
+
+    const content = details.createDiv({ cls: 'thrunt-god-rt-content' });
+
+    // Group entries by hypothesis
+    const grouped = new Map<string, typeof vm.receiptTimeline>();
+    for (const entry of vm.receiptTimeline) {
+      const group = grouped.get(entry.hypothesis) ?? [];
+      group.push(entry);
+      grouped.set(entry.hypothesis, group);
+    }
+
+    // Render each hypothesis group
+    for (const [hypothesis, entries] of grouped) {
+      content.createDiv({ cls: 'thrunt-god-rt-hypothesis', text: hypothesis });
+
+      for (const entry of entries) {
+        const row = content.createDiv({ cls: 'thrunt-god-rt-entry' });
+
+        // Status badge
+        let statusCls = 'is-pending';
+        if (entry.claim_status === 'supports') statusCls = 'is-validated';
+        else if (entry.claim_status === 'disproves') statusCls = 'is-rejected';
+
+        row.createSpan({
+          cls: `thrunt-god-rt-status ${statusCls}`,
+          text: entry.claim_status || 'pending',
+        });
+
+        // Receipt ID
+        row.createSpan({ cls: 'thrunt-god-rt-id', text: entry.receipt_id });
+
+        // Truncated claim
+        const claimText = entry.claim.length > 50
+          ? entry.claim.slice(0, 47) + '...'
+          : entry.claim;
+        row.createSpan({ cls: 'thrunt-god-rt-claim', text: claimText });
+
+        // Technique refs badges
+        for (const ref of entry.technique_refs) {
+          row.createSpan({ cls: 'thrunt-god-rt-technique', text: ref });
+        }
+
+        // Click handler
+        row.addEventListener('click', () => {
+          void this.plugin.openCoreFile('RECEIPTS/' + entry.fileName);
+        });
+      }
+    }
+
+    // Actions row with Ingest button
+    const actions = details.createDiv({ cls: 'thrunt-god-actions' });
+    this.createActionButton(actions, 'Ingest', async () => {
+      const result = await this.plugin.workspaceService.runIngestion();
+      await this.plugin.refreshViews();
+      new Notice(
+        `Ingestion complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`,
+      );
     });
   }
 
