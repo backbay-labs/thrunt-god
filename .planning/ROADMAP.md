@@ -106,7 +106,7 @@ Plans:
   2. Receipt parser extracts claim, claim_status, evidence summary, related_hypotheses, and technique references from agent-produced receipt markdown
   3. Query log parser extracts intent, dataset, result_status, related_receipts, and entity references (IPs, domains, hashes) from agent-produced query log markdown
   4. Both parsers are pure functions with unit tests and handle malformed input gracefully
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 70-01-PLAN.md -- Receipt and query log parsers with TDD (ReceiptSnapshot, QuerySnapshot types, pure functions)
@@ -205,7 +205,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 3/3 | Complete | 2026-04-12 |
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete    | 2026-04-12 | - |
-| 70. Artifact Registry + Parsers | v4.0 | 0/2 | Not started | - |
+| 70. Artifact Registry + Parsers | 1/2 | In Progress|  | - |
 | 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
 | 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/0 | Not started | - |
 | 73. MCP Enrichment + Intelligence Features | v4.0 | 0/0 | Not started | - |

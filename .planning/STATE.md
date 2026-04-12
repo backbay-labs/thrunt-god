@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 69-02-PLAN.md
-last_updated: "2026-04-12T05:11:23.741Z"
+status: Active
+stopped_at: Completed 70-01-PLAN.md
+last_updated: "2026-04-12T05:27:51.235Z"
 progress:
   total_phases: 10
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_plans: 7
+  completed_plans: 6
+  percent: 50
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 69 complete, Phase 70 next
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 70 in progress (plan 01 of 02 complete)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 69 of 77 (Knowledge Base Dashboard + Sidebar Entity Summary)
-**Plan:** 2 of 2 complete
+**Status:** Active
+**Phase:** 70 of 77 (Artifact Registry Parsers)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (2/2 phase 69 plans)
+Progress: [█████░░░░░] 50% (1/2 phase 70 plans)
 
 ## Recently Completed
 
@@ -41,7 +41,7 @@ Progress: [██████████] 100% (2/2 phase 69 plans)
 
 **Velocity:**
 - Total plans completed: 67 phases across 14 milestones
-- v4.0 plans completed: 2
+- v4.0 plans completed: 3
 
 ## Accumulated Context
 
@@ -63,6 +63,9 @@ Progress: [██████████] 100% (2/2 phase 69 plans)
 - [Phase 69-01]: listFiles returns file names only (not full paths), consistent with ObsidianVaultAdapter TFile.name
 - [Phase 69-02]: EntityCounts uses folder path keys (e.g. entities/iocs) not entity type keys -- consistent with ENTITY_FOLDERS constant
 - [Phase 69-02]: KB sidebar section uses native HTML details/summary for collapsible behavior -- no Obsidian API dependency
+- [Phase 70-01]: Manual YAML frontmatter parsing (no library) consistent with existing parser pattern
+- [Phase 70-01]: Entity extraction uses regex with validation (IPv4 octet check, TLD alpha requirement) to reduce false positives
+- [Phase 70-01]: Technique refs regex matches T1234 and T1234.567 -- sub-technique consumes parent in same match
 
 ### Blockers/Concerns
 
@@ -70,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T05:08:04.728Z
-Stopped at: Completed 69-02-PLAN.md
+Last session: 2026-04-12T05:27:51.232Z
+Stopped at: Completed 70-01-PLAN.md
 Resume file: None
