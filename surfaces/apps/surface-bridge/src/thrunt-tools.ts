@@ -111,19 +111,47 @@ export async function runThruntCommand(
     stderr: 'pipe',
   });
 
-  const timer = setTimeout(() => {
+  // Race the process exit against the timeout
+  const exitPromise = proc.exited;
+  const timeoutPromise = new Promise<'timeout'>((resolve) => {
+    setTimeout(() => resolve('timeout'), timeoutMs);
+  });
+
+  const raceResult = await Promise.race([
+    exitPromise.then((code) => ({ kind: 'exited' as const, code })),
+    timeoutPromise.then(() => ({ kind: 'timeout' as const, code: -1 })),
+  ]);
+
+  let stdout = '';
+  let stderr = '';
+  let exitCode: number;
+
+  if (raceResult.kind === 'timeout') {
     timedOut = true;
     proc.kill('SIGTERM');
-    setTimeout(() => {
+    // Give process grace period to terminate, then force kill
+    const graceResult = await Promise.race([
+      exitPromise.then((code) => ({ done: true, code })),
+      new Promise<{ done: false; code: number }>((resolve) => {
+        setTimeout(() => resolve({ done: false, code: -1 }), GRACE_MS);
+      }),
+    ]);
+    if (!graceResult.done) {
       try { proc.kill('SIGKILL'); } catch { /* process may already be dead */ }
-    }, GRACE_MS);
-  }, timeoutMs);
-
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
-
-  clearTimeout(timer);
+      await exitPromise;
+    }
+    exitCode = await exitPromise;
+    // Don't try to read streams from a killed process — they may never close
+    stdout = '';
+    stderr = '';
+  } else {
+    exitCode = raceResult.code;
+    // Process exited normally — safe to read streams
+    [stdout, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+  }
 
   const durationMs = Date.now() - start;
 
