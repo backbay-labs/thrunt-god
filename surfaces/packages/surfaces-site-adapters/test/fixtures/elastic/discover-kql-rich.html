@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="kbn-version" content="8.14.0" />
+    <title>Discover - Elastic</title>
+  </head>
+  <body>
+    <div data-test-subj="discover-app">
+      <div data-test-subj="queryInput">
+        <textarea>process.name: "powershell.exe" AND event.action: "connection_attempted"</textarea>
+      </div>
+      <button data-test-subj="switchQueryLanguageButton">KQL</button>
+      <button data-test-subj="superDatePickerShowDatesButton">Last 7 days</button>
+
+      <div data-test-subj="docTable">
+        <table>
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>process.name</th>
+              <th>source.ip</th>
+              <th>destination.ip</th>
+              <th>user.name</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026-04-10T08:15:00Z</td>
+              <td>powershell.exe</td>
+              <td>10.0.1.45</td>
+              <td>203.0.113.50</td>
+              <td>jsmith</td>
+            </tr>
+            <tr>
+              <td>2026-04-10T08:16:00Z</td>
+              <td>powershell.exe</td>
+              <td>10.0.1.45</td>
+              <td>198.51.100.10</td>
+              <td>jsmith</td>
+            </tr>
+            <tr>
+              <td>2026-04-10T08:17:00Z</td>
+              <td>powershell.exe</td>
+              <td>10.0.1.46</td>
+              <td>203.0.113.50</td>
+              <td>admin-svc</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <aside>
+        <span data-test-subj="formatted-field-value">10.0.1.45</span>
+        <span data-test-subj="formatted-field-value">203.0.113.50</span>
+        <span data-test-subj="formatted-field-value">jsmith@acme.corp</span>
+      </aside>
+    </div>
+  </body>
+</html>
