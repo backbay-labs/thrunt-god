@@ -231,9 +231,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 22-01-PLAN.md -- Event schema types, event journal ring buffer, structured file watcher
-- [ ] 22-02-PLAN.md -- WebSocket broadcast with envelopes, welcome handshake, reconnection replay
-- [ ] 22-03-PLAN.md -- Inbound mutation protocol (JSON-RPC), validation, thrunt-tools delegation
+- [x] 22-01-PLAN.md -- Event schema types, event journal ring buffer, structured file watcher
+- [x] 22-02-PLAN.md -- WebSocket broadcast with envelopes, welcome handshake, reconnection replay
+- [x] 22-03-PLAN.md -- Inbound mutation protocol (JSON-RPC), validation, thrunt-tools delegation
 
 ### Phase 23: Certified Adapters (Elastic + CrowdStrike)
 **Goal**: Hunters investigating in Elastic/Kibana or CrowdStrike Falcon consoles get automatic extraction of queries, results, and entities — backed by fixture tests and a certification campaign that detects when vendor UIs drift
@@ -247,9 +247,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 23-01-PLAN.md -- Elastic adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
-- [ ] 23-02-PLAN.md -- CrowdStrike adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
-- [ ] 23-03-PLAN.md -- Content script consolidation and certification campaign wiring
+- [x] 23-01-PLAN.md -- Elastic adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
+- [x] 23-02-PLAN.md -- CrowdStrike adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
+- [x] 23-03-PLAN.md -- Content script consolidation and certification campaign wiring
 
 ### Phase 24: Sidepanel UI
 **Goal**: Hunters have a persistent browser extension sidepanel that shows live case state, evidence captured so far, vendor connection health, hypothesis status, and recommended next actions — making the extension a full investigation companion rather than just a capture tool
@@ -261,7 +261,11 @@ Plans:
   3. Hunter sees vendor connection status for each active adapter (connected/disconnected/extracting) and hypothesis cards showing verdict badges with linked evidence counts
   4. Hunter sees contextual recommended actions (e.g., "3 hypotheses have no evidence", "Phase 2 ready for execution") derived from case state analysis
   5. Hunter can click any evidence item, hypothesis, or action to navigate to the corresponding artifact in the vendor console or open it through the bridge
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 24-01-PLAN.md -- Data model enrichments (recommended actions, evidence timeline, adapter statuses) + vendor status, hypothesis evidence counts, recommended actions UI sections
+- [ ] 24-02-PLAN.md -- Evidence timeline with vendor badges + click-to-navigate on all interactive elements
 
 ### Phase 25: Extraction Adapters (AWS, Okta, M365)
 **Goal**: Hunters investigating in AWS CloudTrail, Okta Admin Console, or M365 Defender get extraction of queries and entities, with clear messaging for unsupported vendor pages — extending coverage beyond the certified top-3 stack
@@ -305,7 +309,7 @@ Plans:
 | 20. CLI Bridge | v4.0 | 2/2 | Complete | 2026-04-03 |
 | 21. Bridge Hardening | v5.0 | 2/2 | Complete | 2026-04-12 |
 | 22. MCP Event Bridge | v5.0 | 3/3 | Complete | 2026-04-12 |
-| 23. Certified Adapters (Elastic + CrowdStrike) | 3/3 | Complete   | 2026-04-12 | - |
-| 24. Sidepanel UI | v5.0 | 0/? | Not started | - |
+| 23. Certified Adapters (Elastic + CrowdStrike) | v5.0 | 3/3 | Complete | 2026-04-12 |
+| 24. Sidepanel UI | v5.0 | 0/2 | Not started | - |
 | 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/? | Not started | - |
 | 26. Detection Promotion | v5.0 | 0/? | Not started | - |
