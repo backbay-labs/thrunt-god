@@ -124,7 +124,8 @@ describe('refreshTechniqueIntelligence', () => {
   it('updates frontmatter with hunt_count, last_hunted, coverage_status', () => {
     const result = refreshTechniqueIntelligence(makeInput());
     expect(result.content).toContain('hunt_count: 2');
-    expect(result.content).toContain('last_hunted: 2026-03-20');
+    // last_hunted preserves existing quoting style (was "" in fixture)
+    expect(result.content).toContain('last_hunted: "2026-03-20"');
     expect(result.content).toContain('coverage_status: current');
   });
 
