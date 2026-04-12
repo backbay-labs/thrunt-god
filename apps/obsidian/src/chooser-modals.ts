@@ -3,6 +3,7 @@ import type { FuzzyMatch } from 'obsidian';
 import type ThruntGodPlugin from './main';
 import type { CanvasTemplateName } from './modals';
 import { HyperCopyModal } from './hyper-copy-modal';
+import { VERDICT_VALUES, type VerdictValue } from './verdict';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -243,8 +244,7 @@ export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
   }
 
   onChooseItem(item: ChooserItem, _evt: MouseEvent | KeyboardEvent): void {
-    // Dispatch to the appropriate plugin command logic
-    // Each item maps to its corresponding command helper
+    // Dispatch to the appropriate plugin command logic — each item maps to its corresponding command helper
     switch (item.id) {
       case 'enrich-from-mcp': {
         const file = this.plugin.app.workspace.getActiveFile();
@@ -395,5 +395,53 @@ export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
         break;
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// VerdictSuggestModal
+// ---------------------------------------------------------------------------
+
+interface VerdictItem {
+  id: VerdictValue;
+  name: string;
+  description: string;
+}
+
+const VERDICT_ITEMS: readonly VerdictItem[] = VERDICT_VALUES.map((v) => {
+  const meta: Record<VerdictValue, { name: string; description: string }> = {
+    unknown: { name: 'Unknown', description: 'No determination made yet' },
+    suspicious: { name: 'Suspicious', description: 'Warrants further investigation' },
+    confirmed_malicious: { name: 'Confirmed Malicious', description: 'Verified threat actor/IOC' },
+    remediated: { name: 'Remediated', description: 'Threat addressed and contained' },
+    resurfaced: { name: 'Resurfaced', description: 'Previously remediated, seen again' },
+  };
+  return { id: v, ...meta[v] };
+});
+
+export class VerdictSuggestModal extends FuzzySuggestModal<VerdictItem> {
+  private onSelect: (verdict: VerdictValue) => void;
+
+  constructor(app: App, onSelect: (verdict: VerdictValue) => void) {
+    super(app);
+    this.onSelect = onSelect;
+    this.setPlaceholder('Select verdict...');
+  }
+
+  getItems(): VerdictItem[] {
+    return [...VERDICT_ITEMS];
+  }
+
+  getItemText(item: VerdictItem): string {
+    return item.name;
+  }
+
+  renderSuggestion(match: FuzzyMatch<VerdictItem>, el: HTMLElement): void {
+    el.createDiv({ cls: 'thrunt-chooser-name', text: match.item.name });
+    el.createDiv({ cls: 'thrunt-chooser-desc', text: match.item.description });
+  }
+
+  onChooseItem(item: VerdictItem, _evt: MouseEvent | KeyboardEvent): void {
+    this.onSelect(item.id);
   }
 }
