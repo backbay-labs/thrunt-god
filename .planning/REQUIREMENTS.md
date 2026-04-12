@@ -21,8 +21,8 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 
 - [x] **INTEL-01**: Entity notes track verdict lifecycle (unknown -> suspicious -> confirmed_malicious -> remediated -> resurfaced) with timestamped, attributed append-only history
 - [x] **INTEL-02**: "Set entity verdict" command prompts for verdict + rationale, appends to lifecycle log, updates frontmatter
-- [ ] **INTEL-03**: Entity notes show cross-hunt aggregation (every hunt referencing the entity, its role, and outcome) in a computed Hunt History section
-- [ ] **INTEL-04**: Related infrastructure is surfaced when entities co-occur across multiple hunts
+- [x] **INTEL-03**: Entity notes show cross-hunt aggregation (every hunt referencing the entity, its role, and outcome) in a computed Hunt History section
+- [x] **INTEL-04**: Related infrastructure is surfaced when entities co-occur across multiple hunts
 - [x] **INTEL-05**: Entity frontmatter includes schema_version field with additive migration command that updates notes without data loss
 - [ ] **INTEL-06**: ATT&CK technique notes accumulate hunt linkbacks (queries used, data sources, outcomes) in a Hunt History section
 - [ ] **INTEL-07**: Analysts can add false positive annotations to technique notes via command
@@ -93,8 +93,8 @@ Deferred beyond v5.0.
 | UX-07 | Phase 79 | Complete |
 | INTEL-01 | Phase 82 | Complete |
 | INTEL-02 | Phase 82 | Complete |
-| INTEL-03 | Phase 83 | Pending |
-| INTEL-04 | Phase 83 | Pending |
+| INTEL-03 | Phase 83 | Complete |
+| INTEL-04 | Phase 83 | Complete |
 | INTEL-05 | Phase 82 | Complete |
 | INTEL-06 | Phase 84 | Pending |
 | INTEL-07 | Phase 84 | Pending |

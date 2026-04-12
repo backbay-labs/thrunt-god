@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 82-02-PLAN.md
-last_updated: "2026-04-12T15:22:06.571Z"
+stopped_at: Completed 83-01-PLAN.md
+last_updated: "2026-04-12T17:12:42.599Z"
 progress:
   total_phases: 12
   completed_phases: 4
-  total_plans: 10
-  completed_plans: 10
-  percent: 90
+  total_plans: 12
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 82 (Verdict Lifecycle + FrontmatterEditor + Schema Versioning)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 83 (Cross-Hunt Aggregation + Computed Confidence)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
 **Status:** Executing
-**Phase:** 82 of 90 (Verdict Lifecycle + FrontmatterEditor + Schema Versioning)
-**Plan:** 3 of 3 in current phase complete
+**Phase:** 83 of 90 (Cross-Hunt Aggregation + Computed Confidence)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [█████████░] 90% (9/10 v5.0 plans)
+Progress: [█████████░] 92% (11/12 v5.0 plans)
 
 ## Recently Completed
 
@@ -74,6 +74,10 @@ Progress: [█████████░] 90% (9/10 v5.0 plans)
 - [Phase 82]: Verdict entry format locked: - [YYYY-MM-DD HH:mm] verdict -- "rationale" (hunt: huntId)
 - [Phase 82]: Hunt ID detection priority: MISSION.md hunt_id > planning dir name > manual fallback
 - [Phase 82]: VerdictSuggestModal follows FuzzySuggestModal + ChooserItem pattern from Phase 81
+- [Phase 83]: Hunt history and co-occurrence modules follow identical section-insert-replace pattern from verdict.ts
+- [Phase 83]: Related Infrastructure uses ## Related Infrastructure heading, distinct from existing ## Related section
+- [Phase 83]: Co-occurrence threshold defaults to 2 with configurable parameter; wiki-link [[entity_name]] for graph integration
+- [Phase 83]: Section ordering: ## Verdict History > ## Hunt History > ## Related Infrastructure > ## Sightings > ## Related
 
 ### Blockers/Concerns
 
@@ -81,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T15:22:06.569Z
-Stopped at: Completed 82-02-PLAN.md
+Last session: 2026-04-12T17:12:42.596Z
+Stopped at: Completed 83-01-PLAN.md
 Resume file: None
