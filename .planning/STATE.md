@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: completed
-stopped_at: Completed 77-02-PLAN.md
-last_updated: "2026-04-12T08:21:56.272Z"
+status: in_progress
+stopped_at: Completed 78-01-PLAN.md
+last_updated: "2026-04-12T11:16:05Z"
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 10
-  total_plans: 21
-  completed_plans: 21
-  percent: 100
+  total_plans: 23
+  completed_plans: 22
+  percent: 95
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 77 COMPLETE (2/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 78 Tech Debt Cleanup (1/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Milestone complete
-**Phase:** 77 of 77 (Cross-Hunt Intelligence Knowledge Dashboard -- COMPLETE)
-**Plan:** 2 of 2 complete
+**Status:** In progress (tech debt cleanup)
+**Phase:** 78 of 78 (v4.0 Tech Debt Cleanup)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (21/21 v4.0 plans)
+Progress: [█████████░] 95% (22/23 v4.0 plans)
 
 ## Recently Completed
 
@@ -113,12 +113,16 @@ Progress: [██████████] 100% (21/21 v4.0 plans)
 - [Phase 77]: [Phase 77-02]: CompareHuntsModal uses text inputs for vault-relative paths rather than folder picker (consistent with PromptModal pattern)
 - [Phase 77]: [Phase 77-02]: generateKnowledgeDashboard falls back to MISSION.md H1 as hunt name when no cases/ folder exists
 
+- [Phase 78-01]: Core artifact resolution via planningDir path check before entity type filter with continue to prevent double-inclusion
+- [Phase 78-01]: getFileMtime returns number | null (epoch ms) matching TFile.stat.mtime
+- [Phase 78-01]: Null mtime fallback to new Date().toISOString() preserves backward compatibility
+
 ### Blockers/Concerns
 
 None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T08:18:11.051Z
-Stopped at: Completed 77-02-PLAN.md
+Last session: 2026-04-12T11:16:05Z
+Stopped at: Completed 78-01-PLAN.md
 Resume file: None
