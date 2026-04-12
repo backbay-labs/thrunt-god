@@ -43,12 +43,14 @@ export function createElasticAdapter(): SiteAdapter {
     },
 
     extractContext(): VendorPageContext {
-      const pageType = classifyElasticPage();
+      const detected = this.detect();
+      const rawPageType = classifyElasticPage();
+      const pageType = detected ? rawPageType : 'unknown';
       const query = extractElasticQuery();
       const table = extractElasticTable();
       const entities = extractElasticEntities(table);
 
-      const supported = this.detect() && pageType !== 'unknown';
+      const supported = detected && pageType !== 'unknown';
       const failureReasons: string[] = [];
       if (!supported) {
         failureReasons.push('This Kibana page is not a supported Elastic surface');
@@ -58,6 +60,9 @@ export function createElasticAdapter(): SiteAdapter {
         }
         if (!table && pageType === 'search') {
           failureReasons.push('No result table detected');
+        }
+        if (!query && pageType === 'alert_detail') {
+          failureReasons.push('No query editor detected');
         }
       }
 
@@ -184,17 +189,17 @@ function extractElasticEntities(table: ExtractedTable | null): ExtractedEntity[]
 }
 
 function computeElasticSupportedActions(): CaptureAction[] {
-  const pageType = classifyElasticPage();
-  const query = extractElasticQuery();
-  const table = extractElasticTable();
-  const entities = extractElasticEntities(table);
-
   const detected = !!(
     document.querySelector('[data-test-subj="discover-app"]') ||
     document.querySelector('.kibanaChrome') ||
     document.querySelector('[data-test-subj="kibana-chrome"]') ||
     document.querySelector('[data-test-subj="securitySolutionApp"]')
   );
+  const rawPageType = classifyElasticPage();
+  const pageType = detected ? rawPageType : 'unknown';
+  const query = extractElasticQuery();
+  const table = extractElasticTable();
+  const entities = extractElasticEntities(table);
 
   const supported = detected && pageType !== 'unknown';
   const failureReasons: string[] = [];
@@ -206,6 +211,9 @@ function computeElasticSupportedActions(): CaptureAction[] {
     }
     if (!table && pageType === 'search') {
       failureReasons.push('No result table detected');
+    }
+    if (!query && pageType === 'alert_detail') {
+      failureReasons.push('No query editor detected');
     }
   }
 
