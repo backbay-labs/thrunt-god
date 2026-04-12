@@ -154,7 +154,7 @@ Plans:
   2. Entity notes track verdict lifecycle (unknown -> suspicious -> confirmed_malicious -> remediated -> resurfaced) with each transition timestamped, attributed to a hunt ID, and appended to an immutable history log
   3. "Set entity verdict" command prompts for new verdict and rationale, appends to the lifecycle log, updates frontmatter, and shows a confirmation Notice
   4. Entity frontmatter includes schema_version field, and the migration command updates all entity notes to latest schema without losing analyst content or existing field values
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
 - [ ] 82-01: FrontmatterEditor utility with surgical text manipulation (pure module + tests)
@@ -308,7 +308,7 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 78. v4.0 Tech Debt Cleanup | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 79. Service Decomposition + EventBus | 3/3 | Complete    | 2026-04-12 | - |
 | 80. Sidebar Progressive Disclosure + Onboarding | 2/2 | Complete    | 2026-04-12 | - |
-| 81. Command Consolidation + Modal Polish | 2/2 | Complete   | 2026-04-12 | - |
+| 81. Command Consolidation + Modal Polish | 2/2 | Complete    | 2026-04-12 | - |
 | 82. Verdict Lifecycle + FrontmatterEditor + Schema Versioning | v5.0 | 0/3 | Not started | - |
 | 83. Cross-Hunt Aggregation + Computed Confidence | v5.0 | 0/2 | Not started | - |
 | 84. ATT&CK Institutional Memory | v5.0 | 0/2 | Not started | - |
