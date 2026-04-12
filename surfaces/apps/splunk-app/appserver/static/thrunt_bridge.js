@@ -7,6 +7,15 @@
 
 const BRIDGE_URL = 'http://127.0.0.1:7483';
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function fetchBridgeData() {
   try {
     const res = await fetch(`${BRIDGE_URL}/api/case/view`);
@@ -23,9 +32,9 @@ function renderCaseStatus(data) {
   if (!el || !data) return;
   const cv = data.view;
   el.innerHTML = `
-    <h3>${cv.case.title}</h3>
-    <p><strong>Status:</strong> ${cv.case.status} | <strong>Phase:</strong> ${cv.progress.currentPhase}/${cv.progress.totalPhases} | <strong>Progress:</strong> ${cv.progress.percent}%</p>
-    <p><strong>Last activity:</strong> ${cv.progress.lastActivity}</p>
+    <h3>${escapeHtml(cv.case.title)}</h3>
+    <p><strong>Status:</strong> ${escapeHtml(cv.case.status)} | <strong>Phase:</strong> ${escapeHtml(cv.progress.currentPhase)}/${escapeHtml(cv.progress.totalPhases)} | <strong>Progress:</strong> ${escapeHtml(cv.progress.percent)}%</p>
+    <p><strong>Last activity:</strong> ${escapeHtml(cv.progress.lastActivity)}</p>
   `;
 }
 
@@ -39,8 +48,8 @@ function renderQueries(data) {
   }
   el.innerHTML = queries.map(q =>
     `<div style="margin-bottom: 8px; padding: 4px; border-left: 3px solid #1a73e8;">
-      <strong>${q.queryId}</strong> — ${q.title}<br/>
-      <small>${q.connectorId} | ${q.eventCount} events | ${q.executedAt}</small>
+      <strong>${escapeHtml(q.queryId)}</strong> — ${escapeHtml(q.title)}<br/>
+      <small>${escapeHtml(q.connectorId)} | ${escapeHtml(q.eventCount)} events | ${escapeHtml(q.executedAt)}</small>
     </div>`
   ).join('');
 }
@@ -57,7 +66,7 @@ function renderHypotheses(data) {
     const colors = { Supported: '#3fb950', Disproved: '#f85149', Inconclusive: '#d29922', Open: '#58a6ff' };
     const color = colors[h.status] || '#8b949e';
     return `<div style="margin-bottom: 6px;">
-      <span style="color: ${color}; font-weight: bold;">[${h.status}]</span> ${h.id}: ${h.assertion}
+      <span style="color: ${color}; font-weight: bold;">[${escapeHtml(h.status)}]</span> ${escapeHtml(h.id)}: ${escapeHtml(h.assertion)}
     </div>`;
   }).join('');
 }

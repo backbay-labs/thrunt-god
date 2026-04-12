@@ -19,7 +19,6 @@
   "side_panel": {
     "default_path": "sidepanel.html"
   },
-  "optional_host_permissions": ["*://*/*"],
   "content_scripts": [
     {
       "matches": [
@@ -55,8 +54,7 @@
     },
     {
       "matches": [
-        "*://security.microsoft.com/*",
-        "*://portal.azure.com/*"
+        "*://security.microsoft.com/*"
       ],
       "js": ["dist/content-m365.js"],
       "run_at": "document_idle"

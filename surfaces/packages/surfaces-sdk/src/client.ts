@@ -45,30 +45,73 @@ export interface SurfaceClientOptions {
 export class SurfaceClient {
   private readonly baseUrl: string;
   private readonly _fetch: typeof globalThis.fetch;
+  private token: string | null = null;
 
   constructor(options: SurfaceClientOptions = {}) {
     this.baseUrl = options.baseUrl ?? 'http://127.0.0.1:7483';
     this._fetch = options.fetch ?? globalThis.fetch.bind(globalThis);
   }
 
-  private async get<T>(path: string): Promise<T> {
-    const res = await this._fetch(`${this.baseUrl}${path}`);
+  private async handshake(): Promise<string> {
+    const res = await this._fetch(`${this.baseUrl}/api/handshake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: 'surface-sdk' }),
+    });
+
+    if (!res.ok) {
+      throw new SurfaceBridgeError(res.status, await res.text());
+    }
+
+    const body = await res.json() as { token?: string };
+    if (!body.token) {
+      throw new SurfaceBridgeError(500, 'Bridge handshake did not return a token');
+    }
+
+    this.token = body.token;
+    return body.token;
+  }
+
+  private async request<T>(path: string, init: RequestInit = {}, retryOnAuth = true): Promise<T> {
+    const requiresAuth = path !== '/api/health';
+    if (requiresAuth && !this.token) {
+      await this.handshake();
+    }
+
+    const headers = new Headers(init.headers ?? {});
+    if (init.body !== undefined && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+    if (requiresAuth && this.token) {
+      headers.set('X-Bridge-Token', this.token);
+    }
+
+    const res = await this._fetch(`${this.baseUrl}${path}`, {
+      ...init,
+      headers,
+    });
+
+    if (res.status === 401 && requiresAuth && retryOnAuth) {
+      this.token = null;
+      await this.handshake();
+      return this.request<T>(path, init, false);
+    }
+
     if (!res.ok) {
       throw new SurfaceBridgeError(res.status, await res.text());
     }
     return res.json() as Promise<T>;
   }
 
-  private async post<T>(path: string, body?: unknown): Promise<T> {
-    const res = await this._fetch(`${this.baseUrl}${path}`, {
+  private get<T>(path: string): Promise<T> {
+    return this.request(path);
+  }
+
+  private post<T>(path: string, body?: unknown): Promise<T> {
+    return this.request(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    if (!res.ok) {
-      throw new SurfaceBridgeError(res.status, await res.text());
-    }
-    return res.json() as Promise<T>;
   }
 
   // --- Read operations ---
@@ -186,24 +229,41 @@ export class SurfaceClient {
   // --- WebSocket subscription ---
 
   subscribe(onEvent: (event: BridgeEvent) => void, onError?: (error: Error) => void): () => void {
-    const wsUrl = this.baseUrl.replace(/^http/, 'ws') + '/ws';
-    const ws = new WebSocket(wsUrl);
+    let ws: WebSocket | null = null;
+    let closed = false;
 
-    ws.onmessage = (event) => {
+    void (async () => {
       try {
-        const parsed = JSON.parse(String(event.data)) as BridgeEvent;
-        onEvent(parsed);
+        if (!this.token) {
+          await this.handshake();
+        }
+        if (closed || !this.token) {
+          return;
+        }
+
+        const wsUrl = this.baseUrl.replace(/^http/, 'ws') + `/ws?token=${encodeURIComponent(this.token)}`;
+        ws = new WebSocket(wsUrl);
+
+        ws.onmessage = (event) => {
+          try {
+            const parsed = JSON.parse(String(event.data)) as BridgeEvent;
+            onEvent(parsed);
+          } catch (err) {
+            onError?.(err instanceof Error ? err : new Error(String(err)));
+          }
+        };
+
+        ws.onerror = (event) => {
+          onError?.(new Error(`WebSocket error: ${String(event)}`));
+        };
       } catch (err) {
         onError?.(err instanceof Error ? err : new Error(String(err)));
       }
-    };
-
-    ws.onerror = (event) => {
-      onError?.(new Error(`WebSocket error: ${String(event)}`));
-    };
+    })();
 
     return () => {
-      ws.close();
+      closed = true;
+      ws?.close();
     };
   }
 }

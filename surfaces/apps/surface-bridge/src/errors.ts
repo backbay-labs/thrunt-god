@@ -30,31 +30,38 @@ export function classifyError(err: unknown): { class: ErrorClass; code: string; 
   return { class: 'validation', code: 'UNKNOWN_ERROR', message };
 }
 
-export function isAllowedOrigin(origin: string): boolean {
-  return (
-    origin === '' ||
-    origin.startsWith('chrome-extension://') ||
-    origin.startsWith('moz-extension://') ||
-    origin.startsWith('http://127.0.0.1') ||
-    origin.startsWith('http://localhost')
-  );
+export function normalizeExtensionId(value: string | null | undefined): string | null {
+  const trimmed = value?.trim().toLowerCase() ?? '';
+  return trimmed || null;
 }
 
-export function corsHeaders(req?: Request): Record<string, string> {
-  const origin = req?.headers.get('origin') ?? '';
-  const allowed = isAllowedOrigin(origin);
+export function getExtensionIdFromOrigin(origin: string): string | null {
+  const match = origin.match(/^(?:chrome|moz)-extension:\/\/([a-z0-9]+)$/i);
+  return normalizeExtensionId(match?.[1] ?? null);
+}
+
+export function corsHeaders(req?: Request, allowedOrigin: string | null = ''): Record<string, string> {
+  const requestOrigin = req?.headers.get('origin') ?? '';
+  const accessControlAllowOrigin = allowedOrigin || (requestOrigin ? '' : '*');
   return {
-    'Access-Control-Allow-Origin': allowed ? (origin || '*') : '',
+    'Access-Control-Allow-Origin': accessControlAllowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Bridge-Token',
-    ...(allowed && origin ? { 'Vary': 'Origin' } : {}),
+    ...(allowedOrigin ? { 'Vary': 'Origin' } : {}),
   };
 }
 
-export function errorResponse(message: string, errorClass: ErrorClass, code: string, status: number, req?: Request): Response {
+export function errorResponse(
+  message: string,
+  errorClass: ErrorClass,
+  code: string,
+  status: number,
+  req?: Request,
+  allowedOrigin: string | null = '',
+): Response {
   const body: BridgeError = { error: message, code, class: errorClass };
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req, allowedOrigin), 'Content-Type': 'application/json' },
   });
 }

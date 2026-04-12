@@ -9,14 +9,21 @@ import { sendToBackground } from '../lib/message-bus.ts';
 
 /**
  * Strip sensitive elements from snapshot HTML before transmission.
- * Removes script tags, hidden inputs (CSRF tokens), sensitive meta tags,
- * data attributes with tokens/sessions, and inline event handlers.
+ * Removes active content, common secret carriers, and remote-loading attributes
+ * so stored certification snapshots stay inert.
  */
 function sanitizeSnapshot(html: string): string {
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
-  // Remove script tags (may contain state/config with tokens)
-  doc.querySelectorAll('script').forEach(el => el.remove());
+  // Remove active elements that can execute or load external resources.
+  doc.querySelectorAll('script, iframe, frame, frameset, object, embed, portal, base, link').forEach(el => el.remove());
+
+  // Remove refresh redirects.
+  doc.querySelectorAll('meta[http-equiv]').forEach((el) => {
+    if (el.getAttribute('http-equiv')?.toLowerCase() === 'refresh') {
+      el.remove();
+    }
+  });
 
   // Remove hidden inputs (CSRF tokens, session data)
   doc.querySelectorAll('input[type="hidden"]').forEach(el => el.remove());
@@ -27,11 +34,19 @@ function sanitizeSnapshot(html: string): string {
   // Remove elements with common sensitive data attributes
   doc.querySelectorAll('[data-csrf], [data-token], [data-session]').forEach(el => el.remove());
 
-  // Strip inline event handlers (potential token leakage)
-  doc.querySelectorAll('[onclick], [onload], [onerror]').forEach(el => {
-    el.removeAttribute('onclick');
-    el.removeAttribute('onload');
-    el.removeAttribute('onerror');
+  // Strip inline event handlers and remote-loading attributes.
+  const urlAttributes = ['action', 'background', 'data', 'formaction', 'href', 'poster', 'src', 'srcdoc', 'srcset'];
+  doc.querySelectorAll('*').forEach((el) => {
+    for (const attr of [...el.getAttributeNames()]) {
+      if (attr.toLowerCase().startsWith('on')) {
+        el.removeAttribute(attr);
+      }
+    }
+    for (const attr of urlAttributes) {
+      if (el.hasAttribute(attr)) {
+        el.removeAttribute(attr);
+      }
+    }
   });
 
   return doc.documentElement.outerHTML;

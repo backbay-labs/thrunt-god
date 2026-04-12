@@ -56,6 +56,28 @@ describe('M365DefenderCompanion', () => {
     expect(kql).toContain('sort by Timestamp asc');
   });
 
+  test('buildAdvancedHuntingQuery escapes entity search and normalizes invalid limits', () => {
+    const kql = companion.buildAdvancedHuntingQuery({
+      table: 'DeviceProcessEvents',
+      entitySearch: 'evil" or DeviceName has "prod',
+      limit: 0,
+    });
+
+    expect(kql).toContain('has "evil\\" or DeviceName has \\"prod"');
+    expect(kql).toContain('take 100');
+  });
+
+  test('buildAdvancedHuntingQuery rejects invalid identifiers', () => {
+    expect(() => companion.buildAdvancedHuntingQuery({
+      table: 'DeviceEvents\n| invoke bad()',
+    })).toThrow('Invalid M365 table');
+
+    expect(() => companion.buildAdvancedHuntingQuery({
+      table: 'EmailEvents',
+      columns: ['Timestamp', 'DeviceName; drop table'],
+    })).toThrow('Invalid M365 column');
+  });
+
   test('correlateIncident returns valid correlation result', () => {
     const result = companion.correlateIncident('INC-12345');
 

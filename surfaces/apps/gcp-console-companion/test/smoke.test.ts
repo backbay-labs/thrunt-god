@@ -55,6 +55,16 @@ describe('GcpCompanion', () => {
     expect(query).toContain('logName="projects/my-project-123/logs/cloudaudit.googleapis.com');
   });
 
+  test('buildLoggingQuery escapes literal values before interpolation', () => {
+    const query = companion.buildLoggingQuery({
+      principalEmail: 'attacker" OR severity>="CRITICAL',
+      methodName: 'google.iam.admin.v1.CreateServiceAccount\nresource.type="*"',
+    });
+
+    expect(query).toContain('protoPayload.authenticationInfo.principalEmail="attacker\\" OR severity>=\\"CRITICAL"');
+    expect(query).toContain('protoPayload.methodName="google.iam.admin.v1.CreateServiceAccount resource.type=\\"*\\""');
+  });
+
   test('enrichServiceAccount parses service account email', () => {
     const result = companion.enrichServiceAccount(
       'my-sa@my-project.iam.gserviceaccount.com',

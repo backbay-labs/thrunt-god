@@ -55,6 +55,27 @@ export const ADVANCED_HUNTING_TABLES = [
   'AlertInfo',
 ] as const;
 
+function escapeKqlStringLiteral(value: string): string {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, ' ');
+}
+
+function validateKqlIdentifier(value: string, label: string): string {
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value)) {
+    throw new Error(`Invalid ${label}: ${value}`);
+  }
+  return value;
+}
+
+function normalizePositiveInt(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value) || (value ?? 0) <= 0) {
+    return fallback;
+  }
+  return Math.floor(value as number);
+}
+
 export class M365DefenderCompanion {
   protected readonly bridge: SurfaceClient;
 
@@ -73,15 +94,15 @@ export class M365DefenderCompanion {
     const lines: string[] = [];
 
     // Table reference
-    lines.push(params.table);
+    lines.push(validateKqlIdentifier(params.table, 'M365 table'));
 
     // Time filter
-    const lookback = params.lookbackDays ?? 7;
+    const lookback = normalizePositiveInt(params.lookbackDays, 7);
     lines.push(`| where Timestamp > ago(${lookback}d)`);
 
     // Entity search across common fields if provided
     if (params.entitySearch) {
-      const escaped = params.entitySearch.replace(/"/g, '\\"');
+      const escaped = escapeKqlStringLiteral(params.entitySearch);
       lines.push(
         `| where AccountName has "${escaped}" or DeviceName has "${escaped}" or RemoteUrl has "${escaped}" or FileName has "${escaped}" or InitiatingProcessFileName has "${escaped}"`,
       );
@@ -96,17 +117,17 @@ export class M365DefenderCompanion {
 
     // Projection
     if (params.columns && params.columns.length > 0) {
-      lines.push(`| project ${params.columns.join(', ')}`);
+      lines.push(`| project ${params.columns.map((column) => validateKqlIdentifier(column, 'M365 column')).join(', ')}`);
     }
 
     // Sorting
     if (params.orderBy) {
       const direction = params.orderDirection ?? 'desc';
-      lines.push(`| sort by ${params.orderBy} ${direction}`);
+      lines.push(`| sort by ${validateKqlIdentifier(params.orderBy, 'M365 sort field')} ${direction}`);
     }
 
     // Limit
-    const limit = params.limit ?? 100;
+    const limit = normalizePositiveInt(params.limit, 100);
     lines.push(`| take ${limit}`);
 
     return lines.join('\n');

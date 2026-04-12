@@ -11,6 +11,7 @@ import type {
 import {
   createBlockedCertificationCampaign,
   listCertificationBaselines,
+  normalizeCertificationVendorId,
   resolveCertificationPaths,
 } from '@thrunt-surfaces/site-adapters';
 
@@ -33,6 +34,7 @@ export async function checkCertificationPrerequisites(
   input: CertificationPrerequisiteRequest,
   options: { toolsPath?: string | null } = {},
 ): Promise<CertificationPrerequisiteResult> {
+  const vendorId = normalizeCertificationVendorId(input.vendorId);
   const checkedAt = new Date().toISOString();
   const checks: CertificationPrerequisiteCheck[] = [];
 
@@ -42,7 +44,7 @@ export async function checkCertificationPrerequisites(
   const environmentLabel = normalizeOptional(input.environmentLabel) ?? 'live';
   const pageUrl = normalizeOptional(input.pageUrl);
   const pageTitle = normalizeOptional(input.pageTitle);
-  const baselineHistory = listCertificationBaselines(projectRoot).filter((record) => record.vendorId === input.vendorId);
+  const baselineHistory = listCertificationBaselines(projectRoot).filter((record) => record.vendorId === vendorId);
 
   checks.push({
     id: 'operator_metadata',
@@ -80,13 +82,13 @@ export async function checkCertificationPrerequisites(
     label: 'Baseline history',
     status: baselineHistory.length > 0 ? 'pass' : 'warn',
     detail: baselineHistory.length > 0
-      ? `Found ${baselineHistory.length} promoted baseline(s) for ${input.vendorId}.`
+      ? `Found ${baselineHistory.length} promoted baseline(s) for ${vendorId}.`
       : 'No approved baseline history exists yet for this vendor. First campaign will establish the baseline.',
     source: 'campaign_ledger',
     blocking: false,
   });
 
-  const doctor = await runThruntCommand(projectRoot, ['runtime', 'doctor', input.vendorId, '--raw'], options.toolsPath, { timeoutMs: 30_000 });
+  const doctor = await runThruntCommand(projectRoot, ['runtime', 'doctor', vendorId, '--raw'], options.toolsPath, { timeoutMs: 30_000 });
   const parsedDoctor = safeJsonParse<{ connectors?: RuntimeDoctorConnector[] }>(doctor.stdout);
   const connector = parsedDoctor?.connectors?.[0] ?? null;
   const connectorProfile = normalizeOptional(connector?.profile) ?? 'default';
@@ -124,7 +126,7 @@ export async function checkCertificationPrerequisites(
   const nextSteps = deriveNextSteps(checks);
 
   const report: CertificationPrerequisiteReport = {
-    vendorId: input.vendorId,
+    vendorId,
     checkedAt,
     operator,
     reviewer,
@@ -148,8 +150,8 @@ export async function checkCertificationPrerequisites(
   let campaign: CertificationCampaignDetail | null = null;
   if (input.persistBlockedCampaign && (!readyForCapture || !readyForRuntime)) {
     campaign = createBlockedCertificationCampaign(projectRoot, {
-      vendorId: input.vendorId,
-      tenantLabel: tenantLabel ?? `unknown-${input.vendorId}`,
+      vendorId,
+      tenantLabel: tenantLabel ?? `unknown-${vendorId}`,
       environmentLabel,
       operator: operator ?? 'operator',
       reviewer,

@@ -4,6 +4,15 @@
 
 const BRIDGE_URL = 'http://127.0.0.1:7483';
 
+function escapeHtml(value: unknown): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function renderApp(params: { element: HTMLElement }): () => void {
   const { element } = params;
 
@@ -38,12 +47,12 @@ async function loadCaseView(root: HTMLElement) {
 
     container.innerHTML = `
       <div style="background: #1d1e24; padding: 16px; border-radius: 4px; color: #dfe5ef;">
-        <h2>${cv.case.title}</h2>
-        <p>${cv.case.status} — Phase ${cv.progress.currentPhase}/${cv.progress.totalPhases} — ${cv.progress.percent}%</p>
+        <h2>${escapeHtml(cv.case.title)}</h2>
+        <p>${escapeHtml(cv.case.status)} — Phase ${escapeHtml(cv.progress.currentPhase)}/${escapeHtml(cv.progress.totalPhases)} — ${escapeHtml(cv.progress.percent)}%</p>
         <h3 style="margin-top: 12px;">Hypotheses</h3>
-        ${cv.hypotheses.map((h: any) => `<p>[${h.status}] ${h.id}: ${h.assertion}</p>`).join('')}
+        ${cv.hypotheses.map((h: any) => `<p>[${escapeHtml(h.status)}] ${escapeHtml(h.id)}: ${escapeHtml(h.assertion)}</p>`).join('')}
         <h3 style="margin-top: 12px;">Recent Queries (${cv.recentQueries.length})</h3>
-        ${cv.recentQueries.map((q: any) => `<p>${q.queryId}: ${q.title} (${q.eventCount} events)</p>`).join('')}
+        ${cv.recentQueries.map((q: any) => `<p>${escapeHtml(q.queryId)}: ${escapeHtml(q.title)} (${escapeHtml(q.eventCount)} events)</p>`).join('')}
       </div>
     `;
   } catch {

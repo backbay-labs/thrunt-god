@@ -38,6 +38,18 @@ describe('OktaCompanion', () => {
     expect(query.parameters).toHaveProperty('q', 'suspicious login');
   });
 
+  test('buildSystemLogQuery escapes literal filter values and normalizes invalid limits', () => {
+    const query = companion.buildSystemLogQuery({
+      actorId: 'user" or eventType eq "system.import"',
+      eventTypes: ['user.session.start" or outcome.result eq "SUCCESS"'],
+      limit: -5,
+    });
+
+    expect(query.query?.statement).toContain('actor.id eq "user\\" or eventType eq \\"system.import\\""');
+    expect(query.query?.statement).toContain('eventType eq "user.session.start\\" or outcome.result eq \\"SUCCESS\\""');
+    expect(query.pagination?.limit).toBe(100);
+  });
+
   test('enrichEntity returns valid enrichment result', () => {
     const result = companion.enrichEntity('user', 'john.doe@example.com');
 

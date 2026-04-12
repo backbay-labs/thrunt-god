@@ -31,6 +31,20 @@ export interface ServiceAccountEnrichmentResult {
   enrichedAt: string;
 }
 
+function escapeLoggingStringLiteral(value: string): string {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, ' ');
+}
+
+function normalizePositiveInt(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value) || (value ?? 0) <= 0) {
+    return fallback;
+  }
+  return Math.floor(value as number);
+}
+
 export class GcpCompanion {
   /**
    * Build a Cloud Logging filter expression from structured parameters.
@@ -42,25 +56,25 @@ export class GcpCompanion {
     const filters: string[] = [];
 
     if (params.resource) {
-      filters.push(`resource.type="${params.resource}"`);
+      filters.push(`resource.type="${escapeLoggingStringLiteral(params.resource)}"`);
     }
     if (params.severity) {
-      filters.push(`severity>="${params.severity}"`);
+      filters.push(`severity>="${escapeLoggingStringLiteral(params.severity)}"`);
     }
     if (params.principalEmail) {
-      filters.push(`protoPayload.authenticationInfo.principalEmail="${params.principalEmail}"`);
+      filters.push(`protoPayload.authenticationInfo.principalEmail="${escapeLoggingStringLiteral(params.principalEmail)}"`);
     }
     if (params.methodName) {
-      filters.push(`protoPayload.methodName="${params.methodName}"`);
+      filters.push(`protoPayload.methodName="${escapeLoggingStringLiteral(params.methodName)}"`);
     }
     if (params.projectId) {
-      filters.push(`logName="projects/${params.projectId}/logs/cloudaudit.googleapis.com%2Factivity"`);
+      filters.push(`logName="projects/${escapeLoggingStringLiteral(params.projectId)}/logs/cloudaudit.googleapis.com%2Factivity"`);
     }
     if (params.rawFilter) {
       filters.push(params.rawFilter);
     }
 
-    const hours = params.lookbackHours ?? 24;
+    const hours = normalizePositiveInt(params.lookbackHours, 24);
     filters.push(`timestamp>="${new Date(Date.now() - hours * 3600000).toISOString()}"`);
 
     return filters.join(' AND ');

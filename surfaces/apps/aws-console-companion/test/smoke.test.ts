@@ -52,6 +52,26 @@ describe('AwsCompanion', () => {
     expect(query).toContain('LIMIT');
   });
 
+  test('buildCloudTrailQuery athena mode escapes string literals and quotes readonly values', () => {
+    const query = companion.buildCloudTrailQuery({
+      mode: 'athena',
+      eventName: "AssumeRole' OR 1=1 --",
+      readOnly: true,
+    });
+
+    expect(query).toContain("eventname = 'AssumeRole'' OR 1=1 --'");
+    expect(query).toContain("readonly = 'true'");
+  });
+
+  test('buildCloudTrailQuery athena mode uses cross-year partition pruning', () => {
+    const query = companion.buildCloudTrailQuery({
+      mode: 'athena',
+      startTime: '2025-06-01T00:00:00Z',
+    });
+
+    expect(query).toContain("(year > '2025' OR (year = '2025' AND month >= '06'))");
+  });
+
   test('buildCloudTrailQuery athena mode uses custom database/table', () => {
     const query = companion.buildCloudTrailQuery({
       mode: 'athena',
@@ -60,6 +80,20 @@ describe('AwsCompanion', () => {
     });
 
     expect(query).toContain('"security_lake"."ct_events"');
+  });
+
+  test('buildCloudTrailQuery normalizes result limits', () => {
+    const lookupQuery = companion.buildCloudTrailQuery({
+      maxResults: 999,
+    });
+    const parsedLookup = JSON.parse(lookupQuery);
+    expect(parsedLookup.MaxResults).toBe(50);
+
+    const athenaQuery = companion.buildCloudTrailQuery({
+      mode: 'athena',
+      maxResults: 0,
+    });
+    expect(athenaQuery).toContain('LIMIT 1000;');
   });
 
   test('enrichIamEntity returns valid result for user ARN', () => {

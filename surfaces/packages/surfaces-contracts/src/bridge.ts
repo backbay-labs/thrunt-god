@@ -36,6 +36,8 @@ export interface BridgeConfig {
   mockMode: boolean;
   /** Optional explicit path to thrunt-tools.cjs or executable wrapper */
   toolsPath?: string | null;
+  /** Browser extension IDs allowed to bootstrap/authenticate from extension origins */
+  allowedExtensionIds?: string[] | null;
 }
 
 export const DEFAULT_BRIDGE_CONFIG: BridgeConfig = {
@@ -44,6 +46,7 @@ export const DEFAULT_BRIDGE_CONFIG: BridgeConfig = {
   projectRoot: '.',
   mockMode: false,
   toolsPath: null,
+  allowedExtensionIds: [],
 };
 
 // --- HTTP API routes ---

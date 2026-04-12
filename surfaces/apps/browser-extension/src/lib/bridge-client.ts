@@ -28,6 +28,7 @@ interface BridgeClientOptions {
   reconnectInitialMs?: number;
   reconnectMaxMs?: number;
   heartbeatTimeoutMs?: number;
+  extensionId?: string;
 }
 
 export class ExtensionBridgeClient {
@@ -45,12 +46,14 @@ export class ExtensionBridgeClient {
   private readonly reconnectInitialMs: number;
   private readonly reconnectMaxMs: number;
   private readonly heartbeatTimeoutMs: number;
+  private readonly extensionId: string;
 
   constructor(bridgeUrl = DEFAULT_BRIDGE_URL, options: BridgeClientOptions = {}) {
     this.bridgeUrl = bridgeUrl;
     this.reconnectInitialMs = options.reconnectInitialMs ?? 250;
     this.reconnectMaxMs = options.reconnectMaxMs ?? 5_000;
     this.heartbeatTimeoutMs = options.heartbeatTimeoutMs ?? 15_000;
+    this.extensionId = options.extensionId ?? this.resolveRuntimeExtensionId();
   }
 
   getStatus(): BridgeStatus { return this.status; }
@@ -104,14 +107,19 @@ export class ExtensionBridgeClient {
       const res = await fetch(`${this.bridgeUrl}/api/handshake`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ extensionId: 'thrunt-surfaces-extension', surfaceId: 'browser-extension' }),
+        body: JSON.stringify({ extensionId: this.extensionId, surfaceId: 'browser-extension' }),
       });
       if (!res.ok) {
         this.status = 'disconnected';
         this.token = null;
         return false;
       }
-      const body = await res.json() as { token: string };
+      const body = await res.json() as { token?: string };
+      if (!body.token) {
+        this.status = 'disconnected';
+        this.token = null;
+        return false;
+      }
       this.token = body.token;
       this.status = 'connected';
       return true;
@@ -348,5 +356,13 @@ export class ExtensionBridgeClient {
     if (!this.heartbeatMonitor) return;
     clearInterval(this.heartbeatMonitor);
     this.heartbeatMonitor = null;
+  }
+
+  private resolveRuntimeExtensionId(): string {
+    try {
+      return chrome.runtime?.id || 'thrunt-surfaces-extension';
+    } catch {
+      return 'thrunt-surfaces-extension';
+    }
   }
 }

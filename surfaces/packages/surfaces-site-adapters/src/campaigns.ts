@@ -147,6 +147,9 @@ const DEFAULT_FRESH_POLICY: CertificationFreshnessPolicy = {
   agingWithinHours: 24 * 14,
 };
 
+const CERTIFICATION_VENDOR_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+const CERTIFICATION_CAMPAIGN_ID_PATTERN = /^CERT-[A-Z0-9-]+-\d{14}-[A-Z0-9]{4}$/;
+
 export function resolveCertificationPaths(projectRoot: string): CertificationPaths {
   const root = path.join(projectRoot, '.planning', 'certification');
   return {
@@ -167,13 +170,27 @@ export function resolveCertificationPaths(projectRoot: string): CertificationPat
   };
 }
 
+export function normalizeCertificationVendorId(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (!CERTIFICATION_VENDOR_ID_PATTERN.test(normalized)) {
+    throw new Error(`Invalid certification vendorId: ${value}`);
+  }
+  return normalized;
+}
+
+export function normalizeCertificationCampaignId(value: string): string | null {
+  const normalized = value.trim();
+  return CERTIFICATION_CAMPAIGN_ID_PATTERN.test(normalized) ? normalized : null;
+}
+
 export function createCertificationCampaign(
   projectRoot: string,
   input: CreateCertificationCampaignInput,
 ): CertificationCampaignDetail {
+  const vendorId = normalizeCertificationVendorId(input.vendorId);
   const capture = writeLiveCertificationCapture(projectRoot, input);
   const captureMetadata = readLegacyCaptureMetadata(projectRoot, capture.metadataPath);
-  const campaignId = makeCampaignId(input.vendorId);
+  const campaignId = makeCampaignId(vendorId);
   const paths = resolveCertificationPaths(projectRoot);
   const campaignDir = path.join(paths.campaignsRoot, campaignId);
   fs.mkdirSync(campaignDir, { recursive: true });
@@ -188,8 +205,8 @@ export function createCertificationCampaign(
   const capturedAt = captureMetadata?.capturedAt || new Date().toISOString();
   const campaign = normalizeCampaign(projectRoot, {
     campaignId,
-    vendorId: input.vendorId,
-    tenantLabel: input.tenantLabel?.trim() || inferTenantLabel(input.vendorId, input.pageUrl),
+    vendorId,
+    tenantLabel: input.tenantLabel?.trim() || inferTenantLabel(vendorId, input.pageUrl),
     environmentLabel: input.environmentLabel?.trim() || 'live',
     startedAt: capturedAt,
     capturedAt,
@@ -239,14 +256,15 @@ export function createBlockedCertificationCampaign(
   projectRoot: string,
   input: CreateBlockedCertificationCampaignInput,
 ): CertificationCampaignDetail {
-  const campaignId = makeCampaignId(input.vendorId);
+  const vendorId = normalizeCertificationVendorId(input.vendorId);
+  const campaignId = makeCampaignId(vendorId);
   const campaignDir = path.join(resolveCertificationPaths(projectRoot).campaignsRoot, campaignId);
   fs.mkdirSync(campaignDir, { recursive: true });
 
   const capturedAt = new Date().toISOString();
   const campaign = normalizeCampaign(projectRoot, {
     campaignId,
-    vendorId: input.vendorId,
+    vendorId,
     tenantLabel: input.tenantLabel,
     environmentLabel: input.environmentLabel,
     startedAt: capturedAt,
@@ -300,10 +318,12 @@ export function listCertificationCampaigns(projectRoot: string): CertificationCa
 }
 
 export function readCertificationCampaign(projectRoot: string, campaignId: string): CertificationCampaignDetail | null {
-  const campaignPath = path.join(resolveCertificationPaths(projectRoot).campaignsRoot, campaignId, 'campaign.json');
+  const normalizedCampaignId = normalizeCertificationCampaignId(campaignId);
+  if (!normalizedCampaignId) return null;
+  const campaignPath = path.join(resolveCertificationPaths(projectRoot).campaignsRoot, normalizedCampaignId, 'campaign.json');
   if (!fs.existsSync(campaignPath)) return null;
   const parsed = JSON.parse(fs.readFileSync(campaignPath, 'utf-8')) as Record<string, unknown>;
-  return normalizeCampaign(projectRoot, parsed, campaignId);
+  return normalizeCampaign(projectRoot, parsed, normalizedCampaignId);
 }
 
 export function finalizeCampaignReplay(
@@ -1601,9 +1621,10 @@ function roundTo(value: number, digits: number): number {
 }
 
 function makeCampaignId(vendorId: string): string {
+  const normalizedVendorId = normalizeCertificationVendorId(vendorId);
   const stamp = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `CERT-${vendorId.toUpperCase()}-${stamp}-${suffix}`;
+  return `CERT-${normalizedVendorId.toUpperCase()}-${stamp}-${suffix}`;
 }
 
 function toPosixPath(value: string): string {

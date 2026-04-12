@@ -3,6 +3,8 @@
  */
 
 import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 import type {
   AttachEvidenceResponse,
@@ -71,13 +73,41 @@ interface RuntimeArtifactRef {
   path?: string;
 }
 
-function safeJsonParse<T>(value: string): T | null {
+function readLargeJsonPayload(payloadPath: string): string | null {
+  try {
+    if (!fs.existsSync(payloadPath)) return null;
+    const resolvedPath = fs.realpathSync(payloadPath);
+    const tmpRoot = fs.realpathSync(os.tmpdir());
+    const relativeToTmp = path.relative(tmpRoot, resolvedPath);
+    const basename = path.basename(resolvedPath);
+    if (
+      relativeToTmp.startsWith('..')
+      || path.isAbsolute(relativeToTmp)
+      || !/^thrunt-.*\.json$/i.test(basename)
+    ) {
+      return null;
+    }
+
+    const payload = fs.readFileSync(resolvedPath, 'utf-8');
+    try {
+      fs.unlinkSync(resolvedPath);
+    } catch {
+      // Temp-file cleanup is best effort.
+    }
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+export function safeJsonParse<T>(value: string): T | null {
   try {
     const trimmed = value.trim();
     if (trimmed.startsWith('@file:')) {
       const payloadPath = trimmed.slice('@file:'.length);
-      if (!fs.existsSync(payloadPath)) return null;
-      return JSON.parse(fs.readFileSync(payloadPath, 'utf-8')) as T;
+      const payload = readLargeJsonPayload(payloadPath);
+      if (!payload) return null;
+      return JSON.parse(payload) as T;
     }
     return JSON.parse(trimmed) as T;
   } catch {

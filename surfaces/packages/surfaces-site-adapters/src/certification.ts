@@ -48,10 +48,11 @@ export interface VendorCertificationResult extends CertificationStatusSummary {
 }
 
 export function sanitizeLiveSnapshotHtml(vendorId: string, rawHtml: string): { html: string; redactionCount: number } {
-  const sanitized = applyRedactions(vendorId, rawHtml);
+  const inert = stripActiveHtml(rawHtml);
+  const sanitized = applyRedactions(vendorId, inert.html);
   return {
     html: sanitized.text,
-    redactionCount: sanitized.redactionCount,
+    redactionCount: inert.redactionCount + sanitized.redactionCount,
   };
 }
 
@@ -328,6 +329,38 @@ function sanitizeCertificationExtraction(vendorId: string, extraction: Certifica
     value: JSON.parse(sanitized.text) as CertificationCaptureInput['extraction'],
     redactionCount: sanitized.redactionCount,
   };
+}
+
+function stripActiveHtml(input: string): { html: string; redactionCount: number } {
+  let html = input;
+  let redactionCount = 0;
+
+  const replacements: Array<[RegExp, string]> = [
+    [/<script\b[^>]*>[\s\S]*?<\/script\s*>/gi, ''],
+    [/<iframe\b[^>]*>[\s\S]*?<\/iframe\s*>/gi, ''],
+    [/<frame(?:set)?\b[^>]*>[\s\S]*?<\/frame(?:set)?\s*>/gi, ''],
+    [/<object\b[^>]*>[\s\S]*?<\/object\s*>/gi, ''],
+    [/<embed\b[^>]*\/?>/gi, ''],
+    [/<portal\b[^>]*>[\s\S]*?<\/portal\s*>/gi, ''],
+    [/<link\b[^>]*\/?>/gi, ''],
+    [/<base\b[^>]*\/?>/gi, ''],
+    [/<meta\b[^>]*http-equiv\s*=\s*(['"]?)refresh\1[^>]*\/?>/gi, ''],
+    [/<input\b[^>]*type\s*=\s*(['"]?)hidden\1[^>]*\/?>/gi, ''],
+  ];
+
+  for (const [pattern, replacement] of replacements) {
+    html = html.replace(pattern, () => {
+      redactionCount += 1;
+      return replacement;
+    });
+  }
+
+  html = html.replace(/\s(on[a-z-]+|action|background|data|formaction|href|poster|src|srcdoc|srcset)\s*=\s*(".*?"|'.*?'|[^\s>]+)/gi, () => {
+    redactionCount += 1;
+    return '';
+  });
+
+  return { html, redactionCount };
 }
 
 function applyRedactions(vendorId: string, input: string): { text: string; redactionCount: number } {

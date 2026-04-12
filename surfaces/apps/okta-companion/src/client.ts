@@ -34,6 +34,20 @@ export interface OktaEnrichmentResult {
   enrichedAt: string;
 }
 
+function escapeOktaFilterLiteral(value: string): string {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, ' ');
+}
+
+function normalizeLimit(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value) || (value ?? 0) <= 0) {
+    return fallback;
+  }
+  return Math.floor(value as number);
+}
+
 export class OktaCompanion {
   protected readonly bridge: SurfaceClient;
 
@@ -55,14 +69,14 @@ export class OktaCompanion {
       filterParts.push(params.filter);
     }
     if (params.actorId) {
-      filterParts.push(`actor.id eq "${params.actorId}"`);
+      filterParts.push(`actor.id eq "${escapeOktaFilterLiteral(params.actorId)}"`);
     }
     if (params.targetId) {
-      filterParts.push(`target.id eq "${params.targetId}"`);
+      filterParts.push(`target.id eq "${escapeOktaFilterLiteral(params.targetId)}"`);
     }
     if (params.eventTypes && params.eventTypes.length > 0) {
       const eventFilter = params.eventTypes
-        .map((et) => `eventType eq "${et}"`)
+        .map((et) => `eventType eq "${escapeOktaFilterLiteral(et)}"`)
         .join(' or ');
       filterParts.push(`(${eventFilter})`);
     }
@@ -102,7 +116,7 @@ export class OktaCompanion {
       },
       pagination: {
         mode: 'cursor',
-        limit: params.limit ?? 100,
+        limit: normalizeLimit(params.limit, 100),
         max_pages: 5,
         cursor: null,
         page: 1,

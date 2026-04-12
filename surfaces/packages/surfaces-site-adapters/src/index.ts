@@ -13,6 +13,8 @@ export {
 } from './certification.ts';
 export {
   resolveCertificationPaths,
+  normalizeCertificationVendorId,
+  normalizeCertificationCampaignId,
   createCertificationCampaign,
   createBlockedCertificationCampaign,
   listCertificationCampaigns,

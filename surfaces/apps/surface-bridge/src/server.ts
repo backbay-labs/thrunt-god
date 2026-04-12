@@ -34,6 +34,8 @@ import {
   getCertificationHistory,
   listCertificationCampaigns,
   listCertificationBaselines,
+  normalizeCertificationCampaignId,
+  normalizeCertificationVendorId,
   promoteCertificationCampaign,
   readCertificationCampaign,
   replayCertificationCampaign,
@@ -44,7 +46,14 @@ import { createMockProvider, createArtifactProvider, type CaseDataProvider } fro
 import { createMutationHandler } from './mutation-handler.ts';
 import { checkCertificationPrerequisites } from './certification-ops.ts';
 import { createLogger } from './logger.ts';
-import { classifyError, corsHeaders, errorResponse, type ErrorClass } from './errors.ts';
+import {
+  classifyError,
+  corsHeaders,
+  errorResponse,
+  getExtensionIdFromOrigin,
+  normalizeExtensionId,
+  type ErrorClass,
+} from './errors.ts';
 import { createSubprocessHealthMonitor } from './subprocess-health.ts';
 import { createEventJournal } from './event-journal.ts';
 import { createStructuredWatcher, type StructuredWatcher } from './file-watcher.ts';
@@ -209,6 +218,11 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     authFailuresPerMinute: 5,
     maxWsPerIp: 10,
   });
+  const allowedExtensionIds = new Set(
+    (cfg.allowedExtensionIds ?? [])
+      .map((value) => normalizeExtensionId(value))
+      .filter((value): value is string => Boolean(value)),
+  );
 
   // ─── Auth: session nonce ─────────────────────────────────────────────
   const sessionToken = crypto.randomBytes(16).toString('hex');
@@ -234,8 +248,35 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
   function checkWsAuth(req: Request): boolean {
     if (cfg.mockMode) return true;
+    const origin = req.headers.get('origin') ?? '';
+    if (origin && !resolveTrustedOrigin(origin)) {
+      return false;
+    }
     const token = new URL(req.url).searchParams.get('token');
     return token === sessionToken;
+  }
+
+  function resolveTrustedOrigin(origin: string, expected?: {
+    extensionId?: string;
+    surfaceId?: string;
+  }): string | null {
+    if (!origin) return null;
+
+    const originExtensionId = getExtensionIdFromOrigin(origin);
+    if (!originExtensionId || !allowedExtensionIds.has(originExtensionId)) {
+      return null;
+    }
+
+    if (expected?.surfaceId !== undefined && expected.surfaceId !== 'browser-extension') {
+      return null;
+    }
+
+    const claimedExtensionId = normalizeExtensionId(expected?.extensionId);
+    if (expected?.extensionId !== undefined && claimedExtensionId !== originExtensionId) {
+      return null;
+    }
+
+    return origin;
   }
 
   writeTokenFile();
@@ -295,15 +336,22 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
   // ─── Response helpers ────────────────────────────────────────────────
 
   // Response helpers — accept req parameter for correct per-request CORS headers.
-  function json(data: unknown, status = 200, req?: Request): Response {
+  function createJsonResponse(data: unknown, status = 200, req?: Request, allowedOrigin: string | null = ''): Response {
     return new Response(JSON.stringify(data), {
       status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(req, allowedOrigin) },
     });
   }
 
-  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR', req?: Request): Response {
-    return errorResponse(message, errorClass, code, status, req);
+  function createErrorResponse(
+    message: string,
+    status = 400,
+    errorClass: ErrorClass = 'validation',
+    code = 'VALIDATION_ERROR',
+    req?: Request,
+    allowedOrigin: string | null = '',
+  ): Response {
+    return errorResponse(message, errorClass, code, status, req, allowedOrigin);
   }
 
   // ─── Request handler ─────────────────────────────────────────────────
@@ -313,17 +361,21 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     const reqPath = url.pathname;
     const method = req.method;
     const reqStart = Date.now();
+    const responseOrigin = resolveTrustedOrigin(req.headers.get('origin') ?? '');
 
     if (method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders(req) });
+      if (req.headers.get('origin') && !responseOrigin) {
+        return new Response(null, { status: 403, headers: corsHeaders(req, null) });
+      }
+      return new Response(null, { headers: corsHeaders(req, responseOrigin) });
     }
 
     try {
-    return await handleRequestInner(req, url, reqPath, method);
+      return await handleRequestInner(req, url, reqPath, method, clientIp, responseOrigin);
     } catch (err) {
       const classified = classifyError(err);
       logger.error('http', 'unhandled', { path: reqPath, error: String(err) });
-      return error(classified.message, 500, classified.class, classified.code);
+      return createErrorResponse(classified.message, 500, classified.class, classified.code, req, responseOrigin);
     } finally {
       const durationMs = Date.now() - reqStart;
       logger.info('http', `${method} ${reqPath}`, { durationMs });
@@ -339,8 +391,35 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     '/api/execute/next',
   ]);
 
-  async function handleRequestInner(_req: Request, _url: URL, reqPath: string, method: string): Promise<Response> {
+  async function handleRequestInner(
+    _req: Request,
+    _url: URL,
+    reqPath: string,
+    method: string,
+    clientIp: string,
+    responseOrigin: string | null,
+  ): Promise<Response> {
     const req = _req;
+    const json = (data: unknown, status = 200): Response => createJsonResponse(data, status, req, responseOrigin);
+    const error = (
+      message: string,
+      status = 400,
+      errorClass: ErrorClass = 'validation',
+      code = 'VALIDATION_ERROR',
+    ): Response => createErrorResponse(message, status, errorClass, code, req, responseOrigin);
+    const requestOrigin = req.headers.get('origin') ?? '';
+    const parseCampaignId = (rawValue: string): string | null => {
+      try {
+        return normalizeCertificationCampaignId(decodeURIComponent(rawValue));
+      } catch {
+        return null;
+      }
+    };
+
+    if (requestOrigin && !responseOrigin && reqPath !== '/api/health') {
+      rateLimiter.recordAuthFailure(clientIp);
+      return error('Request origin is not allowed', 403, 'auth', 'AUTH_ORIGIN_FORBIDDEN');
+    }
 
     // Auth check — health and handshake are public, everything else requires token
     const isWrite = method === 'POST';
@@ -508,20 +587,43 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     // ─── Handshake endpoint ────────────────────────────────────────
 
     if (method === 'POST' && reqPath === '/api/handshake') {
-      // Caller must prove filesystem access by providing the bridge token
-      const body = await req.json() as { token?: string };
+      const body = await req.json().catch(() => ({})) as {
+        token?: string;
+        extensionId?: string;
+        surfaceId?: string;
+      };
       const providedToken = body.token;
-      if (!providedToken || providedToken !== sessionToken) {
+      const trustedOrigin = resolveTrustedOrigin(requestOrigin, {
+        extensionId: body.extensionId,
+        surfaceId: body.surfaceId,
+      });
+
+      if (providedToken && providedToken !== sessionToken) {
         rateLimiter.recordAuthFailure(clientIp);
-        return error('Invalid or missing token — read .bridge-token file', 401, 'auth', 'AUTH_INVALID_TOKEN');
+        return error('Invalid bridge token', 401, 'auth', 'AUTH_INVALID_TOKEN');
       }
-      return json({ authenticated: true, version: VERSION });
+
+      if (requestOrigin && !trustedOrigin) {
+        rateLimiter.recordAuthFailure(clientIp);
+        return error('Handshake origin is not allowed', 403, 'auth', 'AUTH_ORIGIN_FORBIDDEN');
+      }
+
+      return json({
+        authenticated: true,
+        token: sessionToken,
+        version: VERSION,
+      });
     }
 
     if (method === 'POST' && reqPath === '/api/certification/capture') {
       const body = await req.json() as CertificationCaptureRequest;
       if (!body.vendorId || !body.pageUrl || !body.rawHtml) {
         return error('vendorId, pageUrl, and rawHtml are required');
+      }
+      try {
+        body.vendorId = normalizeCertificationVendorId(body.vendorId);
+      } catch (err) {
+        return error(err instanceof Error ? err.message : 'Invalid certification vendorId');
       }
 
       const campaign = createCertificationCampaign(cfg.projectRoot, body);
@@ -543,6 +645,11 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       const body = await req.json() as CertificationPrerequisiteRequest;
       if (!body.vendorId) {
         return error('vendorId is required');
+      }
+      try {
+        body.vendorId = normalizeCertificationVendorId(body.vendorId);
+      } catch (err) {
+        return error(err instanceof Error ? err.message : 'Invalid certification vendorId');
       }
       const result = await checkCertificationPrerequisites(cfg.projectRoot, body, {
         toolsPath: cfg.toolsPath,
@@ -583,7 +690,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const campaignDetailMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)$/);
     if (method === 'GET' && campaignDetailMatch) {
-      const campaignId = decodeURIComponent(campaignDetailMatch[1] ?? '');
+      const campaignId = parseCampaignId(campaignDetailMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const campaign = readCertificationCampaign(cfg.projectRoot, campaignId);
       if (!campaign) return error('Unknown certification campaign', 404);
       return json({ campaign });
@@ -591,7 +699,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const replayMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)\/replay$/);
     if (method === 'POST' && replayMatch) {
-      const campaignId = decodeURIComponent(replayMatch[1] ?? '');
+      const campaignId = parseCampaignId(replayMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const body = await req.json().catch(() => ({})) as { comparedAgainst?: 'captured' | 'approved_baseline' };
       const campaign = await replayCertificationCampaign({
         projectRoot: cfg.projectRoot,
@@ -607,7 +716,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const runtimePreviewMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)\/runtime\/preview$/);
     if (method === 'POST' && runtimePreviewMatch) {
-      const campaignId = decodeURIComponent(runtimePreviewMatch[1] ?? '');
+      const campaignId = parseCampaignId(runtimePreviewMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const campaign = readCertificationCampaign(cfg.projectRoot, campaignId);
       if (!campaign) return error('Unknown certification campaign', 404);
       const body = await req.json().catch(() => ({})) as CertificationCampaignRuntimeRequest;
@@ -633,7 +743,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const runtimeExecuteMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)\/runtime\/execute$/);
     if (method === 'POST' && runtimeExecuteMatch) {
-      const campaignId = decodeURIComponent(runtimeExecuteMatch[1] ?? '');
+      const campaignId = parseCampaignId(runtimeExecuteMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const campaign = readCertificationCampaign(cfg.projectRoot, campaignId);
       if (!campaign) return error('Unknown certification campaign', 404);
       const body = await req.json().catch(() => ({})) as CertificationCampaignRuntimeRequest;
@@ -661,7 +772,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const reviewMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)\/review$/);
     if (method === 'POST' && reviewMatch) {
-      const campaignId = decodeURIComponent(reviewMatch[1] ?? '');
+      const campaignId = parseCampaignId(reviewMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const body = await req.json() as CertificationCampaignReviewRequest;
       if (!body.reviewer || !body.decision) return error('reviewer and decision are required');
       const campaign = reviewCertificationCampaign(cfg.projectRoot, {
@@ -680,7 +792,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const submitMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)\/submit$/);
     if (method === 'POST' && submitMatch) {
-      const campaignId = decodeURIComponent(submitMatch[1] ?? '');
+      const campaignId = parseCampaignId(submitMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const body = await req.json() as CertificationCampaignSubmitRequest;
       if (!body.submittedBy) return error('submittedBy is required');
       const campaign = submitCertificationCampaignForReview(cfg.projectRoot, {
@@ -697,7 +810,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     const promoteMatch = reqPath.match(/^\/api\/certification\/campaigns\/([^/]+)\/promote$/);
     if (method === 'POST' && promoteMatch) {
-      const campaignId = decodeURIComponent(promoteMatch[1] ?? '');
+      const campaignId = parseCampaignId(promoteMatch[1] ?? '');
+      if (!campaignId) return error('Invalid certification campaign ID');
       const body = await req.json() as CertificationCampaignPromotionRequest;
       if (!body.reviewer || !body.decision || !body.target) {
         return error('reviewer, decision, and target are required');
@@ -734,7 +848,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         if (!rateLimiter.allowWs(ip)) {
           return new Response(JSON.stringify({ error: 'Too many WebSocket connections', code: 'RATE_LIMITED', class: 'rate-limit' }), {
             status: 429,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+            headers: { 'Content-Type': 'application/json', ...corsHeaders(req, resolveTrustedOrigin(req.headers.get('origin') ?? '')) },
           });
         }
         const lastSeqStr = new URL(req.url).searchParams.get('last_seq');
@@ -747,7 +861,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       if (!rateLimiter.allow(ip)) {
         return new Response(JSON.stringify({ error: 'Rate limit exceeded', code: 'RATE_LIMITED', class: 'rate-limit' }), {
           status: 429,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+          headers: { 'Content-Type': 'application/json', ...corsHeaders(req, resolveTrustedOrigin(req.headers.get('origin') ?? '')) },
         });
       }
 

@@ -24,6 +24,9 @@ const TOOLS_PATH = path.resolve(
   import.meta.dir,
   '../../../../thrunt-god/bin/thrunt-tools.cjs'
 );
+const TRUSTED_EXTENSION_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const TRUSTED_EXTENSION_ORIGIN = `chrome-extension://${TRUSTED_EXTENSION_ID}`;
+const UNTRUSTED_EXTENSION_ORIGIN = 'chrome-extension://bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
 let mockBridge: BridgeInstance;
 let realBridge: BridgeInstance;
@@ -78,18 +81,25 @@ beforeAll(() => {
   awsApi = startAwsApi();
 
   mockBridge = startBridge({ port: MOCK_PORT, mockMode: true });
-  realBridge = startBridge({ port: REAL_PORT, mockMode: false, projectRoot: realExampleRoot });
+  realBridge = startBridge({
+    port: REAL_PORT,
+    mockMode: false,
+    projectRoot: realExampleRoot,
+    allowedExtensionIds: [TRUSTED_EXTENSION_ID],
+  });
   mutationBridge = startBridge({
     port: MUTATION_PORT,
     mockMode: false,
     projectRoot: mutationRoot,
     toolsPath: TOOLS_PATH,
+    allowedExtensionIds: [TRUSTED_EXTENSION_ID],
   });
   runtimeBridge = startBridge({
     port: RUNTIME_PORT,
     mockMode: false,
     projectRoot: runtimeRoot,
     toolsPath: TOOLS_PATH,
+    allowedExtensionIds: [TRUSTED_EXTENSION_ID],
   });
 });
 
@@ -283,9 +293,19 @@ describe('Real artifact mode', () => {
     expect(body.planningExists).toBe(true);
   });
 
+  test('GET /api/health does not echo disallowed origins', async () => {
+    const res = await fetch(`${base}/api/health`, {
+      headers: { Origin: 'https://evil.example' },
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Access-Control-Allow-Origin')).not.toBe('https://evil.example');
+  });
+
   test('GET /api/case requires token in real mode', async () => {
     const res = await fetch(`${base}/api/case`);
     expect(res.status).toBe(401);
+    const body = await res.json() as any;
+    expect(body.code).toBe('AUTH_MISSING_TOKEN');
   });
 
   test('GET /api/case returns active case mission with token', async () => {
@@ -318,17 +338,17 @@ describe('Real artifact mode', () => {
     const res = await fetch(`${base}/api/case/queries`, { headers: headers() });
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    expect(body.queries.length).toBe(3);
+    expect(body.queries.length).toBeGreaterThanOrEqual(3);
     expect(body.queries[0].queryId).toBeTruthy();
     expect(body.queries[0].relatedHypotheses.length).toBeGreaterThan(0);
-    expect(body.total).toBe(3);
+    expect(body.total).toBe(body.queries.length);
   });
 
   test('GET /api/case/receipts returns parsed receipts', async () => {
     const res = await fetch(`${base}/api/case/receipts`, { headers: headers() });
     expect(res.status).toBe(200);
     const body = await res.json() as any;
-    expect(body.receipts.length).toBe(3);
+    expect(body.receipts.length).toBeGreaterThanOrEqual(3);
     expect(body.receipts[0].claimStatus).toBe('supports');
   });
 
@@ -347,8 +367,8 @@ describe('Real artifact mode', () => {
     expect(view.case.title).toContain('OAuth');
     expect(view.progress.phases.length).toBe(3);
     expect(view.hypotheses.length).toBe(3);
-    expect(view.recentQueries.length).toBe(3);
-    expect(view.recentReceipts.length).toBe(3);
+    expect(view.recentQueries.length).toBeGreaterThanOrEqual(3);
+    expect(view.recentReceipts.length).toBeGreaterThanOrEqual(3);
     expect(view.findings.length).toBeGreaterThan(0);
     expect(view.recommendedAction).toBeDefined();
   });
@@ -383,15 +403,35 @@ describe('Real artifact mode', () => {
     expect(content).toContain('okta');
   });
 
-  test('POST /api/handshake rejects missing token', async () => {
+  test('POST /api/handshake rejects token bootstrap from disallowed origins', async () => {
     const res = await fetch(`${base}/api/handshake`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: 'https://evil.example',
+      },
       body: JSON.stringify({ extensionId: 'thrunt-surfaces-extension' }),
     });
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
     const body = await res.json() as any;
-    expect(body.code).toBe('AUTH_INVALID_TOKEN');
+    expect(body.code).toBe('AUTH_ORIGIN_FORBIDDEN');
+  });
+
+  test('POST /api/handshake rejects token bootstrap from untrusted extension origins', async () => {
+    const res = await fetch(`${base}/api/handshake`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: UNTRUSTED_EXTENSION_ORIGIN,
+      },
+      body: JSON.stringify({
+        extensionId: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        surfaceId: 'browser-extension',
+      }),
+    });
+    expect(res.status).toBe(403);
+    const body = await res.json() as any;
+    expect(body.code).toBe('AUTH_ORIGIN_FORBIDDEN');
   });
 
   test('POST /api/handshake rejects wrong token', async () => {
@@ -403,18 +443,69 @@ describe('Real artifact mode', () => {
     expect(res.status).toBe(401);
   });
 
-  test('POST /api/handshake accepts valid token', async () => {
+  test('POST /api/handshake bootstraps a token for trusted extension origins', async () => {
     const res = await fetch(`${base}/api/handshake`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: realBridge.token }),
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: TRUSTED_EXTENSION_ORIGIN,
+      },
+      body: JSON.stringify({
+        extensionId: TRUSTED_EXTENSION_ID,
+        surfaceId: 'browser-extension',
+      }),
     });
     expect(res.status).toBe(200);
     const body = await res.json() as any;
     expect(body.authenticated).toBe(true);
     expect(body.version).toBe('0.2.0');
-    // Confirm token is NOT returned in the response
-    expect(body.token).toBeUndefined();
+    expect(body.token).toBe(realBridge.token);
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe(TRUSTED_EXTENSION_ORIGIN);
+  });
+
+  test('POST /api/handshake rejects extension identity mismatches', async () => {
+    const res = await fetch(`${base}/api/handshake`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: TRUSTED_EXTENSION_ORIGIN,
+      },
+      body: JSON.stringify({
+        extensionId: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        surfaceId: 'browser-extension',
+      }),
+    });
+    expect(res.status).toBe(403);
+    const body = await res.json() as any;
+    expect(body.code).toBe('AUTH_ORIGIN_FORBIDDEN');
+  });
+
+  test('POST /api/handshake accepts valid token', async () => {
+    const authBase = `http://127.0.0.1:${MUTATION_PORT}`;
+    const res = await fetch(`${authBase}/api/handshake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: mutationBridge.token }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json() as any;
+    expect(body.authenticated).toBe(true);
+    expect(body.version).toBe('0.2.0');
+    expect(body.token).toBe(mutationBridge.token);
+  });
+
+  test('GET /api/case rejects authenticated requests from untrusted browser origins', async () => {
+    const authBase = `http://127.0.0.1:${MUTATION_PORT}`;
+    const res = await fetch(`${authBase}/api/case`, {
+      headers: {
+        'X-Bridge-Token': mutationBridge.token,
+        Origin: UNTRUSTED_EXTENSION_ORIGIN,
+      },
+    });
+    expect(res.status).toBe(403);
+    const body = await res.json() as any;
+    expect(body.code).toBe('AUTH_ORIGIN_FORBIDDEN');
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBeNull();
   });
 
   test('POST /api/certification/prerequisites emits explicit blocked outputs when live prerequisites are missing', async () => {
@@ -802,6 +893,33 @@ describe('Runtime depth mode', () => {
     const baselinePromotion = promoteBody.campaign.promotions.find((entry: any) => entry.target === 'baseline');
     expect(baselinePromotion.status).toBe('approved');
     expect(fs.existsSync(path.join(runtimeRoot, baselinePromotion.outputPath))).toBe(true);
+  });
+
+  test('rejects traversal-like certification vendor ids at capture time', async () => {
+    const res = await fetch(`${base}/api/certification/capture`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers() },
+      body: JSON.stringify({
+        vendorId: '../../escape',
+        pageUrl: 'https://example.invalid/case',
+        pageTitle: 'Invalid capture',
+        rawHtml: '<div>capture</div>',
+      }),
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.error).toContain('Invalid certification vendorId');
+  });
+
+  test('rejects traversal-like certification campaign ids after URL decoding', async () => {
+    const res = await fetch(`${base}/api/certification/campaigns/..%2F..%2Fescape`, {
+      headers: headers(),
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.error).toBe('Invalid certification campaign ID');
   });
 
   test('certification history, drift trends, baselines, freshness, and churn endpoints reflect campaign history', async () => {

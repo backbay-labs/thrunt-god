@@ -19,6 +19,14 @@ function escapeAthenaIdentifier(value: string): string {
   return value;
 }
 
+function normalizePositiveInt(value: number | undefined, fallback: number, max?: number): number {
+  if (!Number.isFinite(value) || (value ?? 0) <= 0) {
+    return fallback;
+  }
+  const normalized = Math.floor(value as number);
+  return max ? Math.min(normalized, max) : normalized;
+}
+
 export interface CloudTrailQueryParams {
   /** Query mode: 'lookup' for CloudTrail Lookup Events, 'athena' for Athena SQL */
   mode?: 'lookup' | 'athena';
@@ -113,7 +121,7 @@ export class AwsCompanion {
         : undefined,
       StartTime: params.startTime ?? new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       EndTime: params.endTime ?? new Date().toISOString(),
-      MaxResults: params.maxResults ?? 50,
+      MaxResults: normalizePositiveInt(params.maxResults, 50, 50),
     };
 
     if (params.readOnly !== undefined) {
@@ -164,14 +172,14 @@ export class AwsCompanion {
       );
     }
     if (params.readOnly !== undefined) {
-      conditions.push(`readonly = ${params.readOnly}`);
+      conditions.push(`readonly = '${params.readOnly ? 'true' : 'false'}'`);
     }
 
     const whereClause = conditions.length > 0
       ? `WHERE ${conditions.join('\n  AND ')}`
       : '';
 
-    const limit = params.maxResults ?? 1000;
+    const limit = normalizePositiveInt(params.maxResults, 1000, 10_000);
 
     return [
       `SELECT`,

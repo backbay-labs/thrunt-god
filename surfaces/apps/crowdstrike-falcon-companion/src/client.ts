@@ -40,6 +40,31 @@ export interface DetectionCorrelationResult {
   details: Record<string, unknown>;
 }
 
+function escapeFqlLiteral(value: string): string {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\r?\n/g, ' ');
+}
+
+function escapeQueryParam(value: string): string {
+  return String(value).replace(/\r?\n/g, ' ');
+}
+
+function normalizeLimit(value: number | undefined, fallback: number): number {
+  if (!Number.isFinite(value) || (value ?? 0) <= 0) {
+    return fallback;
+  }
+  return Math.floor(value as number);
+}
+
+function validateSortField(value: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(value)) {
+    throw new Error(`Invalid CrowdStrike sort field: ${value}`);
+  }
+  return value;
+}
+
 export class CrowdStrikeCompanion {
   protected readonly bridge: SurfaceClient;
 
@@ -63,21 +88,21 @@ export class CrowdStrikeCompanion {
 
     // Time range
     if (params.since) {
-      fqlParts.push(`created_timestamp:>='${params.since}'`);
+      fqlParts.push(`created_timestamp:>='${escapeFqlLiteral(params.since)}'`);
     }
     if (params.until) {
-      fqlParts.push(`created_timestamp:<='${params.until}'`);
+      fqlParts.push(`created_timestamp:<='${escapeFqlLiteral(params.until)}'`);
     }
 
     // Host filter
     if (params.hostFilter) {
-      fqlParts.push(`device.hostname:'${params.hostFilter}'`);
+      fqlParts.push(`device.hostname:'${escapeFqlLiteral(params.hostFilter)}'`);
     }
 
     // MITRE ATT&CK tactics
     if (params.tacticIds && params.tacticIds.length > 0) {
       const tacticFilter = params.tacticIds
-        .map((t) => `behaviors.tactic_id:'${t}'`)
+        .map((t) => `behaviors.tactic_id:'${escapeFqlLiteral(t)}'`)
         .join(',');
       fqlParts.push(tacticFilter);
     }
@@ -85,7 +110,7 @@ export class CrowdStrikeCompanion {
     // MITRE ATT&CK techniques
     if (params.techniqueIds && params.techniqueIds.length > 0) {
       const techniqueFilter = params.techniqueIds
-        .map((t) => `behaviors.technique_id:'${t}'`)
+        .map((t) => `behaviors.technique_id:'${escapeFqlLiteral(t)}'`)
         .join(',');
       fqlParts.push(techniqueFilter);
     }
@@ -93,7 +118,7 @@ export class CrowdStrikeCompanion {
     // Severity filter
     if (params.severities && params.severities.length > 0) {
       const severityFilter = params.severities
-        .map((s) => `max_severity_displayname:'${s}'`)
+        .map((s) => `max_severity_displayname:'${escapeFqlLiteral(s)}'`)
         .join(',');
       fqlParts.push(severityFilter);
     }
@@ -101,24 +126,24 @@ export class CrowdStrikeCompanion {
     const fql = fqlParts.length > 0 ? fqlParts.join('+') : '*';
 
     // Build the full query structure
-    const queryParts: string[] = [];
-    queryParts.push(`filter=${fql}`);
+    const queryParams = new URLSearchParams();
+    queryParams.set('filter', fql);
 
     if (params.q) {
-      queryParts.push(`q=${params.q}`);
+      queryParams.set('q', escapeQueryParam(params.q));
     }
 
-    const limit = params.limit ?? 100;
-    queryParts.push(`limit=${limit}`);
+    const limit = normalizeLimit(params.limit, 100);
+    queryParams.set('limit', String(limit));
 
     if (params.sortBy) {
       const direction = params.sortDirection ?? 'desc';
-      queryParts.push(`sort=${params.sortBy}.${direction}`);
+      queryParams.set('sort', `${validateSortField(params.sortBy)}.${direction}`);
     } else {
-      queryParts.push('sort=created_timestamp.desc');
+      queryParams.set('sort', 'created_timestamp.desc');
     }
 
-    return queryParts.join('&');
+    return queryParams.toString();
   }
 
   /**

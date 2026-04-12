@@ -49,6 +49,7 @@ All endpoints return JSON. The bridge binds to `127.0.0.1:7483` by default.
 ### WebSocket
 
 Connect to `ws://127.0.0.1:7483/ws` for real-time updates.
+Browser-origin access requires an explicit extension ID allowlist so arbitrary local extensions or localhost apps cannot bootstrap bridge auth.
 
 ## Configuration
 
@@ -58,6 +59,7 @@ Copy `.env.example` to `.env` and adjust:
 - `THRUNT_BRIDGE_HOST` — Bind address (default: 127.0.0.1)
 - `THRUNT_PROJECT_ROOT` — Project root with .planning/ (default: cwd)
 - `THRUNT_MOCK_MODE` — Use fixture data instead of real artifacts
+- `THRUNT_ALLOWED_EXTENSION_IDS` — Comma-separated browser extension IDs allowed to authenticate from `chrome-extension://` or `moz-extension://` origins
 
 ## Architecture
 

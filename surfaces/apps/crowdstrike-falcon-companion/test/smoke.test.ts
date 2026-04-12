@@ -22,8 +22,9 @@ describe('CrowdStrikeCompanion', () => {
     const query = companion.buildDetectionQuery({
       hostFilter: 'WORKSTATION-01',
     });
+    const params = new URLSearchParams(query);
 
-    expect(query).toContain("device.hostname:'WORKSTATION-01'");
+    expect(params.get('filter')).toContain("device.hostname:'WORKSTATION-01'");
   });
 
   test('buildDetectionQuery applies MITRE ATT&CK filters', () => {
@@ -31,19 +32,23 @@ describe('CrowdStrikeCompanion', () => {
       tacticIds: ['TA0001'],
       techniqueIds: ['T1566.001', 'T1566.002'],
     });
+    const params = new URLSearchParams(query);
+    const filter = params.get('filter') ?? '';
 
-    expect(query).toContain("behaviors.tactic_id:'TA0001'");
-    expect(query).toContain("behaviors.technique_id:'T1566.001'");
-    expect(query).toContain("behaviors.technique_id:'T1566.002'");
+    expect(filter).toContain("behaviors.tactic_id:'TA0001'");
+    expect(filter).toContain("behaviors.technique_id:'T1566.001'");
+    expect(filter).toContain("behaviors.technique_id:'T1566.002'");
   });
 
   test('buildDetectionQuery applies severity filter', () => {
     const query = companion.buildDetectionQuery({
       severities: ['Critical', 'High'],
     });
+    const params = new URLSearchParams(query);
+    const filter = params.get('filter') ?? '';
 
-    expect(query).toContain("max_severity_displayname:'Critical'");
-    expect(query).toContain("max_severity_displayname:'High'");
+    expect(filter).toContain("max_severity_displayname:'Critical'");
+    expect(filter).toContain("max_severity_displayname:'High'");
   });
 
   test('buildDetectionQuery applies time range', () => {
@@ -51,9 +56,11 @@ describe('CrowdStrikeCompanion', () => {
       since: '2025-01-01T00:00:00Z',
       until: '2025-01-31T23:59:59Z',
     });
+    const params = new URLSearchParams(query);
+    const filter = params.get('filter') ?? '';
 
-    expect(query).toContain("created_timestamp:>='2025-01-01T00:00:00Z'");
-    expect(query).toContain("created_timestamp:<='2025-01-31T23:59:59Z'");
+    expect(filter).toContain("created_timestamp:>='2025-01-01T00:00:00Z'");
+    expect(filter).toContain("created_timestamp:<='2025-01-31T23:59:59Z'");
   });
 
   test('buildDetectionQuery supports custom sort', () => {
@@ -65,6 +72,23 @@ describe('CrowdStrikeCompanion', () => {
 
     expect(query).toContain('sort=max_severity.asc');
     expect(query).toContain('limit=50');
+  });
+
+  test('buildDetectionQuery escapes literals and URL-encodes query params', () => {
+    const query = companion.buildDetectionQuery({
+      hostFilter: "WORKSTATION-01' OR device_id:'abc",
+      q: 'cmd.exe & powershell.exe',
+    });
+    const params = new URLSearchParams(query);
+
+    expect(params.get('filter')).toContain("device.hostname:'WORKSTATION-01\\' OR device_id:\\'abc'");
+    expect(params.get('q')).toBe('cmd.exe & powershell.exe');
+  });
+
+  test('buildDetectionQuery rejects invalid sort fields', () => {
+    expect(() => companion.buildDetectionQuery({
+      sortBy: 'created_timestamp.desc&limit=5000',
+    })).toThrow('Invalid CrowdStrike sort field');
   });
 
   test('correlateDetection returns valid correlation result', () => {
