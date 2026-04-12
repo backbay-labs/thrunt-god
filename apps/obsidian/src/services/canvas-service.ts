@@ -7,7 +7,7 @@
 
 import type { VaultAdapter } from '../vault-adapter';
 import type { EventBus } from './event-bus';
-import type { CanvasEntity, CanvasData } from '../types';
+import type { CanvasEntity, CanvasData, CanvasNode } from '../types';
 import { normalizePath } from '../paths';
 import { ENTITY_FOLDERS } from '../entity-schema';
 import { parseReceipt } from '../parsers/receipt';
@@ -23,6 +23,61 @@ import {
 } from '../canvas-generator';
 import { parseFrontmatterFields } from '../entity-utils';
 import { resolveEntityColor, patchCanvasNodeColors, parseCanvasRelevantFields } from '../canvas-adapter';
+
+// --- Grid layout constants ---
+
+const NODE_WIDTH = 250;
+const NODE_HEIGHT = 60;
+const COL_GAP = 20;
+const ROW_GAP = 20;
+const COLS_PER_ROW = 4;
+
+/** Gray color for removed / orphaned entity nodes */
+const REMOVED_ENTITY_COLOR = '#757575';
+
+/**
+ * Compute position for a new node in a 4-column grid layout below existing nodes.
+ *
+ * Pure function -- no side effects. Used by handleEntityCreated for grid placement.
+ *
+ * @param existingNodes - current canvas nodes (used to find bottom edge)
+ * @param nodeIndex - index within the current batch (0 = first new node in batch)
+ */
+export function computeNewNodePosition(
+  existingNodes: CanvasNode[],
+  nodeIndex: number = 0,
+): { x: number; y: number } {
+  let startY = 0;
+  if (existingNodes.length > 0) {
+    const maxBottom = Math.max(...existingNodes.map(n => n.y + n.height));
+    startY = maxBottom + ROW_GAP;
+  }
+
+  const col = nodeIndex % COLS_PER_ROW;
+  const row = Math.floor(nodeIndex / COLS_PER_ROW);
+
+  return {
+    x: col * (NODE_WIDTH + COL_GAP),
+    y: startY + row * (NODE_HEIGHT + ROW_GAP),
+  };
+}
+
+/**
+ * Detect whether an entity content change is substantive (verdict, confidence, type)
+ * versus cosmetic (whitespace, body text only).
+ *
+ * Pure function -- uses parseCanvasRelevantFields to compare structured fields.
+ */
+export function isSubstantiveEntityChange(oldContent: string, newContent: string): boolean {
+  const oldFields = parseCanvasRelevantFields(oldContent);
+  const newFields = parseCanvasRelevantFields(newContent);
+
+  return (
+    oldFields.type !== newFields.type ||
+    oldFields.verdict !== newFields.verdict ||
+    oldFields.confidenceScore !== newFields.confidenceScore
+  );
+}
 
 export class CanvasService {
   constructor(
@@ -220,6 +275,155 @@ export class CanvasService {
     }
 
     return { totalPatched };
+  }
+
+  /**
+   * Handle entity:created event -- append a new file-type node to live-hunt.canvas.
+   *
+   * Idempotent: skips if node with same file path already exists.
+   * Creates live-hunt.canvas if it does not exist.
+   * Silently returns if canvas file is malformed JSON.
+   */
+  async handleEntityCreated(event: { name: string; entityType: string; sourcePath: string }): Promise<void> {
+    const planningDir = this.getPlanningDir();
+    const canvasPath = normalizePath(`${planningDir}/live-hunt.canvas`);
+
+    let canvasData: CanvasData;
+    let fileExisted = false;
+
+    if (this.vaultAdapter.fileExists(canvasPath)) {
+      fileExisted = true;
+      try {
+        const raw = await this.vaultAdapter.readFile(canvasPath);
+        canvasData = JSON.parse(raw) as CanvasData;
+      } catch {
+        // Malformed JSON -- silently return
+        return;
+      }
+    } else {
+      canvasData = { nodes: [], edges: [] };
+    }
+
+    // Idempotent: skip if node already exists for this file
+    const alreadyExists = canvasData.nodes.some(
+      n => n.type === 'file' && n.file === event.sourcePath,
+    );
+    if (alreadyExists) return;
+
+    // Compute grid position: find bottom-most row, fill across columns
+    let x: number;
+    let y: number;
+
+    if (canvasData.nodes.length === 0) {
+      x = 0;
+      y = 0;
+    } else {
+      const maxBottom = Math.max(...canvasData.nodes.map(n => n.y + n.height));
+      // Find all nodes whose bottom edge reaches maxBottom (i.e., on the bottom-most row).
+      // Use a small tolerance to handle nodes of different heights on the same visual row.
+      const maxY = Math.max(...canvasData.nodes.map(n => n.y));
+      const nodesOnLastRow = canvasData.nodes.filter(n => n.y === maxY);
+      const bottomRowCount = nodesOnLastRow.length;
+
+      if (bottomRowCount < COLS_PER_ROW) {
+        // Fill next column in current bottom row
+        x = bottomRowCount * (NODE_WIDTH + COL_GAP);
+        y = maxY;
+      } else {
+        // Start new row
+        x = 0;
+        y = maxBottom + ROW_GAP;
+      }
+    }
+
+    const newNode: CanvasNode = {
+      id: `entity-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      x,
+      y,
+      width: NODE_WIDTH,
+      height: NODE_HEIGHT,
+      type: 'file',
+      file: event.sourcePath,
+      color: resolveEntityColor(event.entityType),
+    };
+
+    canvasData.nodes.push(newNode);
+
+    const canvasJson = JSON.stringify(canvasData, null, '\t');
+
+    if (fileExisted) {
+      await this.vaultAdapter.modifyFile(canvasPath, canvasJson);
+    } else {
+      await this.vaultAdapter.createFile(canvasPath, canvasJson);
+    }
+
+    this.eventBus?.emit('canvas:refreshed', { canvasPath, changedCount: 1 });
+  }
+
+  /**
+   * Refresh CANVAS_DASHBOARD.canvas: re-resolve entity colors, gray out removed entities.
+   *
+   * Reads all entity files to build a color map, then patches canvas node colors.
+   * File-type nodes whose entity file no longer exists on disk are grayed out (#757575)
+   * rather than removed (per user decision: "Mark removed entities visually (gray color) instead").
+   */
+  async refreshDashboardCanvas(): Promise<void> {
+    const planningDir = this.getPlanningDir();
+    const canvasPath = normalizePath(`${planningDir}/CANVAS_DASHBOARD.canvas`);
+
+    if (!this.vaultAdapter.fileExists(canvasPath)) return;
+
+    let canvasData: CanvasData;
+    try {
+      const raw = await this.vaultAdapter.readFile(canvasPath);
+      canvasData = JSON.parse(raw) as CanvasData;
+    } catch {
+      // Malformed JSON -- silently return
+      return;
+    }
+
+    // Build color map from all entity files
+    const colorMap = new Map<string, string>();
+    for (const folder of ENTITY_FOLDERS) {
+      const folderPath = normalizePath(`${planningDir}/${folder}`);
+      if (!this.vaultAdapter.folderExists(folderPath)) continue;
+
+      const files = await this.vaultAdapter.listFiles(folderPath);
+      const mdFiles = files.filter(f => f.endsWith('.md'));
+
+      for (const fileName of mdFiles) {
+        try {
+          const filePath = normalizePath(`${folderPath}/${fileName}`);
+          const content = await this.vaultAdapter.readFile(filePath);
+          const { type: entityType } = parseCanvasRelevantFields(content);
+          const color = resolveEntityColor(entityType);
+          colorMap.set(filePath, color);
+        } catch {
+          // Skip unreadable entity files
+        }
+      }
+    }
+
+    // Gray out removed entities: file-type nodes referencing entity paths that
+    // no longer exist on disk get color #757575
+    const entitiesPrefix = normalizePath(`${planningDir}/entities/`);
+    for (const node of canvasData.nodes) {
+      if (
+        node.type === 'file' &&
+        node.file &&
+        node.file.startsWith(entitiesPrefix) &&
+        !colorMap.has(node.file)
+      ) {
+        colorMap.set(node.file, REMOVED_ENTITY_COLOR);
+      }
+    }
+
+    const { patched, changedCount } = patchCanvasNodeColors(canvasData, colorMap);
+
+    if (changedCount === 0) return;
+
+    await this.vaultAdapter.modifyFile(canvasPath, JSON.stringify(patched, null, '\t'));
+    this.eventBus?.emit('canvas:refreshed', { canvasPath, changedCount });
   }
 
   async canvasFromCurrentHunt(
