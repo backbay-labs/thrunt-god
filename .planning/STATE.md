@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
 status: executing
-stopped_at: Completed 75-01-PLAN.md
-last_updated: "2026-04-12T07:21:23.784Z"
+stopped_at: Completed 75-02-PLAN.md
+last_updated: "2026-04-12T07:27:00.000Z"
 progress:
   total_phases: 10
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
 **Status:** Executing
-**Phase:** 75 of 77 (Hyper Copy Commands & Export UX)
-**Plan:** 1 of 2 complete
+**Phase:** 75 of 77 (Hyper Copy Commands & Export UX -- COMPLETE)
+**Plan:** 2 of 2 complete
 
-Progress: [█████████░] 94% (16/17 v4.0 plans)
+Progress: [██████████] 100% (17/17 v4.0 plans)
 
 ## Recently Completed
 
@@ -94,6 +94,8 @@ Progress: [█████████░] 94% (16/17 v4.0 plans)
 - [Phase 75]: [Phase 75-01]: Export log formatter follows pure data module pattern (zero Obsidian imports) consistent with ingestion.ts
 - [Phase 75]: [Phase 75-01]: Entity type counting uses sourcePath folder prefix parsing with deduplication
 - [Phase 75]: [Phase 75-01]: HyperCopyModal preview uses raw markdown in pre element rather than rendered HTML
+- [Phase 75]: [Phase 75-02]: quickExport uses dynamic import for buildExportLogEntry to keep export-log module lazy-loaded
+- [Phase 75]: [Phase 75-02]: copy-ioc-context uses signal-triager profile since that profile is configured for IOC entity types
 
 ### Blockers/Concerns
 
@@ -101,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T07:20:39Z
-Stopped at: Completed 75-01-PLAN.md
+Last session: 2026-04-12T07:27:00Z
+Stopped at: Completed 75-02-PLAN.md
 Resume file: None
