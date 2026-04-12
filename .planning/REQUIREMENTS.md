@@ -9,10 +9,10 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 
 ### UX Foundation + Service Decomposition
 
-- [ ] **UX-01**: Sidebar sections are collapsible with persistent state and context-aware defaults based on hunt phase
+- [x] **UX-01**: Sidebar sections are collapsible with persistent state and context-aware defaults based on hunt phase
 - [ ] **UX-02**: Command palette shows ~10 grouped commands (down from 19) using FuzzySuggestModal chooser modals
 - [ ] **UX-03**: All modals use Obsidian base classes (SuggestModal/FuzzySuggestModal) with keyboard navigation and CSS variables
-- [ ] **UX-04**: New user sees a welcome screen with one-click "Initialize Hunt Workspace" when no .planning directory exists
+- [x] **UX-04**: New user sees a welcome screen with one-click "Initialize Hunt Workspace" when no .planning directory exists
 - [x] **UX-05**: At least 3 default hotkeys ship (hyper copy, toggle sidebar, ingest)
 - [x] **UX-06**: WorkspaceService decomposed into domain services (IntelligenceService, CanvasService, WatcherService, McpBridgeService, JournalService) with typed EventBus
 - [x] **UX-07**: main.ts reduced to lifecycle + command registration (<300 LOC), commands extracted to commands.ts module
@@ -84,10 +84,10 @@ Deferred beyond v5.0.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UX-01 | Phase 80 | Pending |
+| UX-01 | Phase 80 | Complete |
 | UX-02 | Phase 81 | Pending |
 | UX-03 | Phase 81 | Pending |
-| UX-04 | Phase 80 | Pending |
+| UX-04 | Phase 80 | Complete |
 | UX-05 | Phase 80 | Complete |
 | UX-06 | Phase 79 | Complete |
 | UX-07 | Phase 79 | Complete |

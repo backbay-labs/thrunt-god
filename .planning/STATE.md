@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 80-02-PLAN.md
-last_updated: "2026-04-12T13:54:10.327Z"
+stopped_at: Completed 80-01-PLAN.md
+last_updated: "2026-04-12T13:56:21.800Z"
 progress:
   total_phases: 12
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 80
 ---
 
@@ -57,6 +57,9 @@ Progress: [████████░░] 80% (4/5 v5.0 plans)
 - [Phase 79]: Commands receive plugin parameter instead of this binding to avoid circular dependency
 - [Phase 79]: main.ts slimmed to 138 LOC lifecycle-only orchestration with registerCommands(this) delegation
 - [Phase 80]: Created obsidian API mock stub + vitest alias to enable testing modules that import from types-only obsidian package
+- [Phase 80]: Pure sidebar state logic extracted to sidebar-state.ts for unit testing without obsidian dependency
+- [Phase 80]: Context-aware expansion is additive: forces relevant section open without collapsing others
+- [Phase 80]: Uses obsidian.debounce() for vault events: 400ms trailing, scoped to planning directory only
 
 ### Blockers/Concerns
 
@@ -64,6 +67,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:54:10.324Z
-Stopped at: Completed 80-02-PLAN.md
+Last session: 2026-04-12T13:56:21.798Z
+Stopped at: Completed 80-01-PLAN.md
 Resume file: None
