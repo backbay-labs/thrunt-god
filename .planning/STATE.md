@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 82-03-PLAN.md
-last_updated: "2026-04-12T15:21:44.799Z"
+stopped_at: Completed 82-02-PLAN.md
+last_updated: "2026-04-12T15:22:06.571Z"
 progress:
   total_phases: 12
   completed_phases: 4
@@ -70,6 +70,10 @@ Progress: [█████████░] 90% (9/10 v5.0 plans)
 - [Phase 82]: addToArray treats non-array values as no-op (returns unchanged) rather than throwing
 - [Phase 82]: Verdict update from empty string to 'unknown' preserves existing quoting style via updateFrontmatter
 - [Phase 82]: Migration command uses sequential Notice pattern rather than full modal preview for simplicity
+- [Phase 82]: appendVerdictEntry uses line-by-line string manipulation (no YAML parser) for pure testability
+- [Phase 82]: Verdict entry format locked: - [YYYY-MM-DD HH:mm] verdict -- "rationale" (hunt: huntId)
+- [Phase 82]: Hunt ID detection priority: MISSION.md hunt_id > planning dir name > manual fallback
+- [Phase 82]: VerdictSuggestModal follows FuzzySuggestModal + ChooserItem pattern from Phase 81
 
 ### Blockers/Concerns
 
@@ -77,6 +81,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T15:21:09.996Z
-Stopped at: Completed 82-03-PLAN.md
+Last session: 2026-04-12T15:22:06.569Z
+Stopped at: Completed 82-02-PLAN.md
 Resume file: None
