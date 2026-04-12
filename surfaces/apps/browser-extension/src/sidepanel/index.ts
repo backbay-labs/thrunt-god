@@ -597,7 +597,7 @@ function renderHypotheses(cv: CaseViewModel): string {
       cv.recentEvidence.filter(e => e.relatedHypotheses.includes(h.id)).length;
     const evidenceBadgeClass = evidenceCount === 0 ? 'badge-warning' : 'badge-neutral';
     return `
-      <div class="list-row">
+      <div class="list-row hypothesis-item" data-hypothesis-id="${esc(h.id)}" style="cursor:pointer" title="Click to view ${esc(h.id)}">
         <div class="split-header">
           ${renderBadge(h.status, badgeClass)}
           ${renderBadge(`${evidenceCount} evidence`, evidenceBadgeClass)}
@@ -621,7 +621,7 @@ function renderRecommendedActions(cv: CaseViewModel): string {
   let items: string;
   if (cv.recommendedActions.length > 0) {
     items = cv.recommendedActions.map(a => `
-      <div class="list-row">
+      <div class="list-row action-item" data-action-id="${esc(a.id)}" style="cursor:pointer" title="${esc(a.label)}">
         <div class="split-header">
           ${renderBadge(a.priority, priorityBadge[a.priority] ?? 'badge-neutral')}
           <div class="subtle">${esc(a.category.replace(/_/g, ' '))}</div>
@@ -811,6 +811,60 @@ function bindActions(): void {
 
   $('btn-refresh')?.addEventListener('click', () => {
     chrome.runtime.sendMessage({ type: 'request:case_view' });
+  });
+
+  // Timeline item clicks (SIDE-06)
+  document.querySelectorAll('.timeline-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const artifactId = (el as HTMLElement).dataset.artifactId;
+      const artifactType = (el as HTMLElement).dataset.artifactType;
+      if (artifactId && artifactType) {
+        chrome.runtime.sendMessage({
+          type: 'navigate:artifact',
+          artifactId,
+          artifactType,
+        });
+        lastAction = `Navigating to ${artifactType} ${artifactId}`;
+        lastActionTone = 'info';
+        render();
+        setTimeout(() => { lastAction = null; render(); }, 3000);
+      }
+    });
+  });
+
+  // Hypothesis clicks (SIDE-06)
+  document.querySelectorAll('.hypothesis-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const hypothesisId = (el as HTMLElement).dataset.hypothesisId;
+      if (hypothesisId) {
+        chrome.runtime.sendMessage({
+          type: 'navigate:artifact',
+          artifactId: hypothesisId,
+          artifactType: 'hypothesis',
+        });
+        lastAction = `Navigating to hypothesis ${hypothesisId}`;
+        lastActionTone = 'info';
+        render();
+        setTimeout(() => { lastAction = null; render(); }, 3000);
+      }
+    });
+  });
+
+  // Action clicks (SIDE-06)
+  document.querySelectorAll('.action-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      const actionId = (el as HTMLElement).dataset.actionId;
+      if (actionId) {
+        chrome.runtime.sendMessage({
+          type: 'navigate:action',
+          actionId,
+        });
+        lastAction = `Executing action: ${actionId}`;
+        lastActionTone = 'info';
+        render();
+        setTimeout(() => { lastAction = null; render(); }, 3000);
+      }
+    });
   });
 }
 
