@@ -201,20 +201,25 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
   // ─── Response helpers ────────────────────────────────────────────────
 
-  function json(data: unknown, status = 200, req?: Request): Response {
+  // Current request context — set at the top of handleRequest so json/error
+  // helpers emit correct CORS headers without threading req through every call.
+  let _currentReq: Request | undefined;
+
+  function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
       status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(_currentReq) },
     });
   }
 
-  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR', req?: Request): Response {
-    return errorResponse(message, errorClass, code, status, req);
+  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR'): Response {
+    return errorResponse(message, errorClass, code, status, _currentReq);
   }
 
   // ─── Request handler ─────────────────────────────────────────────────
 
   async function handleRequest(req: Request): Promise<Response> {
+    _currentReq = req;
     const url = new URL(req.url);
     const reqPath = url.pathname;
     const method = req.method;

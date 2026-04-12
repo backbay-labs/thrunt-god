@@ -30,18 +30,31 @@ export function classifyError(err: unknown): { class: ErrorClass; code: string; 
   return { class: 'validation', code: 'UNKNOWN_ERROR', message };
 }
 
-export function corsHeaders(): Record<string, string> {
+export function isAllowedOrigin(origin: string): boolean {
+  return (
+    origin === '' ||
+    origin.startsWith('chrome-extension://') ||
+    origin.startsWith('moz-extension://') ||
+    origin.startsWith('http://127.0.0.1') ||
+    origin.startsWith('http://localhost')
+  );
+}
+
+export function corsHeaders(req?: Request): Record<string, string> {
+  const origin = req?.headers.get('origin') ?? '';
+  const allowed = isAllowedOrigin(origin);
   return {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowed ? (origin || '*') : '',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-Bridge-Token',
+    ...(allowed && origin ? { 'Vary': 'Origin' } : {}),
   };
 }
 
-export function errorResponse(message: string, errorClass: ErrorClass, code: string, status: number): Response {
+export function errorResponse(message: string, errorClass: ErrorClass, code: string, status: number, req?: Request): Response {
   const body: BridgeError = { error: message, code, class: errorClass };
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
   });
 }
