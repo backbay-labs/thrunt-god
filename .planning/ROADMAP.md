@@ -264,8 +264,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 24-01-PLAN.md -- Data model enrichments (recommended actions, evidence timeline, adapter statuses) + vendor status, hypothesis evidence counts, recommended actions UI sections
-- [ ] 24-02-PLAN.md -- Evidence timeline with vendor badges + click-to-navigate on all interactive elements
+- [x] 24-01-PLAN.md -- Data model enrichments (recommended actions, evidence timeline, adapter statuses) + vendor status, hypothesis evidence counts, recommended actions UI sections
+- [x] 24-02-PLAN.md -- Evidence timeline with vendor badges + click-to-navigate on all interactive elements
 
 ### Phase 25: Extraction Adapters (AWS, Okta, M365)
 **Goal**: Hunters investigating in AWS CloudTrail, Okta Admin Console, or M365 Defender get extraction of queries and entities, with clear messaging for unsupported vendor pages — extending coverage beyond the certified top-3 stack
@@ -277,7 +277,11 @@ Plans:
   3. With the M365 Defender adapter active, the extension extracts KQL queries, incident details, and device/user entities from the Microsoft Security portal DOM
   4. When navigating to a page with no matching adapter or an unsupported vendor, the sidepanel displays a clear "adapter loading" or "not yet supported" message rather than failing silently
   5. All three extraction adapters have fixture-backed test suites validating extraction against saved HTML snapshots
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 25-01-PLAN.md -- M365 Defender adapter: full DOM extraction, 3 HTML fixtures, Playwright tests
+- [ ] 25-02-PLAN.md -- Content script consolidation, sidepanel unsupported messaging, all-adapter verification
 
 ### Phase 26: Detection Promotion
 **Goal**: Hunters can turn their findings into deployable detection rules — a single CLI command reads FINDINGS.md and generates Sigma, Splunk SPL, or Sentinel KQL rules with ATT&CK mappings and confidence scoring, creating a direct path from investigation to defense
@@ -310,6 +314,6 @@ Plans:
 | 21. Bridge Hardening | v5.0 | 2/2 | Complete | 2026-04-12 |
 | 22. MCP Event Bridge | v5.0 | 3/3 | Complete | 2026-04-12 |
 | 23. Certified Adapters (Elastic + CrowdStrike) | v5.0 | 3/3 | Complete | 2026-04-12 |
-| 24. Sidepanel UI | 2/2 | Complete   | 2026-04-12 | - |
-| 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/? | Not started | - |
+| 24. Sidepanel UI | v5.0 | 2/2 | Complete | 2026-04-12 |
+| 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/2 | Not started | - |
 | 26. Detection Promotion | v5.0 | 0/? | Not started | - |
