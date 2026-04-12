@@ -1297,6 +1297,139 @@ High
   });
 
   // -------------------------------------------------------------------------
+  // analyzeCoverage (Phase 78 Plan 02)
+  // -------------------------------------------------------------------------
+
+  describe('analyzeCoverage', () => {
+    it('offline fallback produces COVERAGE_REPORT.md from vault TTP notes', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/entities/ttps');
+      adapter.addFileToFolder('.planning/entities/ttps', 'T1059.md');
+      adapter.addFile('.planning/entities/ttps/T1059.md', `---
+type: ttp
+mitre_id: "T1059"
+tactic: "Execution"
+hunt_count: 3
+---
+# T1059
+`);
+      adapter.addFileToFolder('.planning/entities/ttps', 'T1566.md');
+      adapter.addFile('.planning/entities/ttps/T1566.md', `---
+type: ttp
+mitre_id: "T1566"
+tactic: "Initial Access"
+hunt_count: 1
+---
+# T1566
+`);
+
+      // No mcpClient -- service created by makeService without one
+      const result = await service.analyzeCoverage();
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('offline');
+
+      const report = await adapter.readFile('.planning/COVERAGE_REPORT.md');
+      expect(report).toContain('Detection Coverage Report');
+      expect(report).toContain('Execution');
+      expect(report).toContain('Initial Access');
+      expect(report).toContain('2/2');
+    });
+
+    it('offline with hunt_count: 0 TTPs lists them in gaps', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/entities/ttps');
+      adapter.addFileToFolder('.planning/entities/ttps', 'T1059.md');
+      adapter.addFile('.planning/entities/ttps/T1059.md', `---
+type: ttp
+mitre_id: "T1059"
+tactic: "Execution"
+hunt_count: 0
+---
+# T1059
+`);
+      adapter.addFileToFolder('.planning/entities/ttps', 'T1566.md');
+      adapter.addFile('.planning/entities/ttps/T1566.md', `---
+type: ttp
+mitre_id: "T1566"
+tactic: "Initial Access"
+hunt_count: 2
+---
+# T1566
+`);
+
+      const result = await service.analyzeCoverage();
+      expect(result.success).toBe(true);
+
+      const report = await adapter.readFile('.planning/COVERAGE_REPORT.md');
+      // T1059 should appear in Detection Gaps
+      expect(report).toContain('## Detection Gaps');
+      expect(report).toContain('T1059');
+      // T1566 should NOT be in gaps
+      expect(report).not.toContain('[[T1566]]');
+      // Overall: 1/2
+      expect(report).toContain('1/2');
+    });
+
+    it('offline returns error when no TTP entities folder exists', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      // No entities/ttps folder
+
+      const result = await service.analyzeCoverage();
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No TTP entities found');
+    });
+
+    it('MCP path used when mcpClient is connected (no regression)', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/entities/ttps');
+      adapter.addFileToFolder('.planning/entities/ttps', 'T1059.md');
+      adapter.addFile('.planning/entities/ttps/T1059.md', `---
+type: ttp
+mitre_id: "T1059"
+tactic: "Execution"
+hunt_count: 1
+---
+# T1059
+`);
+
+      // Create service with mock mcpClient
+      const mockMcpClient = {
+        isConnected: () => true,
+        callTool: async (_name: string, _args: Record<string, unknown>) => ({
+          isError: false,
+          content: [{ text: JSON.stringify({
+            tactics: [{ tactic: 'Execution', total: 1, hunted: 1, percentage: 100 }],
+            totalTechniques: 1,
+            huntedTechniques: 1,
+            overallPercentage: 100,
+            gaps: [],
+          })}],
+        }),
+      } as any;
+
+      const mcpService = new WorkspaceService(
+        null as any,
+        adapter,
+        () => ({ planningDir: PLANNING_DIR }),
+        PLANNING_DIR,
+        mockMcpClient,
+      );
+
+      const result = await mcpService.analyzeCoverage();
+      expect(result.success).toBe(true);
+      // MCP path does NOT say "(offline)"
+      expect(result.message).not.toContain('offline');
+
+      const report = await adapter.readFile('.planning/COVERAGE_REPORT.md');
+      expect(report).toContain('Detection Coverage Report');
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // cross-hunt intelligence (Phase 77 Plan 02)
   // -------------------------------------------------------------------------
 
