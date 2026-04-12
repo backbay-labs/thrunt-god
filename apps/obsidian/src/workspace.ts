@@ -31,6 +31,7 @@ import { IntelligenceService } from './services/intelligence-service';
 import { CanvasService } from './services/canvas-service';
 import { McpBridgeService } from './services/mcp-bridge-service';
 import { WatcherService } from './services/watcher-service';
+import { JournalService } from './services/journal-service';
 
 export class WorkspaceService {
   private cachedViewModel: ViewModel | null = null;
@@ -38,6 +39,7 @@ export class WorkspaceService {
   private canvasService!: CanvasService;
   private mcpBridgeService!: McpBridgeService;
   private watcherService!: WatcherService;
+  private journalService!: JournalService;
 
   constructor(
     private app: App,
@@ -57,6 +59,7 @@ export class WorkspaceService {
     this.canvasService = new CanvasService(vaultAdapter, planningDirGetter, bus);
     this.mcpBridgeService = new McpBridgeService(vaultAdapter, planningDirGetter, mcpClient, bus);
     this.watcherService = new WatcherService(vaultAdapter, planningDirGetter, this.intelligenceService, bus);
+    this.journalService = new JournalService(vaultAdapter, planningDirGetter, bus);
   }
 
   get watcher(): WatcherService {
@@ -65,6 +68,10 @@ export class WorkspaceService {
 
   get mcpBridge(): McpBridgeService {
     return this.mcpBridgeService;
+  }
+
+  get journal(): JournalService {
+    return this.journalService;
   }
 
   getMcpClient(): McpClient | undefined {
