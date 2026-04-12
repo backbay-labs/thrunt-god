@@ -519,6 +519,130 @@ describe('WorkspaceService', () => {
   });
 
   // -------------------------------------------------------------------------
+  // extendedArtifacts in getViewModel
+  // -------------------------------------------------------------------------
+
+  describe('extendedArtifacts', () => {
+    it('returns zeros/false when no extended artifacts exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts).toEqual({
+        receipts: 0,
+        queries: 0,
+        evidenceReview: false,
+        successCriteria: false,
+        environment: false,
+        cases: 0,
+      });
+    });
+
+    it('counts RCT-*.md files in RECEIPTS/ folder', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-002.md');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-003.md');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.receipts).toBe(3);
+    });
+
+    it('filters RECEIPTS/ by RCT- prefix and .md suffix', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'README.md');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-draft.txt');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'notes.md');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.receipts).toBe(1);
+    });
+
+    it('counts QRY-*.md files in QUERIES/ folder', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/QUERIES');
+      adapter.addFileToFolder('.planning/QUERIES', 'QRY-001.md');
+      adapter.addFileToFolder('.planning/QUERIES', 'QRY-002.md');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.queries).toBe(2);
+    });
+
+    it('filters QUERIES/ by QRY- prefix and .md suffix', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/QUERIES');
+      adapter.addFileToFolder('.planning/QUERIES', 'QRY-001.md');
+      adapter.addFileToFolder('.planning/QUERIES', 'README.md');
+      adapter.addFileToFolder('.planning/QUERIES', 'QRY-draft.txt');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.queries).toBe(1);
+    });
+
+    it('detects EVIDENCE_REVIEW.md existence', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/EVIDENCE_REVIEW.md', '# Evidence Review');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.evidenceReview).toBe(true);
+    });
+
+    it('detects SUCCESS_CRITERIA.md existence', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/SUCCESS_CRITERIA.md', '# Success Criteria');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.successCriteria).toBe(true);
+    });
+
+    it('detects environment/ENVIRONMENT.md existence', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/environment/ENVIRONMENT.md', '# Environment');
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.environment).toBe(true);
+    });
+
+    it('counts case directories containing MISSION.md', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/cases');
+      adapter.addSubFolder('.planning/cases', 'case-alpha');
+      adapter.addSubFolder('.planning/cases', 'case-beta');
+      adapter.addSubFolder('.planning/cases', 'case-gamma');
+      adapter.addFile('.planning/cases/case-alpha/MISSION.md', '# Mission');
+      adapter.addFile('.planning/cases/case-beta/MISSION.md', '# Mission');
+      // case-gamma has no MISSION.md
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.cases).toBe(2);
+    });
+
+    it('returns cases = 0 when cases/ folder does not exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      const vm = await service.getViewModel();
+      expect(vm.extendedArtifacts.cases).toBe(0);
+    });
+
+    it('updates after invalidate() when files are added', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      const vm1 = await service.getViewModel();
+      expect(vm1.extendedArtifacts.receipts).toBe(0);
+
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+      adapter.addFile('.planning/EVIDENCE_REVIEW.md', '# Evidence Review');
+      service.invalidate();
+      const vm2 = await service.getViewModel();
+      expect(vm2.extendedArtifacts.receipts).toBe(1);
+      expect(vm2.extendedArtifacts.evidenceReview).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // StubVaultAdapter.listFiles
   // -------------------------------------------------------------------------
 

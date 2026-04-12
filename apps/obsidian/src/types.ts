@@ -53,6 +53,18 @@ export interface EntityCounts {
   [folderPath: string]: number;
 }
 
+// --- Extended artifacts ---
+
+/** Counts and existence flags for agent-produced artifacts beyond the 5 core files */
+export interface ExtendedArtifacts {
+  receipts: number;          // count of RCT-*.md in RECEIPTS/
+  queries: number;           // count of QRY-*.md in QUERIES/
+  evidenceReview: boolean;   // EVIDENCE_REVIEW.md exists
+  successCriteria: boolean;  // SUCCESS_CRITERIA.md exists
+  environment: boolean;      // environment/ENVIRONMENT.md exists
+  cases: number;             // count of cases/*/MISSION.md subdirectories
+}
+
 // --- View model consumed by view.ts ---
 
 export interface ViewModel {
@@ -66,6 +78,7 @@ export interface ViewModel {
   hypothesisSnapshot: HypothesisSnapshot | null; // null if HYPOTHESES.md does not exist
   phaseDirectories: PhaseDirectoryInfo;
   entityCounts: EntityCounts;
+  extendedArtifacts: ExtendedArtifacts;
 }
 
 // --- Error types ---
