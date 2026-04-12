@@ -14,9 +14,9 @@ import type { ApprovalStore } from "../approvals.ts"
 import type { ChannelBindings } from "../bindings.ts"
 import { readHuntStatus, readMission } from "../hunt/state.ts"
 import { createDispatch } from "../hunt/orchestrate.ts"
+import { resolveCaseDir, startHuntCommand } from "../hunt/paths.ts"
 import { huntStatusBlocks } from "../blocks/status.ts"
 import { approvalResponseBlocks } from "../blocks/approval.ts"
-import { join } from "node:path"
 
 export function registerActions(app: App, config: Config, approvalStore?: ApprovalStore, bindings?: ChannelBindings): void {
   // ── Approval flow ──────────────────────────────────────────────────────
@@ -78,10 +78,10 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
     if (!slug) return
 
     const root = bindings?.resolve(body.channel?.id ?? "") ?? config.workspaceRoot
-    const caseRoot = join(root, ".planning", "cases", slug)
+    const { caseDir } = await resolveCaseDir(root, slug)
     const [status, mission] = await Promise.all([
-      readHuntStatus(caseRoot),
-      readMission(caseRoot),
+      readHuntStatus(caseDir),
+      readMission(caseDir),
     ])
 
     await client.chat.postEphemeral({
@@ -100,11 +100,11 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
 
     const channelId = body.channel?.id ?? ""
     const threadTs = body.message?.ts
-    const dispatchRoot = bindings?.resolve(channelId) ?? config.workspaceRoot
-    const caseDir = join(dispatchRoot, ".planning", "cases", slug)
+    const root = bindings?.resolve(channelId) ?? config.workspaceRoot
+    const { workspaceRoot, caseDir } = await resolveCaseDir(root, slug)
 
     // Create a dispatch marker for operators/automation
-    await createDispatch(dispatchRoot, {
+    await createDispatch(workspaceRoot, {
       caseSlug: slug,
       caseDir,
       channelId,
@@ -116,7 +116,7 @@ export function registerActions(app: App, config: Config, approvalStore?: Approv
     await client.chat.postMessage({
       channel: channelId,
       thread_ts: threadTs,
-      text: `:rocket: Hunt dispatched for case \`${slug}\`.\n\nOperator — run:\n\`\`\`cd "${caseDir}" && thrunt-god\`\`\``,
+      text: `:rocket: Hunt dispatched for case \`${slug}\`.\n\nOperator — run:\n\`\`\`${startHuntCommand(workspaceRoot, slug)}\`\`\``,
     })
   })
 }

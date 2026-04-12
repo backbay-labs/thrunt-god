@@ -375,6 +375,43 @@ describe("createCase", () => {
     }
   })
 
+  test("rejects titles that produce an empty slug", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "ioc-test-"))
+    try {
+      await expect(createCase(tmpDir, "🔥📛漢字", makeSource())).rejects.toThrow(
+        'Cannot create case: title "🔥📛漢字" produces an empty slug',
+      )
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true })
+    }
+  })
+
+  test("rejects duplicate case slugs instead of overwriting", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "ioc-test-"))
+    try {
+      await createCase(tmpDir, "Duplicate Case", makeSource())
+
+      await expect(
+        createCase(tmpDir, "Duplicate Case", makeSource({ rawText: "new signal" })),
+      ).rejects.toThrow('Case "duplicate-case" already exists')
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true })
+    }
+  })
+
+  test("normalizes case-scoped roots back to the workspace before creating a new case", async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "ioc-test-"))
+    try {
+      const existing = await createCase(tmpDir, "Existing Case", makeSource())
+      const result = await createCase(existing.caseDir, "Second Case", makeSource())
+
+      expect(result.caseDir).toBe(join(tmpDir, ".planning", "cases", "second-case"))
+      expect(result.caseDir).not.toContain("existing-case/.planning")
+    } finally {
+      await rm(tmpDir, { recursive: true, force: true })
+    }
+  })
+
   test("MISSION.md scope shows manual scoping message when no IOCs", async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ioc-test-"))
     try {

@@ -5,6 +5,7 @@
 import { access, mkdir, writeFile } from "node:fs/promises"
 import { join } from "node:path"
 import { IOC_PATTERNS, type CaseSource, type IocType } from "../types.ts"
+import { resolveWorkspaceRoot } from "./paths.ts"
 
 /** Extract all IOCs from raw text */
 export function extractIocs(text: string): CaseSource["extractedIocs"] {
@@ -108,10 +109,11 @@ export interface CreateCaseResult {
  * Returns the path to the created case.
  */
 export async function createCase(
-  workspaceRoot: string,
+  root: string,
   title: string,
   source: CaseSource,
 ): Promise<CreateCaseResult> {
+  const workspaceRoot = await resolveWorkspaceRoot(root)
   const slug = slugify(title)
   if (!slug) {
     throw new Error(`Cannot create case: title "${title}" produces an empty slug`)

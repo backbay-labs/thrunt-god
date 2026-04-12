@@ -312,6 +312,8 @@ Phase: 3 of 3 (Evidence Correlation)
     expect(status.lastActivity).toBe(
       "2026-03-28 - Completed evidence review and findings",
     )
+    expect(status.currentPhase).toBe("3")
+    expect(status.currentPhaseName).toBe("Evidence Correlation")
   })
 
   test("bold-markdown fields override frontmatter values", async () => {
@@ -457,6 +459,35 @@ Summary text here.
       confidence: "low",
       evidence: undefined,
     })
+  })
+
+  test("parses descriptive hypothesis rows and normalizes disproved verdicts", async () => {
+    await scaffold({
+      ".planning/FINDINGS.md": `# Findings
+
+## Executive Summary
+
+Summary text here.
+
+## Hypothesis Verdicts
+
+| Hypothesis | Verdict | Confidence | Evidence |
+|------------|---------|------------|----------|
+| HYP-03: Stolen token replay explains the sign-ins | Disproved | Medium | RCT-20260409-301 |
+`,
+    })
+
+    const findings = await readFindings(tmpDir)
+
+    expect(findings!.hypotheses).toEqual([
+      {
+        id: "HYP-03",
+        text: "HYP-03: Stolen token replay explains the sign-ins",
+        verdict: "refuted",
+        confidence: "medium",
+        evidence: "RCT-20260409-301",
+      },
+    ])
   })
 
   test("parses impacted scope as bullet list", async () => {
@@ -693,6 +724,26 @@ related_hypotheses: HYP-02
 
     const receipts = await readReceipts(tmpDir)
     expect(receipts[0].claimStatus).toBe("contradicts")
+  })
+
+  test("maps THRUNT receipt claim_status aliases to supported values", async () => {
+    await scaffold({
+      ".planning/RECEIPTS/RCT-20260410-003.md": `source: Threat Intel
+claim_status: disproves
+
+# Receipt: Alias A
+`,
+      ".planning/RECEIPTS/RCT-20260410-004.md": `source: Analyst Notes
+claim_status: context
+
+# Receipt: Alias B
+`,
+    })
+
+    const receipts = await readReceipts(tmpDir)
+
+    expect(receipts[0].claimStatus).toBe("contradicts")
+    expect(receipts[1].claimStatus).toBe("neutral")
   })
 
   test("defaults to neutral when claim_status is missing", async () => {

@@ -39,7 +39,7 @@ export { loadConfig } from "./config.ts"
 export { createBindings } from "./bindings.ts"
 export { createApprovalStore } from "./approvals.ts"
 export { startNotifier } from "./notify.ts"
-export { readHuntStatus, readFindings, readReceipts, readMission } from "./hunt/state.ts"
+export { readHuntStatus, readFindings, readReceipts, readMission, listCases } from "./hunt/state.ts"
 
 export type { Config } from "./config.ts"
 export type { ChannelBindings } from "./bindings.ts"
@@ -144,13 +144,20 @@ export async function start(): Promise<void> {
   // Capture local refs for the binding-change callback (TS knows these are non-null here)
   const localConfig = config
   const localBindings = bindings
+  const runtimeApp = app
 
   // Register handlers
   registerCommands(app, localConfig, localBindings, () => {
-    // Stop the default watcher if the channel is now covered by a binding
-    if (activeWatcher && localConfig.defaultChannelId && localBindings.resolve(localConfig.defaultChannelId)) {
-      activeWatcher.stop()
-      activeWatcher = null
+    const defaultChannelId = localConfig.defaultChannelId
+    if (defaultChannelId) {
+      const defaultBinding = localBindings.resolve(defaultChannelId)
+
+      if (defaultBinding && activeWatcher) {
+        activeWatcher.stop()
+        activeWatcher = null
+      } else if (!defaultBinding && !activeWatcher) {
+        activeWatcher = startNotifier(runtimeApp, defaultChannelId, localConfig.workspaceRoot)
+      }
     }
     notifierManager?.sync()
   })
