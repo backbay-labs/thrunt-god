@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 85-02-PLAN.md
-last_updated: "2026-04-12T19:37:43.626Z"
+stopped_at: Completed 86-01-PLAN.md
+last_updated: "2026-04-12T20:46:31.663Z"
 progress:
   total_phases: 12
   completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
+  total_plans: 18
+  completed_plans: 17
+  percent: 94
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 85 (Canvas Adapter + Reactive Nodes)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 86 (Live Hunt Canvas + Reactive Dashboard)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** executing
-**Phase:** 85 of 90 (Canvas Adapter + Reactive Nodes)
-**Plan:** 2 of 2 in current phase complete
+**Status:** Executing
+**Phase:** 86 of 90 (Live Hunt Canvas + Reactive Dashboard)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (16/16 v5.0 plans)
+Progress: [█████████░] 94% (17/18 v5.0 plans)
 
 ## Recently Completed
 
@@ -101,6 +101,10 @@ Progress: [██████████] 100% (16/16 v5.0 plans)
 - [Phase 85]: Tab indentation for all canvas JSON output matching Obsidian format
 - [Phase 85]: Malformed canvas files silently skipped to avoid breaking patch cycles
 - [Phase 85]: refresh-canvas-nodes added as both top-level command and CanvasChooserModal item
+- [Phase 86]: Grid positioning uses maxY-based row detection (not maxBottom-NODE_HEIGHT) for nodes with variable heights
+- [Phase 86]: handleEntityCreated reads canvas from disk each call, enabling sequential entity:created events to auto-fill grid columns
+- [Phase 86]: Removed entities grayed out to #757575 via entityPathToColor map injection before patchCanvasNodeColors
+- [Phase 86]: Grid positioning uses maxY-based row detection (not maxBottom-NODE_HEIGHT) for nodes with variable heights
 
 ### Blockers/Concerns
 
@@ -108,6 +112,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T19:37:43.622Z
-Stopped at: Completed 85-02-PLAN.md
+Last session: 2026-04-12T20:46:25.399Z
+Stopped at: Completed 86-01-PLAN.md
 Resume file: None
