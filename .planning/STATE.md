@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 84-02-PLAN.md
-last_updated: "2026-04-12T18:22:00.000Z"
+stopped_at: Completed 85-01-PLAN.md
+last_updated: "2026-04-12T19:30:04.935Z"
 progress:
   total_phases: 12
-  completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  completed_phases: 6
+  total_plans: 16
+  completed_plans: 15
+  percent: 94
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 84 (ATT&CK Institutional Memory)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 85 (Canvas Adapter + Reactive Nodes)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** Executing
-**Phase:** 84 of 90 (ATT&CK Institutional Memory)
-**Plan:** 2 of 2 in current phase complete
+**Status:** executing
+**Phase:** 85 of 90 (Canvas Adapter + Reactive Nodes)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (14/14 v5.0 plans)
+Progress: [█████████░] 94% (15/16 v5.0 plans)
 
 ## Recently Completed
 
@@ -91,6 +91,11 @@ Progress: [██████████] 100% (14/14 v5.0 plans)
 - [Phase 84]: Technique refresh runs after entity refresh on TTP notes (additive, not replacing)
 - [Phase 84]: WorkspaceService.refreshTechniqueIntelligence forwards to IntelligenceService (consistent facade pattern)
 - [Phase 84]: mapClaimStatusToOutcome: supports->TP, disproves->FP, else->inconclusive per RESEARCH.md heuristic
+- [Phase 85]: ENTITY_TYPE_COLORS uses 6 base type keys; IOC subtypes resolved via prefix match in resolveEntityColor
+- [Phase 85]: patchCanvasNodeColors skips nodes where color already matches (no-op optimization)
+- [Phase 85]: Confidence tiers: low (<0.4), medium (0.4-0.7), high (>0.7 or undefined)
+- [Phase 85]: CSS verdict borders use :has() selectors on cssclasses frontmatter (Chromium 112+ compatible)
+- [Phase 85]: canvas-generator ENTITY_COLORS removed; getEntityColor delegates to resolveEntityColor (single source of truth)
 
 ### Blockers/Concerns
 
@@ -98,6 +103,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T18:22:00Z
-Stopped at: Completed 84-02-PLAN.md
+Last session: 2026-04-12T19:30:04.928Z
+Stopped at: Completed 85-01-PLAN.md
 Resume file: None

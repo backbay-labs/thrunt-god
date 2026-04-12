@@ -32,11 +32,11 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 
 ### Live Canvas
 
-- [ ] **CANVAS-07**: Entity notes added to a Canvas appear as typed, colored nodes with frontmatter-driven appearance (type -> color, verdict -> border, confidence -> opacity)
-- [ ] **CANVAS-08**: Modifying an entity note's frontmatter updates the corresponding Canvas node via file-level JSON patching (preserves analyst layout)
+- [x] **CANVAS-07**: Entity notes added to a Canvas appear as typed, colored nodes with frontmatter-driven appearance (type -> color, verdict -> border, confidence -> opacity)
+- [x] **CANVAS-08**: Modifying an entity note's frontmatter updates the corresponding Canvas node via file-level JSON patching (preserves analyst layout)
 - [ ] **CANVAS-09**: Live hunt canvas auto-populates with new entities as they are ingested
 - [ ] **CANVAS-10**: Dashboard canvas updates reactively when entity notes change
-- [ ] **CANVAS-11**: Clicking canvas nodes navigates to the corresponding vault note
+- [x] **CANVAS-11**: Clicking canvas nodes navigates to the corresponding vault note
 
 ### Live Hunt Companion
 
@@ -101,11 +101,11 @@ Deferred beyond v5.0.
 | INTEL-08 | Phase 84 | Complete |
 | INTEL-09 | Phase 83 | Complete |
 | INTEL-10 | Phase 82 | Complete |
-| CANVAS-07 | Phase 85 | Pending |
-| CANVAS-08 | Phase 85 | Pending |
+| CANVAS-07 | Phase 85 | Complete |
+| CANVAS-08 | Phase 85 | Complete |
 | CANVAS-09 | Phase 86 | Pending |
 | CANVAS-10 | Phase 86 | Pending |
-| CANVAS-11 | Phase 85 | Pending |
+| CANVAS-11 | Phase 85 | Complete |
 | LIVE-01 | Phase 87 | Pending |
 | LIVE-02 | Phase 87 | Pending |
 | LIVE-03 | Phase 88 | Pending |
