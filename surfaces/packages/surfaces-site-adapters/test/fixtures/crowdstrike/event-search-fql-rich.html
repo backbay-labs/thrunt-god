@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Event Search - CrowdStrike Falcon</title>
+  </head>
+  <body>
+    <div id="falcon-app">
+      <div data-testid="falcon-shell">
+        <nav aria-label="Falcon navigation">
+          <a href="/investigate/events">Event Search</a>
+          <a href="/detects">Detections</a>
+        </nav>
+
+        <div data-testid="event-search">
+          <div data-testid="event-search-query">
+            <textarea>EventType=ProcessRollup2 AND FileName="mimikatz.exe"</textarea>
+          </div>
+          <div data-testid="time-range-display">Last 48 hours</div>
+
+          <div data-testid="events-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>FileName</th>
+                  <th>ComputerName</th>
+                  <th>UserName</th>
+                  <th>SHA256</th>
+                  <th>LocalIP</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>2026-04-10T09:00:00Z</td>
+                  <td>mimikatz.exe</td>
+                  <td>WORKSTATION-01</td>
+                  <td>jdoe</td>
+                  <td>a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2</td>
+                  <td>10.0.2.15</td>
+                </tr>
+                <tr>
+                  <td>2026-04-10T09:01:00Z</td>
+                  <td>mimikatz.exe</td>
+                  <td>WORKSTATION-02</td>
+                  <td>admin-local</td>
+                  <td>b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3</td>
+                  <td>10.0.2.16</td>
+                </tr>
+                <tr>
+                  <td>2026-04-10T09:02:00Z</td>
+                  <td>mimikatz.exe</td>
+                  <td>SERVER-DC01</td>
+                  <td>SYSTEM</td>
+                  <td>c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4</td>
+                  <td>10.0.1.1</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="detection-entities">
+          <span data-testid="host-name">WORKSTATION-01</span>
+          <span data-testid="user-name">jdoe</span>
+          <span data-testid="hash-sha256">a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2</span>
+          <span data-testid="ip-address-local">10.0.2.15</span>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>

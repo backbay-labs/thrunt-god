@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Microsoft Sentinel | Logs</title>
+  </head>
+  <body>
+    <div id="portal-root">
+      <div class="fxs-blade-title-titleText">Microsoft Sentinel</div>
+      <div class="fxs-blade-title-titleText">Logs</div>
+      <div class="fxc-timerange-picker">
+        <span class="fxc-timerange-text">Last 24 hours</span>
+      </div>
+      <div data-bind="subscriptionName">ACME-Prod-Subscription</div>
+      <div data-bind="workspaceName">acme-law-01</div>
+
+      <section class="query-pane">
+        <div class="monaco-editor">
+          <textarea aria-label="KQL Query Editor">
+SigninLogs
+| where ResultType == 500121
+| where UserPrincipalName == "sarah.chen@acme.corp"
+| project TimeGenerated, UserPrincipalName, IPAddress, AppDisplayName
+          </textarea>
+          <div class="view-lines">SigninLogs | where ResultType == 500121</div>
+        </div>
+      </section>
+
+      <section class="result-grid" aria-label="Query Results">
+        <table>
+          <thead>
+            <tr>
+              <th>TimeGenerated</th>
+              <th>UserPrincipalName</th>
+              <th>IPAddress</th>
+              <th>AppDisplayName</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026-04-10T10:15:00Z</td>
+              <td>sarah.chen@acme.corp</td>
+              <td>198.51.100.24</td>
+              <td>Graph Mail.ReadWrite</td>
+            </tr>
+            <tr>
+              <td>2026-04-10T10:16:00Z</td>
+              <td>sarah.chen@acme.corp</td>
+              <td>198.51.100.24</td>
+              <td>MFADenied</td>
+            </tr>
+            <tr>
+              <td>2026-04-10T10:17:00Z</td>
+              <td>svc-analytics@acme.corp</td>
+              <td>203.0.113.44</td>
+              <td>ConsentGrant</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <aside class="entity-panel">
+        <div class="entity-value">sarah.chen@acme.corp</div>
+        <div class="entity-value">198.51.100.24</div>
+        <div class="entity-value">acme-law-01</div>
+      </aside>
+    </div>
+  </body>
+</html>

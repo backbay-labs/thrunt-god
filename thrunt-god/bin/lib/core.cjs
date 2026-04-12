@@ -654,6 +654,7 @@ function planningPaths(cwd, wsOrOpts) {
     phases: path.join(base, 'phases'),
     queries: path.join(base, 'QUERIES'),
     receipts: path.join(base, 'RECEIPTS'),
+    evidence: path.join(base, 'EVIDENCE'),
     manifests: path.join(base, 'MANIFESTS'),
     detections: path.join(base, 'DETECTIONS'),
     published: path.join(base, 'published'),

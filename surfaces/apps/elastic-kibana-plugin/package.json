@@ -1,0 +1,10 @@
+{
+  "name": "@thrunt-surfaces/elastic-kibana-plugin",
+  "version": "0.1.0",
+  "description": "THRUNT Surfaces plugin for Elastic Kibana — displays active hunt case in the Kibana side navigation",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Kibana plugin build requires matching Kibana version — see README'",
+    "test": "echo 'Plugin scaffold smoke test: validate kibana.json' && test -f kibana.json"
+  }
+}
