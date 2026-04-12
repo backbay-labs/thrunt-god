@@ -224,6 +224,59 @@ export default class ThruntGodPlugin extends Plugin {
       },
     });
 
+    // --- Cross-hunt intelligence commands (Phase 77) ---
+
+    this.addCommand({
+      id: 'cross-hunt-intel',
+      name: 'Cross-hunt intelligence report',
+      callback: () => {
+        void (async () => {
+          const result = await this.workspaceService.crossHuntIntel();
+          new Notice(result.message);
+          if (result.success && result.reportPath) {
+            const file = this.workspaceService.vaultAdapter.getFile(result.reportPath);
+            if (file) {
+              await this.app.workspace.getLeaf(true).openFile(file);
+            }
+          }
+          await this.refreshViews();
+        })();
+      },
+    });
+
+    this.addCommand({
+      id: 'compare-hunts',
+      name: 'Compare hunts',
+      callback: () => {
+        new CompareHuntsModal(this.app, this.workspaceService, async (huntAPath, huntBPath) => {
+          const result = await this.workspaceService.compareHuntsReport(huntAPath, huntBPath);
+          new Notice(result.message);
+          if (result.success && result.reportPath) {
+            const file = this.workspaceService.vaultAdapter.getFile(result.reportPath);
+            if (file) {
+              await this.app.workspace.getLeaf(true).openFile(file);
+            }
+          }
+          await this.refreshViews();
+        }).open();
+      },
+    });
+
+    this.addCommand({
+      id: 'generate-knowledge-dashboard',
+      name: 'Generate knowledge dashboard',
+      callback: () => {
+        void (async () => {
+          const result = await this.workspaceService.generateKnowledgeDashboard();
+          new Notice(result.message);
+          if (result.success && result.canvasPath) {
+            await this.app.workspace.openLinkText(result.canvasPath, '', true);
+          }
+          await this.refreshViews();
+        })();
+      },
+    });
+
     this.addSettingTab(new ThruntGodSettingTab(this.app, this));
 
     // Connect MCP if enabled (fire-and-forget -- connect never throws)
@@ -620,6 +673,61 @@ class CanvasTemplateModal extends Modal {
             });
         });
     }
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CompareHuntsModal -- hunt path picker for cross-hunt comparison (Phase 77)
+// ---------------------------------------------------------------------------
+
+class CompareHuntsModal extends Modal {
+  private huntAPath = '';
+  private huntBPath = '';
+
+  constructor(
+    app: import('obsidian').App,
+    private workspaceService: WorkspaceService,
+    private onSubmit: (huntAPath: string, huntBPath: string) => void,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText('Compare Hunts');
+
+    new Setting(this.contentEl)
+      .setName('Hunt A path')
+      .setDesc('Vault-relative path to first hunt workspace')
+      .addText((text) => {
+        text.setPlaceholder('e.g. hunt-alpha');
+        text.onChange((value) => { this.huntAPath = value; });
+      });
+
+    new Setting(this.contentEl)
+      .setName('Hunt B path')
+      .setDesc('Vault-relative path to second hunt workspace')
+      .addText((text) => {
+        text.setPlaceholder('e.g. hunt-bravo');
+        text.onChange((value) => { this.huntBPath = value; });
+      });
+
+    new Setting(this.contentEl)
+      .addButton((btn) => {
+        btn.setButtonText('Compare')
+          .setCta()
+          .onClick(() => {
+            if (!this.huntAPath || !this.huntBPath) {
+              new Notice('Both hunt paths are required.');
+              return;
+            }
+            this.close();
+            this.onSubmit(this.huntAPath, this.huntBPath);
+          });
+      });
   }
 
   onClose(): void {
