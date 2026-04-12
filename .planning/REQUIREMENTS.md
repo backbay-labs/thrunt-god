@@ -32,17 +32,17 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 - [x] **MCP-03**: "Enrich from MCP" action on TTP entity notes pulls technique description, groups, detections, and related techniques
 - [x] **MCP-04**: "Analyze detection coverage" command produces COVERAGE_REPORT.md with per-tactic coverage and gaps
 - [x] **MCP-05**: "Log hunt decision" and "Log hunt learning" commands write to both MCP server and local vault
-- [ ] **MCP-06**: "Search THRUNT knowledge graph" command opens a modal with results and note creation/navigation actions
+- [x] **MCP-06**: "Search THRUNT knowledge graph" command opens a modal with results and note creation/navigation actions
 - [x] **MCP-07**: All MCP features degrade gracefully when server is unreachable
 
 ### Hyper Copy
 
-- [ ] **HCOPY-01**: Export profile registry defines per-agent context needs (at least 5 default profiles: query-writer, intel-advisor, findings-validator, signal-triager, hunt-planner)
+- [x] **HCOPY-01**: Export profile registry defines per-agent context needs (at least 5 default profiles: query-writer, intel-advisor, findings-validator, signal-triager, hunt-planner)
 - [ ] **HCOPY-02**: "Hyper Copy for Agent" command assembles multi-note context by following wiki-links, shows preview with token estimate
 - [ ] **HCOPY-03**: Context assembly engine follows wiki-links to related entity notes up to configurable depth
 - [ ] **HCOPY-04**: Assembled prompts include provenance markers tracing each section to its source file
 - [ ] **HCOPY-05**: Quick export commands skip modal for common flows (copy for query writer, copy for intel advisor, copy IOC context)
-- [ ] **HCOPY-06**: Export profiles are extensible via JSON config file
+- [x] **HCOPY-06**: Export profiles are extensible via JSON config file
 - [ ] **HCOPY-07**: EXPORT_LOG.md records each export with source, context assembled, token estimate, target agent
 
 ### Canvas + Cross-Hunt
@@ -98,11 +98,11 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | MCP-03 | Phase 73 | Complete |
 | MCP-04 | Phase 73 | Complete |
 | MCP-05 | Phase 73 | Complete |
-| MCP-06 | Phase 73 | Pending |
-| HCOPY-01 | Phase 74 | Pending |
+| MCP-06 | Phase 73 | Complete |
+| HCOPY-01 | Phase 74 | Complete |
 | HCOPY-03 | Phase 74 | Pending |
 | HCOPY-04 | Phase 74 | Pending |
-| HCOPY-06 | Phase 74 | Pending |
+| HCOPY-06 | Phase 74 | Complete |
 | HCOPY-02 | Phase 75 | Pending |
 | HCOPY-05 | Phase 75 | Pending |
 | HCOPY-07 | Phase 75 | Pending |
