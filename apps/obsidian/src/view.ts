@@ -1,7 +1,8 @@
-import { ItemView, Notice, Setting, type WorkspaceLeaf } from 'obsidian';
+import { ItemView, Notice, Setting, setIcon, type WorkspaceLeaf } from 'obsidian';
 import type ThruntGodPlugin from './main';
 import type { ViewModel } from './types';
 import { ENTITY_FOLDERS } from './entity-schema';
+import { getEffectiveExpandedSections } from './sidebar-state';
 
 export const THRUNT_WORKSPACE_VIEW_TYPE = 'thrunt-god-workspace';
 
@@ -34,6 +35,7 @@ export class ThruntWorkspaceView extends ItemView {
 
   async render(): Promise<void> {
     const { contentEl } = this;
+    const scrollPos = contentEl.scrollTop;
     contentEl.empty();
     contentEl.addClass('thrunt-god-view');
 
@@ -52,6 +54,8 @@ export class ThruntWorkspaceView extends ItemView {
       }
       this.renderError(err, this.consecutiveErrors < 2);
     }
+
+    contentEl.scrollTop = scrollPos;
   }
 
   private renderError(err: unknown, showRetry: boolean): void {
@@ -76,52 +80,114 @@ export class ThruntWorkspaceView extends ItemView {
   private renderContent(vm: ViewModel): void {
     const { contentEl } = this;
 
-    // Hunt status card (replaces old hero marketing card)
-    this.renderHuntStatusCard(contentEl, vm);
+    if (vm.workspaceStatus === 'missing') {
+      this.renderWelcomeScreen(contentEl);
+      return;
+    }
 
-    // Knowledge Base entity counts
-    this.renderKnowledgeBaseSection(contentEl, vm);
+    const expanded = getEffectiveExpandedSections(
+      this.plugin.settings.sidebarState.expandedSections,
+      vm.workspaceStatus,
+    );
 
-    // Extended artifacts (agent-produced)
-    this.renderExtendedArtifactsSection(contentEl, vm);
+    this.renderCollapsibleSection(contentEl, 'hunt-status', 'Hunt Status', expanded['hunt-status'] ?? true, (body) => {
+      this.renderHuntStatusBody(body, vm);
+    });
 
-    // Receipt Timeline
-    this.renderReceiptTimelineSection(contentEl, vm);
+    this.renderCollapsibleSection(contentEl, 'knowledge-base', 'Knowledge Base', expanded['knowledge-base'] ?? true, (body) => {
+      this.renderKnowledgeBaseBody(body, vm);
+    });
 
-    // Artifact list
-    const artifactCard = contentEl.createDiv({ cls: 'thrunt-god-card' });
-    artifactCard.createEl('h3', { text: 'Core artifacts' });
+    this.renderCollapsibleSection(contentEl, 'extended-artifacts', 'Agent Artifacts', expanded['extended-artifacts'] ?? false, (body) => {
+      this.renderExtendedArtifactsBody(body, vm);
+    });
 
-    for (const artifact of vm.artifacts) {
-      new Setting(artifactCard)
-        .setName(artifact.definition.label)
-        .setDesc(`${artifact.definition.description} (${artifact.path})`)
-        .addButton((button) => {
-          button
-            .setButtonText(artifact.exists ? 'Open' : 'Create')
-            .setCta()
-            .onClick(async () => {
-              if (artifact.exists) {
-                await this.plugin.openCoreFile(artifact.definition.fileName);
-                return;
-              }
+    if (vm.receiptTimeline.length > 0) {
+      this.renderCollapsibleSection(contentEl, 'receipt-timeline', 'Receipt Timeline', expanded['receipt-timeline'] ?? false, (body) => {
+        this.renderReceiptTimelineBody(body, vm);
+      });
+    }
 
-              await this.plugin.workspaceService.ensureCoreFile(
-                artifact.definition.fileName,
-                artifact.definition.starterTemplate,
-              );
-              await this.plugin.openCoreFile(artifact.definition.fileName);
-              await this.plugin.refreshViews();
-            });
-        });
+    this.renderCollapsibleSection(contentEl, 'core-artifacts', 'Core Artifacts', expanded['core-artifacts'] ?? false, (body) => {
+      this.renderCoreArtifactsBody(body, vm);
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Unified collapsible section renderer
+  // ---------------------------------------------------------------------------
+
+  private renderCollapsibleSection(
+    container: HTMLElement,
+    sectionId: string,
+    title: string,
+    isExpanded: boolean,
+    renderBody: (body: HTMLElement) => void,
+  ): HTMLDetailsElement {
+    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-section' });
+    const details = card.createEl('details', { cls: 'thrunt-god-section-details' });
+    if (isExpanded) {
+      details.setAttribute('open', '');
+    }
+    const summary = details.createEl('summary', { cls: 'thrunt-god-section-summary' });
+    summary.createEl('h3', { text: title, cls: 'thrunt-god-section-title' });
+    const body = details.createDiv({ cls: 'thrunt-god-section-body' });
+    renderBody(body);
+    details.addEventListener('toggle', () => {
+      this.updateSectionState(sectionId, details.open);
+    });
+    return details;
+  }
+
+  private updateSectionState(sectionId: string, isOpen: boolean): void {
+    this.plugin.settings.sidebarState.expandedSections[sectionId] = isOpen;
+    void this.plugin.saveSettings();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Welcome screen (shown when workspaceStatus === 'missing')
+  // ---------------------------------------------------------------------------
+
+  private renderWelcomeScreen(container: HTMLElement): void {
+    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-welcome' });
+    const iconEl = card.createDiv({ cls: 'thrunt-god-welcome-icon' });
+    setIcon(iconEl, 'shield');
+    card.createEl('h3', { text: 'THRUNT God' });
+    card.createEl('p', {
+      text: 'Initialize your threat hunting workspace to begin tracking hypotheses, evidence, and entity intelligence.',
+      cls: 'thrunt-god-welcome-text',
+    });
+    this.createActionButton(card, 'Initialize Hunt Workspace', async () => {
+      await this.plugin.workspaceService.bootstrap();
+      this.plugin.workspaceService.invalidate();
+      await this.render();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Empty state hint renderer
+  // ---------------------------------------------------------------------------
+
+  private renderEmptyState(
+    container: HTMLElement,
+    message: string,
+    actionLabel?: string,
+    action?: () => Promise<void>,
+  ): void {
+    const empty = container.createDiv({ cls: 'thrunt-god-empty-state' });
+    empty.createEl('p', { text: message, cls: 'thrunt-god-empty-hint' });
+    if (actionLabel && action) {
+      this.createActionButton(empty, actionLabel, action);
     }
   }
 
-  private renderHuntStatusCard(container: HTMLElement, vm: ViewModel): void {
-    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-hunt-status' });
+  // ---------------------------------------------------------------------------
+  // Section body renderers
+  // ---------------------------------------------------------------------------
 
+  private renderHuntStatusBody(body: HTMLElement, vm: ViewModel): void {
     // Header row: status badge + path
-    const header = card.createDiv({ cls: 'thrunt-god-hunt-header' });
+    const header = body.createDiv({ cls: 'thrunt-god-hunt-header' });
     const statusCls = vm.workspaceStatus === 'healthy' ? 'is-healthy'
       : vm.workspaceStatus === 'partial' ? 'is-partial'
       : 'is-missing';
@@ -169,9 +235,9 @@ export class ThruntWorkspaceView extends ItemView {
         break;
     }
 
-    // Hunt fields (skip if missing)
+    // Hunt fields
     if (vm.workspaceStatus !== 'missing') {
-      const fields = card.createDiv({ cls: 'thrunt-god-hunt-fields' });
+      const fields = body.createDiv({ cls: 'thrunt-god-hunt-fields' });
 
       // Phase
       const phaseLabel = vm.stateSnapshot?.currentPhase ?? 'unknown';
@@ -213,7 +279,7 @@ export class ThruntWorkspaceView extends ItemView {
     }
 
     // Actions row
-    const actions = card.createDiv({ cls: 'thrunt-god-actions' });
+    const actions = body.createDiv({ cls: 'thrunt-god-actions' });
     this.createActionButton(actions, 'Open mission', async () => {
       await this.plugin.openCoreFile('MISSION.md');
     });
@@ -223,34 +289,7 @@ export class ThruntWorkspaceView extends ItemView {
     });
   }
 
-  private renderField(container: HTMLElement, label: string, value: string): void {
-    const field = container.createDiv({ cls: 'thrunt-god-hunt-field' });
-    field.createSpan({ cls: 'thrunt-god-field-label', text: label });
-    field.createSpan({ cls: 'thrunt-god-field-value', text: value });
-  }
-
-  private renderExtendedArtifactsSection(container: HTMLElement, vm: ViewModel): void {
-    if (vm.workspaceStatus === 'missing') return;
-
-    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-extended-artifacts' });
-    const details = card.createEl('details', { cls: 'thrunt-god-ea-details' });
-    details.setAttribute('open', '');
-
-    const summary = details.createEl('summary', { cls: 'thrunt-god-ea-summary' });
-    summary.createEl('h3', { text: 'Agent Artifacts', cls: 'thrunt-god-ea-title' });
-
-    const fields = details.createDiv({ cls: 'thrunt-god-hunt-fields' });
-    const ea = vm.extendedArtifacts;
-
-    this.renderField(fields, 'Receipts', String(ea.receipts));
-    this.renderField(fields, 'Query Logs', String(ea.queries));
-    this.renderField(fields, 'Evidence Review', ea.evidenceReview ? 'Present' : 'Missing');
-    this.renderField(fields, 'Success Criteria', ea.successCriteria ? 'Present' : 'Missing');
-    this.renderField(fields, 'Environment', ea.environment ? 'Present' : 'Missing');
-    this.renderField(fields, 'Cases', String(ea.cases));
-  }
-
-  private renderKnowledgeBaseSection(container: HTMLElement, vm: ViewModel): void {
+  private renderKnowledgeBaseBody(body: HTMLElement, vm: ViewModel): void {
     const folderLabels: Record<string, string> = {
       'entities/iocs': 'IOCs',
       'entities/ttps': 'TTPs',
@@ -260,41 +299,69 @@ export class ThruntWorkspaceView extends ItemView {
       'entities/datasources': 'Data Sources',
     };
 
-    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-kb-section' });
+    const total = Object.values(vm.entityCounts).reduce((sum, c) => sum + c, 0);
 
-    const details = card.createEl('details', { cls: 'thrunt-god-kb-details' });
-    details.setAttribute('open', '');
+    if (total === 0) {
+      this.renderEmptyState(
+        body,
+        'No entities yet -- run ingestion to populate.',
+        'Ingest',
+        async () => {
+          const result = await this.plugin.workspaceService.runIngestion();
+          await this.plugin.refreshViews();
+          new Notice(
+            `Ingestion complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`,
+          );
+        },
+      );
+      return;
+    }
 
-    const summary = details.createEl('summary', { cls: 'thrunt-god-kb-summary' });
-    summary.createEl('h3', { text: 'Knowledge Base', cls: 'thrunt-god-kb-title' });
-
-    const fields = details.createDiv({ cls: 'thrunt-god-hunt-fields' });
+    const fields = body.createDiv({ cls: 'thrunt-god-hunt-fields' });
     for (const folder of ENTITY_FOLDERS) {
       const label = folderLabels[folder] ?? folder;
       const count = vm.entityCounts[folder] ?? 0;
       this.renderField(fields, label, String(count));
     }
 
-    const total = Object.values(vm.entityCounts).reduce((sum, c) => sum + c, 0);
     this.renderField(fields, 'Total', String(total));
 
-    const actions = details.createDiv({ cls: 'thrunt-god-actions' });
+    const actions = body.createDiv({ cls: 'thrunt-god-actions' });
     this.createActionButton(actions, 'Open dashboard', async () => {
       await this.plugin.openCoreFile('KNOWLEDGE_BASE.md');
     });
   }
 
-  private renderReceiptTimelineSection(container: HTMLElement, vm: ViewModel): void {
-    if (vm.workspaceStatus === 'missing' || vm.receiptTimeline.length === 0) return;
+  private renderExtendedArtifactsBody(body: HTMLElement, vm: ViewModel): void {
+    const ea = vm.extendedArtifacts;
+    const hasData = ea.receipts > 0 || ea.queries > 0 || ea.evidenceReview ||
+      ea.successCriteria || ea.environment || ea.cases > 0;
 
-    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-receipt-timeline' });
-    const details = card.createEl('details', { cls: 'thrunt-god-rt-details' });
-    details.setAttribute('open', '');
+    if (!hasData) {
+      this.renderEmptyState(
+        body,
+        'No agent artifacts detected. Run hunts to generate receipts and queries.',
+      );
+      return;
+    }
 
-    const summary = details.createEl('summary', { cls: 'thrunt-god-rt-summary' });
-    summary.createEl('h3', { text: 'Receipt Timeline', cls: 'thrunt-god-rt-title' });
+    const fields = body.createDiv({ cls: 'thrunt-god-hunt-fields' });
 
-    const content = details.createDiv({ cls: 'thrunt-god-rt-content' });
+    this.renderField(fields, 'Receipts', String(ea.receipts));
+    this.renderField(fields, 'Query Logs', String(ea.queries));
+    this.renderField(fields, 'Evidence Review', ea.evidenceReview ? 'Present' : 'Missing');
+    this.renderField(fields, 'Success Criteria', ea.successCriteria ? 'Present' : 'Missing');
+    this.renderField(fields, 'Environment', ea.environment ? 'Present' : 'Missing');
+    this.renderField(fields, 'Cases', String(ea.cases));
+  }
+
+  private renderReceiptTimelineBody(body: HTMLElement, vm: ViewModel): void {
+    if (vm.receiptTimeline.length === 0) {
+      this.renderEmptyState(body, 'No receipts yet.');
+      return;
+    }
+
+    const content = body.createDiv({ cls: 'thrunt-god-rt-content' });
 
     // Group entries by hypothesis
     const grouped = new Map<string, typeof vm.receiptTimeline>();
@@ -343,7 +410,7 @@ export class ThruntWorkspaceView extends ItemView {
     }
 
     // Actions row with Ingest button
-    const actions = details.createDiv({ cls: 'thrunt-god-actions' });
+    const actions = body.createDiv({ cls: 'thrunt-god-actions' });
     this.createActionButton(actions, 'Ingest', async () => {
       const result = await this.plugin.workspaceService.runIngestion();
       await this.plugin.refreshViews();
@@ -351,6 +418,42 @@ export class ThruntWorkspaceView extends ItemView {
         `Ingestion complete: ${result.created} created, ${result.updated} updated, ${result.skipped} skipped`,
       );
     });
+  }
+
+  private renderCoreArtifactsBody(body: HTMLElement, vm: ViewModel): void {
+    for (const artifact of vm.artifacts) {
+      new Setting(body)
+        .setName(artifact.definition.label)
+        .setDesc(`${artifact.definition.description} (${artifact.path})`)
+        .addButton((button) => {
+          button
+            .setButtonText(artifact.exists ? 'Open' : 'Create')
+            .setCta()
+            .onClick(async () => {
+              if (artifact.exists) {
+                await this.plugin.openCoreFile(artifact.definition.fileName);
+                return;
+              }
+
+              await this.plugin.workspaceService.ensureCoreFile(
+                artifact.definition.fileName,
+                artifact.definition.starterTemplate,
+              );
+              await this.plugin.openCoreFile(artifact.definition.fileName);
+              await this.plugin.refreshViews();
+            });
+        });
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shared helpers
+  // ---------------------------------------------------------------------------
+
+  private renderField(container: HTMLElement, label: string, value: string): void {
+    const field = container.createDiv({ cls: 'thrunt-god-hunt-field' });
+    field.createSpan({ cls: 'thrunt-god-field-label', text: label });
+    field.createSpan({ cls: 'thrunt-god-field-value', text: value });
   }
 
   private createActionButton(

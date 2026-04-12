@@ -121,31 +121,31 @@
   color: var(--text-muted);
 }
 
-/* Knowledge Base section */
-.thrunt-god-kb-section {
+/* Unified collapsible section */
+.thrunt-god-section {
   padding: 0;
 }
 
-.thrunt-god-kb-details {
+.thrunt-god-section-details {
   padding: 0;
 }
 
-.thrunt-god-kb-details[open] > .thrunt-god-kb-summary {
+.thrunt-god-section-details[open] > .thrunt-god-section-summary {
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.thrunt-god-kb-summary {
+.thrunt-god-section-summary {
   cursor: pointer;
   list-style: none;
   padding: 0.75rem 1rem;
   user-select: none;
 }
 
-.thrunt-god-kb-summary::-webkit-details-marker {
+.thrunt-god-section-summary::-webkit-details-marker {
   display: none;
 }
 
-.thrunt-god-kb-summary::before {
+.thrunt-god-section-summary::before {
   content: '\25B6';
   display: inline-block;
   font-size: 0.65rem;
@@ -154,123 +154,68 @@
   vertical-align: middle;
 }
 
-.thrunt-god-kb-details[open] > .thrunt-god-kb-summary::before {
+.thrunt-god-section-details[open] > .thrunt-god-section-summary::before {
   transform: rotate(90deg);
 }
 
-.thrunt-god-kb-title {
+.thrunt-god-section-title {
   display: inline;
   font-size: 0.95rem;
   margin: 0;
   vertical-align: middle;
 }
 
-.thrunt-god-kb-details > .thrunt-god-hunt-fields {
+.thrunt-god-section-body {
   padding: 0.5rem 1rem;
 }
 
-.thrunt-god-kb-details > .thrunt-god-actions {
-  padding: 0.25rem 1rem 0.75rem;
+.thrunt-god-section-body > .thrunt-god-actions {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
 }
 
-/* Extended Artifacts section */
-.thrunt-god-extended-artifacts {
-  padding: 0;
+/* Welcome screen */
+.thrunt-god-welcome {
+  text-align: center;
+  padding: 2rem 1rem;
 }
 
-.thrunt-god-ea-details {
-  padding: 0;
+.thrunt-god-welcome-icon {
+  margin-bottom: 0.75rem;
 }
 
-.thrunt-god-ea-details[open] > .thrunt-god-ea-summary {
-  border-bottom: 1px solid var(--background-modifier-border);
+.thrunt-god-welcome-icon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
 }
 
-.thrunt-god-ea-summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 0.75rem 1rem;
-  user-select: none;
+.thrunt-god-welcome h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
 }
 
-.thrunt-god-ea-summary::-webkit-details-marker {
-  display: none;
+.thrunt-god-welcome-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
 }
 
-.thrunt-god-ea-summary::before {
-  content: '\25B6';
-  display: inline-block;
-  font-size: 0.65rem;
-  margin-right: 0.5rem;
-  transition: transform 0.15s ease;
-  vertical-align: middle;
+/* Empty state hints */
+.thrunt-god-empty-state {
+  padding: 0.5rem 0;
 }
 
-.thrunt-god-ea-details[open] > .thrunt-god-ea-summary::before {
-  transform: rotate(90deg);
+.thrunt-god-empty-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
-.thrunt-god-ea-title {
-  display: inline;
-  font-size: 0.95rem;
-  margin: 0;
-  vertical-align: middle;
-}
-
-.thrunt-god-ea-details > .thrunt-god-hunt-fields {
-  padding: 0.5rem 1rem;
-}
-
-.thrunt-god-ea-details > .thrunt-god-actions {
-  padding: 0.25rem 1rem 0.75rem;
-}
-
-/* Receipt Timeline section */
-.thrunt-god-receipt-timeline {
-  padding: 0;
-}
-
-.thrunt-god-rt-details {
-  padding: 0;
-}
-
-.thrunt-god-rt-details[open] > .thrunt-god-rt-summary {
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.thrunt-god-rt-summary {
-  cursor: pointer;
-  list-style: none;
-  padding: 0.75rem 1rem;
-  user-select: none;
-}
-
-.thrunt-god-rt-summary::-webkit-details-marker {
-  display: none;
-}
-
-.thrunt-god-rt-summary::before {
-  content: '\25B6';
-  display: inline-block;
-  font-size: 0.65rem;
-  margin-right: 0.5rem;
-  transition: transform 0.15s ease;
-  vertical-align: middle;
-}
-
-.thrunt-god-rt-details[open] > .thrunt-god-rt-summary::before {
-  transform: rotate(90deg);
-}
-
-.thrunt-god-rt-title {
-  display: inline;
-  font-size: 0.95rem;
-  margin: 0;
-  vertical-align: middle;
-}
-
+/* Receipt Timeline content-specific styles */
 .thrunt-god-rt-content {
-  padding: 0.5rem 1rem;
+  padding: 0;
 }
 
 .thrunt-god-rt-hypothesis {
@@ -336,8 +281,4 @@
   font-size: 0.7rem;
   color: var(--text-accent);
   flex-shrink: 0;
-}
-
-.thrunt-god-rt-details > .thrunt-god-actions {
-  padding: 0.25rem 1rem 0.75rem;
 }
