@@ -7,6 +7,7 @@ import {
   type WorkspaceStatus,
   type ArtifactStatus,
   type ViewModel,
+  type EntityCounts,
 } from './types';
 import { parseState, parseHypotheses } from './parsers';
 import type { StateSnapshot, HypothesisSnapshot, PhaseDirectoryInfo } from './types';
@@ -81,6 +82,18 @@ export class WorkspaceService {
     // Detect phase directories
     const phaseDirectories = await this.detectPhaseDirectories();
 
+    // Count entity files per folder
+    const entityCounts: EntityCounts = {};
+    for (const folder of ENTITY_FOLDERS) {
+      const folderPath = normalizePath(`${planningDir}/${folder}`);
+      if (this.vaultAdapter.folderExists(folderPath)) {
+        const files = await this.vaultAdapter.listFiles(folderPath);
+        entityCounts[folder] = files.filter(f => f.endsWith('.md')).length;
+      } else {
+        entityCounts[folder] = 0;
+      }
+    }
+
     const viewModel: ViewModel = {
       workspaceStatus,
       planningDir,
@@ -90,6 +103,7 @@ export class WorkspaceService {
       stateSnapshot,
       hypothesisSnapshot,
       phaseDirectories,
+      entityCounts,
     };
 
     this.cachedViewModel = viewModel;
