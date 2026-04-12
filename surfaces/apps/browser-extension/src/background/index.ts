@@ -340,35 +340,43 @@ async function handleSurfaceCommand(command: import('@thrunt-surfaces/contracts'
       break;
     }
     case 'execute_pack': {
-      const result = await bridge.executePack({
-        packId: command.packId,
-        target: command.target,
-        parameters: command.parameters,
-        vendorContext: command.vendorContext ? toBridgeVendorContext(command.vendorContext) : undefined,
-      });
-      emitActionResult(
-        result.success ? result.message : `Runtime execute failed: ${result.message}`,
-        result.success
-          ? result.executionState?.status === 'partial' ? 'warning' : 'success'
-          : 'error',
-      );
-      if (result.view) {
-        broadcastToExtension({
-          type: 'bridge:case_updated',
-          data: { view: result.view, mockMode: bridge.isMockMode() },
-        } as any);
-      } else if (result.success) {
-        await pollBridge();
+      try {
+        const result = await bridge.executePack({
+          packId: command.packId,
+          target: command.target,
+          parameters: command.parameters,
+          vendorContext: command.vendorContext ? toBridgeVendorContext(command.vendorContext) : undefined,
+        });
+        emitActionResult(
+          result.success ? result.message : `Runtime execute failed: ${result.message}`,
+          result.success
+            ? result.executionState?.status === 'partial' ? 'warning' : 'success'
+            : 'error',
+        );
+        if (result.view) {
+          broadcastToExtension({
+            type: 'bridge:case_updated',
+            data: { view: result.view, mockMode: bridge.isMockMode() },
+          } as any);
+        } else if (result.success) {
+          await pollBridge();
+        }
+      } catch (err) {
+        emitActionResult(`Execute pack failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
       }
       break;
     }
     case 'execute_next': {
-      const result = await bridge.executeNext();
-      emitActionResult(
-        result.success ? result.message : `Execute failed: ${result.message}`,
-        result.success ? 'success' : 'error',
-      );
-      if (result.success) pollBridge();
+      try {
+        const result = await bridge.executeNext();
+        emitActionResult(
+          result.success ? result.message : `Execute failed: ${result.message}`,
+          result.success ? 'success' : 'error',
+        );
+        if (result.success) pollBridge();
+      } catch (err) {
+        emitActionResult(`Execute next failed: ${err instanceof Error ? err.message : 'unknown error'}`, 'error');
+      }
       break;
     }
   }

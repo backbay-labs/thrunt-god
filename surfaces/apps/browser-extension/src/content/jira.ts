@@ -16,6 +16,7 @@ import type {
   CaptureAction,
 } from '@thrunt-surfaces/contracts';
 import { initializeAdapter } from './base-adapter.ts';
+import { inferEntityType, deduplicateEntities } from './shared-helpers.ts';
 
 export function createJiraAdapter(): SiteAdapter {
   return {
@@ -140,15 +141,6 @@ export function createJiraAdapter(): SiteAdapter {
 
 // --- helpers ---
 
-function deduplicateEntities(entities: ExtractedEntity[]): ExtractedEntity[] {
-  const seen = new Set<string>();
-  return entities.filter((e) => {
-    const key = `${e.type}:${e.value}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
 
 // --- bootstrap ---
 initializeAdapter(createJiraAdapter());

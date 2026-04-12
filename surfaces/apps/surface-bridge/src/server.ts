@@ -294,26 +294,21 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
   // ─── Response helpers ────────────────────────────────────────────────
 
-  // Current request context — set at the top of handleRequest so json/error
-  // helpers emit correct CORS headers without threading req through every call.
-  let _currentReq: Request | undefined;
-  let _currentIp: string = '127.0.0.1';
-
-  function json(data: unknown, status = 200): Response {
+  // Response helpers — accept req parameter for correct per-request CORS headers.
+  function json(data: unknown, status = 200, req?: Request): Response {
     return new Response(JSON.stringify(data), {
       status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders(_currentReq) },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
     });
   }
 
-  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR'): Response {
-    return errorResponse(message, errorClass, code, status, _currentReq);
+  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR', req?: Request): Response {
+    return errorResponse(message, errorClass, code, status, req);
   }
 
   // ─── Request handler ─────────────────────────────────────────────────
 
-  async function handleRequest(req: Request): Promise<Response> {
-    _currentReq = req;
+  async function handleRequest(req: Request, clientIp: string = '127.0.0.1'): Promise<Response> {
     const url = new URL(req.url);
     const reqPath = url.pathname;
     const method = req.method;
@@ -351,7 +346,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     const isWrite = method === 'POST';
     const isPublic = reqPath === '/api/health' || reqPath === '/api/handshake';
     if (!checkAuth(req, isWrite) && !isPublic) {
-      rateLimiter.recordAuthFailure(_currentIp);
+      rateLimiter.recordAuthFailure(clientIp);
       return error('Unauthorized — provide X-Bridge-Token header', 401, 'auth', 'AUTH_MISSING_TOKEN');
     }
 
@@ -517,7 +512,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       const body = await req.json() as { token?: string };
       const providedToken = body.token;
       if (!providedToken || providedToken !== sessionToken) {
-        rateLimiter.recordAuthFailure(_currentIp);
+        rateLimiter.recordAuthFailure(clientIp);
         return error('Invalid or missing token — read .bridge-token file', 401, 'auth', 'AUTH_INVALID_TOKEN');
       }
       return json({ authenticated: true, version: VERSION });
@@ -756,8 +751,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         });
       }
 
-      _currentIp = ip;
-      return handleRequest(req);
+      return handleRequest(req, ip);
     },
     websocket: {
       open(ws) {

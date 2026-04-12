@@ -10,6 +10,15 @@ function escapeAthenaString(value: string): string {
   return String(value).replace(/'/g, "''");
 }
 
+/** Escape a SQL identifier (database/table name) — reject invalid characters. */
+function escapeAthenaIdentifier(value: string): string {
+  // Only allow alphanumeric, underscore, and dot (for qualified names)
+  if (!/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(value)) {
+    throw new Error(`Invalid SQL identifier: ${value}`);
+  }
+  return value;
+}
+
 export interface CloudTrailQueryParams {
   /** Query mode: 'lookup' for CloudTrail Lookup Events, 'athena' for Athena SQL */
   mode?: 'lookup' | 'athena';
@@ -115,8 +124,8 @@ export class AwsCompanion {
   }
 
   private buildAthenaQuery(params: CloudTrailQueryParams): string {
-    const database = params.athenaDatabase ?? 'cloudtrail_logs';
-    const table = params.athenaTable ?? 'cloudtrail';
+    const database = escapeAthenaIdentifier(params.athenaDatabase ?? 'cloudtrail_logs');
+    const table = escapeAthenaIdentifier(params.athenaTable ?? 'cloudtrail');
 
     const conditions: string[] = [];
 
