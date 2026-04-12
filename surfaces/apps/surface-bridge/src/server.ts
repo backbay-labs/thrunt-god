@@ -126,7 +126,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       const paths = resolvePlanningPaths(cfg.projectRoot);
       if (!fs.existsSync(paths.programRoot)) return;
       const tokenPath = path.join(paths.programRoot, '.bridge-token');
-      fs.writeFileSync(tokenPath, sessionToken, 'utf-8');
+      fs.writeFileSync(tokenPath, sessionToken, { encoding: 'utf-8', mode: 0o600 });
     } catch { /* non-fatal if planning dir doesn't exist yet */ }
   }
 
