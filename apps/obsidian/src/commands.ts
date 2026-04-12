@@ -7,12 +7,18 @@ import { ENTITY_TYPES } from './entity-schema';
 import { McpSearchModal } from './mcp-search-modal';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { PromptModal, CanvasTemplateModal, CompareHuntsModal } from './modals';
+import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal } from './chooser-modals';
 
 // ---------------------------------------------------------------------------
 // registerCommands -- called once from plugin.onload()
 // ---------------------------------------------------------------------------
 
 export function registerCommands(plugin: ThruntGodPlugin): void {
+
+  // =========================================================================
+  // Visible top-level commands (9 total)
+  // =========================================================================
+
   plugin.addCommand({
     id: 'open-thrunt-workspace',
     name: 'Open workspace',
@@ -21,17 +27,6 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
       void plugin.activateView();
     },
   });
-
-  // Register open commands for all 5 artifacts from registry
-  for (const artifact of CORE_ARTIFACTS) {
-    plugin.addCommand({
-      id: artifact.commandId,
-      name: artifact.commandName,
-      callback: () => {
-        void openCoreFile(plugin, artifact.fileName);
-      },
-    });
-  }
 
   plugin.addCommand({
     id: 'create-thrunt-workspace',
@@ -58,128 +53,29 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     },
   });
 
-  // --- MCP enrichment commands (Plan 02) ---
+  // --- Grouped chooser commands ---
 
   plugin.addCommand({
-    id: 'enrich-from-mcp',
-    name: 'Enrich from MCP',
-    checkCallback: (checking: boolean) => {
-      const file = plugin.app.workspace.getActiveFile();
-      if (!file || !file.path.includes('entities/ttps/')) return false;
-      if (checking) return true;
-      void enrichFromMcp(plugin, file.path);
-      return true;
-    },
-  });
-
-  plugin.addCommand({
-    id: 'analyze-detection-coverage',
-    name: 'Analyze detection coverage',
+    id: 'copy-chooser',
+    name: 'Copy...',
     callback: () => {
-      void runCoverageAnalysis(plugin);
+      new CopyChooserModal(plugin.app, plugin).open();
     },
   });
 
   plugin.addCommand({
-    id: 'log-hunt-decision',
-    name: 'Log hunt decision',
-    checkCallback: (checking: boolean) => {
-      const file = plugin.app.workspace.getActiveFile();
-      if (!file || !file.path.includes('entities/ttps/')) return false;
-      if (checking) return true;
-      void promptAndLogDecision(plugin, file.path);
-      return true;
-    },
-  });
-
-  plugin.addCommand({
-    id: 'log-hunt-learning',
-    name: 'Log hunt learning',
+    id: 'canvas-chooser',
+    name: 'Canvas...',
     callback: () => {
-      void promptAndLogLearning(plugin);
+      new CanvasChooserModal(plugin.app, plugin).open();
     },
   });
 
   plugin.addCommand({
-    id: 'search-knowledge-graph',
-    name: 'Search THRUNT knowledge graph',
+    id: 'intelligence-chooser',
+    name: 'Intelligence...',
     callback: () => {
-      void openSearchModal(plugin);
-    },
-  });
-
-  // --- Hyper Copy commands (Phase 75) ---
-
-  plugin.addCommand({
-    id: 'hyper-copy-for-agent',
-    name: 'Hyper Copy for Agent',
-    hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'h' }],
-    callback: () => {
-      const file = plugin.app.workspace.getActiveFile();
-      if (!file) {
-        new Notice('No active file. Open a note first.');
-        return;
-      }
-      const profiles = plugin.workspaceService.getAvailableProfiles();
-      new HyperCopyModal(
-        plugin.app,
-        profiles,
-        (agentId: string) =>
-          plugin.workspaceService.assembleContextForProfile(file.path, agentId),
-        (text: string, entry) => {
-          void plugin.workspaceService.logExport(entry);
-        },
-      ).open();
-    },
-  });
-
-  plugin.addCommand({
-    id: 'copy-for-query-writer',
-    name: 'Copy for Query Writer',
-    callback: () => { void quickExport(plugin, 'query-writer', 'Query Writer'); },
-  });
-
-  plugin.addCommand({
-    id: 'copy-for-intel-advisor',
-    name: 'Copy for Intel Advisor',
-    callback: () => { void quickExport(plugin, 'intel-advisor', 'Intel Advisor'); },
-  });
-
-  plugin.addCommand({
-    id: 'copy-ioc-context',
-    name: 'Copy IOC context',
-    callback: () => { void quickExport(plugin, 'signal-triager', 'Signal Triager'); },
-  });
-
-  // --- Canvas commands (Phase 76) ---
-
-  plugin.addCommand({
-    id: 'generate-hunt-canvas',
-    name: 'Generate hunt canvas',
-    callback: () => {
-      new CanvasTemplateModal(plugin.app, async (template) => {
-        const result = await plugin.workspaceService.generateHuntCanvas(template);
-        new Notice(result.message);
-        if (result.success && result.canvasPath) {
-          await plugin.app.workspace.openLinkText(result.canvasPath, '', true);
-        }
-        await plugin.refreshViews();
-      }).open();
-    },
-  });
-
-  plugin.addCommand({
-    id: 'canvas-from-current-hunt',
-    name: 'Canvas from current hunt',
-    callback: () => {
-      new CanvasTemplateModal(plugin.app, async (template) => {
-        const result = await plugin.workspaceService.canvasFromCurrentHunt(template);
-        new Notice(result.message);
-        if (result.success && result.canvasPath) {
-          await plugin.app.workspace.openLinkText(result.canvasPath, '', true);
-        }
-        await plugin.refreshViews();
-      }).open();
+      new IntelligenceChooserModal(plugin.app, plugin).open();
     },
   });
 
@@ -221,9 +117,99 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     },
   });
 
+  // =========================================================================
+  // Hidden aliases -- preserve old command IDs for hotkey bindings
+  // =========================================================================
+
+  // --- Artifact open commands (5) -- hidden from palette ---
+  for (const artifact of CORE_ARTIFACTS) {
+    plugin.addCommand({
+      id: artifact.commandId,
+      name: '',
+      callback: () => {
+        void openCoreFile(plugin, artifact.fileName);
+      },
+    });
+  }
+
+  // --- Copy group aliases (4) ---
+
+  plugin.addCommand({
+    id: 'hyper-copy-for-agent',
+    name: '',
+    hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'h' }],
+    callback: () => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file) {
+        new Notice('No active file. Open a note first.');
+        return;
+      }
+      const profiles = plugin.workspaceService.getAvailableProfiles();
+      new HyperCopyModal(
+        plugin.app,
+        profiles,
+        (agentId: string) =>
+          plugin.workspaceService.assembleContextForProfile(file.path, agentId),
+        (text: string, entry) => {
+          void plugin.workspaceService.logExport(entry);
+        },
+      ).open();
+    },
+  });
+
+  plugin.addCommand({
+    id: 'copy-for-query-writer',
+    name: '',
+    callback: () => { void quickExport(plugin, 'query-writer', 'Query Writer'); },
+  });
+
+  plugin.addCommand({
+    id: 'copy-for-intel-advisor',
+    name: '',
+    callback: () => { void quickExport(plugin, 'intel-advisor', 'Intel Advisor'); },
+  });
+
+  plugin.addCommand({
+    id: 'copy-ioc-context',
+    name: '',
+    callback: () => { void quickExport(plugin, 'signal-triager', 'Signal Triager'); },
+  });
+
+  // --- Canvas group aliases (3) ---
+
+  plugin.addCommand({
+    id: 'generate-hunt-canvas',
+    name: '',
+    callback: () => {
+      new CanvasTemplateModal(plugin.app, async (template) => {
+        const result = await plugin.workspaceService.generateHuntCanvas(template);
+        new Notice(result.message);
+        if (result.success && result.canvasPath) {
+          await plugin.app.workspace.openLinkText(result.canvasPath, '', true);
+        }
+        await plugin.refreshViews();
+      }).open();
+    },
+  });
+
+  plugin.addCommand({
+    id: 'canvas-from-current-hunt',
+    name: '',
+    callback: () => {
+      new CanvasTemplateModal(plugin.app, async (template) => {
+        const result = await plugin.workspaceService.canvasFromCurrentHunt(template);
+        new Notice(result.message);
+        if (result.success && result.canvasPath) {
+          await plugin.app.workspace.openLinkText(result.canvasPath, '', true);
+        }
+        await plugin.refreshViews();
+      }).open();
+    },
+  });
+
   plugin.addCommand({
     id: 'generate-knowledge-dashboard',
-    name: 'Generate knowledge dashboard',
+    name: '',
     callback: () => {
       void (async () => {
         const result = await plugin.workspaceService.generateKnowledgeDashboard();
@@ -233,6 +219,56 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
         }
         await plugin.refreshViews();
       })();
+    },
+  });
+
+  // --- Intelligence group aliases (5) ---
+
+  plugin.addCommand({
+    id: 'enrich-from-mcp',
+    name: '',
+    checkCallback: (checking: boolean) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file || !file.path.includes('entities/ttps/')) return false;
+      if (checking) return true;
+      void enrichFromMcp(plugin, file.path);
+      return true;
+    },
+  });
+
+  plugin.addCommand({
+    id: 'analyze-detection-coverage',
+    name: '',
+    callback: () => {
+      void runCoverageAnalysis(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'log-hunt-decision',
+    name: '',
+    checkCallback: (checking: boolean) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file || !file.path.includes('entities/ttps/')) return false;
+      if (checking) return true;
+      void promptAndLogDecision(plugin, file.path);
+      return true;
+    },
+  });
+
+  plugin.addCommand({
+    id: 'log-hunt-learning',
+    name: '',
+    callback: () => {
+      void promptAndLogLearning(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'search-knowledge-graph',
+    name: '',
+    callback: () => {
+      void openSearchModal(plugin);
     },
   });
 }
@@ -453,7 +489,7 @@ async function openSearchModal(plugin: ThruntGodPlugin): Promise<void> {
   ).open();
 }
 
-async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {
+export async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {
   const file = plugin.app.workspace.getActiveFile();
   if (!file) {
     new Notice('No active file. Open a note first.');
