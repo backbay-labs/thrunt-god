@@ -38,12 +38,12 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 ### Hyper Copy
 
 - [x] **HCOPY-01**: Export profile registry defines per-agent context needs (at least 5 default profiles: query-writer, intel-advisor, findings-validator, signal-triager, hunt-planner)
-- [ ] **HCOPY-02**: "Hyper Copy for Agent" command assembles multi-note context by following wiki-links, shows preview with token estimate
+- [x] **HCOPY-02**: "Hyper Copy for Agent" command assembles multi-note context by following wiki-links, shows preview with token estimate
 - [x] **HCOPY-03**: Context assembly engine follows wiki-links to related entity notes up to configurable depth
 - [x] **HCOPY-04**: Assembled prompts include provenance markers tracing each section to its source file
 - [ ] **HCOPY-05**: Quick export commands skip modal for common flows (copy for query writer, copy for intel advisor, copy IOC context)
 - [x] **HCOPY-06**: Export profiles are extensible via JSON config file
-- [ ] **HCOPY-07**: EXPORT_LOG.md records each export with source, context assembled, token estimate, target agent
+- [x] **HCOPY-07**: EXPORT_LOG.md records each export with source, context assembled, token estimate, target agent
 
 ### Canvas + Cross-Hunt
 
@@ -103,9 +103,9 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | HCOPY-03 | Phase 74 | Complete |
 | HCOPY-04 | Phase 74 | Complete |
 | HCOPY-06 | Phase 74 | Complete |
-| HCOPY-02 | Phase 75 | Pending |
+| HCOPY-02 | Phase 75 | Complete |
 | HCOPY-05 | Phase 75 | Pending |
-| HCOPY-07 | Phase 75 | Pending |
+| HCOPY-07 | Phase 75 | Complete |
 | CANVAS-01 | Phase 76 | Pending |
 | CANVAS-02 | Phase 76 | Pending |
 | CANVAS-03 | Phase 76 | Pending |

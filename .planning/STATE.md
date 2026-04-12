@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 74-02-PLAN.md
-last_updated: "2026-04-12T07:09:52.827Z"
+status: executing
+stopped_at: Completed 75-01-PLAN.md
+last_updated: "2026-04-12T07:21:23.784Z"
 progress:
   total_phases: 10
   completed_phases: 7
-  total_plans: 15
-  completed_plans: 15
-  percent: 100
+  total_plans: 17
+  completed_plans: 16
+  percent: 94
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 74 complete (2/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 75 in progress (1/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 74 of 77 (Export Profile Registry + Context Assembly Engine)
-**Plan:** 2 of 2 complete
+**Status:** Executing
+**Phase:** 75 of 77 (Hyper Copy Commands & Export UX)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (15/15 v4.0 plans)
+Progress: [█████████░] 94% (16/17 v4.0 plans)
 
 ## Recently Completed
 
@@ -41,7 +41,7 @@ Progress: [██████████] 100% (15/15 v4.0 plans)
 
 **Velocity:**
 - Total plans completed: 67 phases across 14 milestones
-- v4.0 plans completed: 5
+- v4.0 plans completed: 6
 
 ## Accumulated Context
 
@@ -91,6 +91,9 @@ Progress: [██████████] 100% (15/15 v4.0 plans)
 - [Phase 74]: [Phase 74-02]: Entity type filtering uses folder prefix matching rather than frontmatter parsing -- faster, no file read needed
 - [Phase 74]: [Phase 74-02]: Linked notes contribute ALL sections (not filtered by includeSections) -- only source note is section-filtered
 - [Phase 74]: [Phase 74-02]: assembleContext uses callback-based I/O (readFile/fileExists) for pure testability without VaultAdapter dependency
+- [Phase 75]: [Phase 75-01]: Export log formatter follows pure data module pattern (zero Obsidian imports) consistent with ingestion.ts
+- [Phase 75]: [Phase 75-01]: Entity type counting uses sourcePath folder prefix parsing with deduplication
+- [Phase 75]: [Phase 75-01]: HyperCopyModal preview uses raw markdown in pre element rather than rendered HTML
 
 ### Blockers/Concerns
 
@@ -98,6 +101,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T07:05:30Z
-Stopped at: Completed 74-02-PLAN.md
+Last session: 2026-04-12T07:20:39Z
+Stopped at: Completed 75-01-PLAN.md
 Resume file: None
