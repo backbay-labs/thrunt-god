@@ -264,8 +264,9 @@ describe('applyMigration', () => {
   it('updates verdict from "" to unknown via migration', () => {
     const result = applyMigration(OLD_NOTE);
     // The old note has verdict: "" -- migration should update it to unknown
-    expect(result).toContain('verdict: unknown');
-    expect(result).not.toContain('verdict: ""');
+    // updateFrontmatter preserves existing quoting style, so "unknown" is valid
+    expect(result).toMatch(/verdict:\s*"?unknown"?/);
+    expect(result).not.toMatch(/verdict:\s*""\s*$/m);
   });
 
   it('handles minimal note with just type and aliases', () => {
