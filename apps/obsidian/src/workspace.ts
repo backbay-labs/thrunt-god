@@ -8,6 +8,7 @@ import {
   type ArtifactStatus,
   type ViewModel,
   type EntityCounts,
+  type ExtendedArtifacts,
 } from './types';
 import { parseState, parseHypotheses } from './parsers';
 import type { StateSnapshot, HypothesisSnapshot, PhaseDirectoryInfo } from './types';
@@ -94,6 +95,9 @@ export class WorkspaceService {
       }
     }
 
+    // Detect extended artifacts
+    const extendedArtifacts = await this.detectExtendedArtifacts(planningDir);
+
     const viewModel: ViewModel = {
       workspaceStatus,
       planningDir,
@@ -104,6 +108,7 @@ export class WorkspaceService {
       hypothesisSnapshot,
       phaseDirectories,
       entityCounts,
+      extendedArtifacts,
     };
 
     this.cachedViewModel = viewModel;
@@ -171,6 +176,50 @@ export class WorkspaceService {
       this.defaultPlanningDir,
     );
     return getCoreFilePath(planningDir, fileName);
+  }
+
+  private async detectExtendedArtifacts(planningDir: string): Promise<ExtendedArtifacts> {
+    // RECEIPTS count: RCT-*.md files in RECEIPTS/ folder
+    let receipts = 0;
+    const receiptsPath = normalizePath(`${planningDir}/RECEIPTS`);
+    if (this.vaultAdapter.folderExists(receiptsPath)) {
+      const files = await this.vaultAdapter.listFiles(receiptsPath);
+      receipts = files.filter(f => /^RCT-.*\.md$/.test(f)).length;
+    }
+
+    // QUERIES count: QRY-*.md files in QUERIES/ folder
+    let queries = 0;
+    const queriesPath = normalizePath(`${planningDir}/QUERIES`);
+    if (this.vaultAdapter.folderExists(queriesPath)) {
+      const files = await this.vaultAdapter.listFiles(queriesPath);
+      queries = files.filter(f => /^QRY-.*\.md$/.test(f)).length;
+    }
+
+    // Boolean artifact checks
+    const evidenceReview = this.vaultAdapter.fileExists(
+      normalizePath(`${planningDir}/EVIDENCE_REVIEW.md`),
+    );
+    const successCriteria = this.vaultAdapter.fileExists(
+      normalizePath(`${planningDir}/SUCCESS_CRITERIA.md`),
+    );
+    const environment = this.vaultAdapter.fileExists(
+      normalizePath(`${planningDir}/environment/ENVIRONMENT.md`),
+    );
+
+    // Cases count: subdirectories in cases/ that contain MISSION.md
+    let cases = 0;
+    const casesPath = normalizePath(`${planningDir}/cases`);
+    if (this.vaultAdapter.folderExists(casesPath)) {
+      const subfolders = await this.vaultAdapter.listFolders(casesPath);
+      for (const subfolder of subfolders) {
+        const missionPath = normalizePath(`${planningDir}/cases/${subfolder}/MISSION.md`);
+        if (this.vaultAdapter.fileExists(missionPath)) {
+          cases++;
+        }
+      }
+    }
+
+    return { receipts, queries, evidenceReview, successCriteria, environment, cases };
   }
 
   private async detectPhaseDirectories(): Promise<PhaseDirectoryInfo> {

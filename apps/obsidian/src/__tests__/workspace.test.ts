@@ -328,6 +328,14 @@ describe('WorkspaceService', () => {
   // -------------------------------------------------------------------------
 
   describe('formatStatusBarText', () => {
+    const defaultExtendedArtifacts = {
+      receipts: 0,
+      queries: 0,
+      evidenceReview: false,
+      successCriteria: false,
+      environment: false,
+      cases: 0,
+    };
     const healthyBase = {
       workspaceStatus: 'healthy' as const,
       planningDir: '.planning',
@@ -338,6 +346,7 @@ describe('WorkspaceService', () => {
       hypothesisSnapshot: null,
       phaseDirectories: { count: 0, highest: null, highestName: null },
       entityCounts: {},
+      extendedArtifacts: defaultExtendedArtifacts,
     };
 
     it('returns "THRUNT not detected" for missing workspace', () => {
@@ -351,6 +360,7 @@ describe('WorkspaceService', () => {
         hypothesisSnapshot: null,
         phaseDirectories: { count: 0, highest: null, highestName: null },
         entityCounts: {},
+        extendedArtifacts: defaultExtendedArtifacts,
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT not detected');
     });
@@ -366,6 +376,7 @@ describe('WorkspaceService', () => {
         hypothesisSnapshot: null,
         phaseDirectories: { count: 0, highest: null, highestName: null },
         entityCounts: {},
+        extendedArtifacts: defaultExtendedArtifacts,
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT .planning (3/5)');
     });
@@ -381,6 +392,7 @@ describe('WorkspaceService', () => {
         hypothesisSnapshot: { total: 5, validated: 1, pending: 2, rejected: 1, unknown: 1 },
         phaseDirectories: { count: 3, highest: 3, highestName: 'phase-03' },
         entityCounts: {},
+        extendedArtifacts: defaultExtendedArtifacts,
       };
       expect(formatStatusBarText(vm)).toBe('Phase 3 | 2/5 hypotheses active | 1 blocker');
     });
