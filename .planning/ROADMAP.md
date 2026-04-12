@@ -215,7 +215,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete    | 2026-04-12 | - |
 | 70. Artifact Registry + Parsers | 2/2 | Complete    | 2026-04-12 | - |
 | 71. Ingestion Engine + Agent Activity Timeline | 2/2 | Complete    | 2026-04-12 | - |
-| 72. MCP Client Adapter + Connection Infrastructure | 2/2 | Complete   | 2026-04-12 | - |
+| 72. MCP Client Adapter + Connection Infrastructure | 2/2 | Complete    | 2026-04-12 | - |
 | 73. MCP Enrichment + Intelligence Features | v4.0 | 0/0 | Not started | - |
 | 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |
 | 75. Hyper Copy Commands + Export UX | v4.0 | 0/0 | Not started | - |
