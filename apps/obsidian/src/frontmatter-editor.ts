@@ -57,6 +57,28 @@ function findFrontmatterBounds(
   return { start: 0, end: endIdx };
 }
 
+/**
+ * Split content into frontmatter lines and the trailing portion (closing --- onward).
+ * Returns null if no valid frontmatter.
+ */
+function splitFrontmatter(
+  content: string,
+): { lines: string[]; afterFm: string } | null {
+  const bounds = findFrontmatterBounds(content);
+  if (!bounds) return null;
+  const firstNewline = content.indexOf('\n');
+  const fmBody = content.slice(firstNewline + 1, bounds.end);
+  const afterFm = content.slice(bounds.end + 1);
+  return { lines: fmBody.split('\n'), afterFm };
+}
+
+/**
+ * Reassemble frontmatter lines and trailing content into a full markdown string.
+ */
+function reassemble(lines: string[], afterFm: string): string {
+  return `---\n${lines.join('\n')}\n${afterFm}`;
+}
+
 // ---------------------------------------------------------------------------
 // updateFrontmatter
 // ---------------------------------------------------------------------------
@@ -77,15 +99,10 @@ export function updateFrontmatter(
   content: string,
   updates: Record<string, unknown>,
 ): string {
-  const bounds = findFrontmatterBounds(content);
-  if (!bounds) return content;
+  const parts = splitFrontmatter(content);
+  if (!parts) return content;
 
-  // Split into: opening ---, frontmatter body, closing --- + rest
-  const firstNewline = content.indexOf('\n');
-  const fmBody = content.slice(firstNewline + 1, bounds.end);
-  const afterFm = content.slice(bounds.end + 1); // includes \n--- and everything after
-
-  const lines = fmBody.split('\n');
+  const { lines, afterFm } = parts;
   const updatedKeys = new Set<string>();
 
   // Pass 1: update existing keys
@@ -101,10 +118,8 @@ export function updateFrontmatter(
     const newValue = updates[key];
     updatedKeys.add(key);
 
-    // Detect existing quoting style
+    // Detect existing quoting style; empty unquoted values use 'none'
     const quoteStyle = detectQuoteStyle(existingValue);
-
-    // For empty unquoted values (key: with nothing after), use 'none'
     const effectiveStyle =
       existingValue.trim() === '' ? 'none' : quoteStyle;
 
@@ -119,8 +134,7 @@ export function updateFrontmatter(
     updatedLines.push(`${key}: ${formatValue(value, 'none')}`);
   }
 
-  // Reassemble: lines joined with \n, then \n before afterFm (which starts with ---)
-  return `---\n${updatedLines.join('\n')}\n${afterFm}`;
+  return reassemble(updatedLines, afterFm);
 }
 
 // ---------------------------------------------------------------------------
@@ -148,17 +162,12 @@ export function addToArray(
   key: string,
   value: string,
 ): string {
-  const bounds = findFrontmatterBounds(content);
-  if (!bounds) return content;
+  const parts = splitFrontmatter(content);
+  if (!parts) return content;
 
-  const firstNewline = content.indexOf('\n');
-  const fmBody = content.slice(firstNewline + 1, bounds.end);
-  const afterFm = content.slice(bounds.end + 1);
-
-  const lines = fmBody.split('\n');
+  const { lines, afterFm } = parts;
   let keyFound = false;
   let modified = false;
-
   const resultLines: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -226,7 +235,7 @@ export function addToArray(
 
   if (!keyFound || !modified) return content;
 
-  return `---\n${resultLines.join('\n')}\n${afterFm}`;
+  return reassemble(resultLines, afterFm);
 }
 
 // ---------------------------------------------------------------------------
