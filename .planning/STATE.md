@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 81-02-PLAN.md
-last_updated: "2026-04-12T14:39:35.650Z"
+stopped_at: Completed 82-01-PLAN.md
+last_updated: "2026-04-12T15:13:00.707Z"
 progress:
   total_phases: 12
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 86
+  total_plans: 10
+  completed_plans: 8
+  percent: 80
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 81 (Command Consolidation + Modal Polish)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 82 (Verdict Lifecycle + FrontmatterEditor + Schema Versioning)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
 **Status:** Executing
-**Phase:** 81 of 90 (Command Consolidation + Modal Polish)
-**Plan:** 1 of 2 in current phase complete
+**Phase:** 82 of 90 (Verdict Lifecycle + FrontmatterEditor + Schema Versioning)
+**Plan:** 1 of 3 in current phase complete
 
-Progress: [████████░░] 86% (6/7 v5.0 plans)
+Progress: [████████░░] 80% (8/10 v5.0 plans)
 
 ## Recently Completed
 
@@ -65,6 +65,9 @@ Progress: [████████░░] 86% (6/7 v5.0 plans)
 - [Phase 81]: CanvasTemplateChooserModal replaces button-based CanvasTemplateModal for consistent fuzzy UI
 - [Phase 81]: CanvasTemplateModal uses FuzzySuggestModal with CanvasTemplateItem for consistent fuzzy keyboard nav
 - [Phase 81]: Entity badge colors use color-mix(var(--color-X) 25%, transparent) with data-entity-type attribute selectors
+- [Phase 82]: FrontmatterEditor uses regex line-by-line scanning, not YAML parse/serialize, to preserve comments and formatting
+- [Phase 82]: splitFrontmatter/reassemble helpers extracted for DRY frontmatter manipulation
+- [Phase 82]: addToArray treats non-array values as no-op (returns unchanged) rather than throwing
 
 ### Blockers/Concerns
 
@@ -72,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T14:39:35.645Z
-Stopped at: Completed 81-02-PLAN.md
+Last session: 2026-04-12T15:12:55.703Z
+Stopped at: Completed 82-01-PLAN.md
 Resume file: None

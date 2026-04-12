@@ -28,7 +28,7 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 - [ ] **INTEL-07**: Analysts can add false positive annotations to technique notes via command
 - [ ] **INTEL-08**: Techniques not hunted in N months (configurable) are flagged as stale coverage
 - [ ] **INTEL-09**: Entity confidence is computed from multiple inspectable factors (source_count, reliability, corroboration, days_since_validation) with configurable decay
-- [ ] **INTEL-10**: FrontmatterEditor utility performs surgical frontmatter updates without YAML formatting destruction
+- [x] **INTEL-10**: FrontmatterEditor utility performs surgical frontmatter updates without YAML formatting destruction
 
 ### Live Canvas
 
@@ -100,7 +100,7 @@ Deferred beyond v5.0.
 | INTEL-07 | Phase 84 | Pending |
 | INTEL-08 | Phase 84 | Pending |
 | INTEL-09 | Phase 83 | Pending |
-| INTEL-10 | Phase 82 | Pending |
+| INTEL-10 | Phase 82 | Complete |
 | CANVAS-07 | Phase 85 | Pending |
 | CANVAS-08 | Phase 85 | Pending |
 | CANVAS-09 | Phase 86 | Pending |
