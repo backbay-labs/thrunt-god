@@ -17,7 +17,8 @@ export function inferEntityType(value: string): ExtractedEntity['type'] {
 export function deduplicateEntities(entities: ExtractedEntity[]): ExtractedEntity[] {
   const seen = new Set<string>();
   return entities.filter((e) => {
-    const key = `${e.type}:${e.value}`;
+    const value = e.value?.trim().toLowerCase() ?? '';
+    const key = `${e.type}:${value}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
