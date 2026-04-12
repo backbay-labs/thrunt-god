@@ -4,32 +4,29 @@ import type {
   ExtractedQuery,
   ExtractedTable,
   SiteAdapter,
-  VendorPageContext,
   VendorPageType,
 } from '@thrunt-surfaces/contracts';
 import {
-  baseContext,
-  buildAssessment,
+  buildAdapter,
   dedupeEntities,
   extractTableFromSelectors,
-  filterSupportedActions,
   firstText,
-  inferEntityType,
   normalizeWhitespace,
 } from '../helpers.ts';
 
 const BASE_ACTIONS: CaptureAction[] = ['clip_query', 'clip_table', 'clip_entity', 'clip_screenshot_metadata', 'attach_page_context'];
 
 export function createCrowdStrikeAdapter(): SiteAdapter {
-  return {
-    id: 'crowdstrike',
-    displayName: 'CrowdStrike Falcon',
+  return buildAdapter({
+    vendorId: 'crowdstrike',
+    consoleName: 'CrowdStrike Falcon',
     urlPatterns: [
       'falcon.crowdstrike.com',
       'falcon.us-2.crowdstrike.com',
       'falcon.eu-1.crowdstrike.com',
       'falcon.laggar.gcw.crowdstrike.com',
     ],
+    baseActions: BASE_ACTIONS,
 
     detect(): boolean {
       return !!(
@@ -41,65 +38,8 @@ export function createCrowdStrikeAdapter(): SiteAdapter {
       );
     },
 
-    extractContext(): VendorPageContext {
-      const detected = this.detect();
-      const pageType = detected ? classifyCrowdStrikePage() : 'unknown';
-      const query = extractCrowdStrikeQuery();
-      const table = extractCrowdStrikeTable();
-      const entities = extractCrowdStrikeEntities();
-
-      const supported = detected && pageType !== 'unknown';
-      const failureReasons: string[] = [];
-      if (!supported) {
-        failureReasons.push('This Falcon page is not a supported CrowdStrike surface');
-      } else {
-        if (!query && pageType === 'search') {
-          failureReasons.push('No FQL query editor detected');
-        }
-        if (!table && pageType === 'search') {
-          failureReasons.push('No events table detected');
-        }
-        if (!query && pageType === 'alert_detail') {
-          failureReasons.push('No FQL query editor detected on detection page');
-        }
-      }
-
-      const extraction = buildAssessment({
-        supported,
-        pageType,
-        failureReasons,
-        detectedSignals: [
-          pageType !== 'unknown' ? `page:${pageType}` : '',
-          document.querySelector('[data-testid="event-search"]') ? 'app:event-search' : '',
-          document.querySelector('[data-testid="falcon-shell"]') ? 'shell:falcon' : '',
-          query ? 'editor:fql' : '',
-          table ? 'data:table' : '',
-        ].filter(Boolean),
-        queryPresent: Boolean(query),
-        tablePresent: Boolean(table),
-        entityCount: entities.length,
-      });
-
-      const path = window.location.pathname.toLowerCase();
-      const supportedActions = filterSupportedActions(BASE_ACTIONS, extraction, {
-        query: Boolean(query),
-        table: Boolean(table),
-        entities: entities.length > 0,
-      });
-
-      return baseContext({
-        vendorId: 'crowdstrike',
-        consoleName: 'CrowdStrike Falcon',
-        pageType,
-        pageUrl: window.location.href,
-        pageTitle: document.title,
-        metadata: {
-          section: path.split('/').filter(Boolean)[0] ?? null,
-          cloudRegion: extractFalconRegion(),
-          timeRange: firstText(['[data-testid="time-range-display"]']),
-          supportedActions,
-        },
-      }, extraction);
+    classifyPage(): VendorPageType {
+      return classifyCrowdStrikePage();
     },
 
     extractQuery(): ExtractedQuery | null {
@@ -110,14 +50,48 @@ export function createCrowdStrikeAdapter(): SiteAdapter {
       return extractCrowdStrikeTable();
     },
 
-    extractEntities(): ExtractedEntity[] {
+    extractEntities(_table: ExtractedTable | null): ExtractedEntity[] {
       return extractCrowdStrikeEntities();
     },
 
-    supportedActions(): CaptureAction[] {
-      return computeCrowdStrikeSupportedActions();
+    computeFailureReasons({ supported, pageType, query, table }) {
+      const reasons: string[] = [];
+      if (!supported) {
+        reasons.push('This Falcon page is not a supported CrowdStrike surface');
+      } else {
+        if (!query && pageType === 'search') {
+          reasons.push('No FQL query editor detected');
+        }
+        if (!table && pageType === 'search') {
+          reasons.push('No events table detected');
+        }
+        if (!query && pageType === 'alert_detail') {
+          reasons.push('No FQL query editor detected on detection page');
+        }
+      }
+      return reasons;
     },
-  };
+
+    computeDetectedSignals({ pageType, query, table }) {
+      return [
+        pageType !== 'unknown' ? `page:${pageType}` : '',
+        document.querySelector('[data-testid="event-search"]') ? 'app:event-search' : '',
+        document.querySelector('[data-testid="falcon-shell"]') ? 'shell:falcon' : '',
+        query ? 'editor:fql' : '',
+        table ? 'data:table' : '',
+      ].filter(Boolean);
+    },
+
+    buildMetadata({ supportedActions }) {
+      const path = window.location.pathname.toLowerCase();
+      return {
+        section: path.split('/').filter(Boolean)[0] ?? null,
+        cloudRegion: extractFalconRegion(),
+        timeRange: firstText(['[data-testid="time-range-display"]']),
+        supportedActions,
+      };
+    },
+  });
 }
 
 function classifyCrowdStrikePage(): VendorPageType {
@@ -196,44 +170,4 @@ function extractFalconRegion(): string | null {
   const hostname = window.location.hostname;
   const regionMatch = hostname.match(/falcon\.([^.]+)\.crowdstrike\.com/);
   return regionMatch ? regionMatch[1] : null;
-}
-
-function computeCrowdStrikeSupportedActions(): CaptureAction[] {
-  const detected = !!(
-    document.querySelector('#falcon-app') ||
-    document.querySelector('[data-testid="falcon-shell"]') ||
-    document.querySelector('[class*="falcon-chrome"]') ||
-    document.querySelector('nav[aria-label="Falcon navigation"]') ||
-    document.querySelector('[data-testid="event-search"]')
-  );
-  const pageType = detected ? classifyCrowdStrikePage() : 'unknown';
-  const query = extractCrowdStrikeQuery();
-  const table = extractCrowdStrikeTable();
-  const entities = extractCrowdStrikeEntities();
-
-  const extraction = buildAssessment({
-    supported: detected && pageType !== 'unknown',
-    pageType,
-    failureReasons: (() => {
-      const reasons: string[] = [];
-      if (pageType === 'unknown' || !detected) {
-        reasons.push('This Falcon page is not a supported CrowdStrike surface');
-      } else {
-        if (!query && pageType === 'search') reasons.push('No FQL query editor detected');
-        if (!table && pageType === 'search') reasons.push('No events table detected');
-        if (!query && pageType === 'alert_detail') reasons.push('No FQL query editor detected on detection page');
-      }
-      return reasons;
-    })(),
-    detectedSignals: [],
-    queryPresent: Boolean(query),
-    tablePresent: Boolean(table),
-    entityCount: entities.length,
-  });
-
-  return filterSupportedActions(BASE_ACTIONS, extraction, {
-    query: Boolean(query),
-    table: Boolean(table),
-    entities: entities.length > 0,
-  });
 }

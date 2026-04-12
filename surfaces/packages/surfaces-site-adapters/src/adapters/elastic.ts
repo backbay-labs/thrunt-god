@@ -4,15 +4,13 @@ import type {
   ExtractedQuery,
   ExtractedTable,
   SiteAdapter,
-  VendorPageContext,
+  VendorPageType,
 } from '@thrunt-surfaces/contracts';
 import {
-  baseContext,
-  buildAssessment,
+  buildAdapter,
   collectColumnEntities,
   dedupeEntities,
   extractTableFromSelectors,
-  filterSupportedActions,
   firstText,
   firstValue,
   inferEntityType,
@@ -22,9 +20,9 @@ import {
 const BASE_ACTIONS: CaptureAction[] = ['clip_query', 'clip_table', 'clip_entity', 'clip_screenshot_metadata', 'attach_page_context'];
 
 export function createElasticAdapter(): SiteAdapter {
-  return {
-    id: 'elastic',
-    displayName: 'Elastic Security / Kibana',
+  return buildAdapter({
+    vendorId: 'elastic',
+    consoleName: 'Elastic Security / Kibana',
     urlPatterns: [
       'cloud.elastic.co',
       'kb.elastic.co',
@@ -32,6 +30,7 @@ export function createElasticAdapter(): SiteAdapter {
       '/app/discover',
       '/app/dashboards',
     ],
+    baseActions: BASE_ACTIONS,
 
     detect(): boolean {
       return !!(
@@ -42,67 +41,8 @@ export function createElasticAdapter(): SiteAdapter {
       );
     },
 
-    extractContext(): VendorPageContext {
-      const detected = this.detect();
-      const rawPageType = classifyElasticPage();
-      const pageType = detected ? rawPageType : 'unknown';
-      const query = extractElasticQuery();
-      const table = extractElasticTable();
-      const entities = extractElasticEntities(table);
-
-      const supported = detected && pageType !== 'unknown';
-      const failureReasons: string[] = [];
-      if (!supported) {
-        failureReasons.push('This Kibana page is not a supported Elastic surface');
-      } else {
-        if (!query && pageType === 'search') {
-          failureReasons.push('No query editor detected');
-        }
-        if (!table && pageType === 'search') {
-          failureReasons.push('No result table detected');
-        }
-        if (!query && pageType === 'alert_detail') {
-          failureReasons.push('No query editor detected');
-        }
-      }
-
-      const extraction = buildAssessment({
-        supported,
-        pageType,
-        failureReasons,
-        detectedSignals: [
-          pageType !== 'unknown' ? `page:${pageType}` : '',
-          document.querySelector('[data-test-subj="discover-app"]') ? 'app:discover' : '',
-          document.querySelector('[data-test-subj="securitySolutionApp"]') ? 'app:security' : '',
-          query ? 'editor:kql' : '',
-          table ? 'data:table' : '',
-        ].filter(Boolean),
-        queryPresent: Boolean(query),
-        tablePresent: Boolean(table),
-        entityCount: entities.length,
-      });
-
-      const supportedActions = filterSupportedActions(BASE_ACTIONS, extraction, {
-        query: Boolean(query),
-        table: Boolean(table),
-        entities: entities.length > 0,
-      });
-
-      const path = window.location.pathname + window.location.hash;
-
-      return baseContext({
-        vendorId: 'elastic',
-        consoleName: 'Elastic Security',
-        pageType,
-        pageUrl: window.location.href,
-        pageTitle: document.title,
-        metadata: {
-          spaceId: path.match(/\/s\/([^/]+)/)?.[1] ?? 'default',
-          kibanaVersion: document.querySelector('meta[name="kbn-version"]')?.getAttribute('content') ?? null,
-          timeRange: firstText(['[data-test-subj="superDatePickerShowDatesButton"]']),
-          supportedActions,
-        },
-      }, extraction);
+    classifyPage(): VendorPageType {
+      return classifyElasticPage();
     },
 
     extractQuery(): ExtractedQuery | null {
@@ -113,17 +53,51 @@ export function createElasticAdapter(): SiteAdapter {
       return extractElasticTable();
     },
 
-    extractEntities(): ExtractedEntity[] {
-      return extractElasticEntities(extractElasticTable());
+    extractEntities(table: ExtractedTable | null): ExtractedEntity[] {
+      return extractElasticEntities(table);
     },
 
-    supportedActions(): CaptureAction[] {
-      return computeElasticSupportedActions();
+    computeFailureReasons({ supported, pageType, query, table }) {
+      const reasons: string[] = [];
+      if (!supported) {
+        reasons.push('This Kibana page is not a supported Elastic surface');
+      } else {
+        if (!query && pageType === 'search') {
+          reasons.push('No query editor detected');
+        }
+        if (!table && pageType === 'search') {
+          reasons.push('No result table detected');
+        }
+        if (!query && pageType === 'alert_detail') {
+          reasons.push('No query editor detected');
+        }
+      }
+      return reasons;
     },
-  };
+
+    computeDetectedSignals({ pageType, query, table }) {
+      return [
+        pageType !== 'unknown' ? `page:${pageType}` : '',
+        document.querySelector('[data-test-subj="discover-app"]') ? 'app:discover' : '',
+        document.querySelector('[data-test-subj="securitySolutionApp"]') ? 'app:security' : '',
+        query ? 'editor:kql' : '',
+        table ? 'data:table' : '',
+      ].filter(Boolean);
+    },
+
+    buildMetadata({ supportedActions }) {
+      const path = window.location.pathname + window.location.hash;
+      return {
+        spaceId: path.match(/\/s\/([^/]+)/)?.[1] ?? 'default',
+        kibanaVersion: document.querySelector('meta[name="kbn-version"]')?.getAttribute('content') ?? null,
+        timeRange: firstText(['[data-test-subj="superDatePickerShowDatesButton"]']),
+        supportedActions,
+      };
+    },
+  });
 }
 
-function classifyElasticPage(): VendorPageContext['pageType'] {
+function classifyElasticPage(): VendorPageType {
   const path = window.location.pathname + window.location.hash;
 
   if (path.includes('/app/discover')) return 'search';
@@ -186,50 +160,4 @@ function extractElasticEntities(table: ExtractedTable | null): ExtractedEntity[]
   ]));
 
   return dedupeEntities(entities);
-}
-
-function computeElasticSupportedActions(): CaptureAction[] {
-  const detected = !!(
-    document.querySelector('[data-test-subj="discover-app"]') ||
-    document.querySelector('.kibanaChrome') ||
-    document.querySelector('[data-test-subj="kibana-chrome"]') ||
-    document.querySelector('[data-test-subj="securitySolutionApp"]')
-  );
-  const rawPageType = classifyElasticPage();
-  const pageType = detected ? rawPageType : 'unknown';
-  const query = extractElasticQuery();
-  const table = extractElasticTable();
-  const entities = extractElasticEntities(table);
-
-  const supported = detected && pageType !== 'unknown';
-  const failureReasons: string[] = [];
-  if (!supported) {
-    failureReasons.push('This Kibana page is not a supported Elastic surface');
-  } else {
-    if (!query && pageType === 'search') {
-      failureReasons.push('No query editor detected');
-    }
-    if (!table && pageType === 'search') {
-      failureReasons.push('No result table detected');
-    }
-    if (!query && pageType === 'alert_detail') {
-      failureReasons.push('No query editor detected');
-    }
-  }
-
-  const extraction = buildAssessment({
-    supported,
-    pageType,
-    failureReasons,
-    detectedSignals: [],
-    queryPresent: Boolean(query),
-    tablePresent: Boolean(table),
-    entityCount: entities.length,
-  });
-
-  return filterSupportedActions(BASE_ACTIONS, extraction, {
-    query: Boolean(query),
-    table: Boolean(table),
-    entities: entities.length > 0,
-  });
 }

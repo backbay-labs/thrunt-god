@@ -4,15 +4,12 @@ import type {
   ExtractedQuery,
   ExtractedTable,
   SiteAdapter,
-  VendorPageContext,
   VendorPageType,
 } from '@thrunt-surfaces/contracts';
 import {
-  baseContext,
-  buildAssessment,
+  buildAdapter,
   dedupeEntities,
   extractTableFromSelectors,
-  filterSupportedActions,
   firstText,
   firstValue,
   hasAnySelector,
@@ -23,14 +20,15 @@ import {
 const BASE_ACTIONS: CaptureAction[] = ['clip_query', 'clip_table', 'clip_entity', 'attach_page_context'];
 
 export function createM365DefenderAdapter(): SiteAdapter {
-  return {
-    id: 'm365-defender',
-    displayName: 'Microsoft 365 Defender',
+  return buildAdapter({
+    vendorId: 'm365-defender',
+    consoleName: 'Microsoft 365 Defender',
     urlPatterns: [
       'security.microsoft.com',
       'securitycenter.microsoft.com',
       '/v2/advanced-hunting',
     ],
+    baseActions: BASE_ACTIONS,
 
     detect(): boolean {
       return !!(
@@ -46,64 +44,17 @@ export function createM365DefenderAdapter(): SiteAdapter {
       );
     },
 
-    extractContext(): VendorPageContext {
-      const detected = this.detect();
-      const pageType = detected ? classifyM365Page() : 'unknown';
-      const query = extractM365Query();
-      const table = extractM365Table();
-      const entities = extractM365Entities();
+    classifyPage(): VendorPageType {
+      return classifyM365Page();
+    },
 
-      const supported =
+    isSupported(pageType: VendorPageType, _detected: boolean): boolean {
+      return (
         pageType === 'search' ||
         pageType === 'incident' ||
         pageType === 'alert_detail' ||
-        pageType === 'entity_detail';
-
-      const failureReasons: string[] = [];
-      if (!supported) {
-        failureReasons.push('This M365 Defender page type is not supported for structured extraction');
-      } else {
-        if (!query && (pageType === 'incident' || pageType === 'alert_detail')) {
-          failureReasons.push(`No query editor detected on ${pageType} page`);
-        }
-      }
-
-      const detectedSignals = [
-        pageType !== 'unknown' ? `page:${pageType}` : '',
-        document.querySelector('[class*="AdvancedHunting"]') ? 'app:hunting' : '',
-        document.querySelector('[class*="IncidentQueue"]') ? 'app:incidents' : '',
-        query ? 'editor:kql' : '',
-        table ? 'data:table' : '',
-      ].filter(Boolean);
-
-      const extraction = buildAssessment({
-        supported,
-        pageType,
-        failureReasons,
-        detectedSignals,
-        queryPresent: Boolean(query),
-        tablePresent: Boolean(table),
-        entityCount: entities.length,
-      });
-
-      const path = window.location.pathname.toLowerCase();
-      const supportedActions = filterSupportedActions(BASE_ACTIONS, extraction, {
-        query: Boolean(query),
-        table: Boolean(table),
-        entities: entities.length > 0,
-      });
-
-      return baseContext({
-        vendorId: 'm365-defender',
-        consoleName: 'Microsoft 365 Defender',
-        pageType,
-        pageUrl: window.location.href,
-        pageTitle: document.title,
-        metadata: {
-          section: path.split('/').filter(Boolean)[0] ?? null,
-          supportedActions,
-        },
-      }, extraction);
+        pageType === 'entity_detail'
+      );
     },
 
     extractQuery(): ExtractedQuery | null {
@@ -114,14 +65,40 @@ export function createM365DefenderAdapter(): SiteAdapter {
       return extractM365Table();
     },
 
-    extractEntities(): ExtractedEntity[] {
+    extractEntities(_table: ExtractedTable | null): ExtractedEntity[] {
       return extractM365Entities();
     },
 
-    supportedActions(): CaptureAction[] {
-      return computeM365SupportedActions();
+    computeFailureReasons({ supported, pageType, query }) {
+      const reasons: string[] = [];
+      if (!supported) {
+        reasons.push('This M365 Defender page type is not supported for structured extraction');
+      } else {
+        if (!query && (pageType === 'incident' || pageType === 'alert_detail')) {
+          reasons.push(`No query editor detected on ${pageType} page`);
+        }
+      }
+      return reasons;
     },
-  };
+
+    computeDetectedSignals({ pageType, query, table }) {
+      return [
+        pageType !== 'unknown' ? `page:${pageType}` : '',
+        document.querySelector('[class*="AdvancedHunting"]') ? 'app:hunting' : '',
+        document.querySelector('[class*="IncidentQueue"]') ? 'app:incidents' : '',
+        query ? 'editor:kql' : '',
+        table ? 'data:table' : '',
+      ].filter(Boolean);
+    },
+
+    buildMetadata({ supportedActions }) {
+      const path = window.location.pathname.toLowerCase();
+      return {
+        section: path.split('/').filter(Boolean)[0] ?? null,
+        supportedActions,
+      };
+    },
+  });
 }
 
 function classifyM365Page(): VendorPageType {
@@ -193,53 +170,4 @@ function extractM365Entities(): ExtractedEntity[] {
   }
 
   return dedupeEntities(entities);
-}
-
-function computeM365SupportedActions(): CaptureAction[] {
-  const detected = !!(
-    hasAnySelector([
-      '[data-testid="defender-app"]',
-      '.ms-nav-header',
-      '#security-center-app',
-      '[class*="AdvancedHunting"]',
-      '[class*="IncidentQueue"]',
-    ]) ||
-    (window.location.hostname === 'security.microsoft.com' &&
-      document.querySelector('.o365cs-base'))
-  );
-  const pageType = detected ? classifyM365Page() : 'unknown';
-  const query = extractM365Query();
-  const table = extractM365Table();
-  const entities = extractM365Entities();
-
-  const supported =
-    pageType === 'search' ||
-    pageType === 'incident' ||
-    pageType === 'alert_detail' ||
-    pageType === 'entity_detail';
-
-  const failureReasons: string[] = [];
-  if (!supported) {
-    failureReasons.push('This M365 Defender page type is not supported for structured extraction');
-  } else {
-    if (!query && (pageType === 'incident' || pageType === 'alert_detail')) {
-      failureReasons.push(`No query editor detected on ${pageType} page`);
-    }
-  }
-
-  const extraction = buildAssessment({
-    supported,
-    pageType,
-    failureReasons,
-    detectedSignals: [],
-    queryPresent: Boolean(query),
-    tablePresent: Boolean(table),
-    entityCount: entities.length,
-  });
-
-  return filterSupportedActions(BASE_ACTIONS, extraction, {
-    query: Boolean(query),
-    table: Boolean(table),
-    entities: entities.length > 0,
-  });
 }
