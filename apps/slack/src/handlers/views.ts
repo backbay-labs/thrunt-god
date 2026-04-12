@@ -9,6 +9,7 @@ import { createCase, extractIocs } from "../hunt/case.ts"
 import { caseCreatedBlocks } from "../blocks/case.ts"
 import { fetchThread, fetchMessageText, formatThreadAsSignal } from "../hunt/thread.ts"
 import type { CaseSource } from "../types.ts"
+import type { CaseModalMetadata } from "./caseModalMetadata.ts"
 
 export function registerViews(app: App, config: Config, bindings?: ChannelBindings): void {
   app.view("create_case_modal", async ({ ack, view, body, client }) => {
@@ -18,13 +19,7 @@ export function registerViews(app: App, config: Config, bindings?: ChannelBindin
       view.state.values["case_title_block"]?.["case_title_input"]?.value ?? ""
     if (!title) return
 
-    const meta = JSON.parse(view.private_metadata || "{}") as {
-      channelId?: string
-      messageTs?: string
-      threadTs?: string
-      rawText?: string
-      origin?: CaseSource["origin"]
-    }
+    const meta = JSON.parse(view.private_metadata || "{}") as CaseModalMetadata
 
     // If there's a thread, fetch the full thread for richer context
     let rawText = ""

@@ -8,6 +8,7 @@ import type { App } from "@slack/bolt"
 import type { Config } from "../config.ts"
 import { extractIocs } from "../hunt/case.ts"
 import { caseModalBlocks } from "../blocks/case.ts"
+import { serializeCaseModalMetadata } from "./caseModalMetadata.ts"
 
 export function registerShortcuts(app: App, _config: Config): void {
   // ── Message shortcut: create case from any message ─────────────────────
@@ -25,7 +26,7 @@ export function registerShortcuts(app: App, _config: Config): void {
       view: {
         type: "modal",
         callback_id: "create_case_modal",
-        private_metadata: JSON.stringify({
+        private_metadata: serializeCaseModalMetadata({
           channelId: shortcut.channel.id,
           messageTs: shortcut.message.ts,
           threadTs: shortcut.message.thread_ts,

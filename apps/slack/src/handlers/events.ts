@@ -12,6 +12,7 @@ import type { ChannelBindings } from "../bindings.ts"
 import { extractIocs } from "../hunt/case.ts"
 import { fetchMessageText } from "../hunt/thread.ts"
 import { readHuntStatus, readMission } from "../hunt/state.ts"
+import { serializeCaseModalMetadata } from "./caseModalMetadata.ts"
 import { huntStatusOneliner } from "../blocks/status.ts"
 import { caseModalBlocks } from "../blocks/case.ts"
 import { actions, section } from "../blocks/common.ts"
@@ -118,7 +119,7 @@ export function registerEvents(app: App, config: Config, bindings?: ChannelBindi
       view: {
         type: "modal",
         callback_id: "create_case_modal",
-        private_metadata: JSON.stringify({
+        private_metadata: serializeCaseModalMetadata({
           channelId,
           messageTs,
           threadTs,
