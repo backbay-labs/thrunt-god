@@ -56,7 +56,7 @@
     {
       "matches": [
         "*://security.microsoft.com/*",
-        "*://*.microsoft.com/*"
+        "*://portal.azure.com/*"
       ],
       "js": ["dist/content-m365.js"],
       "run_at": "document_idle"

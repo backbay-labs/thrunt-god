@@ -5,6 +5,11 @@
 
 import { SurfaceClient, type SurfaceClientOptions } from '@thrunt-surfaces/sdk';
 
+/** Escape a string for safe interpolation in Athena SQL (Presto SQL dialect). */
+function escapeAthenaString(value: string): string {
+  return String(value).replace(/'/g, "''");
+}
+
 export interface CloudTrailQueryParams {
   /** Query mode: 'lookup' for CloudTrail Lookup Events, 'athena' for Athena SQL */
   mode?: 'lookup' | 'athena';
@@ -83,9 +88,8 @@ export class AwsCompanion {
     if (params.accessKeyId) {
       lookupAttributes.push({ key: 'AccessKeyId', value: params.accessKeyId });
     }
-    if (params.sourceIpAddress) {
-      lookupAttributes.push({ key: 'ResourceName', value: params.sourceIpAddress });
-    }
+    // Note: CloudTrail LookupEvents API does not support filtering by sourceIpAddress.
+    // sourceIpAddress filtering is handled by Athena queries only.
     if (params.resourceArn) {
       lookupAttributes.push({ key: 'ResourceName', value: params.resourceArn });
     }
@@ -116,36 +120,38 @@ export class AwsCompanion {
 
     const conditions: string[] = [];
 
-    // Time range using partition pruning
+    // Time range using partition pruning (year/month must use nested logic for cross-year correctness)
     if (params.startTime) {
       const start = new Date(params.startTime);
+      const y = start.getUTCFullYear();
+      const m = String(start.getUTCMonth() + 1).padStart(2, '0');
       conditions.push(
-        `year >= '${start.getUTCFullYear()}' AND month >= '${String(start.getUTCMonth() + 1).padStart(2, '0')}'`,
+        `(year > '${y}' OR (year = '${y}' AND month >= '${m}'))`,
       );
-      conditions.push(`eventtime >= '${params.startTime}'`);
+      conditions.push(`eventtime >= '${escapeAthenaString(params.startTime)}'`);
     }
     if (params.endTime) {
       conditions.push(`eventtime <= '${params.endTime}'`);
     }
 
     if (params.eventSource) {
-      conditions.push(`eventsource = '${params.eventSource}'`);
+      conditions.push(`eventsource = '${escapeAthenaString(params.eventSource)}'`);
     }
     if (params.eventName) {
-      conditions.push(`eventname = '${params.eventName}'`);
+      conditions.push(`eventname = '${escapeAthenaString(params.eventName)}'`);
     }
     if (params.username) {
-      conditions.push(`useridentity.username = '${params.username}'`);
+      conditions.push(`useridentity.username = '${escapeAthenaString(params.username)}'`);
     }
     if (params.accessKeyId) {
-      conditions.push(`useridentity.accesskeyid = '${params.accessKeyId}'`);
+      conditions.push(`useridentity.accesskeyid = '${escapeAthenaString(params.accessKeyId)}'`);
     }
     if (params.sourceIpAddress) {
-      conditions.push(`sourceipaddress = '${params.sourceIpAddress}'`);
+      conditions.push(`sourceipaddress = '${escapeAthenaString(params.sourceIpAddress)}'`);
     }
     if (params.resourceArn) {
       conditions.push(
-        `json_array_contains(json_extract(requestparameters, '$.resources'), '${params.resourceArn}')`,
+        `json_array_contains(json_extract(requestparameters, '$.resources'), '${escapeAthenaString(params.resourceArn)}')`,
       );
     }
     if (params.readOnly !== undefined) {

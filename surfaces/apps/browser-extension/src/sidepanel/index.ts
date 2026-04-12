@@ -288,20 +288,6 @@ function renderVendorStatusRow(cv: CaseViewModel): string {
     </div>`;
 }
 
-function renderProgress(cv: CaseViewModel): string {
-  return `
-    <div class="section">
-      <div class="section-title">Hunt Progress</div>
-      <div class="card">
-        <div class="split-header">
-          <div class="card-title">Phase ${cv.progress.currentPhase} of ${cv.progress.totalPhases}</div>
-          ${renderBadge(`${cv.progress.percent}%`, 'badge-info')}
-        </div>
-        <div class="progress-bar"><div class="progress-fill" style="width: ${cv.progress.percent}%"></div></div>
-        <div class="card-meta">${esc(cv.progress.lastActivity || 'No activity recorded')}</div>
-      </div>
-    </div>`;
-}
 
 function renderControlDeck(cv: CaseViewModel): string {
   const captureDisabled = !detectedVendor;
@@ -912,13 +898,6 @@ function sendCaptureRequest(action: string): void {
   });
 }
 
-function renderArtifactRow(label: string, value: string): string {
-  return `
-    <div class="list-row">
-      <strong>${esc(label)}</strong>
-      <div class="compact-item">${esc(truncate(value, 110))}</div>
-    </div>`;
-}
 
 function renderToolButton(options: {
   id: string;
