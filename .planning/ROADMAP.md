@@ -225,7 +225,11 @@ Plans:
   2. Wiki-link resolution in context-assembly.ts resolves `[[MISSION]]`, `[[STATE]]` etc. to `{planningDir}/MISSION.md` when the file exists under planningDir
   3. Knowledge dashboard canvas uses actual file modification time for `HuntSummary.lastModified` so recency-based node width scaling works correctly
   4. `analyzeCoverage` has an offline fallback that scans entity notes directly when MCP is unreachable, producing a COVERAGE_REPORT.md from vault data alone
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 78-01-PLAN.md -- Wiki-link resolution for core artifacts, VaultAdapter getFileMtime, dashboard mtime fix
+- [ ] 78-02-PLAN.md -- Template picker for canvasFromCurrentHunt, offline coverage fallback for analyzeCoverage
 
 ## Progress
 
@@ -254,4 +258,4 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
 | 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete    | 2026-04-12 | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | 2/2 | Complete    | 2026-04-12 | - |
-| 78. v4.0 Tech Debt Cleanup | v4.0 | 0/0 | Not started | - |
+| 78. v4.0 Tech Debt Cleanup | v4.0 | 0/2 | Not started | - |

@@ -437,4 +437,121 @@ Just a hypothesis, no links.
     // IOC should NOT be followed since entityTypes only includes 'ttp'
     expect(sourcePaths).not.toContain('entities/iocs/evil-ip.md');
   });
+
+  it('resolves [[MISSION]] wiki-link to {planningDir}/MISSION.md when file exists', async () => {
+    const noteWithMission = '# Hunt Note\n\n## Hypothesis\n\nSee [[MISSION]] for goals.\n';
+    const missionContent = '# Mission\n\n## Objective\n\nFind the attacker.\n';
+    const files: Record<string, string> = {
+      'notes/hunt.md': noteWithMission,
+      '.planning/MISSION.md': missionContent,
+    };
+    const profile = makeProfile({
+      includeSections: [],
+      includeRelated: { entityTypes: ['ttp'], depth: 1 },
+    });
+    const result = await assembleContext({
+      sourceNotePath: 'notes/hunt.md',
+      profile,
+      readFile: makeReadFile(files),
+      fileExists: makeFileExists(files),
+      planningDir: '.planning',
+    });
+
+    const sourcePaths = [...new Set(result.sections.map(s => s.sourcePath))];
+    expect(sourcePaths).toContain('.planning/MISSION.md');
+  });
+
+  it('resolves [[STATE]] wiki-link to {planningDir}/STATE.md when file exists', async () => {
+    const noteWithState = '# Hunt Note\n\n## Info\n\nCheck [[STATE]] for progress.\n';
+    const stateContent = '# Project State\n\n## Current\n\nPhase 78 in progress.\n';
+    const files: Record<string, string> = {
+      'notes/hunt.md': noteWithState,
+      '.planning/STATE.md': stateContent,
+    };
+    const profile = makeProfile({
+      includeSections: [],
+      includeRelated: { entityTypes: [], depth: 1 },
+    });
+    const result = await assembleContext({
+      sourceNotePath: 'notes/hunt.md',
+      profile,
+      readFile: makeReadFile(files),
+      fileExists: makeFileExists(files),
+      planningDir: '.planning',
+    });
+
+    const sourcePaths = [...new Set(result.sections.map(s => s.sourcePath))];
+    expect(sourcePaths).toContain('.planning/STATE.md');
+  });
+
+  it('does NOT resolve [[NONEXISTENT]] when file does not exist under planningDir', async () => {
+    const noteWithBadLink = '# Hunt Note\n\n## Info\n\nSee [[NONEXISTENT]] for details.\n';
+    const files: Record<string, string> = {
+      'notes/hunt.md': noteWithBadLink,
+    };
+    const profile = makeProfile({
+      includeSections: [],
+      includeRelated: { entityTypes: [], depth: 1 },
+    });
+    const result = await assembleContext({
+      sourceNotePath: 'notes/hunt.md',
+      profile,
+      readFile: makeReadFile(files),
+      fileExists: makeFileExists(files),
+      planningDir: '.planning',
+    });
+
+    const sourcePaths = [...new Set(result.sections.map(s => s.sourcePath))];
+    expect(sourcePaths).toEqual(['notes/hunt.md']);
+  });
+
+  it('core artifact resolution bypasses entity type filter', async () => {
+    const noteWithMission = '# Hunt Note\n\n## Info\n\nSee [[MISSION]] for goals.\n';
+    const missionContent = '# Mission\n\n## Objective\n\nFind the attacker.\n';
+    const files: Record<string, string> = {
+      'notes/hunt.md': noteWithMission,
+      '.planning/MISSION.md': missionContent,
+    };
+    // Entity types restricted to only TTP, but MISSION should still resolve
+    const profile = makeProfile({
+      includeSections: [],
+      includeRelated: { entityTypes: ['ttp'], depth: 1 },
+    });
+    const result = await assembleContext({
+      sourceNotePath: 'notes/hunt.md',
+      profile,
+      readFile: makeReadFile(files),
+      fileExists: makeFileExists(files),
+      planningDir: '.planning',
+    });
+
+    const sourcePaths = [...new Set(result.sections.map(s => s.sourcePath))];
+    expect(sourcePaths).toContain('.planning/MISSION.md');
+  });
+
+  it('entity links still resolve normally alongside core artifact resolution', async () => {
+    const noteWithBoth = '# Hunt Note\n\n## Info\n\nSee [[MISSION]] and [[entities/ttps/T1059.001]].\n';
+    const missionContent = '# Mission\n\n## Objective\n\nFind the attacker.\n';
+    const ttpContent = '# T1059.001\n\n## Description\n\nPowerShell execution.\n';
+    const files: Record<string, string> = {
+      'notes/hunt.md': noteWithBoth,
+      '.planning/MISSION.md': missionContent,
+      'entities/ttps/T1059.001.md': ttpContent,
+    };
+    const profile = makeProfile({
+      includeSections: [],
+      includeRelated: { entityTypes: ['ttp'], depth: 1 },
+    });
+    const result = await assembleContext({
+      sourceNotePath: 'notes/hunt.md',
+      profile,
+      readFile: makeReadFile(files),
+      fileExists: makeFileExists(files),
+      planningDir: '.planning',
+    });
+
+    const sourcePaths = [...new Set(result.sections.map(s => s.sourcePath))];
+    expect(sourcePaths).toContain('.planning/MISSION.md');
+    expect(sourcePaths).toContain('entities/ttps/T1059.001.md');
+  });
 });

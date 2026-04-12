@@ -288,9 +288,16 @@ function resolveLinkedPaths(
   }
 
   for (const link of links) {
-    // Try direct path (link is a vault-relative path without .md extension)
     const directPath = link.endsWith('.md') ? link : `${link}.md`;
 
+    // Try planningDir resolution for core artifacts (MISSION, STATE, etc.)
+    const planningDirPath = `${planningDir}/${directPath}`;
+    if (fileExists(planningDirPath)) {
+      resolved.push(planningDirPath);
+      continue; // Core artifact resolved -- skip entity type check
+    }
+
+    // Existing: entity folder resolution
     if (fileExists(directPath)) {
       // Check if path matches any allowed entity folder
       if (matchesEntityType(directPath, planningDir, allowedFolders)) {
