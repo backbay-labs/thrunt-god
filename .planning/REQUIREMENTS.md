@@ -1,123 +1,130 @@
 # Requirements: THRUNT GOD
 
-**Defined:** 2026-04-11
+**Defined:** 2026-04-12
 **Core Value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
 
-## v4.0 Requirements
+## v5.0 Requirements
 
-Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap phases.
+Requirements for the Obsidian Intelligence Platform milestone. Each maps to roadmap phases.
 
-### Ontology
+### UX Foundation + Service Decomposition
 
-- [x] **ONTO-01**: Plugin can scaffold ATT&CK technique notes (~200) with typed frontmatter from a single command
-- [x] **ONTO-02**: Entity note types (IOC/IP, IOC/domain, IOC/hash, TTP, actor, tool, infrastructure, data source) each have a canonical folder and YAML frontmatter schema
-- [x] **ONTO-03**: Workspace bootstrap creates entity folder structure alongside core artifacts
-- [x] **ONTO-04**: KNOWLEDGE_BASE.md ships with embedded Dataview queries (IOCs by confidence, TTPs by frequency, coverage gaps, cross-hunt entity references)
-- [x] **ONTO-05**: Sidebar shows a collapsible Knowledge Base section with entity counts by type
+- [ ] **UX-01**: Sidebar sections are collapsible with persistent state and context-aware defaults based on hunt phase
+- [ ] **UX-02**: Command palette shows ~10 grouped commands (down from 19) using FuzzySuggestModal chooser modals
+- [ ] **UX-03**: All modals use Obsidian base classes (SuggestModal/FuzzySuggestModal) with keyboard navigation and CSS variables
+- [ ] **UX-04**: New user sees a welcome screen with one-click "Initialize Hunt Workspace" when no .planning directory exists
+- [ ] **UX-05**: At least 3 default hotkeys ship (hyper copy, toggle sidebar, ingest)
+- [ ] **UX-06**: WorkspaceService decomposed into domain services (IntelligenceService, CanvasService, WatcherService, McpBridgeService, JournalService) with typed EventBus
+- [ ] **UX-07**: main.ts reduced to lifecycle + command registration (<300 LOC), commands extracted to commands.ts module
 
-### Ingestion
+### Intelligence Depth
 
-- [x] **INGEST-01**: Plugin recognizes extended artifact types (RECEIPTS/, QUERIES/, EVIDENCE_REVIEW.md, SUCCESS_CRITERIA.md, environment/, cases/)
-- [x] **INGEST-02**: Receipt parser extracts claim, claim_status, evidence summary, related_hypotheses, technique references from agent-produced receipts
-- [x] **INGEST-03**: Query log parser extracts intent, dataset, result_status, related_receipts, entity references from agent-produced query logs
-- [x] **INGEST-04**: Sidebar shows receipt timeline grouped by hypothesis with color-coded claim status
-- [x] **INGEST-05**: "Ingest agent output" command scans RECEIPTS/ and QUERIES/, extracts entities, and creates or updates entity notes with sightings and backlinks
-- [x] **INGEST-06**: Ingestion is idempotent (running twice on same artifacts does not create duplicate sightings)
-- [x] **INGEST-07**: INGESTION_LOG.md records every ingestion run with counts of created, updated, and skipped entities
+- [ ] **INTEL-01**: Entity notes track verdict lifecycle (unknown -> suspicious -> confirmed_malicious -> remediated -> resurfaced) with timestamped, attributed append-only history
+- [ ] **INTEL-02**: "Set entity verdict" command prompts for verdict + rationale, appends to lifecycle log, updates frontmatter
+- [ ] **INTEL-03**: Entity notes show cross-hunt aggregation (every hunt referencing the entity, its role, and outcome) in a computed Hunt History section
+- [ ] **INTEL-04**: Related infrastructure is surfaced when entities co-occur across multiple hunts
+- [ ] **INTEL-05**: Entity frontmatter includes schema_version field with additive migration command that updates notes without data loss
+- [ ] **INTEL-06**: ATT&CK technique notes accumulate hunt linkbacks (queries used, data sources, outcomes) in a Hunt History section
+- [ ] **INTEL-07**: Analysts can add false positive annotations to technique notes via command
+- [ ] **INTEL-08**: Techniques not hunted in N months (configurable) are flagged as stale coverage
+- [ ] **INTEL-09**: Entity confidence is computed from multiple inspectable factors (source_count, reliability, corroboration, days_since_validation) with configurable decay
+- [ ] **INTEL-10**: FrontmatterEditor utility performs surgical frontmatter updates without YAML formatting destruction
 
-### MCP Bridge
+### Live Canvas
 
-- [x] **MCP-01**: MCP client adapter connects to THRUNT MCP server with configurable URL and explicit enable toggle
-- [x] **MCP-02**: Connection status indicator in sidebar header (green/grey/red dot)
-- [x] **MCP-03**: "Enrich from MCP" action on TTP entity notes pulls technique description, groups, detections, and related techniques
-- [x] **MCP-04**: "Analyze detection coverage" command produces COVERAGE_REPORT.md with per-tactic coverage and gaps
-- [x] **MCP-05**: "Log hunt decision" and "Log hunt learning" commands write to both MCP server and local vault
-- [x] **MCP-06**: "Search THRUNT knowledge graph" command opens a modal with results and note creation/navigation actions
-- [x] **MCP-07**: All MCP features degrade gracefully when server is unreachable
+- [ ] **CANVAS-07**: Entity notes added to a Canvas appear as typed, colored nodes with frontmatter-driven appearance (type -> color, verdict -> border, confidence -> opacity)
+- [ ] **CANVAS-08**: Modifying an entity note's frontmatter updates the corresponding Canvas node via file-level JSON patching (preserves analyst layout)
+- [ ] **CANVAS-09**: Live hunt canvas auto-populates with new entities as they are ingested
+- [ ] **CANVAS-10**: Dashboard canvas updates reactively when entity notes change
+- [ ] **CANVAS-11**: Clicking canvas nodes navigates to the corresponding vault note
 
-### Hyper Copy
+### Live Hunt Companion
 
-- [x] **HCOPY-01**: Export profile registry defines per-agent context needs (at least 5 default profiles: query-writer, intel-advisor, findings-validator, signal-triager, hunt-planner)
-- [x] **HCOPY-02**: "Hyper Copy for Agent" command assembles multi-note context by following wiki-links, shows preview with token estimate
-- [x] **HCOPY-03**: Context assembly engine follows wiki-links to related entity notes up to configurable depth
-- [x] **HCOPY-04**: Assembled prompts include provenance markers tracing each section to its source file
-- [x] **HCOPY-05**: Quick export commands skip modal for common flows (copy for query writer, copy for intel advisor, copy IOC context)
-- [x] **HCOPY-06**: Export profiles are extensible via JSON config file
-- [x] **HCOPY-07**: EXPORT_LOG.md records each export with source, context assembled, token estimate, target agent
+- [ ] **LIVE-01**: New receipts/queries in RECEIPTS/ and QUERIES/ directories trigger auto-ingestion within configurable interval
+- [ ] **LIVE-02**: Status bar shows "hunt pulse" indicator when recent agent activity is detected
+- [ ] **LIVE-03**: Bidirectional MCP event bridge: CLI lifecycle events flow to Obsidian and create/update vault artifacts
+- [ ] **LIVE-04**: Vault changes in Obsidian publish events consumable by CLI and VS Code
+- [ ] **LIVE-05**: Prior-hunt suggestions appear as dismissable sidebar callouts when newly ingested entities match historical knowledge
+- [ ] **LIVE-06**: All live features can be disabled via settings (graceful opt-out)
 
-### Canvas + Cross-Hunt
+### Hunt Journal + Playbooks
 
-- [x] **CANVAS-01**: "Generate hunt canvas" command creates Canvas file with entity cards positioned by ATT&CK tactic
-- [x] **CANVAS-02**: At least 4 canvas templates ship (kill chain, diamond model, lateral movement map, hunt progression)
-- [x] **CANVAS-03**: "Canvas from current hunt" reads FINDINGS.md and RECEIPTS/ to auto-generate a kill chain canvas
-- [x] **CANVAS-04**: Cross-hunt intelligence queries surface recurring IOCs, TTP coverage gaps, and actor convergence
-- [x] **CANVAS-05**: "Compare hunts" command identifies shared and divergent entities across two workspaces
-- [x] **CANVAS-06**: Knowledge dashboard canvas provides a visual program overview
+- [ ] **JOURNAL-01**: Hunt journal note type with YAML frontmatter (hunt_id, hypothesis, status, linked_entities) and timestamped entries
+- [ ] **JOURNAL-02**: Inline tagging syntax (#thrunt/h/, #thrunt/ev/, #thrunt/dp/) for hypotheses, evidence strength, and decision points
+- [ ] **JOURNAL-03**: "New journal entry" command appends a timestamped block to the active hunt journal
+- [ ] **JOURNAL-04**: Journal summary command extracts reasoning chain from tagged entries into structured narrative
+- [ ] **JOURNAL-05**: Post-hunt "Generate playbook" command produces reusable template with trigger conditions, query sequences, and decision trees
+- [ ] **JOURNAL-06**: "Apply playbook" command pre-populates new hunt hypotheses and huntmap from a selected playbook
+- [ ] **JOURNAL-07**: Detection note type links Sigma/KQL/SPL rules to source hunts, TTPs, and entities
 
 ## Future Requirements
 
-Deferred beyond v4.0. Tracked but not in current roadmap.
+Deferred beyond v5.0.
 
-### Advanced Integrations
+### Ecosystem Integration
 
-- **ADV-01**: Agent-initiated note creation via MCP (right-click IOC -> "Analyze with THRUNT")
-- **ADV-02**: Swarm visualization dashboard polling MCP lifecycle endpoints
-- **ADV-03**: Hunt journal mode with structured reasoning capture and inline hypothesis references
-- **ADV-04**: Post-hunt review templates with playbook generation
+- **ECO-01**: Drag-to-reorder sidebar sections
+- **ECO-02**: Post-scaffold guided tour overlay
+- **ECO-03**: Executable playbook sections (MCP tool calls from playbook steps)
+- **ECO-04**: VS Code cross-surface event protocol (shared JSON event schema)
+- **ECO-05**: Vault template package for standalone use without plugin
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| CLI process orchestration from Obsidian | Obsidian is knowledge tool, not process launcher; security risk from shell injection |
-| Background sync / polling | No invisible state drift; all updates are user-initiated or vault-event-driven |
-| VS Code feature parity | Different platform strengths; Obsidian is intelligence surface, not execution surface |
-| Custom graph renderers | Obsidian's native graph view + Dataview handle visualization; don't compete with platform |
-| Real-time telemetry integration | Obsidian is not a SIEM |
-| AI-generated artifact content | Agents populate via structured ingestion, not generative writing |
+| Canvas internal API (undocumented) | Fragile, breaks on Obsidian updates; use file-level JSON manipulation only |
+| MCP SSE transport | Deprecated March 2025; use file-based events or obsidian:// protocol |
+| Raw fs.watch filesystem watcher | Unreliable on macOS, breaks mobile; use Obsidian vault events + polling |
+| SOAR-style orchestration | "Prepare, don't orchestrate" design philosophy |
+| NLP-based entity extraction | Regex extraction sufficient; NLP adds complexity without proportional value |
+| WebSocket server in plugin | Electron plugin sandbox constraints; use protocol handlers instead |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ONTO-01 | Phase 68 | Complete |
-| ONTO-02 | Phase 68 | Complete |
-| ONTO-03 | Phase 68 | Complete |
-| ONTO-04 | Phase 69 | Complete |
-| ONTO-05 | Phase 69 | Complete |
-| INGEST-01 | Phase 70 | Complete |
-| INGEST-02 | Phase 70 | Complete |
-| INGEST-03 | Phase 70 | Complete |
-| INGEST-04 | Phase 71 | Complete |
-| INGEST-05 | Phase 71 | Complete |
-| INGEST-06 | Phase 71 | Complete |
-| INGEST-07 | Phase 71 | Complete |
-| MCP-01 | Phase 72 | Complete |
-| MCP-02 | Phase 72 | Complete |
-| MCP-07 | Phase 72 | Complete |
-| MCP-03 | Phase 73 | Complete |
-| MCP-04 | Phase 73 | Complete |
-| MCP-05 | Phase 73 | Complete |
-| MCP-06 | Phase 73 | Complete |
-| HCOPY-01 | Phase 74 | Complete |
-| HCOPY-03 | Phase 74 | Complete |
-| HCOPY-04 | Phase 74 | Complete |
-| HCOPY-06 | Phase 74 | Complete |
-| HCOPY-02 | Phase 75 | Complete |
-| HCOPY-05 | Phase 75 | Complete |
-| HCOPY-07 | Phase 75 | Complete |
-| CANVAS-01 | Phase 76 | Complete |
-| CANVAS-02 | Phase 76 | Complete |
-| CANVAS-03 | Phase 76 | Complete |
-| CANVAS-04 | Phase 77 | Complete |
-| CANVAS-05 | Phase 77 | Complete |
-| CANVAS-06 | Phase 77 | Complete |
+| UX-01 | Pending | Pending |
+| UX-02 | Pending | Pending |
+| UX-03 | Pending | Pending |
+| UX-04 | Pending | Pending |
+| UX-05 | Pending | Pending |
+| UX-06 | Pending | Pending |
+| UX-07 | Pending | Pending |
+| INTEL-01 | Pending | Pending |
+| INTEL-02 | Pending | Pending |
+| INTEL-03 | Pending | Pending |
+| INTEL-04 | Pending | Pending |
+| INTEL-05 | Pending | Pending |
+| INTEL-06 | Pending | Pending |
+| INTEL-07 | Pending | Pending |
+| INTEL-08 | Pending | Pending |
+| INTEL-09 | Pending | Pending |
+| INTEL-10 | Pending | Pending |
+| CANVAS-07 | Pending | Pending |
+| CANVAS-08 | Pending | Pending |
+| CANVAS-09 | Pending | Pending |
+| CANVAS-10 | Pending | Pending |
+| CANVAS-11 | Pending | Pending |
+| LIVE-01 | Pending | Pending |
+| LIVE-02 | Pending | Pending |
+| LIVE-03 | Pending | Pending |
+| LIVE-04 | Pending | Pending |
+| LIVE-05 | Pending | Pending |
+| LIVE-06 | Pending | Pending |
+| JOURNAL-01 | Pending | Pending |
+| JOURNAL-02 | Pending | Pending |
+| JOURNAL-03 | Pending | Pending |
+| JOURNAL-04 | Pending | Pending |
+| JOURNAL-05 | Pending | Pending |
+| JOURNAL-06 | Pending | Pending |
+| JOURNAL-07 | Pending | Pending |
 
 **Coverage:**
-- v4.0 requirements: 32 total
-- Mapped to phases: 32
-- Unmapped: 0
+- v5.0 requirements: 35 total
+- Mapped to phases: 0
+- Unmapped: 35
 
 ---
-*Requirements defined: 2026-04-11*
-*Last updated: 2026-04-11 after roadmap creation*
+*Requirements defined: 2026-04-12*
+*Last updated: 2026-04-12 after initial definition*
