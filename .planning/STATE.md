@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 80-01-PLAN.md
-last_updated: "2026-04-12T13:56:21.800Z"
+stopped_at: Completed 81-01-PLAN.md
+last_updated: "2026-04-12T14:32:10Z"
 progress:
   total_phases: 12
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
-  percent: 80
+  total_plans: 7
+  completed_plans: 6
+  percent: 86
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 80 (Sidebar Progressive Disclosure + Onboarding)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 81 (Command Consolidation + Modal Polish)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
 **Status:** Executing
-**Phase:** 80 of 90 (Sidebar Progressive Disclosure + Onboarding)
-**Plan:** 2 of 2 in current phase complete
+**Phase:** 81 of 90 (Command Consolidation + Modal Polish)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [████████░░] 80% (4/5 v5.0 plans)
+Progress: [████████░░] 86% (6/7 v5.0 plans)
 
 ## Recently Completed
 
@@ -60,6 +60,9 @@ Progress: [████████░░] 80% (4/5 v5.0 plans)
 - [Phase 80]: Pure sidebar state logic extracted to sidebar-state.ts for unit testing without obsidian dependency
 - [Phase 80]: Context-aware expansion is additive: forces relevant section open without collapsing others
 - [Phase 80]: Uses obsidian.debounce() for vault events: 400ms trailing, scoped to planning directory only
+- [Phase 81]: FuzzySuggestModal chooser pattern with ChooserItem{id,name,description} for sub-command grouping
+- [Phase 81]: Hidden aliases (name:'') preserve old command IDs for hotkey bindings without palette clutter
+- [Phase 81]: CanvasTemplateChooserModal replaces button-based CanvasTemplateModal for consistent fuzzy UI
 
 ### Blockers/Concerns
 
@@ -67,6 +70,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:56:21.798Z
-Stopped at: Completed 80-01-PLAN.md
+Last session: 2026-04-12T14:32:10Z
+Stopped at: Completed 81-01-PLAN.md
 Resume file: None

@@ -307,8 +307,8 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 78. v4.0 Tech Debt Cleanup | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 79. Service Decomposition + EventBus | 3/3 | Complete    | 2026-04-12 | - |
-| 80. Sidebar Progressive Disclosure + Onboarding | 2/2 | Complete   | 2026-04-12 | - |
-| 81. Command Consolidation + Modal Polish | v5.0 | 0/2 | Not started | - |
+| 80. Sidebar Progressive Disclosure + Onboarding | 2/2 | Complete    | 2026-04-12 | - |
+| 81. Command Consolidation + Modal Polish | 1/2 | In Progress|  | - |
 | 82. Verdict Lifecycle + FrontmatterEditor + Schema Versioning | v5.0 | 0/3 | Not started | - |
 | 83. Cross-Hunt Aggregation + Computed Confidence | v5.0 | 0/2 | Not started | - |
 | 84. ATT&CK Institutional Memory | v5.0 | 0/2 | Not started | - |
