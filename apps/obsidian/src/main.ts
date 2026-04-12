@@ -15,6 +15,10 @@ import { createScopedHandler } from './sidebar-events';
 import { formatHuntPulse } from './hunt-pulse';
 import { mapCliEventToAction } from './mcp-events';
 import type { VaultEvent } from './mcp-events';
+import { findPriorHuntMatches, type PriorHuntSuggestion } from './prior-hunt-suggester';
+import { scanEntityNotes } from './entity-utils';
+import { detectHuntId } from './verdict';
+import type { EntityNote } from './cross-hunt';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -32,6 +36,11 @@ export default class ThruntGodPlugin extends Plugin {
   private mcpPollInterval?: number;
   private outboundEventBuffer: VaultEvent[] = [];
   private outboundFlushTimeout?: number;
+  private priorHuntSuggestions: PriorHuntSuggestion[] = [];
+  private dismissedSuggestions = new Set<string>();
+  private entityNoteCache: EntityNote[] | null = null;
+  private suggestionEntityHandler?: (data: { name: string; entityType: string; sourcePath: string }) => void;
+  private suggestionCacheHandler?: () => void;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -167,6 +176,11 @@ export default class ThruntGodPlugin extends Plugin {
     if (this.settings.mcpEventPollingEnabled) {
       this.enableMcpEventPolling();
     }
+
+    // --- Prior-hunt suggestions (Phase 88) ---
+    if (this.settings.priorHuntSuggestionsEnabled) {
+      this.enablePriorHuntSuggestions();
+    }
   }
 
   onunload(): void {
@@ -176,6 +190,7 @@ export default class ThruntGodPlugin extends Plugin {
     this.disableAutoIngestion();
     this.disableHuntPulse();
     this.disableMcpEventPolling();
+    this.disablePriorHuntSuggestions();
     this.mcpClient.disconnect();
     this.eventBus.removeAllListeners();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);
@@ -268,12 +283,91 @@ export default class ThruntGodPlugin extends Plugin {
     this.outboundEventBuffer = [];
   }
 
+  getPriorHuntSuggestions(): PriorHuntSuggestion[] {
+    return this.priorHuntSuggestions.filter(
+      (s) => !this.dismissedSuggestions.has(s.entityName),
+    );
+  }
+
+  dismissSuggestion(entityName: string): void {
+    this.dismissedSuggestions.add(entityName);
+  }
+
   enablePriorHuntSuggestions(): void {
-    // Phase 88-02 will implement suggestion logic
+    if (this.suggestionEntityHandler) return; // already enabled
+
+    this.suggestionEntityHandler = (data: { name: string; entityType: string; sourcePath: string }) => {
+      void this.handleSuggestionEntityCreated(data);
+    };
+    this.eventBus.on('entity:created', this.suggestionEntityHandler);
+
+    // Invalidate entity note cache when cache is cleared
+    this.suggestionCacheHandler = () => {
+      this.entityNoteCache = null;
+    };
+    this.eventBus.on('cache:invalidated', this.suggestionCacheHandler);
   }
 
   disablePriorHuntSuggestions(): void {
-    // Phase 88-02 will implement suggestion logic
+    if (this.suggestionEntityHandler) {
+      this.eventBus.off('entity:created', this.suggestionEntityHandler);
+      this.suggestionEntityHandler = undefined;
+    }
+    if (this.suggestionCacheHandler) {
+      this.eventBus.off('cache:invalidated', this.suggestionCacheHandler);
+      this.suggestionCacheHandler = undefined;
+    }
+    this.priorHuntSuggestions = [];
+    this.dismissedSuggestions.clear();
+    this.entityNoteCache = null;
+  }
+
+  private async handleSuggestionEntityCreated(data: { name: string; entityType: string; sourcePath: string }): Promise<void> {
+    // Populate entity note cache on first use (pitfall #6)
+    if (this.entityNoteCache === null) {
+      const planningDir = this.settings.planningDir || DEFAULT_SETTINGS.planningDir;
+      this.entityNoteCache = await scanEntityNotes(
+        this.workspaceService.vaultAdapter,
+        planningDir,
+        planningDir,
+      );
+    }
+
+    // Detect current hunt ID (MISSION.md hunt_id > planning dir name > "manual")
+    const planningDir = this.settings.planningDir || DEFAULT_SETTINGS.planningDir;
+    let missionContent: string | null = null;
+    try {
+      missionContent = await this.workspaceService.vaultAdapter.readFile(
+        `${planningDir}/MISSION.md`,
+      );
+    } catch {
+      // MISSION.md not found -- fallback to planning dir name
+    }
+    const currentHuntId = detectHuntId(missionContent, planningDir);
+
+    const matches = findPriorHuntMatches(
+      data.name,
+      data.entityType,
+      this.entityNoteCache,
+      currentHuntId,
+      this.settings.suggestionMinHunts,
+    );
+
+    // Dedup by entityName to avoid duplicate suggestions
+    let added = false;
+    for (const match of matches) {
+      const existing = this.priorHuntSuggestions.find(
+        (s) => s.entityName === match.entityName,
+      );
+      if (!existing) {
+        this.priorHuntSuggestions.push(match);
+        added = true;
+      }
+    }
+
+    if (added) {
+      await this.refreshViews();
+    }
   }
 
   private async handleMcpPoll(): Promise<void> {

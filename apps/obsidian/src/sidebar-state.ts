@@ -11,6 +11,7 @@ export const DEFAULT_SIDEBAR_STATE: SidebarState = {
     'extended-artifacts': false,
     'receipt-timeline': false,
     'core-artifacts': false,
+    'prior-hunt-suggestions': false,
   },
 };
 

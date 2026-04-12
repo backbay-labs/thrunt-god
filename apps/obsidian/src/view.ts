@@ -111,6 +111,14 @@ export class ThruntWorkspaceView extends ItemView {
     this.renderCollapsibleSection(contentEl, 'core-artifacts', 'Core Artifacts', expanded['core-artifacts'] ?? false, (body) => {
       this.renderCoreArtifactsBody(body, vm);
     });
+
+    this.renderCollapsibleSection(
+      contentEl,
+      'prior-hunt-suggestions',
+      'Prior Hunt Suggestions',
+      expanded['prior-hunt-suggestions'] ?? false,
+      (body) => this.renderPriorHuntSuggestions(body),
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -443,6 +451,38 @@ export class ThruntWorkspaceView extends ItemView {
               await this.plugin.refreshViews();
             });
         });
+    }
+  }
+
+  private renderPriorHuntSuggestions(body: HTMLElement): void {
+    const suggestions = this.plugin.getPriorHuntSuggestions();
+
+    if (suggestions.length === 0) {
+      this.renderEmptyState(body, 'No prior-hunt matches detected.');
+      return;
+    }
+
+    for (const suggestion of suggestions) {
+      const row = body.createDiv({ cls: 'thrunt-god-suggestion' });
+      row.createSpan({
+        cls: 'thrunt-god-suggestion-entity',
+        text: suggestion.entityName,
+      });
+      row.createSpan({
+        cls: 'thrunt-god-suggestion-detail',
+        text: `Seen in ${suggestion.matchingHunts.length} prior hunt(s): ${suggestion.matchingHunts.join(', ')}`,
+      });
+
+      const dismissBtn = row.createEl('button', {
+        cls: 'thrunt-god-suggestion-dismiss',
+        text: '\u2715',
+        type: 'button',
+      });
+      dismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.plugin.dismissSuggestion(suggestion.entityName);
+        row.remove();
+      });
     }
   }
 

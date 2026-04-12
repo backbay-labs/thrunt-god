@@ -25,14 +25,19 @@ describe('DEFAULT_SIDEBAR_STATE', () => {
     expect(DEFAULT_SIDEBAR_STATE.expandedSections['core-artifacts']).toBe(false);
   });
 
-  it('has exactly 5 section keys', () => {
+  it('defaults prior-hunt-suggestions to collapsed', () => {
+    expect(DEFAULT_SIDEBAR_STATE.expandedSections['prior-hunt-suggestions']).toBe(false);
+  });
+
+  it('has exactly 6 section keys', () => {
     const keys = Object.keys(DEFAULT_SIDEBAR_STATE.expandedSections);
-    expect(keys).toHaveLength(5);
+    expect(keys).toHaveLength(6);
     expect(keys).toContain('hunt-status');
     expect(keys).toContain('knowledge-base');
     expect(keys).toContain('extended-artifacts');
     expect(keys).toContain('receipt-timeline');
     expect(keys).toContain('core-artifacts');
+    expect(keys).toContain('prior-hunt-suggestions');
   });
 });
 
