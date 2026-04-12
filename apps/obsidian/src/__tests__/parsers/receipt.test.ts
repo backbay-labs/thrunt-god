@@ -148,7 +148,7 @@ describe('parseReceipt', () => {
     expect(result.related_queries).toEqual([]);
     expect(result.claim).toBe('Some claim extracted from body only.');
     expect(result.evidence_summary).toBe('Evidence without frontmatter. Technique T1048.003 noted.');
-    expect(result.technique_refs).toEqual(['T1048.003', 'T1048']);
+    expect(result.technique_refs).toEqual(['T1048.003']);
     expect(result.confidence).toBe('Medium');
   });
 
