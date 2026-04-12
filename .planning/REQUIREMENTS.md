@@ -50,9 +50,9 @@ Requirements for v5.0 Hunt Ecosystem: Evidence In, Detections Out. Each maps to 
 
 - [x] **HARD-01**: All subprocess calls to `thrunt-tools.cjs` have configurable timeouts (default 30s) with clean SIGTERM→SIGKILL escalation
 - [x] **HARD-02**: Bridge emits structured JSON logs for all HTTP requests, WebSocket events, subprocess calls, and errors
-- [ ] **HARD-03**: Bridge exposes `/api/health` endpoint returning uptime, connected clients, active case, last file-watcher event, and subprocess health
+- [x] **HARD-03**: Bridge exposes `/api/health` endpoint returning uptime, connected clients, active case, last file-watcher event, and subprocess health
 - [x] **HARD-04**: Errors are classified (auth, timeout, subprocess, file-system, validation) with actionable messages in API responses
-- [ ] **HARD-05**: Bridge degrades gracefully when `thrunt-tools.cjs` is unavailable — read operations continue, write operations return clear errors
+- [x] **HARD-05**: Bridge degrades gracefully when `thrunt-tools.cjs` is unavailable — read operations continue, write operations return clear errors
 
 ## v4.0 Requirements (Shipped)
 
@@ -126,9 +126,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | HARD-01 | Phase 21 | Complete |
 | HARD-02 | Phase 21 | Complete |
-| HARD-03 | Phase 21 | Pending |
+| HARD-03 | Phase 21 | Complete |
 | HARD-04 | Phase 21 | Complete |
-| HARD-05 | Phase 21 | Pending |
+| HARD-05 | Phase 21 | Complete |
 | MCPB-01 | Phase 22 | Pending |
 | MCPB-02 | Phase 22 | Pending |
 | MCPB-03 | Phase 22 | Pending |

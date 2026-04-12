@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
 status: active
-stopped_at: "Completed 21-01-PLAN.md"
-last_updated: "2026-04-12T13:07:14Z"
-last_activity: 2026-04-12 — Completed Phase 21 Plan 01 (Bridge Hardening)
+stopped_at: "Completed 21-02-PLAN.md"
+last_updated: "2026-04-12T13:14:29Z"
+last_activity: 2026-04-12 — Completed Phase 21 Plan 02 (Bridge Hardening)
 progress:
   total_phases: 16
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 19
-  completed_plans: 18
-  percent: 95
+  completed_plans: 19
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Close the loop from evidence capture to detection deployment — every hunt produces evidence chains, intelligence updates, and deployable detection rules
-**Current focus:** v5.0 Phase 21 — Bridge Hardening
+**Current focus:** v5.0 Phase 21 — Bridge Hardening (complete)
 
 ## Current Position
 
 Phase: 21 of 26 (Bridge Hardening)
-Plan: 1 of 2 complete
-Status: Active — Plan 01 complete, Plan 02 pending
-Last activity: 2026-04-12 — Completed Phase 21 Plan 01
+Plan: 2 of 2 complete
+Status: Phase Complete
+Last activity: 2026-04-12 — Completed Phase 21 Plan 02
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -53,6 +53,9 @@ Recent decisions affecting current work:
 - [21-01]: Promise.race pattern for subprocess timeout -- prevents Bun pipe hang on killed processes
 - [21-01]: Logger dependency-injected through provider options rather than global singleton
 - [21-01]: Split handleRequest into outer (logging/catch) and inner (routing) for clean separation
+- [21-02]: Consecutive failure threshold of 2 before marking subprocess unavailable (transient tolerance)
+- [21-02]: Certification routes excluded from subprocess gate (filesystem-only operations)
+- [21-02]: onStateChange callback broadcasts BRIDGE_DEGRADED to WebSocket clients
 
 ### Pending Todos
 
@@ -67,9 +70,10 @@ Recent decisions affecting current work:
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 21    | 01   | 11min    | 3     | 9     |
+| 21    | 02   | 3min     | 3     | 3     |
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:07:14Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-04-12T13:14:29Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
