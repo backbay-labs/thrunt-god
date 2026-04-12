@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 88-01-PLAN.md
-last_updated: "2026-04-12T22:27:32Z"
+stopped_at: Completed 88-02-PLAN.md
+last_updated: "2026-04-12T22:35:48.358Z"
 progress:
   total_phases: 12
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** Executing
 **Phase:** 88 of 90 (Bidirectional MCP Event Bridge + Prior Hunt Suggester)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [█████████░] 95% (21/22 v5.0 plans)
+Progress: [██████████] 100% (22/22 v5.0 plans)
 
 ## Recently Completed
 
@@ -122,6 +122,10 @@ Progress: [█████████░] 95% (21/22 v5.0 plans)
 - [Phase 88]: Outbound events batched in 500ms debounce window before publishing as array
 - [Phase 88]: Hunt pulse shows MCP online/offline only when mcpEventPollingEnabled is true
 - [Phase 88]: WorkspaceService exposes mcpBridge as public getter for lifecycle access
+- [Phase 88]: Entity note cache populated on first entity:created (lazy init), invalidated on cache:invalidated event
+- [Phase 88]: Suggestion dismiss is session-only via in-memory Set, never persisted to disk
+- [Phase 88]: Suggestions deduped by entityName to avoid duplicates from rapid entity:created events
+- [Phase 88]: detectHuntId reused from verdict.ts for MISSION.md hunt_id detection in suggestion pipeline
 
 ### Blockers/Concerns
 
@@ -129,6 +133,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T22:27:32Z
-Stopped at: Completed 88-01-PLAN.md
+Last session: 2026-04-12T22:35:48.354Z
+Stopped at: Completed 88-02-PLAN.md
 Resume file: None

@@ -90,7 +90,7 @@
 #### M4: Live Hunt Companion
 
 - [x] **Phase 87: Filesystem Watcher + Hunt Pulse** - Vault event-based auto-ingestion for RECEIPTS/QUERIES, status bar pulse indicator, opt-out settings (completed 2026-04-12)
-- [ ] **Phase 88: Bidirectional MCP Event Bridge + Prior-Hunt Suggester** - CLI-to-Obsidian and Obsidian-to-CLI event flow, historical intelligence suggestions
+- [x] **Phase 88: Bidirectional MCP Event Bridge + Prior-Hunt Suggester** - CLI-to-Obsidian and Obsidian-to-CLI event flow, historical intelligence suggestions (completed 2026-04-12)
 
 #### M5: Hunt Journal + Playbooks
 
@@ -315,6 +315,6 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 85. Canvas Adapter + Reactive Nodes | 2/2 | Complete    | 2026-04-12 | - |
 | 86. Live Hunt Canvas + Reactive Dashboard | 2/2 | Complete    | 2026-04-12 | - |
 | 87. Filesystem Watcher + Hunt Pulse | 2/2 | Complete    | 2026-04-12 | - |
-| 88. Bidirectional MCP Event Bridge + Prior-Hunt Suggester | 1/2 | In Progress|  | - |
+| 88. Bidirectional MCP Event Bridge + Prior-Hunt Suggester | 2/2 | Complete   | 2026-04-12 | - |
 | 89. Hunt Journal Engine | v5.0 | 0/2 | Not started | - |
 | 90. Playbook Distillation + Detection Pipeline | v5.0 | 0/2 | Not started | - |
