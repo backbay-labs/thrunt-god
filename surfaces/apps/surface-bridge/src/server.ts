@@ -52,6 +52,92 @@ import type { EventBridgeEnvelope } from '@thrunt-surfaces/contracts';
 
 const VERSION = '0.2.0';
 
+// ─── Rate limiter ──────────────────────────────────────────────────────
+interface RateLimiterConfig {
+  requestsPerMinute: number;
+  authFailuresPerMinute: number;
+  maxWsPerIp: number;
+}
+
+interface RateLimiter {
+  /** Returns true if the request is allowed. */
+  allow(ip: string): boolean;
+  /** Record an auth failure for stricter limiting. */
+  recordAuthFailure(ip: string): void;
+  /** Track WS connections; returns true if under limit. */
+  allowWs(ip: string): boolean;
+  /** Release a WS slot (on disconnect). */
+  releaseWs(ip: string): void;
+  /** Stop cleanup timer. */
+  stop(): void;
+}
+
+function createRateLimiter(config: RateLimiterConfig): RateLimiter {
+  const requests = new Map<string, number[]>();
+  const authFailures = new Map<string, number[]>();
+  const wsConnections = new Map<string, number>();
+  const windowMs = 60_000;
+
+  // Periodic cleanup of stale entries
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    const cutoff = now - windowMs;
+    for (const [ip, timestamps] of requests) {
+      const filtered = timestamps.filter(t => t > cutoff);
+      if (filtered.length === 0) requests.delete(ip);
+      else requests.set(ip, filtered);
+    }
+    for (const [ip, timestamps] of authFailures) {
+      const filtered = timestamps.filter(t => t > cutoff);
+      if (filtered.length === 0) authFailures.delete(ip);
+      else authFailures.set(ip, filtered);
+    }
+  }, 60_000);
+
+  function countRecent(map: Map<string, number[]>, ip: string): number {
+    const timestamps = map.get(ip);
+    if (!timestamps) return 0;
+    const cutoff = Date.now() - windowMs;
+    return timestamps.filter(t => t > cutoff).length;
+  }
+
+  return {
+    allow(ip: string): boolean {
+      // Check auth failure lockout first
+      if (countRecent(authFailures, ip) >= config.authFailuresPerMinute) {
+        return false;
+      }
+      // Check request rate
+      if (countRecent(requests, ip) >= config.requestsPerMinute) {
+        return false;
+      }
+      const arr = requests.get(ip) ?? [];
+      arr.push(Date.now());
+      requests.set(ip, arr);
+      return true;
+    },
+    recordAuthFailure(ip: string): void {
+      const arr = authFailures.get(ip) ?? [];
+      arr.push(Date.now());
+      authFailures.set(ip, arr);
+    },
+    allowWs(ip: string): boolean {
+      const count = wsConnections.get(ip) ?? 0;
+      if (count >= config.maxWsPerIp) return false;
+      wsConnections.set(ip, count + 1);
+      return true;
+    },
+    releaseWs(ip: string): void {
+      const count = wsConnections.get(ip) ?? 0;
+      if (count <= 1) wsConnections.delete(ip);
+      else wsConnections.set(ip, count - 1);
+    },
+    stop(): void {
+      clearInterval(cleanupTimer);
+    },
+  };
+}
+
 function createMutex() {
   let pending = Promise.resolve();
   return {
@@ -116,6 +202,13 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     isSubprocessAvailable: () => cfg.mockMode || subprocessHealth.isAvailable(),
   });
   const mutationMutex = createMutex();
+
+  // ─── Rate limiting ──────────────────────────────────────────────────
+  const rateLimiter = createRateLimiter({
+    requestsPerMinute: 60,
+    authFailuresPerMinute: 5,
+    maxWsPerIp: 10,
+  });
 
   // ─── Auth: session nonce ─────────────────────────────────────────────
   const sessionToken = crypto.randomBytes(16).toString('hex');
@@ -204,6 +297,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
   // Current request context — set at the top of handleRequest so json/error
   // helpers emit correct CORS headers without threading req through every call.
   let _currentReq: Request | undefined;
+  let _currentIp: string = '127.0.0.1';
 
   function json(data: unknown, status = 200): Response {
     return new Response(JSON.stringify(data), {
@@ -257,6 +351,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     const isWrite = method === 'POST';
     const isPublic = reqPath === '/api/health' || reqPath === '/api/handshake';
     if (!checkAuth(req, isWrite) && !isPublic) {
+      rateLimiter.recordAuthFailure(_currentIp);
       return error('Unauthorized — provide X-Bridge-Token header', 401, 'auth', 'AUTH_MISSING_TOKEN');
     }
 
@@ -422,6 +517,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       const body = await req.json() as { token?: string };
       const providedToken = body.token;
       if (!providedToken || providedToken !== sessionToken) {
+        rateLimiter.recordAuthFailure(_currentIp);
         return error('Invalid or missing token — read .bridge-token file', 401, 'auth', 'AUTH_INVALID_TOKEN');
       }
       return json({ authenticated: true, version: VERSION });
@@ -634,15 +730,33 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     port: cfg.port,
     hostname: cfg.host,
     fetch(req, server) {
+      const ip = server.requestIP(req)?.address ?? '127.0.0.1';
+
       if (new URL(req.url).pathname === '/ws') {
         if (!checkWsAuth(req)) {
           return new Response('Unauthorized — provide bridge token', { status: 401 });
         }
+        if (!rateLimiter.allowWs(ip)) {
+          return new Response(JSON.stringify({ error: 'Too many WebSocket connections', code: 'RATE_LIMITED', class: 'rate-limit' }), {
+            status: 429,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+          });
+        }
         const lastSeqStr = new URL(req.url).searchParams.get('last_seq');
         const lastSeq = lastSeqStr ? parseInt(lastSeqStr, 10) : undefined;
-        if (server.upgrade(req, { data: { lastSeq } } as any)) return undefined as unknown as Response;
+        if (server.upgrade(req, { data: { lastSeq, ip } } as any)) return undefined as unknown as Response;
+        rateLimiter.releaseWs(ip);
         return new Response('WebSocket upgrade failed', { status: 400 });
       }
+
+      if (!rateLimiter.allow(ip)) {
+        return new Response(JSON.stringify({ error: 'Rate limit exceeded', code: 'RATE_LIMITED', class: 'rate-limit' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
+        });
+      }
+
+      _currentIp = ip;
       return handleRequest(req);
     },
     websocket: {
@@ -682,6 +796,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       },
       close(ws) {
         wsClients.delete(ws);
+        const wsIp = (ws as any).data?.ip as string | undefined;
+        if (wsIp) rateLimiter.releaseWs(wsIp);
         logger.info('ws', 'client disconnected', { clients: wsClients.size });
       },
       message(ws, message) {
@@ -719,6 +835,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     stop: () => {
       clearInterval(heartbeatTimer);
       subprocessHealth.stop();
+      rateLimiter.stop();
       structuredWatcher?.stop();
       server.stop();
     },
