@@ -113,14 +113,18 @@ export async function runThruntCommand(
 
   // Race the process exit against the timeout
   const exitPromise = proc.exited;
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<'timeout'>((resolve) => {
-    setTimeout(() => resolve('timeout'), timeoutMs);
+    timeoutHandle = setTimeout(() => resolve('timeout'), timeoutMs);
   });
 
   const raceResult = await Promise.race([
     exitPromise.then((code) => ({ kind: 'exited' as const, code })),
     timeoutPromise.then(() => ({ kind: 'timeout' as const, code: -1 })),
   ]);
+
+  // Clear the timer if process exited before timeout
+  if (timeoutHandle) clearTimeout(timeoutHandle);
 
   let stdout = '';
   let stderr = '';
