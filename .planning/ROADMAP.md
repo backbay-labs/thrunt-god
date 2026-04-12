@@ -208,7 +208,11 @@ Plans:
   1. Cross-hunt intelligence queries surface recurring IOCs (seen in 2+ hunts), TTP coverage gaps (hunt_count: 0 grouped by tactic), and actor convergence (hunts sharing 3+ IOCs)
   2. "Compare hunts" command identifies shared entities, divergent findings, and combined technique coverage across two hunt workspaces
   3. Knowledge dashboard canvas provides a visual program overview with hunts by recency, top entities by sighting count, and hunt-to-entity connections
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 77-01-PLAN.md -- Cross-hunt intelligence pure module with TDD (recurring IOCs, coverage gaps, actor convergence, hunt comparison, dashboard canvas)
+- [ ] 77-02-PLAN.md -- WorkspaceService cross-hunt methods, 3 command registrations (cross-hunt-intel, compare-hunts, generate-knowledge-dashboard)
 
 ## Progress
 
@@ -236,4 +240,4 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 74. Export Profile Registry + Context Assembly Engine | 2/2 | Complete    | 2026-04-12 | - |
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
 | 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete    | 2026-04-12 | - |
-| 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/0 | Not started | - |
+| 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/2 | Not started | - |
