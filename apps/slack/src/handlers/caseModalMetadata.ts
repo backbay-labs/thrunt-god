@@ -11,6 +11,10 @@ export interface CaseModalMetadata {
 // Slack caps private_metadata at 3000 chars. Keep a small buffer.
 export const CASE_MODAL_PRIVATE_METADATA_LIMIT = 2800
 
+function serializeWithRawText(base: Omit<CaseModalMetadata, "rawText">, rawText?: string): string {
+  return JSON.stringify(rawText === undefined ? base : { ...base, rawText })
+}
+
 export function serializeCaseModalMetadata(meta: CaseModalMetadata): string {
   const { rawText, ...base } = meta
 
@@ -18,21 +22,28 @@ export function serializeCaseModalMetadata(meta: CaseModalMetadata): string {
     return JSON.stringify(base)
   }
 
-  const emptyRawText = JSON.stringify({ ...base, rawText: "" })
-  const available = CASE_MODAL_PRIVATE_METADATA_LIMIT - emptyRawText.length
+  const fallback = JSON.stringify(base)
+  const emptyRawText = serializeWithRawText(base, "")
 
-  if (available <= 0) {
-    return JSON.stringify(base)
+  if (emptyRawText.length > CASE_MODAL_PRIVATE_METADATA_LIMIT) {
+    return fallback
   }
 
-  const serialized = JSON.stringify({
-    ...base,
-    rawText: rawText.slice(0, available),
-  })
+  let best = emptyRawText
+  let low = 0
+  let high = rawText.length
 
-  if (serialized.length <= CASE_MODAL_PRIVATE_METADATA_LIMIT) {
-    return serialized
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2)
+    const candidate = serializeWithRawText(base, rawText.slice(0, mid))
+
+    if (candidate.length <= CASE_MODAL_PRIVATE_METADATA_LIMIT) {
+      best = candidate
+      low = mid + 1
+    } else {
+      high = mid - 1
+    }
   }
 
-  return JSON.stringify(base)
+  return best.length > CASE_MODAL_PRIVATE_METADATA_LIMIT ? fallback : best
 }

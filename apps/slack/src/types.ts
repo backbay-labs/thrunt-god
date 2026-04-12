@@ -127,12 +127,24 @@ export type ApprovalRequest = z.infer<typeof ApprovalRequest>
 // IOC EXTRACTION PATTERNS
 // =============================================================================
 
-export const IOC_PATTERNS: Record<IocType, RegExp> = {
-  ip: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g,
-  domain: /\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:com|net|org|io|co|gov|edu|mil|xyz|info|biz|dev|app|cloud|ru|cn|de|uk|fr|jp|kr|br|au|nl|se|no|fi|dk|ch|at|be|it|es|pt)\b/g,
-  hash: /\b[a-fA-F0-9]{64}\b|\b[a-fA-F0-9]{40}\b|\b[a-fA-F0-9]{32}\b/g,
-  url: /https?:\/\/[^\s<>\"']+/g,
-  email: /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g,
-  file_path: /(?:\/(?:tmp|var|etc|usr|home|opt|proc|sys|dev|mnt|root|Windows|Users|Program Files)[^\s;|&"']*)/g,
-  command: /\b(?:powershell|cmd\.exe|bash|sh|python|curl|wget|certutil|bitsadmin|mshta|regsvr32|rundll32)\s+[^\n]{5,}/gi,
+interface IocPatternDefinition {
+  source: string
+  flags: string
+}
+
+function defineIocPattern(pattern: RegExp): IocPatternDefinition {
+  return {
+    source: pattern.source,
+    flags: pattern.flags,
+  }
+}
+
+export const IOC_PATTERNS: Record<IocType, IocPatternDefinition> = {
+  ip: defineIocPattern(/\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g),
+  domain: defineIocPattern(/\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:com|net|org|io|co|gov|edu|mil|xyz|info|biz|dev|app|cloud|ru|cn|de|uk|fr|jp|kr|br|au|nl|se|no|fi|dk|ch|at|be|it|es|pt)\b/g),
+  hash: defineIocPattern(/\b[a-fA-F0-9]{64}\b|\b[a-fA-F0-9]{40}\b|\b[a-fA-F0-9]{32}\b/g),
+  url: defineIocPattern(/https?:\/\/[^\s<>\"']+/g),
+  email: defineIocPattern(/\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g),
+  file_path: defineIocPattern(/(?:\/(?:tmp|var|etc|usr|home|opt|proc|sys|dev|mnt|root|Windows|Users|Program Files)[^\s;|&"']*)/g),
+  command: defineIocPattern(/\b(?:powershell|cmd\.exe|bash|sh|python|curl|wget|certutil|bitsadmin|mshta|regsvr32|rundll32)\s+[^\n]{5,}/gi),
 }

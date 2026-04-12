@@ -28,16 +28,21 @@ async function readOptional(path: string): Promise<string | null> {
   }
 }
 
-/** Extract YAML frontmatter between --- markers */
+/**
+ * Extract simple inline YAML frontmatter between --- markers.
+ * This preserves empty assignments but does not try to parse nested YAML.
+ */
 function extractFrontmatter(content: string): Record<string, string> | null {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/)
   if (!match) return null
 
   const fields: Record<string, string> = {}
   for (const line of match[1].split("\n")) {
-    const kv = line.match(/^(\w[\w_]*):\s*"?(.+?)"?\s*$/)
+    const kv = line.match(/^(\w[\w_]*):(?:\s*(.*))?$/)
     if (kv) {
-      fields[kv[1]] = kv[2]
+      const rawValue = (kv[2] ?? "").trim()
+      const quoted = rawValue.match(/^(['"])([\s\S]*)\1$/)
+      fields[kv[1]] = quoted ? quoted[2] : rawValue
     }
   }
   return fields

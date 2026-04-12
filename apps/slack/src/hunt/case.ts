@@ -12,16 +12,15 @@ export function extractIocs(text: string): CaseSource["extractedIocs"] {
   const found: CaseSource["extractedIocs"] = []
   const seen = new Set<string>()
 
-  for (const [type, pattern] of Object.entries(IOC_PATTERNS)) {
-    // Reset lastIndex for global regexes
-    pattern.lastIndex = 0
+  for (const [type, patternDefinition] of Object.entries(IOC_PATTERNS) as [IocType, typeof IOC_PATTERNS[IocType]][]) {
+    const pattern = new RegExp(patternDefinition.source, patternDefinition.flags)
     let match: RegExpExecArray | null
     while ((match = pattern.exec(text)) !== null) {
       const value = match[0]
       const key = `${type}:${value}`
       if (!seen.has(key)) {
         seen.add(key)
-        found.push({ type: type as IocType, value })
+        found.push({ type, value })
       }
     }
   }

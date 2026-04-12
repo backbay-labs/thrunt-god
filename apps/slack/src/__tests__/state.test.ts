@@ -316,6 +316,23 @@ Phase: 3 of 3 (Evidence Correlation)
     expect(status.currentPhaseName).toBe("Evidence Correlation")
   })
 
+  test("preserves empty inline frontmatter values", async () => {
+    await scaffold({
+      ".planning/STATE.md": `---
+status: executing
+last_activity:
+---
+
+# Hunt State
+`,
+    })
+
+    const status = await readHuntStatus(tmpDir)
+
+    expect(status.status).toBe("executing")
+    expect(status.lastActivity).toBeNull()
+  })
+
   test("bold-markdown fields override frontmatter values", async () => {
     await scaffold({
       ".planning/STATE.md": `---
