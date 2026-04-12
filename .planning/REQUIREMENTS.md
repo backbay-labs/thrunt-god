@@ -20,7 +20,7 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 - [x] **INGEST-01**: Plugin recognizes extended artifact types (RECEIPTS/, QUERIES/, EVIDENCE_REVIEW.md, SUCCESS_CRITERIA.md, environment/, cases/)
 - [x] **INGEST-02**: Receipt parser extracts claim, claim_status, evidence summary, related_hypotheses, technique references from agent-produced receipts
 - [x] **INGEST-03**: Query log parser extracts intent, dataset, result_status, related_receipts, entity references from agent-produced query logs
-- [ ] **INGEST-04**: Sidebar shows receipt timeline grouped by hypothesis with color-coded claim status
+- [x] **INGEST-04**: Sidebar shows receipt timeline grouped by hypothesis with color-coded claim status
 - [x] **INGEST-05**: "Ingest agent output" command scans RECEIPTS/ and QUERIES/, extracts entities, and creates or updates entity notes with sightings and backlinks
 - [x] **INGEST-06**: Ingestion is idempotent (running twice on same artifacts does not create duplicate sightings)
 - [x] **INGEST-07**: INGESTION_LOG.md records every ingestion run with counts of created, updated, and skipped entities
@@ -88,7 +88,7 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | INGEST-01 | Phase 70 | Complete |
 | INGEST-02 | Phase 70 | Complete |
 | INGEST-03 | Phase 70 | Complete |
-| INGEST-04 | Phase 71 | Pending |
+| INGEST-04 | Phase 71 | Complete |
 | INGEST-05 | Phase 71 | Complete |
 | INGEST-06 | Phase 71 | Complete |
 | INGEST-07 | Phase 71 | Complete |

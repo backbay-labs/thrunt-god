@@ -57,7 +57,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 - [x] **Phase 68: Entity Note Schema + ATT&CK Ontology Scaffold** - Define typed entity notes with YAML frontmatter schemas, scaffold ~200 ATT&CK technique stubs, and update workspace bootstrap with entity folder structure (completed 2026-04-12)
 - [x] **Phase 69: Knowledge Base Dashboard + Sidebar Entity Summary** - Ship KNOWLEDGE_BASE.md with embedded Dataview queries and add collapsible Knowledge Base section to sidebar with entity counts (completed 2026-04-12)
 - [x] **Phase 70: Artifact Registry + Parsers** - Extend artifact recognition to RECEIPTS/, QUERIES/, evidence reviews, cases; build receipt and query log parsers with entity extraction (completed 2026-04-12)
-- [ ] **Phase 71: Ingestion Engine + Agent Activity Timeline** - "Ingest agent output" command with idempotent entity creation/update, ingestion logging, and receipt timeline sidebar view
+- [x] **Phase 71: Ingestion Engine + Agent Activity Timeline** - "Ingest agent output" command with idempotent entity creation/update, ingestion logging, and receipt timeline sidebar view (completed 2026-04-12)
 - [ ] **Phase 72: MCP Client Adapter + Connection Infrastructure** - MCP client interface with configurable URL, enable toggle, connection status indicator, and graceful degradation for all MCP-dependent features
 - [ ] **Phase 73: MCP Enrichment + Intelligence Features** - Technique enrichment action, detection coverage analysis command, decision/learning logging, and knowledge graph search modal
 - [ ] **Phase 74: Export Profile Registry + Context Assembly Engine** - Define per-agent export profiles, build wiki-link-following context assembler with configurable depth and provenance markers
@@ -121,7 +121,7 @@ Plans:
   2. "Ingest agent output" command scans RECEIPTS/ and QUERIES/, extracts entities (IPs, domains, hashes, technique IDs), and creates or updates entity notes with sightings and wiki-link backlinks
   3. Running ingestion twice on the same artifacts does not create duplicate sightings -- idempotency is enforced via content hashing or sighting deduplication
   4. INGESTION_LOG.md records every ingestion run with counts of entities created, updated, and skipped
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 71-01-PLAN.md -- Ingestion engine pure module with TDD (entity extraction, sighting deduplication, log formatting)
@@ -210,7 +210,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 3/3 | Complete | 2026-04-12 |
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete    | 2026-04-12 | - |
 | 70. Artifact Registry + Parsers | 2/2 | Complete    | 2026-04-12 | - |
-| 71. Ingestion Engine + Agent Activity Timeline | 1/2 | In Progress|  | - |
+| 71. Ingestion Engine + Agent Activity Timeline | 2/2 | Complete   | 2026-04-12 | - |
 | 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/0 | Not started | - |
 | 73. MCP Enrichment + Intelligence Features | v4.0 | 0/0 | Not started | - |
 | 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |
