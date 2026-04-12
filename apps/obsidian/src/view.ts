@@ -131,6 +131,44 @@ export class ThruntWorkspaceView extends ItemView {
     header.createSpan({ cls: `thrunt-god-status ${statusCls}`, text: statusText });
     header.createSpan({ cls: 'thrunt-god-path', text: vm.planningDir });
 
+    // MCP connection indicator
+    const mcpDot = header.createSpan({ cls: 'thrunt-god-mcp-status' });
+    const dotEl = mcpDot.createSpan({ cls: 'thrunt-god-mcp-dot' });
+
+    dotEl.style.display = 'inline-block';
+    dotEl.style.width = '8px';
+    dotEl.style.height = '8px';
+    dotEl.style.borderRadius = '50%';
+    dotEl.style.marginLeft = '6px';
+    dotEl.style.verticalAlign = 'middle';
+
+    switch (vm.mcpStatus) {
+      case 'connected':
+        dotEl.addClass('is-connected');
+        dotEl.style.backgroundColor = 'var(--color-green, #4ade80)';
+        mcpDot.setAttribute('aria-label', 'MCP connected');
+        mcpDot.setAttribute('title', 'MCP connected');
+        break;
+      case 'disabled':
+        dotEl.addClass('is-disabled');
+        dotEl.style.backgroundColor = 'var(--text-muted)';
+        mcpDot.setAttribute('aria-label', 'MCP disabled');
+        mcpDot.setAttribute('title', 'MCP disabled — enable in settings');
+        break;
+      case 'error':
+        dotEl.addClass('is-error');
+        dotEl.style.backgroundColor = 'var(--color-red, #f87171)';
+        mcpDot.setAttribute('aria-label', 'MCP connection error');
+        mcpDot.setAttribute('title', 'MCP enabled but unreachable — check server URL');
+        break;
+      case 'disconnected':
+        dotEl.addClass('is-disabled');
+        dotEl.style.backgroundColor = 'var(--text-muted)';
+        mcpDot.setAttribute('aria-label', 'MCP disconnected');
+        mcpDot.setAttribute('title', 'MCP disconnected');
+        break;
+    }
+
     // Hunt fields (skip if missing)
     if (vm.workspaceStatus !== 'missing') {
       const fields = card.createDiv({ cls: 'thrunt-god-hunt-fields' });
