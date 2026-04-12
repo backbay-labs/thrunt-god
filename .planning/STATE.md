@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-current_plan: null
-status: ready_to_plan
-stopped_at: null
-last_updated: "2026-04-11T23:00:00Z"
-last_activity: 2026-04-11 -- Roadmap created for v4.0 (10 phases, 32 requirements)
+current_plan: 2
+status: executing
+stopped_at: "Completed 68-01-PLAN.md"
+last_updated: "2026-04-12T04:32:26Z"
+last_activity: 2026-04-12 -- Completed 68-01 entity type registry (8 types, 22 tests)
 progress:
   total_phases: 77
   completed_phases: 67
-  total_plans: null
-  completed_plans: null
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan Phase 68
+**Status:** Executing Phase 68 -- Plan 01 complete, Plan 02 next
 **Phase:** 68 of 77 (Entity Note Schema + ATT&CK Ontology Scaffold)
-**Plan:** Not started
+**Plan:** 1 of 3 complete
 
-Progress: [░░░░░░░░░░] 0% (0/10 v4.0 phases)
+Progress: [###░░░░░░░] 33% (1/3 phase 68 plans)
 
 ## Recently Completed
 
@@ -55,6 +55,8 @@ Progress: [░░░░░░░░░░] 0% (0/10 v4.0 phases)
 - MCP enriches, vault owns -- MCP unavailability degrades enrichment, not core
 - Entity notes as typed frontmatter -- 8 entity types with canonical folders and YAML schemas
 - Full milestone spec at apps/obsidian/MILESTONES-v2.md
+- Pure data module pattern for entity-schema.ts -- zero Obsidian imports, safe for testing and CLI
+- IOC subtypes share entities/iocs folder, differentiated by frontmatter type field
 
 ### Blockers/Concerns
 
@@ -62,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-11
-Stopped at: Roadmap created for v4.0 milestone
-Resume file: None -- ready for `plan-phase 68`
+Last session: 2026-04-12
+Stopped at: Completed 68-01-PLAN.md (entity type registry)
+Resume file: .planning/phases/68-entity-note-schema-att-ck-ontology-scaffold/68-02-PLAN.md

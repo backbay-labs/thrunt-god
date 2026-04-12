@@ -10,7 +10,7 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 ### Ontology
 
 - [ ] **ONTO-01**: Plugin can scaffold ATT&CK technique notes (~200) with typed frontmatter from a single command
-- [ ] **ONTO-02**: Entity note types (IOC/IP, IOC/domain, IOC/hash, TTP, actor, tool, infrastructure, data source) each have a canonical folder and YAML frontmatter schema
+- [x] **ONTO-02**: Entity note types (IOC/IP, IOC/domain, IOC/hash, TTP, actor, tool, infrastructure, data source) each have a canonical folder and YAML frontmatter schema
 - [ ] **ONTO-03**: Workspace bootstrap creates entity folder structure alongside core artifacts
 - [ ] **ONTO-04**: KNOWLEDGE_BASE.md ships with embedded Dataview queries (IOCs by confidence, TTPs by frequency, coverage gaps, cross-hunt entity references)
 - [ ] **ONTO-05**: Sidebar shows a collapsible Knowledge Base section with entity counts by type
@@ -81,7 +81,7 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ONTO-01 | Phase 68 | Pending |
-| ONTO-02 | Phase 68 | Pending |
+| ONTO-02 | Phase 68 | Complete |
 | ONTO-03 | Phase 68 | Pending |
 | ONTO-04 | Phase 69 | Pending |
 | ONTO-05 | Phase 69 | Pending |
