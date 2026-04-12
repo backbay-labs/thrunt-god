@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 83-02-PLAN.md
-last_updated: "2026-04-12T17:24:47.607Z"
+stopped_at: Completed 84-01-PLAN.md
+last_updated: "2026-04-12T18:12:28.206Z"
 progress:
   total_phases: 12
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
-  percent: 92
+  total_plans: 14
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 83 (Cross-Hunt Aggregation + Computed Confidence)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 84 (ATT&CK Institutional Memory)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
 **Status:** Executing
-**Phase:** 83 of 90 (Cross-Hunt Aggregation + Computed Confidence)
+**Phase:** 84 of 90 (ATT&CK Institutional Memory)
 **Plan:** 1 of 2 in current phase complete
 
-Progress: [█████████░] 92% (11/12 v5.0 plans)
+Progress: [█████████░] 93% (13/14 v5.0 plans)
 
 ## Recently Completed
 
@@ -81,6 +81,11 @@ Progress: [█████████░] 92% (11/12 v5.0 plans)
 - [Phase 83]: Confidence formula locked: (srcNorm*0.25 + reliability*0.30 + corrNorm*0.25 + recency*0.20) * decay with configurable half-life
 - [Phase 83]: entity-intelligence.ts follows coordinator pattern: pure function composing modules, IntelligenceService wraps with vault I/O
 - [Phase 83]: Schema migration v2: additive-only fields + sections (confidence, Hunt History, Related Infrastructure)
+- [Phase 84]: Technique Hunt History uses 3-case placement (no Verdict History anchor), distinct from entity 4-case
+- [Phase 84]: Coverage staleness uses UTC-normalized day diff (getUTCFullYear/getUTCMonth/getUTCDate) to avoid timezone boundary issues
+- [Phase 84]: FP append is single-entry (not bulk replace) matching append-only requirement
+- [Phase 84]: Coordinator extracts lastHuntedDate BEFORE replacing Hunt History section to handle empty-entries fallback
+- [Phase 84]: FP counting uses regex /^- \*\*pattern\*\*:/ for locked format detection
 
 ### Blockers/Concerns
 
@@ -88,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:24:47.604Z
-Stopped at: Completed 83-02-PLAN.md
+Last session: 2026-04-12T18:12:28.199Z
+Stopped at: Completed 84-01-PLAN.md
 Resume file: None

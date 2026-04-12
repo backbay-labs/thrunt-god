@@ -310,8 +310,8 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 80. Sidebar Progressive Disclosure + Onboarding | 2/2 | Complete    | 2026-04-12 | - |
 | 81. Command Consolidation + Modal Polish | 2/2 | Complete    | 2026-04-12 | - |
 | 82. Verdict Lifecycle + FrontmatterEditor + Schema Versioning | 3/3 | Complete    | 2026-04-12 | - |
-| 83. Cross-Hunt Aggregation + Computed Confidence | 2/2 | Complete   | 2026-04-12 | - |
-| 84. ATT&CK Institutional Memory | v5.0 | 0/2 | Not started | - |
+| 83. Cross-Hunt Aggregation + Computed Confidence | 2/2 | Complete    | 2026-04-12 | - |
+| 84. ATT&CK Institutional Memory | 1/2 | In Progress|  | - |
 | 85. Canvas Adapter + Reactive Nodes | v5.0 | 0/2 | Not started | - |
 | 86. Live Hunt Canvas + Reactive Dashboard | v5.0 | 0/2 | Not started | - |
 | 87. Filesystem Watcher + Hunt Pulse | v5.0 | 0/2 | Not started | - |

@@ -24,9 +24,9 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 - [x] **INTEL-03**: Entity notes show cross-hunt aggregation (every hunt referencing the entity, its role, and outcome) in a computed Hunt History section
 - [x] **INTEL-04**: Related infrastructure is surfaced when entities co-occur across multiple hunts
 - [x] **INTEL-05**: Entity frontmatter includes schema_version field with additive migration command that updates notes without data loss
-- [ ] **INTEL-06**: ATT&CK technique notes accumulate hunt linkbacks (queries used, data sources, outcomes) in a Hunt History section
-- [ ] **INTEL-07**: Analysts can add false positive annotations to technique notes via command
-- [ ] **INTEL-08**: Techniques not hunted in N months (configurable) are flagged as stale coverage
+- [x] **INTEL-06**: ATT&CK technique notes accumulate hunt linkbacks (queries used, data sources, outcomes) in a Hunt History section
+- [x] **INTEL-07**: Analysts can add false positive annotations to technique notes via command
+- [x] **INTEL-08**: Techniques not hunted in N months (configurable) are flagged as stale coverage
 - [x] **INTEL-09**: Entity confidence is computed from multiple inspectable factors (source_count, reliability, corroboration, days_since_validation) with configurable decay
 - [x] **INTEL-10**: FrontmatterEditor utility performs surgical frontmatter updates without YAML formatting destruction
 
@@ -96,9 +96,9 @@ Deferred beyond v5.0.
 | INTEL-03 | Phase 83 | Complete |
 | INTEL-04 | Phase 83 | Complete |
 | INTEL-05 | Phase 82 | Complete |
-| INTEL-06 | Phase 84 | Pending |
-| INTEL-07 | Phase 84 | Pending |
-| INTEL-08 | Phase 84 | Pending |
+| INTEL-06 | Phase 84 | Complete |
+| INTEL-07 | Phase 84 | Complete |
+| INTEL-08 | Phase 84 | Complete |
 | INTEL-09 | Phase 83 | Complete |
 | INTEL-10 | Phase 82 | Complete |
 | CANVAS-07 | Phase 85 | Pending |
