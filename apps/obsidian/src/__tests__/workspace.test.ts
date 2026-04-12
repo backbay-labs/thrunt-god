@@ -952,4 +952,54 @@ High
       expect(rendered).toContain('Some evidence');
     });
   });
+
+  // -------------------------------------------------------------------------
+  // logExport -- EXPORT_LOG.md
+  // -------------------------------------------------------------------------
+
+  describe('logExport', () => {
+    const mockEntry = {
+      timestamp: '2026-04-12T00:00:00.000Z',
+      sourceNote: 'hunts/APT29.md',
+      profileId: 'query-writer',
+      profileLabel: 'Query Writer',
+      tokenEstimate: 1500,
+      sectionCount: 3,
+      entityCounts: { ttps: 2, iocs: 1 },
+    };
+
+    function setupForExport(a: StubVaultAdapter): void {
+      a.addFolder(PLANNING_DIR);
+      addAllArtifacts(a);
+    }
+
+    it('creates EXPORT_LOG.md with export entry', async () => {
+      setupForExport(adapter);
+
+      await service.logExport(mockEntry);
+
+      expect(adapter.fileExists('.planning/EXPORT_LOG.md')).toBe(true);
+      const logContent = await adapter.readFile('.planning/EXPORT_LOG.md');
+      expect(logContent).toContain('# Export Log');
+      expect(logContent).toContain('Source: hunts/APT29.md');
+      expect(logContent).toContain('Profile: Query Writer (query-writer)');
+      expect(logContent).toContain('Token estimate: 1500');
+      expect(logContent).toContain('Sections: 3');
+      expect(logContent).toContain('ttps: 2');
+      expect(logContent).toContain('iocs: 1');
+    });
+
+    it('appends to EXPORT_LOG.md on second call', async () => {
+      setupForExport(adapter);
+
+      await service.logExport(mockEntry);
+      await service.logExport({ ...mockEntry, timestamp: '2026-04-12T01:00:00.000Z' });
+
+      const logContent = await adapter.readFile('.planning/EXPORT_LOG.md');
+      // Should contain two run entries (two ## headings beyond the initial # heading)
+      const runHeadings = logContent.match(/^## /gm);
+      expect(runHeadings).not.toBeNull();
+      expect(runHeadings!.length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });

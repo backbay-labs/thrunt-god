@@ -21,6 +21,8 @@ import {
 import type { McpClient } from './mcp-client';
 import { mergeEnrichment, buildCoverageReport, formatDecisionEntry, formatLearningEntry } from './mcp-enrichment';
 import { assembleContext } from './context-assembly';
+import { formatExportLog } from './export-log';
+import type { ExportLogEntry } from './export-log';
 import { loadProfiles } from './export-profiles';
 import { parseState, parseHypotheses } from './parsers';
 import { parseReceipt } from './parsers/receipt';
@@ -591,6 +593,25 @@ export class WorkspaceService {
       lines.push('');
     }
     return lines.join('\n');
+  }
+
+  async logExport(entry: ExportLogEntry): Promise<void> {
+    const planningDir = getPlanningDir(
+      this.getSettings().planningDir,
+      this.defaultPlanningDir,
+    );
+    const logPath = normalizePath(`${planningDir}/EXPORT_LOG.md`);
+    const logEntry = formatExportLog(entry);
+
+    if (this.vaultAdapter.fileExists(logPath)) {
+      const existingLog = await this.vaultAdapter.readFile(logPath);
+      await this.vaultAdapter.modifyFile(logPath, existingLog + '\n' + logEntry);
+    } else {
+      await this.vaultAdapter.createFile(
+        logPath,
+        '# Export Log\n\n' + logEntry,
+      );
+    }
   }
 
   private async detectExtendedArtifacts(planningDir: string): Promise<ExtendedArtifacts> {
