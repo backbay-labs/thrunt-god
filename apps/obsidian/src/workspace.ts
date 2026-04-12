@@ -1,7 +1,8 @@
 import type { App } from 'obsidian';
 import { type VaultAdapter } from './vault-adapter';
 import { CORE_ARTIFACTS } from './artifacts';
-import { getPlanningDir, getCoreFilePath } from './paths';
+import { getPlanningDir, getCoreFilePath, normalizePath } from './paths';
+import { ENTITY_FOLDERS } from './entity-schema';
 import {
   type WorkspaceStatus,
   type ArtifactStatus,
@@ -112,6 +113,13 @@ export class WorkspaceService {
       if (!this.vaultAdapter.fileExists(path)) {
         await this.vaultAdapter.createFile(path, artifact.starterTemplate);
       }
+    }
+
+    // Entity folders (new in Phase 68)
+    for (const folder of ENTITY_FOLDERS) {
+      await this.vaultAdapter.ensureFolder(
+        normalizePath(`${planningDir}/${folder}`),
+      );
     }
 
     this.invalidate();
