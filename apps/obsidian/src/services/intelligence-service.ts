@@ -33,6 +33,12 @@ import {
   refreshEntityIntelligence as refreshEntityIntelCoordinator,
   type RefreshInput,
 } from '../entity-intelligence';
+import {
+  refreshTechniqueIntelligence as refreshTechniqueIntelCoordinator,
+  type TechniqueRefreshInput,
+} from '../technique-intelligence';
+import type { TechniqueHuntEntry, HuntOutcome } from '../technique-hunt-history';
+import { detectHuntId } from '../verdict';
 import type { ConfidenceFactors } from '../confidence';
 import type { HuntHistoryEntry } from '../hunt-history';
 
@@ -486,6 +492,104 @@ export class IntelligenceService {
     }
   }
 
+  async refreshTechniqueIntelligence(
+    filePath: string,
+    staleCoverageDays: number,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const planningDir = this.getPlanningDir();
+
+      // Read the technique note content
+      const content = await this.vaultAdapter.readFile(filePath);
+
+      // Extract mitre_id from frontmatter
+      const mitreIdMatch = content.match(/^mitre_id:\s*"?([^"\n]+)"?\s*$/m);
+      const mitreId = mitreIdMatch?.[1]?.trim() ?? '';
+      if (!mitreId) {
+        return { success: false, message: 'No mitre_id found in technique note frontmatter' };
+      }
+
+      // Extract data_sources from frontmatter for hunt entries
+      const dataSources: string[] = [];
+      const dsMatch = content.match(/^data_sources:\s*\[([^\]]*)\]\s*$/m);
+      if (dsMatch?.[1]) {
+        dataSources.push(
+          ...dsMatch[1].split(',').map((s) => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean),
+        );
+      }
+
+      // Extract technique name from filename
+      const fileName = filePath.split('/').pop() ?? filePath;
+      const techniqueName = fileName.replace(/\.md$/, '');
+
+      // Detect hunt ID from MISSION.md or planning dir
+      let missionContent: string | null = null;
+      try {
+        const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+        missionContent = await this.vaultAdapter.readFile(missionPath);
+      } catch {
+        // MISSION.md not found
+      }
+      const huntId = detectHuntId(missionContent, planningDir);
+
+      // Scan receipts to build TechniqueHuntEntry[]
+      const huntEntries: TechniqueHuntEntry[] = [];
+      const receiptsPath = normalizePath(`${planningDir}/RECEIPTS`);
+      if (this.vaultAdapter.folderExists(receiptsPath)) {
+        const receiptFiles = await this.vaultAdapter.listFiles(receiptsPath);
+        const rctFiles = receiptFiles.filter((f) => /^RCT-.*\.md$/.test(f));
+        for (const rctFileName of rctFiles) {
+          try {
+            const rctFilePath = normalizePath(`${receiptsPath}/${rctFileName}`);
+            const rctContent = await this.vaultAdapter.readFile(rctFilePath);
+            const receipt = parseReceipt(rctContent);
+
+            // Check if this technique is referenced in the receipt
+            if (!receipt.technique_refs.includes(mitreId)) continue;
+
+            // Extract date from receipt_id (RCT-YYYYMMDD pattern) or use current date
+            let entryDate = new Date().toISOString().slice(0, 10);
+            const dateMatch = receipt.receipt_id.match(/RCT-(\d{4})(\d{2})(\d{2})/);
+            if (dateMatch) {
+              entryDate = `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+            }
+
+            huntEntries.push({
+              huntId,
+              date: entryDate,
+              queryCount: receipt.related_queries.length,
+              dataSources,
+              outcome: mapClaimStatusToOutcome(receipt.claim_status),
+            });
+          } catch {
+            // Skip unreadable receipts
+          }
+        }
+      }
+
+      // Call the pure technique-intelligence coordinator
+      const input: TechniqueRefreshInput = {
+        techniqueContent: content,
+        techniqueName,
+        huntEntries,
+        staleCoverageDays,
+      };
+
+      const result = refreshTechniqueIntelCoordinator(input);
+
+      // Write updated content back
+      await this.vaultAdapter.modifyFile(filePath, result.content);
+
+      return {
+        success: true,
+        message: `Technique intelligence refreshed (${result.huntHistoryCount} hunts, coverage: ${result.coverageStatus}, FP: ${result.fpCount})`,
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, message };
+    }
+  }
+
   async refreshEntityIntelligence(
     filePath: string,
     halfLifeDays: number,
@@ -566,4 +670,20 @@ export class IntelligenceService {
       return { success: false, message };
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Map receipt claim_status to technique HuntOutcome.
+ * - 'supports' -> TP (true positive)
+ * - 'disproves' -> FP (false positive)
+ * - anything else -> inconclusive
+ */
+function mapClaimStatusToOutcome(claimStatus: string): HuntOutcome {
+  if (claimStatus === 'supports') return 'TP';
+  if (claimStatus === 'disproves') return 'FP';
+  return 'inconclusive';
 }
