@@ -49,10 +49,10 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 
 ### Hunt Journal + Playbooks
 
-- [ ] **JOURNAL-01**: Hunt journal note type with YAML frontmatter (hunt_id, hypothesis, status, linked_entities) and timestamped entries
-- [ ] **JOURNAL-02**: Inline tagging syntax (#thrunt/h/, #thrunt/ev/, #thrunt/dp/) for hypotheses, evidence strength, and decision points
+- [x] **JOURNAL-01**: Hunt journal note type with YAML frontmatter (hunt_id, hypothesis, status, linked_entities) and timestamped entries
+- [x] **JOURNAL-02**: Inline tagging syntax (#thrunt/h/, #thrunt/ev/, #thrunt/dp/) for hypotheses, evidence strength, and decision points
 - [ ] **JOURNAL-03**: "New journal entry" command appends a timestamped block to the active hunt journal
-- [ ] **JOURNAL-04**: Journal summary command extracts reasoning chain from tagged entries into structured narrative
+- [x] **JOURNAL-04**: Journal summary command extracts reasoning chain from tagged entries into structured narrative
 - [ ] **JOURNAL-05**: Post-hunt "Generate playbook" command produces reusable template with trigger conditions, query sequences, and decision trees
 - [ ] **JOURNAL-06**: "Apply playbook" command pre-populates new hunt hypotheses and huntmap from a selected playbook
 - [ ] **JOURNAL-07**: Detection note type links Sigma/KQL/SPL rules to source hunts, TTPs, and entities
@@ -112,10 +112,10 @@ Deferred beyond v5.0.
 | LIVE-04 | Phase 88 | Complete |
 | LIVE-05 | Phase 88 | Complete |
 | LIVE-06 | Phase 87 | Complete |
-| JOURNAL-01 | Phase 89 | Pending |
-| JOURNAL-02 | Phase 89 | Pending |
+| JOURNAL-01 | Phase 89 | Complete |
+| JOURNAL-02 | Phase 89 | Complete |
 | JOURNAL-03 | Phase 89 | Pending |
-| JOURNAL-04 | Phase 89 | Pending |
+| JOURNAL-04 | Phase 89 | Complete |
 | JOURNAL-05 | Phase 90 | Pending |
 | JOURNAL-06 | Phase 90 | Pending |
 | JOURNAL-07 | Phase 90 | Pending |

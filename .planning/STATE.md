@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 88-02-PLAN.md
-last_updated: "2026-04-12T22:35:48.358Z"
+stopped_at: Completed 89-01-PLAN.md
+last_updated: "2026-04-12T23:22:49.834Z"
 progress:
   total_phases: 12
   completed_phases: 10
-  total_plans: 22
-  completed_plans: 22
-  percent: 100
+  total_plans: 24
+  completed_plans: 23
+  percent: 96
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 88 (Bidirectional MCP Event Bridge + Prior Hunt Suggester)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 89 (Hunt Journal Engine)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
 **Status:** Executing
-**Phase:** 88 of 90 (Bidirectional MCP Event Bridge + Prior Hunt Suggester)
-**Plan:** 2 of 2 in current phase complete
+**Phase:** 89 of 90 (Hunt Journal Engine)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (22/22 v5.0 plans)
+Progress: [██████████] 96% (23/24 v5.0 plans)
 
 ## Recently Completed
 
@@ -126,6 +126,12 @@ Progress: [██████████] 100% (22/22 v5.0 plans)
 - [Phase 88]: Suggestion dismiss is session-only via in-memory Set, never persisted to disk
 - [Phase 88]: Suggestions deduped by entityName to avoid duplicates from rapid entity:created events
 - [Phase 88]: detectHuntId reused from verdict.ts for MISSION.md hunt_id detection in suggestion pipeline
+- [Phase 89]: Journal tags use #thrunt/ namespace prefix for Dataview compatibility
+- [Phase 89]: extractTags strips fenced code blocks and inline code before regex scanning
+- [Phase 89]: buildSummarySection deduplicates hypotheses by value, keeping first occurrence timestamp
+- [Phase 89]: replaceSummarySection appends at EOF when missing, splice-replaces when present
+- [Phase 89]: appendJournalEntry insertion priority: before ## Summary > end of ## Reasoning Log > EOF
+- [Phase 89]: Journal tags use #thrunt/ namespace prefix for Dataview compatibility
 
 ### Blockers/Concerns
 
@@ -133,6 +139,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T22:35:48.354Z
-Stopped at: Completed 88-02-PLAN.md
+Last session: 2026-04-12T23:22:43.111Z
+Stopped at: Completed 89-01-PLAN.md
 Resume file: None
