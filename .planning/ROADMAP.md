@@ -231,8 +231,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 87-01: WatcherService with vault event filtering, debounced auto-ingestion, hunt pulse status bar
-- [ ] 87-02: Settings UI for live feature toggles, VaultAdapter onFileEvent extension
+- [ ] 87-01-PLAN.md &mdash; WatcherService real implementation (path scoping, auto-ingestion delegation, activity tracking), formatHuntPulse pure function, EventBus extension
+- [ ] 87-02-PLAN.md &mdash; Settings UI with live feature toggles, auto-ingestion vault event wiring, hunt pulse status bar, dynamic enable/disable in main.ts
 
 ### Phase 88: Bidirectional MCP Event Bridge + Prior-Hunt Suggester
 **Goal**: Obsidian is an active participant in hunts -- CLI events flow into the vault as artifacts, vault changes publish back to CLI/VS Code, and historical intelligence surfaces automatically when new entities match past hunts
@@ -313,7 +313,7 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 83. Cross-Hunt Aggregation + Computed Confidence | 2/2 | Complete    | 2026-04-12 | - |
 | 84. ATT&CK Institutional Memory | 2/2 | Complete    | 2026-04-12 | - |
 | 85. Canvas Adapter + Reactive Nodes | 2/2 | Complete    | 2026-04-12 | - |
-| 86. Live Hunt Canvas + Reactive Dashboard | 2/2 | Complete   | 2026-04-12 | - |
+| 86. Live Hunt Canvas + Reactive Dashboard | 2/2 | Complete    | 2026-04-12 | - |
 | 87. Filesystem Watcher + Hunt Pulse | v5.0 | 0/2 | Not started | - |
 | 88. Bidirectional MCP Event Bridge + Prior-Hunt Suggester | v5.0 | 0/2 | Not started | - |
 | 89. Hunt Journal Engine | v5.0 | 0/2 | Not started | - |
