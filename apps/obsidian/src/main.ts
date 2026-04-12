@@ -21,6 +21,7 @@ export default class ThruntGodPlugin extends Plugin {
   private statusBarItemEl?: HTMLElement;
   private debouncedRefresh?: Debouncer<[], void>;
   private debouncedCanvasRefresh?: Debouncer<[], void>;
+  private debouncedDashboardRefresh?: Debouncer<[], void>;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -108,11 +109,34 @@ export default class ThruntGodPlugin extends Plugin {
         this.debouncedCanvasRefresh!();
       }
     }));
+
+    // --- Live canvas auto-population (Phase 86) ---
+    if (this.settings.liveCanvasEnabled) {
+      this.eventBus.on('entity:created', (data) => {
+        void this.workspaceService.handleLiveCanvasEntityCreated(data);
+      });
+    }
+
+    // --- Dashboard reactive refresh (Phase 86) ---
+    // Debounced at 2000ms trailing, longer than 500ms canvas color patcher
+    // because dashboard updates are batch-heavy
+    if (this.settings.liveCanvasEnabled) {
+      this.debouncedDashboardRefresh = debounce(async () => {
+        await this.workspaceService.refreshDashboardCanvas();
+      }, 2000, true);
+
+      this.registerEvent(this.app.vault.on('modify', (file) => {
+        if (isEntityFile(file.path)) {
+          this.debouncedDashboardRefresh!();
+        }
+      }));
+    }
   }
 
   onunload(): void {
     this.debouncedRefresh?.cancel();
     this.debouncedCanvasRefresh?.cancel();
+    this.debouncedDashboardRefresh?.cancel();
     this.mcpClient.disconnect();
     this.eventBus.removeAllListeners();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);
