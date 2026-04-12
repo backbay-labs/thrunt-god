@@ -67,6 +67,26 @@ export class ItemView {
   getDisplayText() { return ''; }
 }
 
+export class SuggestModal extends Modal {
+  limit = 50;
+  emptyStateText = 'No results found.';
+  inputEl: any = {};
+  resultContainerEl: any = {};
+  setPlaceholder(_placeholder: string) {}
+  setInstructions(_instructions: any[]) {}
+  onNoSuggestion() {}
+  selectSuggestion(_value: any, _evt: any) {}
+}
+
+export class FuzzySuggestModal extends SuggestModal {
+  getItems(): any[] { return []; }
+  getItemText(_item: any): string { return ''; }
+  onChooseItem(_item: any, _evt: any) {}
+  getSuggestions(_query: string): any[] { return []; }
+  renderSuggestion(_item: any, _el: any) {}
+  onChooseSuggestion(_item: any, _evt: any) {}
+}
+
 export type WorkspaceLeaf = any;
 export type App = any;
 
