@@ -137,9 +137,16 @@ describe('appendTechniqueHuntHistorySection', () => {
     ];
     const result = appendTechniqueHuntHistorySection(content, entries);
 
-    // Old placeholder removed, new entry present
-    expect(result).not.toContain('_No hunts have targeted this technique yet._');
+    // Hunt History section should have new entry, not placeholder
     expect(result).toContain('- **HUNT-002** (2026-02-01) -- queries: 2, data_sources: [Sysmon], outcome: TP');
+
+    // Verify the Hunt History section specifically does not have the placeholder
+    // (the ## Sightings section may still have it -- that's fine)
+    const lines = result.split('\n');
+    const huntHistoryIdx = lines.findIndex((l) => l.trim() === '## Hunt History');
+    const nextSectionIdx = lines.findIndex((l, i) => i > huntHistoryIdx && l.startsWith('## '));
+    const huntHistoryContent = lines.slice(huntHistoryIdx, nextSectionIdx === -1 ? undefined : nextSectionIdx).join('\n');
+    expect(huntHistoryContent).not.toContain('_No hunts have targeted this technique yet._');
 
     // Should only have one ## Hunt History heading
     const headingCount = result.split('\n').filter((l) => l.trim() === '## Hunt History').length;
