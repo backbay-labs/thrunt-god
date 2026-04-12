@@ -165,7 +165,11 @@ Plans:
   2. Context assembly engine follows wiki-links to related entity notes up to a configurable depth (1 = direct links, 2 = neighbors of neighbors) with deduplication
   3. Every section in assembled output includes a provenance marker identifying the source file path it was extracted from
   4. Export profiles are extensible via a JSON config file that analysts can edit to add custom profiles
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 74-01-PLAN.md -- ExportProfile types, 5 default profiles registry, loadProfiles with JSON merge
+- [ ] 74-02-PLAN.md -- Context assembly engine (wiki-link traversal, section extraction, provenance), WorkspaceService wiring
 
 ### Phase 75: Hyper Copy Commands + Export UX
 **Goal**: Analysts can hand off rich, structured context to agents with one command -- either through a preview modal or quick-action shortcuts
@@ -221,7 +225,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 71. Ingestion Engine + Agent Activity Timeline | 2/2 | Complete    | 2026-04-12 | - |
 | 72. MCP Client Adapter + Connection Infrastructure | 2/2 | Complete    | 2026-04-12 | - |
 | 73. MCP Enrichment + Intelligence Features | 2/2 | Complete    | 2026-04-12 | - |
-| 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |
+| 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/2 | Planning | - |
 | 75. Hyper Copy Commands + Export UX | v4.0 | 0/0 | Not started | - |
 | 76. Canvas Kill Chain Generator + Templates | v4.0 | 0/0 | Not started | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/0 | Not started | - |

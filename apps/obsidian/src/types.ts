@@ -223,3 +223,33 @@ export interface SearchResult {
   entityType: string; // e.g. 'ttp', 'ioc/ip', 'actor'
   snippet: string;    // context snippet from search hit
 }
+
+// --- Export profile + context assembly types ---
+
+/** Per-agent export profile defining what context to assemble */
+export interface ExportProfile {
+  agentId: string;           // e.g. "query-writer"
+  label: string;             // human-readable e.g. "Query Writer"
+  includeSections: string[]; // section identifiers to extract
+  includeRelated: {
+    entityTypes: string[];   // entity types to follow links for
+    depth: number;           // 1 = direct links, 2 = neighbors of neighbors
+  };
+  promptTemplate: string;    // template wrapping assembled context
+  maxTokenEstimate: number;  // soft cap for token budget warning
+}
+
+/** Result of context assembly */
+export interface AssembledContext {
+  sections: ProvenanceSection[];
+  tokenEstimate: number;
+  profileUsed: string;       // agentId
+  sourceNote: string;        // vault path of origin note
+}
+
+/** One section of assembled context with source provenance */
+export interface ProvenanceSection {
+  heading: string;           // section heading
+  content: string;           // markdown content
+  sourcePath: string;        // vault-relative path of source file
+}
