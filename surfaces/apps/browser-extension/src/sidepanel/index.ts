@@ -5,7 +5,7 @@
  * shows vendor context, and supports real capture actions.
  */
 
-import type { CaseViewModel, VendorPageContext, FindingSummary } from '@thrunt-surfaces/contracts';
+import type { CaseViewModel, VendorPageContext, FindingSummary, EvidenceTimelineEntry } from '@thrunt-surfaces/contracts';
 
 // --- State ---
 
@@ -218,7 +218,7 @@ function render(): void {
     renderHypotheses(cv),
     renderRecommendedActions(cv),
     renderFindings(cv),
-    renderRecentActivity(cv),
+    renderEvidenceTimeline(cv),
     renderDiagnostics(),
   ].join('');
 
@@ -662,20 +662,45 @@ function renderFindings(cv: CaseViewModel): string {
   return `<div class="section"><div class="section-title">Findings (${cv.findings.length})</div><div class="card"><div class="compact-list">${items}</div></div></div>`;
 }
 
-function renderRecentActivity(cv: CaseViewModel): string {
+function renderEvidenceTimeline(cv: CaseViewModel): string {
+  const count = cv.evidenceTimeline.length;
+  if (count === 0) {
+    return `
+      <div class="section">
+        <div class="section-title">Evidence Timeline (0)</div>
+        <div class="card">
+          <div class="empty">No evidence captured yet</div>
+        </div>
+      </div>`;
+  }
+
+  const typeConfig: Record<EvidenceTimelineEntry['type'], { label: string; badgeClass: string }> = {
+    query: { label: 'QRY', badgeClass: 'badge-info' },
+    receipt: { label: 'RCT', badgeClass: 'badge-success' },
+    evidence: { label: 'EVD', badgeClass: 'badge-neutral' },
+  };
+
+  const items = cv.evidenceTimeline.map((entry) => {
+    const config = typeConfig[entry.type] ?? { label: entry.type.toUpperCase(), badgeClass: 'badge-neutral' };
+    return `
+      <div class="list-row timeline-item" data-artifact-id="${esc(entry.id)}" data-artifact-type="${esc(entry.type)}" style="cursor:pointer" title="Click to navigate to ${esc(entry.id)}">
+        <div class="split-header">
+          <div class="pill-row" style="margin-top:0">
+            ${renderBadge(config.label, config.badgeClass)}
+            ${renderBadge(entry.vendorId, 'badge-neutral')}
+          </div>
+          <div class="subtle">${esc(formatTimestamp(entry.timestamp))}</div>
+        </div>
+        <div class="compact-item">${esc(truncate(entry.summary, 120))}</div>
+      </div>`;
+  }).join('');
+
   return `
     <div class="section">
-      <div class="section-title">Recent Artifacts</div>
+      <div class="section-title">Evidence Timeline (${count})</div>
       <div class="card">
-        <div class="pill-row">
-          ${renderBadge(`${cv.recentQueries.length} queries`, 'badge-info')}
-          ${renderBadge(`${cv.recentReceipts.length} receipts`, 'badge-success')}
-          ${renderBadge(`${cv.recentEvidence.length} evidence`, 'badge-neutral')}
-        </div>
-        <div class="compact-list" style="margin-top:12px">
-          ${cv.recentQueries.slice(0, 2).map((query) => renderArtifactRow('Query', query.title || query.queryId)).join('')}
-          ${cv.recentReceipts.slice(0, 2).map((receipt) => renderArtifactRow('Receipt', receipt.claim || receipt.receiptId)).join('')}
-          ${cv.recentEvidence.slice(0, 2).map((evidence) => renderArtifactRow('Evidence', evidence.summary)).join('')}
+        <div class="scroll-pane" style="max-height:280px">
+          <div class="compact-list">${items}</div>
         </div>
       </div>
     </div>`;
