@@ -77,6 +77,21 @@ export class WorkspaceError extends Error {
   }
 }
 
+// --- Parsed receipt snapshots ---
+
+/** Parsed snapshot of a receipt markdown file */
+export interface ReceiptSnapshot {
+  receipt_id: string;
+  claim_status: string;      // "supports" | "disproves" | "context" | ""
+  result_status: string;     // "ok" | "partial" | "error" | "empty" | ""
+  related_hypotheses: string[];
+  related_queries: string[];
+  claim: string;             // first non-empty paragraph from ## Claim
+  evidence_summary: string;  // first non-empty paragraph from ## Evidence
+  technique_refs: string[];  // T1234 or T1234.567 patterns found in body
+  confidence: string;        // "Low" | "Medium" | "High" | ""
+}
+
 // --- Entity schema types ---
 
 export interface FrontmatterFieldDef {
