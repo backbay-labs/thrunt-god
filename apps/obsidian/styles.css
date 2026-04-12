@@ -172,3 +172,51 @@
 .thrunt-god-kb-details > .thrunt-god-actions {
   padding: 0.25rem 1rem 0.75rem;
 }
+
+/* Extended Artifacts section */
+.thrunt-god-extended-artifacts {
+  padding: 0;
+}
+
+.thrunt-god-ea-details {
+  padding: 0;
+}
+
+.thrunt-god-ea-details[open] > .thrunt-god-ea-summary {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.thrunt-god-ea-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.75rem 1rem;
+  user-select: none;
+}
+
+.thrunt-god-ea-summary::-webkit-details-marker {
+  display: none;
+}
+
+.thrunt-god-ea-summary::before {
+  content: '\25B6';
+  display: inline-block;
+  font-size: 0.65rem;
+  margin-right: 0.5rem;
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.thrunt-god-ea-details[open] > .thrunt-god-ea-summary::before {
+  transform: rotate(90deg);
+}
+
+.thrunt-god-ea-title {
+  display: inline;
+  font-size: 0.95rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.thrunt-god-ea-details > .thrunt-god-hunt-fields {
+  padding: 0.5rem 1rem;
+}

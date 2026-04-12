@@ -82,6 +82,9 @@ export class ThruntWorkspaceView extends ItemView {
     // Knowledge Base entity counts
     this.renderKnowledgeBaseSection(contentEl, vm);
 
+    // Extended artifacts (agent-produced)
+    this.renderExtendedArtifactsSection(contentEl, vm);
+
     // Artifact list
     const artifactCard = contentEl.createDiv({ cls: 'thrunt-god-card' });
     artifactCard.createEl('h3', { text: 'Core artifacts' });
@@ -183,6 +186,27 @@ export class ThruntWorkspaceView extends ItemView {
     const field = container.createDiv({ cls: 'thrunt-god-hunt-field' });
     field.createSpan({ cls: 'thrunt-god-field-label', text: label });
     field.createSpan({ cls: 'thrunt-god-field-value', text: value });
+  }
+
+  private renderExtendedArtifactsSection(container: HTMLElement, vm: ViewModel): void {
+    if (vm.workspaceStatus === 'missing') return;
+
+    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-extended-artifacts' });
+    const details = card.createEl('details', { cls: 'thrunt-god-ea-details' });
+    details.setAttribute('open', '');
+
+    const summary = details.createEl('summary', { cls: 'thrunt-god-ea-summary' });
+    summary.createEl('h3', { text: 'Agent Artifacts', cls: 'thrunt-god-ea-title' });
+
+    const fields = details.createDiv({ cls: 'thrunt-god-hunt-fields' });
+    const ea = vm.extendedArtifacts;
+
+    this.renderField(fields, 'Receipts', String(ea.receipts));
+    this.renderField(fields, 'Query Logs', String(ea.queries));
+    this.renderField(fields, 'Evidence Review', ea.evidenceReview ? 'Present' : 'Missing');
+    this.renderField(fields, 'Success Criteria', ea.successCriteria ? 'Present' : 'Missing');
+    this.renderField(fields, 'Environment', ea.environment ? 'Present' : 'Missing');
+    this.renderField(fields, 'Cases', String(ea.cases));
   }
 
   private renderKnowledgeBaseSection(container: HTMLElement, vm: ViewModel): void {
