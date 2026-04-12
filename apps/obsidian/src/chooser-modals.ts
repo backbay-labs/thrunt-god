@@ -5,6 +5,7 @@ import type { CanvasTemplateName } from './modals';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { VERDICT_VALUES, type VerdictValue } from './verdict';
 import { ENTITY_FOLDERS } from './entity-schema';
+import { getParentTechniques, getTechniqueFileName } from './scaffold';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -221,6 +222,7 @@ const INTELLIGENCE_ITEMS: readonly ChooserItem[] = [
   { id: 'log-hunt-learning', name: 'Log hunt learning', description: 'Record a learning from the current hunt' },
   { id: 'search-knowledge-graph', name: 'Search knowledge graph', description: 'Search entities, techniques, and actors via MCP' },
   { id: 'refresh-entity-intelligence', name: 'Refresh entity intelligence', description: 'Update hunt history, co-occurrence, and confidence for current entity' },
+  { id: 'add-false-positive', name: 'Add false positive', description: 'Record a known false positive on a technique note' },
 ];
 
 export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
@@ -354,6 +356,11 @@ export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
         (this.plugin.app as any).commands.executeCommandById('thrunt-god:refresh-entity-intelligence');
         break;
       }
+      case 'add-false-positive': {
+        // Delegate to the command callback
+        (this.plugin.app as any).commands.executeCommandById('thrunt-god:add-false-positive');
+        break;
+      }
       case 'search-knowledge-graph': {
         if (!this.plugin.mcpClient.isConnected()) {
           new Notice('MCP is not connected. Enable in Settings > THRUNT God.');
@@ -413,6 +420,55 @@ export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
       }
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// TechniqueSuggestModal
+// ---------------------------------------------------------------------------
+
+export interface TechniqueItem {
+  id: string;       // e.g. "T1059"
+  name: string;     // e.g. "Command and Scripting Interpreter"
+  fullName: string; // e.g. "T1059 -- Command and Scripting Interpreter"
+}
+
+export class TechniqueSuggestModal extends FuzzySuggestModal<TechniqueItem> {
+  private techniques: TechniqueItem[];
+  private onSelect: (technique: TechniqueItem) => void;
+
+  constructor(app: App, techniques: TechniqueItem[], onSelect: (technique: TechniqueItem) => void) {
+    super(app);
+    this.techniques = techniques;
+    this.onSelect = onSelect;
+    this.setPlaceholder('Select technique...');
+  }
+
+  getItems(): TechniqueItem[] {
+    return this.techniques;
+  }
+
+  getItemText(item: TechniqueItem): string {
+    return item.fullName;
+  }
+
+  renderSuggestion(match: FuzzyMatch<TechniqueItem>, el: HTMLElement): void {
+    el.createDiv({ cls: 'thrunt-chooser-name', text: match.item.fullName });
+  }
+
+  onChooseItem(item: TechniqueItem, _evt: MouseEvent | KeyboardEvent): void {
+    this.onSelect(item);
+  }
+}
+
+/**
+ * Build TechniqueItem[] from the scaffold's getParentTechniques().
+ */
+export function buildTechniqueItems(): TechniqueItem[] {
+  return getParentTechniques().map((t) => ({
+    id: t.id,
+    name: t.name,
+    fullName: `${t.id} -- ${t.name}`,
+  }));
 }
 
 // ---------------------------------------------------------------------------

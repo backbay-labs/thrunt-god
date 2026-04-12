@@ -14,14 +14,21 @@ vi.mock('../hyper-copy-modal', () => ({
 vi.mock('../export-log', () => ({
   buildExportLogEntry: vi.fn().mockReturnValue({}),
 }));
+vi.mock('../scaffold', () => ({
+  getParentTechniques: vi.fn().mockReturnValue([
+    { id: 'T1059', name: 'Command and Scripting Interpreter', tactic: 'Execution', description: '', sub_techniques: [], platforms: [], data_sources: [] },
+  ]),
+  getTechniqueFileName: vi.fn().mockReturnValue('T1059 -- Command and Scripting Interpreter.md'),
+}));
 
 import {
   CopyChooserModal,
   CanvasChooserModal,
   CanvasTemplateChooserModal,
   IntelligenceChooserModal,
+  TechniqueSuggestModal,
 } from '../chooser-modals';
-import type { ChooserItem } from '../chooser-modals';
+import type { ChooserItem, TechniqueItem } from '../chooser-modals';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -219,9 +226,9 @@ describe('IntelligenceChooserModal', () => {
     expect(modal).toBeInstanceOf(FuzzySuggestModal);
   });
 
-  it('getItems() returns 6 items with correct ids', () => {
+  it('getItems() returns 7 items with correct ids', () => {
     const items = modal.getItems();
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(7);
     const ids = items.map((i: ChooserItem) => i.id);
     expect(ids).toEqual([
       'enrich-from-mcp',
@@ -230,6 +237,7 @@ describe('IntelligenceChooserModal', () => {
       'log-hunt-learning',
       'search-knowledge-graph',
       'refresh-entity-intelligence',
+      'add-false-positive',
     ]);
   });
 
@@ -261,5 +269,53 @@ describe('IntelligenceChooserModal', () => {
     for (const item of items) {
       expect(() => modal.onChooseItem(item, {} as any)).not.toThrow();
     }
+  });
+
+  it('includes add-false-positive item', () => {
+    const items = modal.getItems();
+    const fpItem = items.find((i: ChooserItem) => i.id === 'add-false-positive');
+    expect(fpItem).toBeDefined();
+    expect(fpItem!.name).toBe('Add false positive');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TechniqueSuggestModal
+// ---------------------------------------------------------------------------
+
+describe('TechniqueSuggestModal', () => {
+  const testTechniques: TechniqueItem[] = [
+    { id: 'T1059', name: 'Command and Scripting Interpreter', fullName: 'T1059 -- Command and Scripting Interpreter' },
+    { id: 'T1053', name: 'Scheduled Task/Job', fullName: 'T1053 -- Scheduled Task/Job' },
+  ];
+
+  it('extends FuzzySuggestModal', () => {
+    const onSelect = vi.fn();
+    const modal = new TechniqueSuggestModal({} as any, testTechniques, onSelect);
+    expect(modal).toBeInstanceOf(FuzzySuggestModal);
+  });
+
+  it('getItems() returns the provided techniques', () => {
+    const onSelect = vi.fn();
+    const modal = new TechniqueSuggestModal({} as any, testTechniques, onSelect);
+    const items = modal.getItems();
+    expect(items).toHaveLength(2);
+    expect(items[0]!.id).toBe('T1059');
+    expect(items[1]!.id).toBe('T1053');
+  });
+
+  it('getItemText() returns fullName', () => {
+    const onSelect = vi.fn();
+    const modal = new TechniqueSuggestModal({} as any, testTechniques, onSelect);
+    const items = modal.getItems();
+    expect(modal.getItemText(items[0]!)).toBe('T1059 -- Command and Scripting Interpreter');
+  });
+
+  it('onChooseItem calls onSelect with the selected technique', () => {
+    const onSelect = vi.fn();
+    const modal = new TechniqueSuggestModal({} as any, testTechniques, onSelect);
+    const items = modal.getItems();
+    modal.onChooseItem(items[0]!, {} as any);
+    expect(onSelect).toHaveBeenCalledWith(testTechniques[0]);
   });
 });

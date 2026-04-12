@@ -37,7 +37,7 @@ export interface MigrationPreview {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export const MIGRATIONS: SchemaMigration[] = [
   {
@@ -82,6 +82,22 @@ export const MIGRATIONS: SchemaMigration[] = [
         heading: '## Related Infrastructure',
         defaultContent:
           '_No co-occurring entities found (2+ shared hunts required)._',
+        beforeSection: '## Sightings',
+      },
+    ],
+  },
+  {
+    version: 3,
+    description:
+      'Add coverage_status and fp_count fields, add Known False Positives section',
+    addFields: [
+      { key: 'coverage_status', defaultValue: 'stale' },
+      { key: 'fp_count', defaultValue: 0 },
+    ],
+    addSections: [
+      {
+        heading: '## Known False Positives',
+        defaultContent: '_No false positives recorded._',
         beforeSection: '## Sightings',
       },
     ],

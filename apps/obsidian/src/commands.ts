@@ -7,7 +7,7 @@ import { ENTITY_TYPES, ENTITY_FOLDERS } from './entity-schema';
 import { McpSearchModal } from './mcp-search-modal';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { PromptModal, CanvasTemplateModal, CompareHuntsModal } from './modals';
-import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, VerdictSuggestModal } from './chooser-modals';
+import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, VerdictSuggestModal, TechniqueSuggestModal, buildTechniqueItems } from './chooser-modals';
 import { appendVerdictEntry, formatTimestamp, detectHuntId, type VerdictEntry } from './verdict';
 import { updateFrontmatter } from './frontmatter-editor';
 import { previewMigration, applyMigration, CURRENT_SCHEMA_VERSION } from './schema-migration';
@@ -15,6 +15,8 @@ import { refreshEntityIntelligence, type RefreshInput } from './entity-intellige
 import type { ConfidenceFactors } from './confidence';
 import { parseEntityNote, scanEntityNotes } from './entity-utils';
 import type { HuntHistoryEntry } from './hunt-history';
+import { appendFalsePositiveEntry, type FalsePositiveEntry } from './false-positive';
+import { getTechniqueFileName } from './scaffold';
 
 // ---------------------------------------------------------------------------
 // registerCommands -- called once from plugin.onload()
@@ -153,6 +155,16 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
       if (checking) return true;
       void refreshEntityIntel(plugin, file.path);
       return true;
+    },
+  });
+
+  // --- Add false positive command (Phase 84-02) ---
+
+  plugin.addCommand({
+    id: 'add-false-positive',
+    name: 'Add false positive',
+    callback: () => {
+      void addFalsePositive(plugin);
     },
   });
 
@@ -359,6 +371,14 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     name: '',
     callback: () => {
       void openSearchModal(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'add-false-positive-alias',
+    name: '',
+    callback: () => {
+      void addFalsePositive(plugin);
     },
   });
 
@@ -723,6 +743,25 @@ async function refreshEntityIntel(plugin: ThruntGodPlugin, filePath: string): Pr
 
     await plugin.workspaceService.vaultAdapter.modifyFile(filePath, result.content);
 
+    // If this is a technique note, also run technique-specific refresh
+    if (filePath.includes('entities/ttps/')) {
+      try {
+        const techResult = await plugin.workspaceService.refreshTechniqueIntelligence(
+          filePath,
+          plugin.settings.staleCoverageDays,
+        );
+        if (techResult.success) {
+          new Notice(
+            `Entity + technique intelligence refreshed (${result.huntHistoryCount} hunts, ${result.coOccurrenceCount} co-occurrences, confidence: ${result.confidenceScore}, ${techResult.message})`,
+          );
+          await plugin.refreshViews();
+          return;
+        }
+      } catch {
+        // Fall through to standard notice if technique refresh fails
+      }
+    }
+
     new Notice(
       `Entity intelligence refreshed (${result.huntHistoryCount} hunts, ${result.coOccurrenceCount} co-occurrences, confidence: ${result.confidenceScore})`,
     );
@@ -731,6 +770,78 @@ async function refreshEntityIntel(plugin: ThruntGodPlugin, filePath: string): Pr
     const message = err instanceof Error ? err.message : 'Unknown error';
     new Notice(`Refresh failed: ${message}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Add false positive helper (Plan 84-02)
+// ---------------------------------------------------------------------------
+
+async function addFalsePositive(plugin: ThruntGodPlugin): Promise<void> {
+  const file = plugin.app.workspace.getActiveFile();
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  const promptForPattern = (techniqueFilePath: string, techniqueName: string) => {
+    new PromptModal(
+      plugin.app,
+      'Add False Positive',
+      [{ label: 'Pattern', placeholder: 'Describe the false positive pattern...' }],
+      (values) => {
+        const pattern = values[0];
+        if (!pattern) {
+          new Notice('Pattern description is required.');
+          return;
+        }
+        void (async () => {
+          try {
+            const content = await plugin.workspaceService.vaultAdapter.readFile(techniqueFilePath);
+
+            // Detect hunt ID
+            let missionContent: string | null = null;
+            try {
+              const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+              missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+            } catch {
+              // MISSION.md not found
+            }
+            const huntId = detectHuntId(missionContent, planningDir);
+
+            const entry: FalsePositiveEntry = {
+              pattern,
+              date: new Date().toISOString().slice(0, 10),
+              huntId,
+            };
+
+            const updated = appendFalsePositiveEntry(content, entry);
+            await plugin.workspaceService.vaultAdapter.modifyFile(techniqueFilePath, updated);
+            new Notice(`False positive added to ${techniqueName}`);
+            await plugin.refreshViews();
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            new Notice(`Failed to add false positive: ${message}`);
+          }
+        })();
+      },
+    ).open();
+  };
+
+  // If active file is a technique note, use it directly
+  if (file && file.path.includes('entities/ttps/')) {
+    const techniqueName = file.name.replace(/\.md$/, '');
+    promptForPattern(file.path, techniqueName);
+    return;
+  }
+
+  // Otherwise, show technique selection modal
+  const techniques = buildTechniqueItems();
+  new TechniqueSuggestModal(plugin.app, techniques, (selected) => {
+    const fileName = getTechniqueFileName({ id: selected.id, name: selected.name });
+    const ttpsFolder = normalizePath(`${planningDir}/entities/ttps`);
+    const filePath = normalizePath(`${ttpsFolder}/${fileName}`);
+    promptForPattern(filePath, selected.fullName);
+  }).open();
 }
 
 export async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {

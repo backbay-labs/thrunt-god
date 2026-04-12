@@ -388,6 +388,15 @@ export class WorkspaceService {
     return result;
   }
 
+  async refreshTechniqueIntelligence(
+    filePath: string,
+    staleCoverageDays: number,
+  ): Promise<{ success: boolean; message: string }> {
+    const result = await this.intelligenceService.refreshTechniqueIntelligence(filePath, staleCoverageDays);
+    this.invalidate();
+    return result;
+  }
+
   private async detectExtendedArtifacts(planningDir: string): Promise<ExtendedArtifacts> {
     // RECEIPTS count: RCT-*.md files in RECEIPTS/ folder
     let receipts = 0;

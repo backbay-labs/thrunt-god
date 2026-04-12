@@ -17,6 +17,14 @@ vi.mock('../chooser-modals', () => ({
   CanvasChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   IntelligenceChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   VerdictSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
+  TechniqueSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
+  buildTechniqueItems: vi.fn().mockReturnValue([]),
+}));
+vi.mock('../false-positive', () => ({
+  appendFalsePositiveEntry: vi.fn().mockReturnValue(''),
+}));
+vi.mock('../scaffold', () => ({
+  getTechniqueFileName: vi.fn().mockReturnValue('T1059 -- Command and Scripting Interpreter.md'),
 }));
 
 import { registerCommands } from '../commands';
@@ -64,15 +72,16 @@ describe('command consolidation', () => {
   // Visible top-level commands
   // -----------------------------------------------------------------------
 
-  it('registers exactly 12 visible top-level commands (non-empty name)', () => {
+  it('registers exactly 13 visible top-level commands (non-empty name)', () => {
     const visible = commands.filter((c) => c.name !== '');
-    expect(visible).toHaveLength(12);
+    expect(visible).toHaveLength(13);
   });
 
   it('visible commands include the expected IDs', () => {
     const visible = commands.filter((c) => c.name !== '');
     const ids = visible.map((c) => c.id).sort();
     expect(ids).toEqual([
+      'add-false-positive',
       'canvas-chooser',
       'compare-hunts',
       'copy-chooser',
@@ -198,8 +207,8 @@ describe('command consolidation', () => {
   // Total hidden alias count
   // -----------------------------------------------------------------------
 
-  it('has at least 17 hidden aliases (12 consolidated + 5 artifacts)', () => {
+  it('has at least 18 hidden aliases (13 consolidated + 5 artifacts)', () => {
     const hidden = commands.filter((c) => c.name === '');
-    expect(hidden.length).toBeGreaterThanOrEqual(17);
+    expect(hidden.length).toBeGreaterThanOrEqual(18);
   });
 });

@@ -12,6 +12,7 @@ export interface ThruntGodPluginSettings {
   mcpEnabled: boolean;
   sidebarState: SidebarState;
   halfLifeDays: number;
+  staleCoverageDays: number;
 }
 
 export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
   mcpEnabled: false,
   sidebarState: DEFAULT_SIDEBAR_STATE,
   halfLifeDays: 90,
+  staleCoverageDays: 90,
 };
 
 export class ThruntGodSettingTab extends PluginSettingTab {
@@ -112,6 +114,20 @@ export class ThruntGodSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             const parsed = parseInt(value, 10);
             this.plugin.settings.halfLifeDays = parsed > 0 ? parsed : DEFAULT_SETTINGS.halfLifeDays;
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Stale coverage threshold (days)')
+      .setDesc('Techniques not hunted within this many days are flagged stale. Default: 90.')
+      .addText((text) =>
+        text
+          .setPlaceholder('90')
+          .setValue(String(this.plugin.settings.staleCoverageDays))
+          .onChange(async (value) => {
+            const parsed = parseInt(value, 10);
+            this.plugin.settings.staleCoverageDays = parsed > 0 ? parsed : DEFAULT_SETTINGS.staleCoverageDays;
             await this.plugin.saveSettings();
           }),
       );
