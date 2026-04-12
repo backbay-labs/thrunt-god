@@ -1,0 +1,49 @@
+{
+  "vendorId": "m365-defender",
+  "fixtures": [
+    {
+      "file": "advanced-hunting-kql-rich.html",
+      "url": "https://security.microsoft.com/v2/advanced-hunting",
+      "expected": {
+        "detect": true,
+        "pageType": "search",
+        "confidence": "high",
+        "completeness": "complete",
+        "supported": true,
+        "tableRows": 3,
+        "queryLanguage": "kql",
+        "entityValues": ["WORKSTATION-03", "jsmith@acme.corp"]
+      }
+    },
+    {
+      "file": "incident-detail.html",
+      "url": "https://security.microsoft.com/incidents/12345",
+      "expected": {
+        "detect": true,
+        "pageType": "incident",
+        "confidence": "medium",
+        "completeness": "partial",
+        "supported": true,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": ["SERVER-DC01", "10.0.2.50", "lateral-admin@acme.corp"],
+        "failureReasons": ["No query editor detected on incident page"]
+      }
+    },
+    {
+      "file": "generic-unsupported.html",
+      "url": "https://security.microsoft.com/settings/general",
+      "expected": {
+        "detect": true,
+        "pageType": "unknown",
+        "confidence": "low",
+        "completeness": "unsupported",
+        "supported": false,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": [],
+        "failureReasons": ["This M365 Defender page type is not supported for structured extraction"]
+      }
+    }
+  ]
+}
