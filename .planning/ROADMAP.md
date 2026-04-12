@@ -54,7 +54,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 
 **Milestone Goal:** Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting -- where every hunt makes the next one smarter, analysts prepare context that makes agents more effective, and the knowledge graph grows organically from structured markdown.
 
-- [ ] **Phase 68: Entity Note Schema + ATT&CK Ontology Scaffold** - Define typed entity notes with YAML frontmatter schemas, scaffold ~200 ATT&CK technique stubs, and update workspace bootstrap with entity folder structure
+- [x] **Phase 68: Entity Note Schema + ATT&CK Ontology Scaffold** - Define typed entity notes with YAML frontmatter schemas, scaffold ~200 ATT&CK technique stubs, and update workspace bootstrap with entity folder structure (completed 2026-04-12)
 - [ ] **Phase 69: Knowledge Base Dashboard + Sidebar Entity Summary** - Ship KNOWLEDGE_BASE.md with embedded Dataview queries and add collapsible Knowledge Base section to sidebar with entity counts
 - [ ] **Phase 70: Artifact Registry + Parsers** - Extend artifact recognition to RECEIPTS/, QUERIES/, evidence reviews, cases; build receipt and query log parsers with entity extraction
 - [ ] **Phase 71: Ingestion Engine + Agent Activity Timeline** - "Ingest agent output" command with idempotent entity creation/update, ingestion logging, and receipt timeline sidebar view
@@ -76,7 +76,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
   2. Each of the 8 entity types (IOC/IP, IOC/domain, IOC/hash, TTP, actor, tool, infrastructure, data source) has a defined folder and YAML frontmatter schema, and creating a note from template produces well-structured output
   3. Running "Create THRUNT workspace" (bootstrap) generates the entity folder structure (entities/iocs/, entities/ttps/, entities/actors/, entities/tools/, entities/infra/, entities/datasources/) alongside existing core artifacts
   4. Scaffold command is idempotent -- running twice does not overwrite user-added content in existing technique notes
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 68-01-PLAN.md -- Entity type registry with 8 types, frontmatter schemas, path helpers
@@ -195,7 +195,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 65. Obsidian CLI Install Channel | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 66. Release Artifact Pipeline | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |
-| 68. Entity Note Schema + ATT&CK Ontology Scaffold | 2/3 | In Progress|  | - |
+| 68. Entity Note Schema + ATT&CK Ontology Scaffold | 3/3 | Complete   | 2026-04-12 | - |
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | v4.0 | 0/0 | Not started | - |
 | 70. Artifact Registry + Parsers | v4.0 | 0/0 | Not started | - |
 | 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
