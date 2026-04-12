@@ -192,6 +192,38 @@ export default class ThruntGodPlugin extends Plugin {
       callback: () => { void this.quickExport('signal-triager', 'Signal Triager'); },
     });
 
+    // --- Canvas commands (Phase 76) ---
+
+    this.addCommand({
+      id: 'generate-hunt-canvas',
+      name: 'Generate hunt canvas',
+      callback: () => {
+        new CanvasTemplateModal(this.app, async (template) => {
+          const result = await this.workspaceService.generateHuntCanvas(template);
+          new Notice(result.message);
+          if (result.success && result.canvasPath) {
+            await this.app.workspace.openLinkText(result.canvasPath, '', true);
+          }
+          await this.refreshViews();
+        }).open();
+      },
+    });
+
+    this.addCommand({
+      id: 'canvas-from-current-hunt',
+      name: 'Canvas from current hunt',
+      callback: () => {
+        void (async () => {
+          const result = await this.workspaceService.canvasFromCurrentHunt();
+          new Notice(result.message);
+          if (result.success && result.canvasPath) {
+            await this.app.workspace.openLinkText(result.canvasPath, '', true);
+          }
+          await this.refreshViews();
+        })();
+      },
+    });
+
     this.addSettingTab(new ThruntGodSettingTab(this.app, this));
 
     // Connect MCP if enabled (fire-and-forget -- connect never throws)
@@ -545,6 +577,49 @@ class PromptModal extends Modal {
             this.onSubmit(this.values);
           });
       });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CanvasTemplateModal -- template picker for canvas generation
+// ---------------------------------------------------------------------------
+
+type CanvasTemplateName = 'kill-chain' | 'diamond' | 'lateral-movement' | 'hunt-progression';
+
+class CanvasTemplateModal extends Modal {
+  constructor(
+    app: import('obsidian').App,
+    private onSelect: (template: CanvasTemplateName) => void,
+  ) {
+    super(app);
+  }
+
+  onOpen(): void {
+    this.titleEl.setText('Generate Hunt Canvas');
+
+    const templates: Array<{ label: string; value: CanvasTemplateName }> = [
+      { label: 'ATT&CK Kill Chain', value: 'kill-chain' },
+      { label: 'Diamond Model', value: 'diamond' },
+      { label: 'Lateral Movement Map', value: 'lateral-movement' },
+      { label: 'Hunt Progression', value: 'hunt-progression' },
+    ];
+
+    for (const tmpl of templates) {
+      new Setting(this.contentEl)
+        .setName(tmpl.label)
+        .addButton((btn) => {
+          btn.setButtonText('Generate')
+            .setCta()
+            .onClick(() => {
+              this.close();
+              this.onSelect(tmpl.value);
+            });
+        });
+    }
   }
 
   onClose(): void {
