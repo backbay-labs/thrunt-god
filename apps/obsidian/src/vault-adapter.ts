@@ -10,6 +10,7 @@ export interface VaultAdapter {
   listFolders(path: string): Promise<string[]>;
   listFiles(path: string): Promise<string[]>;
   modifyFile(path: string, content: string): Promise<void>;
+  getFileMtime(path: string): number | null;
 }
 
 export class ObsidianVaultAdapter implements VaultAdapter {
@@ -85,5 +86,13 @@ export class ObsidianVaultAdapter implements VaultAdapter {
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof TFile)) throw new Error(`File not found: ${path}`);
     await this.app.vault.modify(file, content);
+  }
+
+  getFileMtime(path: string): number | null {
+    const file = this.app.vault.getAbstractFileByPath(path);
+    if (file instanceof TFile) {
+      return file.stat.mtime;
+    }
+    return null;
   }
 }

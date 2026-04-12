@@ -1074,10 +1074,15 @@ export class WorkspaceService {
               }
             }
 
+            const mtime = this.vaultAdapter.getFileMtime(missionPath);
+            const lastModified = mtime
+              ? new Date(mtime).toISOString()
+              : new Date().toISOString();
+
             hunts.push({
               name: huntName,
               entityCount,
-              lastModified: new Date().toISOString(),
+              lastModified,
             });
           }
         }
@@ -1104,10 +1109,15 @@ export class WorkspaceService {
           }
         }
 
+        const mtime = this.vaultAdapter.getFileMtime(missionPath);
+        const lastModified = mtime
+          ? new Date(mtime).toISOString()
+          : new Date().toISOString();
+
         hunts.push({
           name: huntName,
           entityCount,
-          lastModified: new Date().toISOString(),
+          lastModified,
         });
       }
 
