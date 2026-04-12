@@ -195,7 +195,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 65. Obsidian CLI Install Channel | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 66. Release Artifact Pipeline | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |
-| 68. Entity Note Schema + ATT&CK Ontology Scaffold | 3/3 | Complete   | 2026-04-12 | - |
+| 68. Entity Note Schema + ATT&CK Ontology Scaffold | 3/3 | Complete    | 2026-04-12 | - |
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | v4.0 | 0/0 | Not started | - |
 | 70. Artifact Registry + Parsers | v4.0 | 0/0 | Not started | - |
 | 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
