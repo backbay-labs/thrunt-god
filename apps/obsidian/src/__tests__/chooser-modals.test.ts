@@ -145,14 +145,15 @@ describe('CanvasChooserModal', () => {
     expect(modal).toBeInstanceOf(FuzzySuggestModal);
   });
 
-  it('getItems() returns 3 items with correct ids', () => {
+  it('getItems() returns 4 items with correct ids', () => {
     const items = modal.getItems();
-    expect(items).toHaveLength(3);
+    expect(items).toHaveLength(4);
     const ids = items.map((i: ChooserItem) => i.id);
     expect(ids).toEqual([
       'generate-hunt-canvas',
       'canvas-from-current-hunt',
       'generate-knowledge-dashboard',
+      'refresh-canvas-nodes',
     ]);
   });
 

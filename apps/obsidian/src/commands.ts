@@ -168,6 +168,17 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     },
   });
 
+  // --- Refresh canvas nodes command (Phase 85-02) ---
+
+  plugin.addCommand({
+    id: 'refresh-canvas-nodes',
+    name: 'Refresh canvas nodes',
+    callback: async () => {
+      const result = await plugin.workspaceService.refreshAllCanvasNodes();
+      new Notice(`Canvas nodes refreshed: ${result.totalPatched} nodes updated`);
+    },
+  });
+
   // --- Schema migration command (Phase 82-03) ---
 
   plugin.addCommand({

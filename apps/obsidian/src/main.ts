@@ -20,6 +20,7 @@ export default class ThruntGodPlugin extends Plugin {
   eventBus!: EventBus;
   private statusBarItemEl?: HTMLElement;
   private debouncedRefresh?: Debouncer<[], void>;
+  private debouncedCanvasRefresh?: Debouncer<[], void>;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -86,10 +87,32 @@ export default class ThruntGodPlugin extends Plugin {
     this.registerEvent(this.app.vault.on('modify', handler));
     this.registerEvent(this.app.vault.on('delete', handler));
     this.registerEvent(this.app.vault.on('rename', handler));
+
+    // Entity-scoped canvas refresh: debounced at 500ms, batches rapid entity changes
+    const planningDir = this.settings.planningDir || DEFAULT_SETTINGS.planningDir;
+    const pendingEntityPaths = new Set<string>();
+    this.debouncedCanvasRefresh = debounce(async () => {
+      const paths = [...pendingEntityPaths];
+      pendingEntityPaths.clear();
+      for (const path of paths) {
+        await this.workspaceService.refreshCanvasForEntity(path);
+      }
+    }, 500, true);
+
+    const isEntityFile = (path: string): boolean =>
+      path.startsWith(planningDir + '/entities/') && path.endsWith('.md');
+
+    this.registerEvent(this.app.vault.on('modify', (file) => {
+      if (isEntityFile(file.path)) {
+        pendingEntityPaths.add(file.path);
+        this.debouncedCanvasRefresh!();
+      }
+    }));
   }
 
   onunload(): void {
     this.debouncedRefresh?.cancel();
+    this.debouncedCanvasRefresh?.cancel();
     this.mcpClient.disconnect();
     this.eventBus.removeAllListeners();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);

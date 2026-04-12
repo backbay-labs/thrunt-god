@@ -104,7 +104,7 @@ export class CanvasService {
       // Output path
       const outputFileName = `CANVAS_${templateName.toUpperCase().replace(/-/g, '_')}.canvas`;
       const canvasPath = normalizePath(`${planningDir}/${outputFileName}`);
-      const canvasJson = JSON.stringify(canvasData, null, 2);
+      const canvasJson = JSON.stringify(canvasData, null, '\t');
 
       if (this.vaultAdapter.fileExists(canvasPath)) {
         await this.vaultAdapter.modifyFile(canvasPath, canvasJson);
@@ -363,7 +363,7 @@ export class CanvasService {
 
       const outputFileName = `CANVAS_HUNT_${templateName.toUpperCase().replace(/-/g, '_')}.canvas`;
       const canvasPath = normalizePath(`${planningDir}/${outputFileName}`);
-      const canvasJson = JSON.stringify(canvasData, null, 2);
+      const canvasJson = JSON.stringify(canvasData, null, '\t');
 
       if (this.vaultAdapter.fileExists(canvasPath)) {
         await this.vaultAdapter.modifyFile(canvasPath, canvasJson);

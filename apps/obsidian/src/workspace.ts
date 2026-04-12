@@ -363,6 +363,14 @@ export class WorkspaceService {
     return result;
   }
 
+  async refreshCanvasForEntity(entityPath: string): Promise<void> {
+    await this.canvasService.handleEntityModified(entityPath);
+  }
+
+  async refreshAllCanvasNodes(): Promise<{ totalPatched: number }> {
+    return this.canvasService.refreshAllCanvasNodes();
+  }
+
   // ---------------------------------------------------------------------------
   // Cross-hunt intelligence methods (Phase 77 Plan 02) -- facade delegations
   // ---------------------------------------------------------------------------

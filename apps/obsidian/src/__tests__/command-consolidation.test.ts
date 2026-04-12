@@ -72,9 +72,9 @@ describe('command consolidation', () => {
   // Visible top-level commands
   // -----------------------------------------------------------------------
 
-  it('registers exactly 13 visible top-level commands (non-empty name)', () => {
+  it('registers exactly 14 visible top-level commands (non-empty name)', () => {
     const visible = commands.filter((c) => c.name !== '');
-    expect(visible).toHaveLength(13);
+    expect(visible).toHaveLength(14);
   });
 
   it('visible commands include the expected IDs', () => {
@@ -91,6 +91,7 @@ describe('command consolidation', () => {
       'intelligence-chooser',
       'migrate-entity-schema',
       'open-thrunt-workspace',
+      'refresh-canvas-nodes',
       'refresh-entity-intelligence',
       'scaffold-attack-ontology',
       'set-entity-verdict',
