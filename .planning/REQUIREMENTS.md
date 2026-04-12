@@ -84,47 +84,47 @@ Deferred beyond v5.0.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UX-01 | Pending | Pending |
-| UX-02 | Pending | Pending |
-| UX-03 | Pending | Pending |
-| UX-04 | Pending | Pending |
-| UX-05 | Pending | Pending |
-| UX-06 | Pending | Pending |
-| UX-07 | Pending | Pending |
-| INTEL-01 | Pending | Pending |
-| INTEL-02 | Pending | Pending |
-| INTEL-03 | Pending | Pending |
-| INTEL-04 | Pending | Pending |
-| INTEL-05 | Pending | Pending |
-| INTEL-06 | Pending | Pending |
-| INTEL-07 | Pending | Pending |
-| INTEL-08 | Pending | Pending |
-| INTEL-09 | Pending | Pending |
-| INTEL-10 | Pending | Pending |
-| CANVAS-07 | Pending | Pending |
-| CANVAS-08 | Pending | Pending |
-| CANVAS-09 | Pending | Pending |
-| CANVAS-10 | Pending | Pending |
-| CANVAS-11 | Pending | Pending |
-| LIVE-01 | Pending | Pending |
-| LIVE-02 | Pending | Pending |
-| LIVE-03 | Pending | Pending |
-| LIVE-04 | Pending | Pending |
-| LIVE-05 | Pending | Pending |
-| LIVE-06 | Pending | Pending |
-| JOURNAL-01 | Pending | Pending |
-| JOURNAL-02 | Pending | Pending |
-| JOURNAL-03 | Pending | Pending |
-| JOURNAL-04 | Pending | Pending |
-| JOURNAL-05 | Pending | Pending |
-| JOURNAL-06 | Pending | Pending |
-| JOURNAL-07 | Pending | Pending |
+| UX-01 | Phase 80 | Pending |
+| UX-02 | Phase 81 | Pending |
+| UX-03 | Phase 81 | Pending |
+| UX-04 | Phase 80 | Pending |
+| UX-05 | Phase 80 | Pending |
+| UX-06 | Phase 79 | Pending |
+| UX-07 | Phase 79 | Pending |
+| INTEL-01 | Phase 82 | Pending |
+| INTEL-02 | Phase 82 | Pending |
+| INTEL-03 | Phase 83 | Pending |
+| INTEL-04 | Phase 83 | Pending |
+| INTEL-05 | Phase 82 | Pending |
+| INTEL-06 | Phase 84 | Pending |
+| INTEL-07 | Phase 84 | Pending |
+| INTEL-08 | Phase 84 | Pending |
+| INTEL-09 | Phase 83 | Pending |
+| INTEL-10 | Phase 82 | Pending |
+| CANVAS-07 | Phase 85 | Pending |
+| CANVAS-08 | Phase 85 | Pending |
+| CANVAS-09 | Phase 86 | Pending |
+| CANVAS-10 | Phase 86 | Pending |
+| CANVAS-11 | Phase 85 | Pending |
+| LIVE-01 | Phase 87 | Pending |
+| LIVE-02 | Phase 87 | Pending |
+| LIVE-03 | Phase 88 | Pending |
+| LIVE-04 | Phase 88 | Pending |
+| LIVE-05 | Phase 88 | Pending |
+| LIVE-06 | Phase 87 | Pending |
+| JOURNAL-01 | Phase 89 | Pending |
+| JOURNAL-02 | Phase 89 | Pending |
+| JOURNAL-03 | Phase 89 | Pending |
+| JOURNAL-04 | Phase 89 | Pending |
+| JOURNAL-05 | Phase 90 | Pending |
+| JOURNAL-06 | Phase 90 | Pending |
+| JOURNAL-07 | Phase 90 | Pending |
 
 **Coverage:**
 - v5.0 requirements: 35 total
-- Mapped to phases: 0
-- Unmapped: 35
+- Mapped to phases: 35
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-12*
-*Last updated: 2026-04-12 after initial definition*
+*Last updated: 2026-04-12 after roadmap creation*
