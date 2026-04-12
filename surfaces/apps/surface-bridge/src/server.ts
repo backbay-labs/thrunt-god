@@ -707,7 +707,12 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
   const mode = cfg.mockMode ? ' (mock mode)' : '';
   console.log(`THRUNT Surface Bridge v${VERSION}${mode} on http://${cfg.host}:${cfg.port}`);
   console.log(`  Project: ${cfg.projectRoot}`);
-  console.log(`  Token: ${sessionToken}`);
+  try {
+    const paths = resolvePlanningPaths(cfg.projectRoot);
+    console.log(`  Token: ${path.join(paths.programRoot, '.bridge-token')}`);
+  } catch {
+    console.log('  Token: written to .planning/.bridge-token');
+  }
   console.log(`  WS: ws://${cfg.host}:${cfg.port}/ws`);
 
   return {
