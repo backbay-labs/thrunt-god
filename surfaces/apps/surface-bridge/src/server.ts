@@ -41,6 +41,7 @@ import {
   submitCertificationCampaignForReview,
 } from '@thrunt-surfaces/site-adapters';
 import { createMockProvider, createArtifactProvider, type CaseDataProvider } from './providers.ts';
+import { createMutationHandler } from './mutation-handler.ts';
 import { checkCertificationPrerequisites } from './certification-ops.ts';
 import { createLogger } from './logger.ts';
 import { classifyError, errorResponse, type ErrorClass } from './errors.ts';
@@ -88,6 +89,15 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     },
   });
   if (!cfg.mockMode) { subprocessHealth.startPeriodicProbe(60_000); }
+
+  // ─── Mutation handler ───────────────────────────────────────────────
+  const mutationHandler = createMutationHandler({
+    projectRoot: cfg.projectRoot,
+    toolsPath: cfg.toolsPath,
+    logger,
+    provider,
+    isSubprocessAvailable: () => cfg.mockMode || subprocessHealth.isAvailable(),
+  });
 
   // ─── Auth: session nonce ─────────────────────────────────────────────
   const sessionToken = crypto.randomBytes(16).toString('hex');
@@ -656,7 +666,23 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         wsClients.delete(ws);
         logger.info('ws', 'client disconnected', { clients: wsClients.size });
       },
-      message(_ws, _message) {},
+      message(ws, message) {
+        const raw = typeof message === 'string' ? message : new TextDecoder().decode(message as unknown as ArrayBuffer);
+        logger.debug('ws', 'inbound message', { length: raw.length });
+
+        // Handle mutation requests (JSON-RPC format)
+        void mutationHandler.handle(raw).then((response) => {
+          try { ws.send(response); } catch { /* client disconnected */ }
+        }).catch((err) => {
+          logger.error('ws', 'mutation handler error', { error: String(err) });
+          const errorResponse = JSON.stringify({
+            jsonrpc: '2.0',
+            id: null,
+            error: { code: -32603, message: 'Internal error' },
+          });
+          try { ws.send(errorResponse); } catch {}
+        });
+      },
     },
   });
 
