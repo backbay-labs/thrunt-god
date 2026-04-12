@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 83-01-PLAN.md
-last_updated: "2026-04-12T17:12:42.599Z"
+stopped_at: Completed 83-02-PLAN.md
+last_updated: "2026-04-12T17:24:47.607Z"
 progress:
   total_phases: 12
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   percent: 92
 ---
 
@@ -78,6 +78,9 @@ Progress: [█████████░] 92% (11/12 v5.0 plans)
 - [Phase 83]: Related Infrastructure uses ## Related Infrastructure heading, distinct from existing ## Related section
 - [Phase 83]: Co-occurrence threshold defaults to 2 with configurable parameter; wiki-link [[entity_name]] for graph integration
 - [Phase 83]: Section ordering: ## Verdict History > ## Hunt History > ## Related Infrastructure > ## Sightings > ## Related
+- [Phase 83]: Confidence formula locked: (srcNorm*0.25 + reliability*0.30 + corrNorm*0.25 + recency*0.20) * decay with configurable half-life
+- [Phase 83]: entity-intelligence.ts follows coordinator pattern: pure function composing modules, IntelligenceService wraps with vault I/O
+- [Phase 83]: Schema migration v2: additive-only fields + sections (confidence, Hunt History, Related Infrastructure)
 
 ### Blockers/Concerns
 
@@ -85,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:12:42.596Z
-Stopped at: Completed 83-01-PLAN.md
+Last session: 2026-04-12T17:24:47.604Z
+Stopped at: Completed 83-02-PLAN.md
 Resume file: None
