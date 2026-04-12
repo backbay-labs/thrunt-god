@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: in_progress
-stopped_at: Completed 78-01-PLAN.md
-last_updated: "2026-04-12T11:16:05Z"
+status: completed
+stopped_at: Completed 78-02-PLAN.md
+last_updated: "2026-04-12T11:28:39.370Z"
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 23
-  completed_plans: 22
-  percent: 95
+  completed_plans: 23
+  percent: 100
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 78 Tech Debt Cleanup (1/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 78 Tech Debt Cleanup (2/2 plans complete)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** In progress (tech debt cleanup)
+**Status:** Complete
 **Phase:** 78 of 78 (v4.0 Tech Debt Cleanup)
-**Plan:** 1 of 2 complete
+**Plan:** 2 of 2 complete
 
-Progress: [█████████░] 95% (22/23 v4.0 plans)
+Progress: [██████████] 100% (23/23 v4.0 plans)
 
 ## Recently Completed
 
@@ -116,6 +116,9 @@ Progress: [█████████░] 95% (22/23 v4.0 plans)
 - [Phase 78-01]: Core artifact resolution via planningDir path check before entity type filter with continue to prevent double-inclusion
 - [Phase 78-01]: getFileMtime returns number | null (epoch ms) matching TFile.stat.mtime
 - [Phase 78-01]: Null mtime fallback to new Date().toISOString() preserves backward compatibility
+- [Phase 78-02]: Extended parseFrontmatterFields to extract hunt_count and mitre_id -- keeps single parser pattern across all callers
+- [Phase 78-02]: Offline coverage message includes "(offline)" suffix so analyst knows data source
+- [Phase 78-02]: canvasFromCurrentHunt defaults to kill-chain for backward compatibility
 
 ### Blockers/Concerns
 
@@ -123,6 +126,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T11:16:05Z
-Stopped at: Completed 78-01-PLAN.md
+Last session: 2026-04-12T11:28:39.367Z
+Stopped at: Completed 78-02-PLAN.md
 Resume file: None

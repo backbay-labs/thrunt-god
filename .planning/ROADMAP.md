@@ -64,7 +64,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 - [x] **Phase 75: Hyper Copy Commands + Export UX** - "Hyper Copy for Agent" modal with preview and token estimate, quick export shortcuts, extensible profile config, and export audit log (completed 2026-04-12)
 - [x] **Phase 76: Canvas Kill Chain Generator + Templates** - Canvas generation engine with entity cards positioned by ATT&CK tactic, 4 canvas templates, and auto-generation from hunt findings (completed 2026-04-12)
 - [x] **Phase 77: Cross-Hunt Intelligence + Knowledge Dashboard** - Cross-hunt analytical queries, hunt comparison command, and knowledge dashboard canvas for program overview (completed 2026-04-12)
-- [ ] **Phase 78: v4.0 Tech Debt Cleanup** - Close integration gaps and tech debt from milestone audit: template picker for canvasFromCurrentHunt, wiki-link resolution for core artifacts, file mtime for dashboard, offline coverage fallback
+- [x] **Phase 78: v4.0 Tech Debt Cleanup** - Close integration gaps and tech debt from milestone audit: template picker for canvasFromCurrentHunt, wiki-link resolution for core artifacts, file mtime for dashboard, offline coverage fallback (completed 2026-04-12)
 
 ## Phase Details
 
@@ -225,7 +225,7 @@ Plans:
   2. Wiki-link resolution in context-assembly.ts resolves `[[MISSION]]`, `[[STATE]]` etc. to `{planningDir}/MISSION.md` when the file exists under planningDir
   3. Knowledge dashboard canvas uses actual file modification time for `HuntSummary.lastModified` so recency-based node width scaling works correctly
   4. `analyzeCoverage` has an offline fallback that scans entity notes directly when MCP is unreachable, producing a COVERAGE_REPORT.md from vault data alone
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 78-01-PLAN.md -- Wiki-link resolution for core artifacts, VaultAdapter getFileMtime, dashboard mtime fix
@@ -258,4 +258,4 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
 | 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete    | 2026-04-12 | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | 2/2 | Complete    | 2026-04-12 | - |
-| 78. v4.0 Tech Debt Cleanup | v4.0 | 1/2 | In progress | - |
+| 78. v4.0 Tech Debt Cleanup | 2/2 | Complete   | 2026-04-12 | - |
