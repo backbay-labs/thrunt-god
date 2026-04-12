@@ -1,0 +1,112 @@
+{
+  "manifest_version": 3,
+  "name": "THRUNT Surfaces",
+  "version": "0.1.0",
+  "description": "Threat hunting operator shell — capture evidence, monitor hunts, and interact with THRUNT across SIEM and cloud consoles.",
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:7483/*"
+  ],
+  "background": {
+    "service_worker": "dist/background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "optional_host_permissions": ["*://*/*"],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.splunk.com/*",
+        "*://*.splunkcloud.com/*"
+      ],
+      "js": ["dist/content-splunk.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.elastic.co/*",
+        "*://*.cloud.es.io/*",
+        "*://*.kb.elastic.co/*"
+      ],
+      "js": ["dist/content-elastic.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://portal.azure.com/*"
+      ],
+      "js": ["dist/content-sentinel.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.okta.com/*",
+        "*://*.oktapreview.com/*"
+      ],
+      "js": ["dist/content-okta.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://security.microsoft.com/*",
+        "*://*.microsoft.com/*"
+      ],
+      "js": ["dist/content-m365.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.crowdstrike.com/*"
+      ],
+      "js": ["dist/content-crowdstrike.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.console.aws.amazon.com/*",
+        "*://console.aws.amazon.com/*"
+      ],
+      "js": ["dist/content-aws.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://console.cloud.google.com/*"
+      ],
+      "js": ["dist/content-gcp.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.atlassian.net/*"
+      ],
+      "js": ["dist/content-jira.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.atlassian.net/wiki/*"
+      ],
+      "js": ["dist/content-confluence.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.service-now.com/*",
+        "*://*.servicenow.com/*"
+      ],
+      "js": ["dist/content-servicenow.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "THRUNT Surfaces"
+  }
+}

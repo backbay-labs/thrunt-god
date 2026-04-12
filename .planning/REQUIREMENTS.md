@@ -30,12 +30,12 @@ Requirements for v5.0 Hunt Ecosystem: Evidence In, Detections Out. Each maps to 
 
 ### Detection Promotion
 
-- [ ] **DTCT-01**: Hunter runs `thrunt findings promote --format sigma` and gets valid Sigma rules generated from FINDINGS.md with technique IDs, log source mappings, and detection logic
-- [ ] **DTCT-02**: Hunter runs `thrunt findings promote --format splunk` and gets SPL correlation searches deployable as Splunk saved searches
-- [ ] **DTCT-03**: Hunter runs `thrunt findings promote --format kql` and gets Sentinel analytics rules with KQL queries and entity mappings
-- [ ] **DTCT-04**: Each promoted detection includes ATT&CK technique mapping derived from hunt hypothesis tags and finding classifications
-- [ ] **DTCT-05**: Each promoted detection includes a confidence tag (high/medium/low) derived from evidence strength and receipt coverage
-- [ ] **DTCT-06**: Promoted detections are written to `.planning/DETECTIONS/` as versioned artifacts with provenance linking back to the source finding and hunt
+- [x] **DTCT-01**: Hunter runs `thrunt findings promote --format sigma` and gets valid Sigma rules generated from FINDINGS.md with technique IDs, log source mappings, and detection logic
+- [x] **DTCT-02**: Hunter runs `thrunt findings promote --format splunk` and gets SPL correlation searches deployable as Splunk saved searches
+- [x] **DTCT-03**: Hunter runs `thrunt findings promote --format kql` and gets Sentinel analytics rules with KQL queries and entity mappings
+- [x] **DTCT-04**: Each promoted detection includes ATT&CK technique mapping derived from hunt hypothesis tags and finding classifications
+- [x] **DTCT-05**: Each promoted detection includes a confidence tag (high/medium/low) derived from evidence strength and receipt coverage
+- [x] **DTCT-06**: Promoted detections are written to `.planning/DETECTIONS/` as versioned artifacts with provenance linking back to the source finding and hunt
 
 ### MCP Event Bridge
 
@@ -150,12 +150,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADPT-07 | Phase 25 | Complete |
 | ADPT-08 | Phase 25 | Complete |
 | ADPT-09 | Phase 25 | Complete |
-| DTCT-01 | Phase 26 | Pending |
-| DTCT-02 | Phase 26 | Pending |
-| DTCT-03 | Phase 26 | Pending |
-| DTCT-04 | Phase 26 | Pending |
-| DTCT-05 | Phase 26 | Pending |
-| DTCT-06 | Phase 26 | Pending |
+| DTCT-01 | Phase 26 | Complete |
+| DTCT-02 | Phase 26 | Complete |
+| DTCT-03 | Phase 26 | Complete |
+| DTCT-04 | Phase 26 | Complete |
+| DTCT-05 | Phase 26 | Complete |
+| DTCT-06 | Phase 26 | Complete |
 
 **Coverage:**
 - v5.0 requirements: 30 total

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
-status: completed
-stopped_at: Completed 25-02-PLAN.md
-last_updated: "2026-04-12T17:28:04.328Z"
-last_activity: 2026-04-12 — Completed Phase 25 Plan 02 (M365 content script consolidation + sidepanel messaging)
+status: in-progress
+stopped_at: Completed 26-01-PLAN.md
+last_updated: "2026-04-12T17:43:52.000Z"
+last_activity: 2026-04-12 — Completed Phase 26 Plan 01 (findings promote with Sigma/SPL/KQL renderers)
 progress:
   total_phases: 16
-  completed_phases: 11
-  total_plans: 29
-  completed_plans: 29
+  completed_phases: 12
+  total_plans: 30
+  completed_plans: 30
   percent: 100
 ---
 
@@ -21,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Close the loop from evidence capture to detection deployment — every hunt produces evidence chains, intelligence updates, and deployable detection rules
-**Current focus:** v5.0 Phase 25 — Extraction Adapters (in progress)
+**Current focus:** v5.0 Phase 26 — Detection Promotion (complete)
 
 ## Current Position
 
-Phase: 25 of 26 (Extraction Adapters)
-Plan: 2 of 2 complete
+Phase: 26 of 26 (Detection Promotion)
+Plan: 1 of 1 complete
 Status: Phase Complete
-Last activity: 2026-04-12 — Completed Phase 25 Plan 02 (M365 content script consolidation + sidepanel messaging)
+Last activity: 2026-04-12 — Completed Phase 26 Plan 01 (findings promote with Sigma/SPL/KQL renderers)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 41 (v1.0: 12, v2.0: 12, v3.0: 14, v4.0: 5, v5.0: 9)
+- Total plans completed: 42 (v1.0: 12, v2.0: 12, v3.0: 14, v4.0: 5, v5.0: 10)
 
 ## Accumulated Context
 
@@ -80,6 +80,10 @@ Recent decisions affecting current work:
 - [Phase 25]: M365 content script slimmed to 4-line thin wrapper, completing all-vendor consolidation pattern
 - [Phase 25]: Sidepanel shows navigational guidance for no-adapter state rather than empty space
 - [Phase 25]: vendor:loading clears detectedVendor to null, briefly showing no-adapter state until vendor:detected arrives
+- [Phase 26]: Confidence scoring from evidence chain receipt count: high (3+), medium (1-2), low (0)
+- [Phase 26]: Technique-to-logsource heuristic maps ATT&CK domains to Sigma/SPL/KQL log source categories
+- [Phase 26]: Format aliases in CLI (spl->splunk, sentinel->kql) for user convenience
+- [Phase 26]: Findings without ATT&CK techniques still promoted with empty technique_ids rather than skipped
 
 ### Pending Todos
 
@@ -105,9 +109,10 @@ Recent decisions affecting current work:
 | Phase 24 P02 | 2min | 2 tasks | 1 files |
 | Phase 25 P01 | 3min | 3 tasks | 7 files |
 | Phase 25 P02 | 2min | 2 tasks | 2 files |
+| Phase 26 P01 | 5min | 2 tasks | 3 files |
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:28:04.324Z
-Stopped at: Completed 25-02-PLAN.md
+Last session: 2026-04-12T17:43:52.000Z
+Stopped at: Completed 26-01-PLAN.md
 Resume file: None
