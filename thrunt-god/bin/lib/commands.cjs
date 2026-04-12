@@ -7,6 +7,7 @@ const { execSync, execFileSync } = require('child_process');
 const { safeReadFile, loadConfig, isGitIgnored, execGit, normalizePhaseName, comparePhaseNum, getArchivedPhaseDirs, generateSlugInternal, getMilestoneInfo, getMilestonePhaseFilter, resolveModelInternal, stripShippedMilestones, extractCurrentMilestone, planningDir, planningRoot, planningPaths, toPosixPath, output, error, findPhaseInternal, extractOneLinerFromBody, getHuntmapPhaseInternal, getHuntmapDocInfo, getActiveCase, setActiveCase, PLANNING_DIR_NAME } = require('./core.cjs');
 const { extractFrontmatter, spliceFrontmatter, reconstructFrontmatter } = require('./frontmatter.cjs');
 const { addCaseToRoster, updateCaseInRoster, getCaseRoster } = require('./state.cjs');
+const { ensureConfigFile } = require('./config.cjs');
 const { MODEL_PROFILES } = require('./model-profiles.cjs');
 
 const TECHNIQUE_ID_RE = /T\d{4}(?:\.\d{3})?/gi;
@@ -3414,6 +3415,8 @@ function buildCaseStateBody(title, opts = {}) {
   const scope = opts.scope || 'Validate the case signal, collect first evidence, and decide the next investigation step.';
   const confidence = opts.confidence || 'Low';
   const blockers = opts.blockers || 'None.';
+  const phaseDisplay = opts.phaseDisplay || '1 of 1';
+  const planDisplay = opts.planDisplay || '1 of 2';
 
   return [
     `# Case: ${title}`,
@@ -3422,8 +3425,8 @@ function buildCaseStateBody(title, opts = {}) {
     '',
     `**Active signal:** ${activeSignal}`,
     `**Current focus:** ${currentFocus}`,
-    'Phase: 1 of 1',
-    'Plan: 1 of 1',
+    `Phase: ${phaseDisplay}`,
+    `Plan: ${planDisplay}`,
     `Status: ${status}`,
     `Last activity: ${lastActivity}`,
     '',
@@ -3489,7 +3492,145 @@ function buildCaseMissionContent(title, openedAt, opts = {}) {
     '',
     scope,
     '',
+    '## Working Theory',
+    '',
+    opts.workingTheory || '_What is the most likely explanation and what needs to be proved?_',
+    '',
   ].join('\n');
+}
+
+function buildInitialCaseHuntmap(title) {
+  return [
+    '---',
+    `title: ${title}`,
+    'status: active',
+    '---',
+    '',
+    '# Huntmap',
+    '',
+    '- [ ] **Phase 1: Initial Triage and Evidence Collection**',
+    '',
+    '### Phase 1: Initial Triage and Evidence Collection',
+    '',
+    '**Goal:** Validate the incoming signal, capture first evidence, and determine the next investigation step.',
+    '**Depends on:** None',
+    '**Plans:** 2',
+    '**Hypotheses:** [HYP-01]',
+    '',
+    '- [ ] Review the signal, scope, and available console context',
+    '- [ ] Capture initial evidence and decide whether escalation is required',
+    '',
+    '## Hypotheses',
+    '',
+    'See HYPOTHESES.md',
+    '',
+  ].join('\n');
+}
+
+function buildInitialHypotheses(signal) {
+  return [
+    '# Hypotheses',
+    '',
+    '### HYP-01: Initial signal explains a real investigation-worthy condition',
+    '',
+    `- **Assertion:** ${signal || 'The triggering console signal reflects real suspicious activity that merits investigation.'}`,
+    '- **Priority:** High',
+    '- **Status:** Open',
+    '- **Confidence:** Low',
+    '',
+  ].join('\n');
+}
+
+function buildProgramMissionContent(name, openedAt, signal) {
+  return [
+    `# Mission: ${name}`,
+    '',
+    '**Mode:** program',
+    `**Opened:** ${openedAt}`,
+    '**Owner:** surfaces-bridge',
+    '**Status:** Active',
+    '',
+    '## Signal',
+    '',
+    signal || 'Program bootstrapped from surface bridge case creation.',
+    '',
+    '## Desired Outcome',
+    '',
+    'Maintain a valid THRUNT program root that can own browser-opened investigation cases.',
+    '',
+    '## Scope',
+    '',
+    '- Host child cases opened from the surfaces bridge',
+    '- Preserve `.planning/` as the source of truth',
+    '- Keep mutation paths delegated through THRUNT tooling',
+    '',
+    '## Working Theory',
+    '',
+    'A lightweight program root is sufficient for locally opened browser cases as long as case state, evidence, and mutations remain inside THRUNT artifacts.',
+    '',
+  ].join('\n');
+}
+
+function buildProgramStateContent(openedAt) {
+  return buildStateDocument({
+    thrunt_state_version: '1.0',
+    status: 'executing',
+    last_activity: `${openedAt} - Program bootstrapped for browser-opened case`,
+    case_roster: [],
+  }, [
+    '# Hunt State',
+    '',
+    '**Active signal:** Surface bridge program bootstrap',
+    '**Current focus:** Waiting for the first active case',
+    '',
+    '## Current Position',
+    '',
+    'Phase: 1 of 1 (Program bootstrap)',
+    'Plan: 1 of 1 in current phase',
+    'Status: Active',
+    `Last activity: ${openedAt} - Program bootstrapped for browser-opened case`,
+    '',
+    '### Current Scope',
+    '',
+    '- Own browser-opened cases and their evidence artifacts',
+    '- Keep active case selection in `.planning/.active-case`',
+    '',
+    '### Confidence',
+    '',
+    'Medium',
+    '',
+    '### Blockers',
+    '',
+    'None.',
+    '',
+  ].join('\n'));
+}
+
+function bootstrapProgramForCases(cwd, options = {}) {
+  const today = new Date().toISOString().split('T')[0];
+  const paths = planningPaths(cwd);
+
+  fs.mkdirSync(planningRoot(cwd), { recursive: true });
+  ensureConfigFile(cwd);
+  fs.mkdirSync(paths.cases, { recursive: true });
+  fs.mkdirSync(paths.phases, { recursive: true });
+
+  if (!fs.existsSync(paths.programState)) {
+    fs.writeFileSync(paths.programState, buildProgramStateContent(today), 'utf-8');
+  }
+  if (!fs.existsSync(paths.mission)) {
+    fs.writeFileSync(
+      paths.mission,
+      buildProgramMissionContent('Surface Bridge Investigation Program', today, options.signal),
+      'utf-8'
+    );
+  }
+  if (!fs.existsSync(paths.huntmap)) {
+    fs.writeFileSync(paths.huntmap, '# Huntmap\n\n## Cases\n\nSurface-opened cases are tracked under `cases/`.\n', 'utf-8');
+  }
+  if (!fs.existsSync(paths.hypotheses)) {
+    fs.writeFileSync(paths.hypotheses, '# Hypotheses\n\n_Program-level hypotheses not started yet._\n', 'utf-8');
+  }
 }
 
 function parseActivityDate(value) {
@@ -3661,8 +3802,10 @@ function cmdCaseNew(cwd, name, options, raw) {
 
   const root = planningRoot(cwd);
 
-  // Validate program STATE.md exists before creating case artifacts
   const programState = path.join(root, 'STATE.md');
+  if (!fs.existsSync(programState) && options.bootstrapProgram) {
+    bootstrapProgramForCases(cwd, options);
+  }
   if (!fs.existsSync(programState)) {
     error('Program not initialized. Run `thrunt new-program` first.');
   }
@@ -3677,20 +3820,20 @@ function cmdCaseNew(cwd, name, options, raw) {
 
   // Create MISSION.md (required by VS Code store for case discovery).
   // parseMission requires bold metadata fields and ## Signal, ## Desired Outcome, ## Scope sections.
-  const missionContent = buildCaseMissionContent(name, today, { signal: options.signal });
+  const missionContent = buildCaseMissionContent(name, today, {
+    signal: options.signal,
+    owner: options.owner,
+    workingTheory: options.workingTheory,
+  });
   fs.writeFileSync(path.join(caseDir, 'MISSION.md'), missionContent, 'utf-8');
-
-  const huntmapFm = `---\ntitle: ${name}\nstatus: active\ncreated: ${today}\n---\n\n`;
-  const huntmapBody = `# Huntmap\n\n## Hypotheses\n\nSee HYPOTHESES.md\n`;
-  fs.writeFileSync(path.join(caseDir, 'HUNTMAP.md'), huntmapFm + huntmapBody, 'utf-8');
-
-  fs.writeFileSync(path.join(caseDir, 'HYPOTHESES.md'), `# Hypotheses\n\n_No hypotheses yet._\n`, 'utf-8');
+  fs.writeFileSync(path.join(caseDir, 'HUNTMAP.md'), buildInitialCaseHuntmap(name), 'utf-8');
+  fs.writeFileSync(path.join(caseDir, 'HYPOTHESES.md'), buildInitialHypotheses(options.signal), 'utf-8');
 
   const caseStateFm = {
     title: name,
     status: 'active',
-    phase: 0,
-    totalPhases: 0,
+    phase: 1,
+    totalPhases: 1,
     opened_at: today,
     technique_ids: [],
   };
@@ -3698,12 +3841,15 @@ function cmdCaseNew(cwd, name, options, raw) {
     activeSignal: `${name} opened for investigation`,
     currentFocus: 'Initial triage and evidence collection',
     lastActivity: `Opened ${today}`,
+    phaseDisplay: '1 of 1 (Initial Triage and Evidence Collection)',
+    planDisplay: '1 of 2 in current phase',
   });
   fs.writeFileSync(path.join(caseDir, 'STATE.md'), buildStateDocument(caseStateFm, caseStateBody), 'utf-8');
 
-  // Create QUERIES/ and RECEIPTS/ directories
+  // Create QUERIES/, RECEIPTS/, and EVIDENCE/ directories
   fs.mkdirSync(path.join(caseDir, 'QUERIES'), { recursive: true });
   fs.mkdirSync(path.join(caseDir, 'RECEIPTS'), { recursive: true });
+  fs.mkdirSync(path.join(caseDir, 'EVIDENCE'), { recursive: true });
 
   // Add to program roster
   addCaseToRoster(cwd, { slug, name, status: 'active', opened_at: today, technique_count: '0' });
@@ -3768,7 +3914,16 @@ function cmdCaseNew(cwd, name, options, raw) {
   }
 
   const caseDirRel = toPosixPath(path.relative(cwd, caseDir));
-  output({ success: true, slug, name, case_dir: caseDirRel, message: `Case created: ${slug}`, past_case_matches, detection_coverage }, raw);
+  output({
+    success: true,
+    slug,
+    name,
+    case_dir: caseDirRel,
+    message: `Case created: ${slug}`,
+    bootstrapped_program: !!options.bootstrapProgram,
+    past_case_matches,
+    detection_coverage,
+  }, raw);
 }
 
 function cmdCaseList(cwd, raw) {

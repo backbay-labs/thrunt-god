@@ -1,0 +1,43 @@
+<dashboard version="1.1">
+  <label>THRUNT Hunt Dashboard</label>
+  <description>Overview of the active THRUNT hunt case. Reads from the local surface bridge.</description>
+  <row>
+    <panel>
+      <title>Case Status</title>
+      <html>
+        <div id="thrunt-case-status">
+          <p>Connect to the THRUNT surface bridge to view case status.</p>
+          <p>Bridge URL: <code>http://127.0.0.1:7483</code></p>
+        </div>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Recent Queries</title>
+      <html>
+        <div id="thrunt-recent-queries">
+          <p>No queries loaded. Ensure the surface bridge is running.</p>
+        </div>
+      </html>
+    </panel>
+    <panel>
+      <title>Hypotheses</title>
+      <html>
+        <div id="thrunt-hypotheses">
+          <p>No hypotheses loaded.</p>
+        </div>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Search Handoff</title>
+      <html>
+        <div id="thrunt-search-handoff">
+          <p>Click "Clip to THRUNT" from any search result to attach evidence to the active case.</p>
+        </div>
+      </html>
+    </panel>
+  </row>
+</dashboard>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Okta Admin Console | System Log</title>
+  </head>
+  <body>
+    <header id="admin-header">
+      <nav data-se="admin-nav">
+        <span data-se="org-label">acme</span>
+        <span data-se="admin-console-shell">Admin Console</span>
+      </nav>
+    </header>
+
+    <main class="admin-syslog">
+      <section aria-label="System Log Header">
+        <h1 data-se="page-title">System Log</h1>
+        <div class="syslog-summary">
+          <span data-se="time-range">Last 24 hours</span>
+          <span data-se="result-count">3 results</span>
+        </div>
+      </section>
+
+      <section class="syslog-filters" data-se="filter-bar">
+        <label for="filter-expression">Filter</label>
+        <input
+          id="filter-expression"
+          data-se="system-log-filter"
+          type="text"
+          value="eventType eq &quot;user.session.start&quot; and outcome.result eq &quot;SUCCESS&quot;"
+        />
+      </section>
+
+      <section class="data-list-table" aria-label="System Log Results">
+        <table>
+          <thead>
+            <tr>
+              <th>Event</th>
+              <th>Actor</th>
+              <th>Target</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>User session started</td>
+              <td class="syslog-actor">sarah.chen@acme.corp</td>
+              <td>acme-admin</td>
+              <td class="syslog-ip">198.51.100.24</td>
+            </tr>
+            <tr>
+              <td>Application grant created</td>
+              <td class="syslog-actor">svc-analytics@acme.corp</td>
+              <td>Graph Mail.ReadWrite</td>
+              <td class="syslog-ip">203.0.113.44</td>
+            </tr>
+            <tr>
+              <td>User MFA denied</td>
+              <td class="syslog-actor">james.wu@acme.corp</td>
+              <td>Okta Verify</td>
+              <td class="syslog-ip">198.51.100.24</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>

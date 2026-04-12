@@ -1,0 +1,29 @@
+{
+  "name": "@thrunt-surfaces/bridge",
+  "version": "0.1.0",
+  "description": "Local-first bridge service exposing THRUNT case state to external surfaces",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "bin": {
+    "thrunt-bridge": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun run --watch src/cli.ts",
+    "build": "bun build ./src/cli.ts --outdir ./dist --target node",
+    "start": "bun run src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@thrunt-surfaces/contracts": "workspace:*",
+    "@thrunt-surfaces/artifacts": "workspace:*",
+    "@thrunt-surfaces/site-adapters": "workspace:*",
+    "@thrunt-surfaces/state": "workspace:*",
+    "@thrunt-surfaces/mocks": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

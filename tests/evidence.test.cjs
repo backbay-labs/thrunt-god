@@ -369,6 +369,37 @@ result: pending
     assert.strictEqual(output.summary.by_category.build_needed, 1);
   });
 
+  test('surfaces captured evidence follow-up from EVIDENCE directory', () => {
+    const evidenceDir = path.join(tmpDir, '.planning', 'EVIDENCE');
+    fs.mkdirSync(evidenceDir, { recursive: true });
+
+    fs.writeFileSync(path.join(evidenceDir, 'EVD-001.md'), `---
+evidence_id: EVD-001
+type: manual_note
+vendor_id: okta
+captured_at: 2026-04-11T12:00:00Z
+captured_by: operator
+source_url: https://acme.okta.com/admin/reports/system-log
+review_status: needs_follow_up
+related_hypotheses:
+  -
+---
+
+# Evidence: operator note
+
+Uncorrelated evidence captured from browser workflow.
+`);
+
+    const result = runThruntTools('audit-evidence --raw', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const output = JSON.parse(result.output);
+    const captured = output.results.find(r => r.type === 'captured_evidence');
+    assert.ok(captured, 'captured_evidence result should be present');
+    assert.strictEqual(output.summary.by_category.unlinked_evidence, 1);
+    assert.strictEqual(output.summary.by_category.follow_up, 1);
+  });
+
   test('ignores VERIFICATION files without human_needed or gaps_found status', () => {
     const phaseDir = path.join(tmpDir, '.planning', 'phases', '01-foundation');
     fs.mkdirSync(phaseDir, { recursive: true });

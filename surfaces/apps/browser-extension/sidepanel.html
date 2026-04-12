@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THRUNT Surfaces</title>
+  <style>
+    :root {
+      --bg: #0c1017;
+      --bg-glow: rgba(77, 109, 163, 0.18);
+      --surface: #131a24;
+      --surface-strong: #1a2431;
+      --surface-muted: #0f151d;
+      --surface-hero: #182231;
+      --border: #2d3948;
+      --border-strong: #45566d;
+      --text: #e7edf4;
+      --text-muted: #95a4b7;
+      --text-soft: #bdc8d4;
+      --accent: #7ea7ff;
+      --accent-strong: #447cf2;
+      --success: #63d88b;
+      --success-surface: rgba(99, 216, 139, 0.13);
+      --warning: #e8b458;
+      --warning-surface: rgba(232, 180, 88, 0.14);
+      --danger: #ff7b73;
+      --danger-surface: rgba(255, 123, 115, 0.14);
+      --info: #93b9ff;
+      --info-surface: rgba(147, 185, 255, 0.14);
+      --font: 'Avenir Next', 'Segoe UI', Helvetica, Arial, sans-serif;
+      --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background:
+        radial-gradient(circle at top right, var(--bg-glow), transparent 36%),
+        linear-gradient(180deg, #10161f 0%, var(--bg) 42%);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 14px 14px 22px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 0 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 18px;
+    }
+    .header-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .header-copy {
+      min-width: 0;
+    }
+    .header h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; }
+    .header-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(255, 123, 115, 0.08);
+    }
+    .status-dot.connected { background: var(--success); }
+    .status-dot.mock { background: var(--warning); }
+    .status-dot.no-case { background: var(--text-muted); }
+    .btn:disabled { opacity: 0.42; cursor: not-allowed; }
+    code {
+      background: var(--surface-muted);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .section { margin-bottom: 18px; }
+    .section-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      margin-bottom: 9px;
+      font-weight: 700;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 13px;
+      margin-bottom: 8px;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.2);
+    }
+    .hero-card {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 42%),
+        var(--surface-hero);
+      border-color: var(--border-strong);
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 14px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .card-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      overflow-wrap: anywhere;
+    }
+    .card-body { margin-top: 10px; display: grid; gap: 8px; }
+    .card-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .card-label { color: var(--text-muted); flex: 0 0 auto; }
+    .card-value { color: var(--text); text-align: right; min-width: 0; }
+    .card-value strong { color: var(--text); }
+    .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.06); border-radius: 999px;
+      margin: 10px 0 8px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-strong)); border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 10px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .badge-supports { background: #0d3822; color: var(--success); }
+    .badge-contradicts { background: #3d1419; color: var(--danger); }
+    .badge-inconclusive { background: #3d2e00; color: var(--warning); }
+    .badge-open { background: #0c2d6b; color: var(--accent); }
+    .badge-neutral { background: rgba(148, 163, 184, 0.14); color: var(--text-soft); }
+    .badge-success { background: var(--success-surface); color: var(--success); }
+    .badge-warning { background: var(--warning-surface); color: var(--warning); }
+    .badge-danger { background: var(--danger-surface); color: var(--danger); }
+    .badge-info { background: var(--info-surface); color: var(--info); }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .detail-grid {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .detail-item {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+    .detail-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .detail-value {
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text-soft);
+      overflow-wrap: anywhere;
+    }
+    .detail-value strong { color: var(--text); }
+    .actions { display: grid; gap: 10px; }
+    .control-deck {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+    .control-strip-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .control-strip-copy {
+      min-width: 0;
+    }
+    .control-strip-title {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .control-strip-subtitle {
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--text-soft);
+      line-height: 1.4;
+      overflow-wrap: anywhere;
+    }
+    .control-rail {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .tool-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      min-height: 0;
+      text-align: center;
+      background: var(--surface-strong);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    }
+    .tool-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .tool-btn-primary {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-strong) 86%, white 14%), var(--accent-strong));
+      border-color: transparent;
+      color: white;
+    }
+    .tool-btn-runtime {
+      color: var(--info);
+    }
+    .tool-btn-capture {
+      color: var(--text);
+    }
+    .tool-btn-quiet {
+      border-style: dashed;
+      color: var(--text-soft);
+    }
+    .tool-btn-live {
+      color: var(--warning);
+    }
+    .btn {
+      background: var(--surface-strong);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 11px 12px;
+      min-height: 50px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+      text-align: left;
+      font-weight: 600;
+      transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    }
+    .btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+    .btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .btn-primary {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--accent-strong) 86%, white 14%), var(--accent-strong));
+      border-color: transparent;
+      color: white;
+    }
+    .btn-secondary {
+      border-color: var(--border-strong);
+    }
+    .btn-quiet {
+      background: transparent;
+      border-style: dashed;
+    }
+    .btn-title {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .btn-hint {
+      display: block;
+      margin-top: 3px;
+      font-size: 11px;
+      line-height: 1.35;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .btn-primary .btn-hint {
+      color: rgba(255, 255, 255, 0.82);
+    }
+    .empty { color: var(--text-muted); font-style: italic; padding: 12px 0; }
+    .banner {
+      border-radius: 14px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+    .banner-success { background: var(--success-surface); border-color: color-mix(in srgb, var(--success) 55%, var(--border) 45%); color: var(--success); }
+    .banner-warning { background: var(--warning-surface); border-color: color-mix(in srgb, var(--warning) 55%, var(--border) 45%); color: var(--warning); }
+    .banner-danger { background: var(--danger-surface); border-color: color-mix(in srgb, var(--danger) 55%, var(--border) 45%); color: var(--danger); }
+    .banner-info { background: var(--info-surface); border-color: color-mix(in srgb, var(--info) 55%, var(--border) 45%); color: var(--info); }
+    .preview-query {
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 10px;
+      border-radius: 10px;
+      background: var(--surface-muted);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-soft);
+      word-break: break-word;
+    }
+    .preview-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .preview-target {
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 10px;
+      background: var(--surface-muted);
+    }
+    .entity-list,
+    .compact-list {
+      display: grid;
+      gap: 8px;
+    }
+    .compact-item {
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .compact-item strong {
+      color: var(--text);
+    }
+    .subtle {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+    .list-row {
+      display: grid;
+      gap: 4px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .list-row strong {
+      color: var(--text);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .scroll-pane {
+      max-height: 170px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+    details {
+      margin-top: 10px;
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    details summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .split-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .section-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+      margin: 10px 0 2px;
+    }
+    @media (max-width: 360px) {
+      .control-strip-head {
+        flex-direction: column;
+      }
+    }
+    #app { min-height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <div class="header-main">
+        <div class="status-dot" id="status-dot"></div>
+        <div class="header-copy">
+          <h1>THRUNT Surfaces</h1>
+          <div class="header-meta" id="status-label">Connecting to bridge</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="content">
+      <div class="empty">Connecting to bridge...</div>
+    </div>
+  </div>
+  <script src="dist/sidepanel.js" type="module"></script>
+</body>
+</html>

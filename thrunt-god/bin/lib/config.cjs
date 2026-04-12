@@ -697,5 +697,6 @@ module.exports = {
   cmdConfigGet,
   cmdConfigSetModelProfile,
   cmdConfigNewProgram,
+  ensureConfigFile,
   setConfigValue,
 };

@@ -1,0 +1,14 @@
+{
+  "id": "thruntSurfaces",
+  "version": "0.1.0",
+  "kibanaVersion": "8.x",
+  "server": false,
+  "ui": true,
+  "requiredPlugins": [],
+  "optionalPlugins": [],
+  "owner": {
+    "name": "THRUNT",
+    "githubTeam": "thrunt"
+  },
+  "description": "THRUNT threat hunting operator surface for Kibana — shows active case state and supports evidence capture."
+}

@@ -15,19 +15,17 @@ const telemetry = require('./telemetry.cjs');
 
 function cmdAuditEvidence(cwd, raw) {
   const phasesDir = path.join(planningDir(cwd), 'phases');
-  if (!fs.existsSync(phasesDir)) {
-    error('No phases directory found in planning directory');
-  }
-
   const isDirInMilestone = getMilestonePhaseFilter(cwd);
   const results = [];
 
   // Scan all phase directories
-  const dirs = fs.readdirSync(phasesDir, { withFileTypes: true })
-    .filter(e => e.isDirectory())
-    .map(e => e.name)
-    .filter(isDirInMilestone)
-    .sort();
+  const dirs = fs.existsSync(phasesDir)
+    ? fs.readdirSync(phasesDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .map(e => e.name)
+      .filter(isDirInMilestone)
+      .sort()
+    : [];
 
   for (const dir of dirs) {
     const phaseMatch = dir.match(/^(\d+[A-Z]?(?:\.\d+)*)/i);
@@ -62,6 +60,27 @@ function cmdAuditEvidence(cwd, raw) {
           file_path: toPosixPath(path.relative(cwd, path.join(phaseDir, file))),
           type: 'findings',
           status: (extractFrontmatter(content).status || 'unknown'),
+          items,
+        });
+      }
+    }
+  }
+
+  const evidenceDir = planningPaths(cwd).evidence;
+  if (fs.existsSync(evidenceDir)) {
+    const files = fs.readdirSync(evidenceDir).filter(file => file.endsWith('.md')).sort();
+    for (const file of files) {
+      const filePath = path.join(evidenceDir, file);
+      const content = fs.readFileSync(filePath, 'utf-8');
+      const items = parseCapturedEvidenceItems(content);
+      if (items.length > 0) {
+        results.push({
+          phase: 'captured_evidence',
+          phase_dir: 'EVIDENCE',
+          file,
+          file_path: toPosixPath(path.relative(cwd, filePath)),
+          type: 'captured_evidence',
+          status: extractFrontmatter(content).review_status || 'captured',
           items,
         });
       }
@@ -364,6 +383,43 @@ function parseFindingsItems(content) {
   }
 
   return items;
+}
+
+function parseCapturedEvidenceItems(content) {
+  const items = [];
+  const frontmatter = extractFrontmatter(content);
+  const reviewStatus = frontmatter.review_status || 'captured';
+  const evidenceId = frontmatter.evidence_id || 'unknown_evidence';
+  const relatedHypotheses = extractFrontmatterList(content, 'related_hypotheses');
+
+  if (relatedHypotheses.length === 0) {
+    items.push({
+      name: `${evidenceId} is not linked to a hypothesis`,
+      result: 'needs_linkage',
+      category: 'unlinked_evidence',
+    });
+  }
+
+  if (reviewStatus === 'needs_follow_up') {
+    items.push({
+      name: `${evidenceId} still needs follow-up`,
+      result: 'pending',
+      category: 'follow_up',
+    });
+  }
+
+  return items;
+}
+
+function extractFrontmatterList(content, key) {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = content.match(new RegExp(`^${escapedKey}:\\s*\\n((?:[ \\t]+-[ \\t]*.*\\n?)*)`, 'mi'));
+  if (!match || !match[1]) return [];
+  return match[1]
+    .split('\n')
+    .map(line => line.replace(/^[ \t]+-[ \t]*/, '').trim())
+    .filter(Boolean)
+    .filter(value => value !== '-');
 }
 
 function categorizeItem(result, reason, blockedBy) {

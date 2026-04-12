@@ -1,1 +1,16 @@
-{}
+{
+  "connector_profiles": {
+    "okta": {
+      "default": {
+        "auth_type": "api_key",
+        "base_url": "https://trial-5503210.okta.com",
+        "secret_refs": {
+          "api_key": {
+            "type": "env",
+            "value": "OKTA_API_KEY"
+          }
+        }
+      }
+    }
+  }
+}

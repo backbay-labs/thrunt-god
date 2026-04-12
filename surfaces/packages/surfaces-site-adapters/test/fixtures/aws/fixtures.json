@@ -1,0 +1,65 @@
+{
+  "vendorId": "aws",
+  "fixtures": [
+    {
+      "file": "cloudtrail-rich.html",
+      "url": "https://console.aws.amazon.com/cloudtrail/home?region=us-east-1#/events",
+      "expected": {
+        "detect": true,
+        "pageType": "log_viewer",
+        "confidence": "high",
+        "completeness": "complete",
+        "supported": true,
+        "tableRows": 3,
+        "queryLanguage": null,
+        "entityValues": [
+          "123456789012",
+          "us-east-1",
+          "sarah.chen",
+          "198.51.100.24",
+          "arn:aws:iam::123456789012:user/sarah.chen"
+        ]
+      }
+    },
+    {
+      "file": "cloudwatch-empty.html",
+      "url": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#logsV2:logs-insights",
+      "expected": {
+        "detect": true,
+        "pageType": "search",
+        "confidence": "medium",
+        "completeness": "partial",
+        "supported": true,
+        "tableRows": 0,
+        "queryLanguage": "cloudwatch-insights",
+        "entityValues": [
+          "123456789012",
+          "us-east-1"
+        ],
+        "failureReasons": [
+          "No results table detected for the current AWS page"
+        ]
+      }
+    },
+    {
+      "file": "support-center-unsupported.html",
+      "url": "https://console.aws.amazon.com/support/home?region=us-east-1#/case/create",
+      "expected": {
+        "detect": true,
+        "pageType": "unknown",
+        "confidence": "low",
+        "completeness": "unsupported",
+        "supported": false,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": [
+          "123456789012",
+          "us-east-1"
+        ],
+        "failureReasons": [
+          "This AWS page type is not supported for structured extraction"
+        ]
+      }
+    }
+  ]
+}
