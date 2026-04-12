@@ -293,7 +293,7 @@ Plans:
 | 18. SLA Countdown Timer | v4.0 | 1/1 | Complete | 2026-04-03 |
 | 19. IOC Quick-Entry | v4.0 | 1/1 | Complete | 2026-04-03 |
 | 20. CLI Bridge | v4.0 | 2/2 | Complete | 2026-04-03 |
-| 21. Bridge Hardening | v5.0 | 0/2 | In progress | - |
+| 21. Bridge Hardening | 1/2 | In Progress|  | - |
 | 22. MCP Event Bridge | v5.0 | 0/? | Not started | - |
 | 23. Certified Adapters (Elastic + CrowdStrike) | v5.0 | 0/? | Not started | - |
 | 24. Sidepanel UI | v5.0 | 0/? | Not started | - |
