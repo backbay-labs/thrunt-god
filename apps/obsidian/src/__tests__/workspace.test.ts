@@ -1248,6 +1248,52 @@ High
       const t1059Nodes = parsed.nodes.filter((n: { id: string }) => n.id === 'T1059');
       expect(t1059Nodes).toHaveLength(1);
     });
+
+    it('canvasFromCurrentHunt("diamond") creates CANVAS_HUNT_DIAMOND.canvas', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/FINDINGS.md', `# Findings\n\nObserved T1059 in the environment.\n`);
+      adapter.addFolder('.planning/entities/ttps');
+      adapter.addFile('.planning/entities/ttps/T1059.md', `---\ntype: ttp\nmitre_id: "T1059"\ntactic: "Execution"\n---\n# T1059\n`);
+
+      const result = await service.canvasFromCurrentHunt('diamond');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_HUNT_DIAMOND.canvas');
+
+      const content = await adapter.readFile('.planning/CANVAS_HUNT_DIAMOND.canvas');
+      const parsed = JSON.parse(content);
+      expect(parsed.nodes.length).toBeGreaterThan(0);
+    });
+
+    it('canvasFromCurrentHunt("kill-chain") creates CANVAS_HUNT_KILL_CHAIN.canvas (backward compat)', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/FINDINGS.md', `# Findings\n\nObserved T1059 in the environment.\n`);
+
+      const result = await service.canvasFromCurrentHunt('kill-chain');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_HUNT_KILL_CHAIN.canvas');
+    });
+
+    it('canvasFromCurrentHunt("lateral-movement") calls generateLateralMovementCanvas', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/FINDINGS.md', `# Findings\n\nObserved T1059 in the environment.\n`);
+
+      const result = await service.canvasFromCurrentHunt('lateral-movement');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_HUNT_LATERAL_MOVEMENT.canvas');
+    });
+
+    it('canvasFromCurrentHunt("hunt-progression") calls generateHuntProgressionCanvas', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/FINDINGS.md', `# Findings\n\nObserved T1059 in the environment.\n`);
+
+      const result = await service.canvasFromCurrentHunt('hunt-progression');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_HUNT_HUNT_PROGRESSION.canvas');
+    });
   });
 
   // -------------------------------------------------------------------------
