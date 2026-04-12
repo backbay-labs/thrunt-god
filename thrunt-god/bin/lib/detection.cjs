@@ -1564,6 +1564,34 @@ function cmdDetectionStatus(cwd, options, raw) {
 // Full-Format Renderers (findings promote)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Input Sanitization for Detection Rule Renderers
+// ---------------------------------------------------------------------------
+
+/**
+ * Escape a value for safe interpolation into Sigma YAML rules.
+ * Handles backslashes, double quotes, and newlines.
+ */
+function escapeForSigma(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+}
+
+/**
+ * Escape a value for safe interpolation into Splunk SPL queries.
+ * Handles backslashes, double quotes, and pipe characters.
+ */
+function escapeForSpl(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\|/g, '\\|');
+}
+
+/**
+ * Escape a value for safe interpolation into KQL queries.
+ * Handles backslashes, double quotes, and single quotes.
+ */
+function escapeForKql(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'");
+}
+
 /**
  * Map technique IDs to logsource metadata for Sigma/SPL/KQL rendering.
  * Technique-domain heuristic: credential access -> authentication,
@@ -1602,11 +1630,16 @@ function extractKeywords(description) {
     'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
     'should', 'may', 'might', 'shall', 'can', 'via', 'detected', 'observed',
   ]);
-  return description
+  let keywords = description
     .replace(/T\d{4}(\.\d{3})?/gi, '')
     .split(/\s+/)
     .map(w => w.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase())
     .filter(w => w.length > 2 && !stopwords.has(w));
+
+  // Filter out keywords that could break rule syntax (injection prevention)
+  keywords = keywords.filter(k => k.length >= 3 && k.length <= 100 && !/["|\\`${}]/.test(k));
+
+  return keywords;
 }
 
 /**
@@ -1643,7 +1676,11 @@ function renderSigmaFull(finding, techniques, confidence) {
   const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '/');
   const candidateUuid = crypto.randomUUID();
 
-  // Build selection from keywords
+  // Escape finding fields for safe YAML interpolation
+  const safeDescription = escapeForSigma(finding.description);
+  const safeId = escapeForSigma(finding.id);
+
+  // Build selection from keywords (keywords already filtered by extractKeywords)
   const selection = {};
   if (keywords.length > 0) {
     selection['keywords'] = keywords.length === 1 ? `*${keywords[0]}*` : keywords.map(k => `*${k}*`);
@@ -1652,10 +1689,10 @@ function renderSigmaFull(finding, techniques, confidence) {
   }
 
   const rule = {
-    title: `THRUNT: ${finding.description.slice(0, 80)}`,
+    title: `THRUNT: ${safeDescription.slice(0, 80)}`,
     id: candidateUuid,
     status: 'experimental',
-    description: `Detection from finding ${finding.id}: ${finding.description}`,
+    description: `Detection from finding ${safeId}: ${safeDescription}`,
     author: 'THRUNT',
     date: dateStr,
     tags: techniques.map(t => `attack.${t.toLowerCase()}`),
@@ -1682,10 +1719,14 @@ function renderSigmaFull(finding, techniques, confidence) {
 function renderSplunkFull(finding, techniques, confidence) {
   const datamodel = inferSplunkDatamodel(techniques);
   const keywords = extractKeywords(finding.description);
+  // Keywords already filtered by extractKeywords; escape for SPL safety
   const conditions = keywords.length > 0
-    ? keywords.map(k => `*${k}*`).join(' OR ')
+    ? keywords.map(k => `*${escapeForSpl(k)}*`).join(' OR ')
     : '*';
   const threshold = confidence === 'high' ? 1 : confidence === 'medium' ? 3 : 5;
+
+  // Escape finding ID for safe SPL interpolation
+  const safeId = escapeForSpl(finding.id);
 
   const entityFields = datamodel === 'Authentication'
     ? 'src, user, dest'
@@ -1697,9 +1738,9 @@ function renderSplunkFull(finding, techniques, confidence) {
     `| tstats count from datamodel=${datamodel} where index=* sourcetype=* ${conditions}`,
     `| stats count by ${entityFields}`,
     `| where count > ${threshold}`,
-    `| eval attack_technique="${techniques.join(',')}"`,
-    `| eval confidence="${confidence}"`,
-    `| eval finding_ref="${finding.id}"`,
+    `| eval attack_technique="${escapeForSpl(techniques.join(','))}"`,
+    `| eval confidence="${escapeForSpl(confidence)}"`,
+    `| eval finding_ref="${safeId}"`,
     `| eval alert_condition="count > ${threshold}"`,
   ].join('\n');
 }
@@ -1715,10 +1756,15 @@ function renderSplunkFull(finding, techniques, confidence) {
 function renderKqlFull(finding, techniques, confidence) {
   const table = inferKqlTable(techniques);
   const keywords = extractKeywords(finding.description);
+  // Keywords already filtered by extractKeywords; escape for KQL safety
   const conditions = keywords.length > 0
-    ? keywords.map(k => `tostring(Message) contains "${k}" or tostring(Activity) contains "${k}"`).join('\n    or ')
+    ? keywords.map(k => `tostring(Message) contains "${escapeForKql(k)}" or tostring(Activity) contains "${escapeForKql(k)}"`).join('\n    or ')
     : 'true';
   const threshold = confidence === 'high' ? 1 : confidence === 'medium' ? 3 : 5;
+
+  // Escape finding fields for safe KQL interpolation
+  const safeDescription = escapeForKql(finding.description);
+  const safeId = escapeForKql(finding.id);
 
   const entityFields = table === 'SigninLogs'
     ? 'TimeGenerated, UserPrincipalName, IPAddress, Location, ResultType'
@@ -1729,7 +1775,7 @@ function renderKqlFull(finding, techniques, confidence) {
     : 'Computer, Account';
 
   return [
-    `// Detection: ${finding.description}`,
+    `// Detection: ${safeDescription}`,
     `// ATT&CK: ${techniques.join(', ')}`,
     `// Confidence: ${confidence}`,
     table,
@@ -1970,4 +2016,8 @@ module.exports = {
   renderSplunkFull,
   renderKqlFull,
   writeDetectionMarkdown,
+  // sanitization helpers (exported for testing)
+  escapeForSigma,
+  escapeForSpl,
+  escapeForKql,
 };
