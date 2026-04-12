@@ -10,7 +10,16 @@ import { join } from 'path';
 const src = join(import.meta.dir, '..', 'src');
 const dist = join(import.meta.dir, '..', 'dist');
 
-const entrypoints = [
+type BuildOptions = Parameters<typeof Bun.build>[0];
+type BuildResult = Awaited<ReturnType<typeof Bun.build>>;
+type BuildFn = (options: BuildOptions) => Promise<Pick<BuildResult, 'success' | 'logs'>>;
+
+export interface ExtensionBuildEntrypoint {
+  name: string;
+  entry: string;
+}
+
+export const entrypoints: ExtensionBuildEntrypoint[] = [
   { name: 'background', entry: join(src, 'background', 'index.ts') },
   { name: 'sidepanel', entry: join(src, 'sidepanel', 'index.ts') },
   // Content scripts — one per vendor
@@ -27,27 +36,45 @@ const entrypoints = [
   { name: 'content-servicenow', entry: join(src, 'content', 'servicenow.ts') },
 ];
 
-console.log('Building THRUNT browser extension...');
+export async function buildExtension(
+  targets: ExtensionBuildEntrypoint[] = entrypoints,
+  build: BuildFn = (options) => Bun.build(options),
+): Promise<boolean> {
+  let hadFailure = false;
 
-for (const { name, entry } of entrypoints) {
-  try {
-    const result = await Bun.build({
-      entrypoints: [entry],
-      outdir: dist,
-      naming: `${name}.js`,
-      target: 'browser',
-      minify: false,
-      sourcemap: 'external',
-    });
+  for (const { name, entry } of targets) {
+    try {
+      const result = await build({
+        entrypoints: [entry],
+        outdir: dist,
+        naming: `${name}.js`,
+        target: 'browser',
+        minify: false,
+        sourcemap: 'external',
+      });
 
-    if (!result.success) {
-      console.error(`  ✗ ${name}: ${result.logs.map(l => l.message).join(', ')}`);
-    } else {
+      if (!result.success) {
+        hadFailure = true;
+        console.error(`  ✗ ${name}: ${result.logs.map((log) => log.message).join(', ')}`);
+        continue;
+      }
+
       console.log(`  ✓ ${name}`);
+    } catch (err) {
+      hadFailure = true;
+      console.error(`  ✗ ${name}: ${err}`);
     }
-  } catch (err) {
-    console.error(`  ✗ ${name}: ${err}`);
   }
+
+  return !hadFailure;
 }
 
-console.log('Build complete.');
+if (import.meta.main) {
+  console.log('Building THRUNT browser extension...');
+  const ok = await buildExtension();
+  if (!ok) {
+    console.error('Build failed.');
+    process.exit(1);
+  }
+  console.log('Build complete.');
+}

@@ -34,11 +34,12 @@ export interface SubprocessHealthMonitorOptions {
 export function createSubprocessHealthMonitor(opts: SubprocessHealthMonitorOptions): SubprocessHealthMonitor {
   const { projectRoot, toolsPath, logger, probeTimeoutMs = 5000, onStateChange } = opts;
 
-  let available = false;
+  let available = true;
   let lastProbeAt: string | null = null;
   let lastProbeOk = false;
   let consecutiveFailures = 0;
   let intervalHandle: ReturnType<typeof setInterval> | null = null;
+  let hasSuccessfulProbe = false;
 
   async function probe(): Promise<boolean> {
     const result = await runThruntCommand(projectRoot, ['--version'], toolsPath, {
@@ -51,6 +52,7 @@ export function createSubprocessHealthMonitor(opts: SubprocessHealthMonitorOptio
     if (result.ok) {
       lastProbeOk = true;
       consecutiveFailures = 0;
+      hasSuccessfulProbe = true;
       const wasAvailable = available;
       available = true;
       if (!wasAvailable && onStateChange) {
@@ -59,8 +61,10 @@ export function createSubprocessHealthMonitor(opts: SubprocessHealthMonitorOptio
     } else {
       lastProbeOk = false;
       consecutiveFailures++;
-      // Allow one transient failure before marking unavailable
-      if (consecutiveFailures >= 2) {
+      // Before the first known-good probe, fail closed immediately. Once the
+      // subprocess has been healthy, require two consecutive failures before
+      // marking it unavailable to avoid flapping on a transient miss.
+      if (!hasSuccessfulProbe || consecutiveFailures >= 2) {
         const wasAvailable = available;
         available = false;
         if (wasAvailable && onStateChange) {
@@ -76,6 +80,9 @@ export function createSubprocessHealthMonitor(opts: SubprocessHealthMonitorOptio
   function startPeriodicProbe(intervalMs = 60_000): void {
     // Probe immediately at startup
     void probe();
+    if (intervalHandle !== null) {
+      clearInterval(intervalHandle);
+    }
     intervalHandle = setInterval(() => {
       void probe();
     }, intervalMs);

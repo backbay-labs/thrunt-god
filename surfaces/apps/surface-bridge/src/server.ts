@@ -147,6 +147,18 @@ function createRateLimiter(config: RateLimiterConfig): RateLimiter {
   };
 }
 
+class RequestBodyValidationError extends Error {
+  readonly code: string;
+  readonly status: number;
+
+  constructor(message: string, code = 'INVALID_JSON_BODY', status = 400) {
+    super(message);
+    this.name = 'RequestBodyValidationError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
 function createMutex() {
   let pending = Promise.resolve();
   return {
@@ -373,6 +385,10 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     try {
       return await handleRequestInner(req, url, reqPath, method, clientIp, responseOrigin);
     } catch (err) {
+      if (err instanceof RequestBodyValidationError) {
+        logger.warn('http', 'invalid request body', { path: reqPath, error: err.message });
+        return createErrorResponse(err.message, err.status, 'validation', err.code, req, responseOrigin);
+      }
       const classified = classifyError(err);
       logger.error('http', 'unhandled', { path: reqPath, error: String(err) });
       return createErrorResponse(classified.message, 500, classified.class, classified.code, req, responseOrigin);
@@ -414,6 +430,26 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       } catch {
         return null;
       }
+    };
+    const readJsonObject = async <T extends object>(allowEmpty = false): Promise<T> => {
+      const raw = await req.text();
+      if (!raw.trim()) {
+        if (allowEmpty) return {} as T;
+        throw new RequestBodyValidationError('Request body must be a JSON object');
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        throw new RequestBodyValidationError('Malformed JSON request body');
+      }
+
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new RequestBodyValidationError('Request body must be a JSON object');
+      }
+
+      return parsed as T;
     };
 
     if (requestOrigin && !responseOrigin && reqPath !== '/api/health') {
@@ -498,7 +534,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     // ─── POST routes ───────────────────────────────────────────────
 
     if (method === 'POST' && reqPath === '/api/case/open') {
-      const body = await req.json() as OpenCaseRequest;
+      const body = await readJsonObject<OpenCaseRequest>();
       if (!body.signal) return error('signal is required');
       const result = await provider.openCase(body);
       provider.invalidate();
@@ -509,7 +545,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
 
     if (method === 'POST' && reqPath === '/api/evidence/attach') {
-      const attachment = await req.json() as EvidenceAttachment;
+      const attachment = await readJsonObject<EvidenceAttachment>();
       const result = await provider.attachEvidence(attachment);
       for (const artifact of result.createdArtifacts ?? []) {
         if (artifact.type === 'query') {
@@ -540,7 +576,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
 
     if (method === 'POST' && reqPath === '/api/execute/pack') {
-      const body = await req.json() as ExecutePackRequest;
+      const body = await readJsonObject<ExecutePackRequest>();
       const result = await provider.executePack(body);
       if (!body.dryRun && result.executionId) {
         broadcast({
@@ -556,7 +592,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
 
     if (method === 'POST' && reqPath === '/api/execute/target') {
-      const body = await req.json() as ExecuteTargetRequest;
+      const body = await readJsonObject<ExecuteTargetRequest>();
       if (!body.connectorId || !body.query) return error('connectorId and query are required');
       const result = await provider.executeTarget(body);
       if (!body.dryRun && result.executionId) {
@@ -587,11 +623,11 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     // ─── Handshake endpoint ────────────────────────────────────────
 
     if (method === 'POST' && reqPath === '/api/handshake') {
-      const body = await req.json().catch(() => ({})) as {
+      const body = await readJsonObject<{
         token?: string;
         extensionId?: string;
         surfaceId?: string;
-      };
+      }>(true);
       const providedToken = body.token;
       const trustedOrigin = resolveTrustedOrigin(requestOrigin, {
         extensionId: body.extensionId,
@@ -616,7 +652,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
 
     if (method === 'POST' && reqPath === '/api/certification/capture') {
-      const body = await req.json() as CertificationCaptureRequest;
+      const body = await readJsonObject<CertificationCaptureRequest>();
       if (!body.vendorId || !body.pageUrl || !body.rawHtml) {
         return error('vendorId, pageUrl, and rawHtml are required');
       }
@@ -642,7 +678,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
 
     if (method === 'POST' && reqPath === '/api/certification/prerequisites') {
-      const body = await req.json() as CertificationPrerequisiteRequest;
+      const body = await readJsonObject<CertificationPrerequisiteRequest>();
       if (!body.vendorId) {
         return error('vendorId is required');
       }
@@ -701,7 +737,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     if (method === 'POST' && replayMatch) {
       const campaignId = parseCampaignId(replayMatch[1] ?? '');
       if (!campaignId) return error('Invalid certification campaign ID');
-      const body = await req.json().catch(() => ({})) as { comparedAgainst?: 'captured' | 'approved_baseline' };
+      const body = await readJsonObject<{ comparedAgainst?: 'captured' | 'approved_baseline' }>(true);
       const campaign = await replayCertificationCampaign({
         projectRoot: cfg.projectRoot,
         campaignId,
@@ -720,7 +756,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       if (!campaignId) return error('Invalid certification campaign ID');
       const campaign = readCertificationCampaign(cfg.projectRoot, campaignId);
       if (!campaign) return error('Unknown certification campaign', 404);
-      const body = await req.json().catch(() => ({})) as CertificationCampaignRuntimeRequest;
+      const body = await readJsonObject<CertificationCampaignRuntimeRequest>(true);
       const execution = await provider.executePack({
         packId: body.packId,
         target: body.target,
@@ -747,7 +783,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       if (!campaignId) return error('Invalid certification campaign ID');
       const campaign = readCertificationCampaign(cfg.projectRoot, campaignId);
       if (!campaign) return error('Unknown certification campaign', 404);
-      const body = await req.json().catch(() => ({})) as CertificationCampaignRuntimeRequest;
+      const body = await readJsonObject<CertificationCampaignRuntimeRequest>(true);
       const execution = await provider.executePack({
         packId: body.packId,
         target: body.target,
@@ -774,7 +810,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     if (method === 'POST' && reviewMatch) {
       const campaignId = parseCampaignId(reviewMatch[1] ?? '');
       if (!campaignId) return error('Invalid certification campaign ID');
-      const body = await req.json() as CertificationCampaignReviewRequest;
+      const body = await readJsonObject<CertificationCampaignReviewRequest>();
       if (!body.reviewer || !body.decision) return error('reviewer and decision are required');
       const campaign = reviewCertificationCampaign(cfg.projectRoot, {
         campaignId,
@@ -794,7 +830,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     if (method === 'POST' && submitMatch) {
       const campaignId = parseCampaignId(submitMatch[1] ?? '');
       if (!campaignId) return error('Invalid certification campaign ID');
-      const body = await req.json() as CertificationCampaignSubmitRequest;
+      const body = await readJsonObject<CertificationCampaignSubmitRequest>();
       if (!body.submittedBy) return error('submittedBy is required');
       const campaign = submitCertificationCampaignForReview(cfg.projectRoot, {
         campaignId,
@@ -812,7 +848,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     if (method === 'POST' && promoteMatch) {
       const campaignId = parseCampaignId(promoteMatch[1] ?? '');
       if (!campaignId) return error('Invalid certification campaign ID');
-      const body = await req.json() as CertificationCampaignPromotionRequest;
+      const body = await readJsonObject<CertificationCampaignPromotionRequest>();
       if (!body.reviewer || !body.decision || !body.target) {
         return error('reviewer, decision, and target are required');
       }

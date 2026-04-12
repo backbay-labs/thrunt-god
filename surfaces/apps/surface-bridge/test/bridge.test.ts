@@ -443,6 +443,30 @@ describe('Real artifact mode', () => {
     expect(res.status).toBe(401);
   });
 
+  test('POST /api/handshake rejects malformed JSON bodies', async () => {
+    const res = await fetch(`${base}/api/handshake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"token"',
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.code).toBe('INVALID_JSON_BODY');
+    expect(body.error).toBe('Malformed JSON request body');
+  });
+
+  test('POST /api/handshake rejects non-object JSON bodies', async () => {
+    const res = await fetch(`${base}/api/handshake`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'null',
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.code).toBe('INVALID_JSON_BODY');
+    expect(body.error).toBe('Request body must be a JSON object');
+  });
+
   test('POST /api/handshake bootstraps a token for trusted extension origins', async () => {
     const res = await fetch(`${base}/api/handshake`, {
       method: 'POST',
@@ -572,6 +596,19 @@ describe('Mutation path mode', () => {
     expect(body.case.title).toContain('Okta');
     expect(body.command.join(' ')).toContain('case');
     expect(fs.existsSync(path.join(mutationRoot, '.planning', '.active-case'))).toBe(true);
+  });
+
+  test('POST /api/case/open returns 400 for malformed JSON bodies', async () => {
+    const res = await fetch(`${base}/api/case/open`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers() },
+      body: '{"signal"',
+    });
+
+    expect(res.status).toBe(400);
+    const body = await res.json() as any;
+    expect(body.code).toBe('INVALID_JSON_BODY');
+    expect(body.class).toBe('validation');
   });
 
   test('POST /api/evidence/attach is later consumed by audit-evidence', async () => {

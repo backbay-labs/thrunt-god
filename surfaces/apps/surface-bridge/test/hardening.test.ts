@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import { createLogger } from '../src/logger.ts';
 import { classifyError, errorResponse } from '../src/errors.ts';
 import { runThruntCommand } from '../src/thrunt-tools.ts';
+import { createSubprocessHealthMonitor } from '../src/subprocess-health.ts';
 
 const REPO_ROOT = path.resolve(import.meta.dir, '../../../..');
 const TOOLS_PATH = path.join(REPO_ROOT, 'thrunt-god', 'bin', 'thrunt-tools.cjs');
@@ -174,4 +175,54 @@ describe('subprocess timeout', () => {
     expect(entry.timedOut).toBe(false);
     expect(typeof entry.durationMs).toBe('number');
   }, 15_000);
+});
+
+describe('subprocess health monitor', () => {
+  test('treats startup as available until the first probe completes', async () => {
+    const logger = createLogger({ stream: { write() {} } });
+    const missingToolsPath = path.join(os.tmpdir(), `thrunt-missing-${Date.now()}.cjs`);
+    const monitor = createSubprocessHealthMonitor({
+      projectRoot: REPO_ROOT,
+      toolsPath: missingToolsPath,
+      logger,
+      probeTimeoutMs: 100,
+    });
+
+    expect(monitor.isAvailable()).toBe(true);
+
+    const available = await monitor.probe();
+    expect(available).toBe(false);
+    expect(monitor.isAvailable()).toBe(false);
+    expect(monitor.getState().lastProbeOk).toBe(false);
+    expect(monitor.getState().lastProbeAt).not.toBeNull();
+  });
+
+  test('requires two consecutive failures after a healthy probe before degrading', async () => {
+    const logger = createLogger({ stream: { write() {} } });
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-health-'));
+    const toolsPath = path.join(tmpDir, 'fake-thrunt-tools.sh');
+    fs.writeFileSync(toolsPath, '#!/bin/sh\necho "thrunt-tools 0.0.1"\n', { mode: 0o755 });
+
+    try {
+      const monitor = createSubprocessHealthMonitor({
+        projectRoot: tmpDir,
+        toolsPath,
+        logger,
+        probeTimeoutMs: 1000,
+      });
+
+      expect(await monitor.probe()).toBe(true);
+      expect(monitor.isAvailable()).toBe(true);
+
+      fs.rmSync(toolsPath, { force: true });
+
+      expect(await monitor.probe()).toBe(true);
+      expect(monitor.isAvailable()).toBe(true);
+
+      expect(await monitor.probe()).toBe(false);
+      expect(monitor.isAvailable()).toBe(false);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });
