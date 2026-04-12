@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 71-02-PLAN.md
-last_updated: "2026-04-12T06:02:12.372Z"
+status: executing
+stopped_at: Completed 72-01-PLAN.md
+last_updated: "2026-04-12T06:15:16.022Z"
 progress:
   total_phases: 10
   completed_phases: 4
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 71 complete (2/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 72 in progress (1/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 71 of 77 (Ingestion Engine + Agent Activity Timeline)
-**Plan:** 2 of 2 complete
+**Status:** Executing
+**Phase:** 72 of 77 (MCP Client Adapter + Connection Infrastructure)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (9/9 v4.0 plans)
+Progress: [█████████░] 91% (10/11 v4.0 plans)
 
 ## Recently Completed
 
@@ -74,6 +74,8 @@ Progress: [██████████] 100% (9/9 v4.0 plans)
 - [Phase 71]: [Phase 71-01]: deduplicateSightings returns true (is-new) for empty/missing Sightings section -- safe default for new notes
 - [Phase 71]: [Phase 71-02]: Ingest button placed in receipt timeline section actions row rather than hunt status card
 - [Phase 71]: [Phase 71-02]: Receipt timeline renders between Extended Artifacts and Core Artifacts in sidebar order
+- [Phase 72]: [Phase 72-01]: Injectable requestFn parameter enables testing HttpMcpClient without real HTTP calls
+- [Phase 72]: [Phase 72-01]: McpClient property accessed via type cast in settings.ts -- will be typed properly in Plan 02 wiring
 
 ### Blockers/Concerns
 
@@ -81,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T05:58:44.442Z
-Stopped at: Completed 71-02-PLAN.md
+Last session: 2026-04-12T06:15:16.019Z
+Stopped at: Completed 72-01-PLAN.md
 Resume file: None

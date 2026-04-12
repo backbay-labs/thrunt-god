@@ -27,7 +27,7 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 
 ### MCP Bridge
 
-- [ ] **MCP-01**: MCP client adapter connects to THRUNT MCP server with configurable URL and explicit enable toggle
+- [x] **MCP-01**: MCP client adapter connects to THRUNT MCP server with configurable URL and explicit enable toggle
 - [ ] **MCP-02**: Connection status indicator in sidebar header (green/grey/red dot)
 - [ ] **MCP-03**: "Enrich from MCP" action on TTP entity notes pulls technique description, groups, detections, and related techniques
 - [ ] **MCP-04**: "Analyze detection coverage" command produces COVERAGE_REPORT.md with per-tactic coverage and gaps
@@ -92,7 +92,7 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | INGEST-05 | Phase 71 | Complete |
 | INGEST-06 | Phase 71 | Complete |
 | INGEST-07 | Phase 71 | Complete |
-| MCP-01 | Phase 72 | Pending |
+| MCP-01 | Phase 72 | Complete |
 | MCP-02 | Phase 72 | Pending |
 | MCP-07 | Phase 72 | Pending |
 | MCP-03 | Phase 73 | Pending |
