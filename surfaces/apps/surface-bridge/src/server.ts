@@ -634,7 +634,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
         // Check for replay request (last_seq passed as query param on WS connect)
         const lastSeq = (ws as any).data?.lastSeq as number | undefined;
-        if (lastSeq !== undefined && lastSeq > 0) {
+        if (lastSeq !== undefined && !isNaN(lastSeq)) {
           const result = journal.replayFrom(lastSeq);
           if ('overflow' in result) {
             const overflow: EventBridgeEnvelope = {
