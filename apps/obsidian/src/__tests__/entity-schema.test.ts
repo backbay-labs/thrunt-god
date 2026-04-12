@@ -123,7 +123,7 @@ describe('ENTITY_TYPES', () => {
     for (const entity of ENTITY_TYPES) {
       const template = entity.starterTemplate('test');
       // Extract YAML keys from frontmatter
-      const frontmatter = template.split('---')[1];
+      const frontmatter = template.split('---')[1] ?? '';
       const lines = frontmatter.split('\n');
       for (const line of lines) {
         const keyMatch = line.match(/^(\w+):/);

@@ -68,3 +68,20 @@ export class WorkspaceError extends Error {
     this.name = 'WorkspaceError';
   }
 }
+
+// --- Entity schema types ---
+
+export interface FrontmatterFieldDef {
+  key: string;
+  type: 'string' | 'number' | 'string[]' | 'date';
+  default: string | number | string[] | null;
+  required: boolean;
+}
+
+export interface EntityTypeDefinition {
+  type: string;
+  label: string;
+  folder: string;
+  frontmatterFields: FrontmatterFieldDef[];
+  starterTemplate: (name: string) => string;
+}

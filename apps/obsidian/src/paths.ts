@@ -29,3 +29,10 @@ export function getCoreFilePath(
 ): string {
   return normalizePath(`${planningDir}/${fileName}`);
 }
+
+export function getEntityFolder(
+  planningDir: string,
+  entityFolder: string,
+): string {
+  return normalizePath(`${planningDir}/${entityFolder}`);
+}
