@@ -4,7 +4,7 @@ milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
 status: completed
 stopped_at: Completed 78-02-PLAN.md
-last_updated: "2026-04-12T11:28:39.370Z"
+last_updated: "2026-04-12T11:31:31.227Z"
 progress:
   total_phases: 11
   completed_phases: 11
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Complete
+**Status:** Milestone complete
 **Phase:** 78 of 78 (v4.0 Tech Debt Cleanup)
 **Plan:** 2 of 2 complete
 
