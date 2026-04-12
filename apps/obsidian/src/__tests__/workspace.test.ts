@@ -274,6 +274,36 @@ describe('WorkspaceService', () => {
       // Verify NOT at vault root
       expect(adapter.folderExists('entities/iocs')).toBe(false);
     });
+
+    it('creates KNOWLEDGE_BASE.md during bootstrap', async () => {
+      await service.bootstrap();
+      expect(adapter.fileExists('.planning/KNOWLEDGE_BASE.md')).toBe(true);
+    });
+
+    it('does not overwrite existing KNOWLEDGE_BASE.md', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      adapter.addFile('.planning/KNOWLEDGE_BASE.md', '# My custom KB');
+      await service.bootstrap();
+      const content = await adapter.readFile('.planning/KNOWLEDGE_BASE.md');
+      expect(content).toBe('# My custom KB');
+    });
+
+    it('creates KNOWLEDGE_BASE.md under custom planningDir', async () => {
+      const customService = new WorkspaceService(
+        null as any,
+        adapter,
+        () => ({ planningDir: '.hunt' }),
+        '.hunt',
+      );
+      await customService.bootstrap();
+      expect(adapter.fileExists('.hunt/KNOWLEDGE_BASE.md')).toBe(true);
+    });
+
+    it('KNOWLEDGE_BASE.md contains Dataview queries', async () => {
+      await service.bootstrap();
+      const content = await adapter.readFile('.planning/KNOWLEDGE_BASE.md');
+      expect(content).toContain('```dataview');
+    });
   });
 
   describe('ensureCoreFile', () => {

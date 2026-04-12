@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
 import { type VaultAdapter } from './vault-adapter';
-import { CORE_ARTIFACTS } from './artifacts';
+import { CORE_ARTIFACTS, KNOWLEDGE_BASE_TEMPLATE } from './artifacts';
 import { getPlanningDir, getCoreFilePath, normalizePath } from './paths';
 import { ENTITY_FOLDERS } from './entity-schema';
 import {
@@ -120,6 +120,12 @@ export class WorkspaceService {
       await this.vaultAdapter.ensureFolder(
         normalizePath(`${planningDir}/${folder}`),
       );
+    }
+
+    // Knowledge Base dashboard (not a core artifact, but created during bootstrap)
+    const kbPath = normalizePath(`${planningDir}/KNOWLEDGE_BASE.md`);
+    if (!this.vaultAdapter.fileExists(kbPath)) {
+      await this.vaultAdapter.createFile(kbPath, KNOWLEDGE_BASE_TEMPLATE);
     }
 
     this.invalidate();
