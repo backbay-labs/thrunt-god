@@ -851,16 +851,17 @@ function buildVendorContext(campaign: {
   capturedAt: string;
   captureExpected: Record<string, unknown> | null;
 }): VendorContext {
-  const extracted = campaign.captureExpected?.context && typeof campaign.captureExpected.context === 'object'
+  const metadata = campaign.captureExpected?.context && typeof campaign.captureExpected.context === 'object'
     ? campaign.captureExpected.context as Record<string, unknown>
     : {};
 
   return {
     vendorId: campaign.vendorId,
     consoleName: `${campaign.vendorId} certification capture`,
+    pageType: 'unknown',
     pageUrl: campaign.pageUrl,
     pageTitle: campaign.pageTitle,
-    extracted,
+    metadata,
     capturedAt: campaign.capturedAt,
   };
 }

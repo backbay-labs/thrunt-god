@@ -374,16 +374,9 @@ async function handleSurfaceCommand(command: import('@thrunt-surfaces/contracts'
   }
 }
 
-function toBridgeVendorContext(context: import('@thrunt-surfaces/contracts').VendorPageContext) {
+function toBridgeVendorContext(context: import('@thrunt-surfaces/contracts').VendorPageContext): import('@thrunt-surfaces/contracts').VendorContext {
   return {
-    vendorId: context.vendorId,
-    consoleName: context.consoleName,
-    pageUrl: context.pageUrl,
-    pageTitle: context.pageTitle,
-    extracted: {
-      metadata: context.metadata,
-      extraction: context.extraction ?? null,
-    },
+    ...context,
     capturedAt: new Date().toISOString(),
   };
 }

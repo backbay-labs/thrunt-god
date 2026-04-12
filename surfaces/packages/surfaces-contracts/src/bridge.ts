@@ -23,6 +23,8 @@ import type {
   RuntimePreviewSummary,
 } from './case.ts';
 
+import type { VendorPageContext } from './adapters.ts';
+
 // --- Bridge configuration ---
 
 export interface BridgeConfig {
@@ -490,13 +492,10 @@ export const MUTATION_ERROR_CODES = {
 
 // --- Vendor context (from browser extension) ---
 
-export interface VendorContext {
-  vendorId: string;
-  consoleName: string;
-  pageUrl: string;
-  pageTitle: string;
-  /** Vendor-specific extracted context */
-  extracted: Record<string, unknown>;
+// VendorContext is now VendorPageContext with an optional capturedAt timestamp.
+// Previously a parallel type with `extracted` field — now unified so adapters
+// and bridge routes share one canonical shape.
+export interface VendorContext extends VendorPageContext {
   /** Timestamp of context capture */
-  capturedAt: string;
+  capturedAt?: string;
 }

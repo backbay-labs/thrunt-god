@@ -106,26 +106,24 @@ function appendParameterArgs(command: string[], parameters: Record<string, unkno
 }
 
 function inferVendorMetadata(vendorContext?: VendorContext | null): Record<string, unknown> {
-  if (!vendorContext?.extracted || typeof vendorContext.extracted !== 'object') return {};
+  if (!vendorContext) return {};
 
-  const extracted = vendorContext.extracted as Record<string, unknown>;
-  const metadata = extracted.metadata;
+  // VendorContext now extends VendorPageContext — metadata is a direct field
+  const metadata = vendorContext.metadata;
   return metadata && typeof metadata === 'object'
     ? metadata as Record<string, unknown>
     : {};
 }
 
 function inferVendorEntities(vendorContext?: VendorContext | null): string[] {
-  if (!vendorContext?.extracted || typeof vendorContext.extracted !== 'object') return [];
+  if (!vendorContext) return [];
 
-  const extracted = vendorContext.extracted as Record<string, unknown>;
-  const metadata = extracted.metadata && typeof extracted.metadata === 'object'
-    ? extracted.metadata as Record<string, unknown>
+  // VendorContext now extends VendorPageContext — metadata is a direct field
+  const metadata = vendorContext.metadata && typeof vendorContext.metadata === 'object'
+    ? vendorContext.metadata as Record<string, unknown>
     : null;
   const metadataEntities = metadata && Array.isArray(metadata.entities) ? metadata.entities : [];
-  const entities = Array.isArray(extracted.entities)
-    ? extracted.entities
-    : metadataEntities;
+  const entities = metadataEntities;
   return entities
     .map((entity) => {
       if (!entity || typeof entity !== 'object') return null;
