@@ -729,7 +729,9 @@ export class WorkspaceService {
     }
   }
 
-  async canvasFromCurrentHunt(): Promise<{ success: boolean; message: string; canvasPath?: string }> {
+  async canvasFromCurrentHunt(
+    templateName: 'kill-chain' | 'diamond' | 'lateral-movement' | 'hunt-progression' = 'kill-chain',
+  ): Promise<{ success: boolean; message: string; canvasPath?: string }> {
     try {
       const planningDir = getPlanningDir(
         this.getSettings().planningDir,
@@ -860,9 +862,17 @@ export class WorkspaceService {
       }
 
       const entities = [...entitiesMap.values()];
-      const canvasData = generateKillChainCanvas(entities, edgeGroups);
+      const generators: Record<string, (e: CanvasEntity[], g?: EdgeGroup[]) => CanvasData> = {
+        'kill-chain': generateKillChainCanvas,
+        'diamond': generateDiamondCanvas,
+        'lateral-movement': generateLateralMovementCanvas,
+        'hunt-progression': generateHuntProgressionCanvas,
+      };
+      const generator = generators[templateName]!;
+      const canvasData = generator(entities, edgeGroups);
 
-      const canvasPath = normalizePath(`${planningDir}/CANVAS_HUNT_KILL_CHAIN.canvas`);
+      const outputFileName = `CANVAS_HUNT_${templateName.toUpperCase().replace(/-/g, '_')}.canvas`;
+      const canvasPath = normalizePath(`${planningDir}/${outputFileName}`);
       const canvasJson = JSON.stringify(canvasData, null, 2);
 
       if (this.vaultAdapter.fileExists(canvasPath)) {

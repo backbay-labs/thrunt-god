@@ -213,14 +213,14 @@ export default class ThruntGodPlugin extends Plugin {
       id: 'canvas-from-current-hunt',
       name: 'Canvas from current hunt',
       callback: () => {
-        void (async () => {
-          const result = await this.workspaceService.canvasFromCurrentHunt();
+        new CanvasTemplateModal(this.app, async (template) => {
+          const result = await this.workspaceService.canvasFromCurrentHunt(template);
           new Notice(result.message);
           if (result.success && result.canvasPath) {
             await this.app.workspace.openLinkText(result.canvasPath, '', true);
           }
           await this.refreshViews();
-        })();
+        }).open();
       },
     });
 
