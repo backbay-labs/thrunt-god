@@ -1,6 +1,7 @@
-import { Notice, Plugin, requestUrl } from 'obsidian';
+import { debounce, Notice, Plugin, requestUrl, type Debouncer } from 'obsidian';
 import {
   DEFAULT_SETTINGS,
+  DEFAULT_SIDEBAR_STATE,
   type ThruntGodPluginSettings,
   ThruntGodSettingTab,
 } from './settings';
@@ -10,6 +11,7 @@ import { WorkspaceService, formatStatusBarText } from './workspace';
 import { HttpMcpClient } from './mcp-client';
 import { EventBus } from './services/event-bus';
 import { registerCommands } from './commands';
+import { createScopedHandler } from './sidebar-events';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -17,6 +19,7 @@ export default class ThruntGodPlugin extends Plugin {
   mcpClient!: HttpMcpClient;
   eventBus!: EventBus;
   private statusBarItemEl?: HTMLElement;
+  private debouncedRefresh?: Debouncer<[], void>;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -68,18 +71,25 @@ export default class ThruntGodPlugin extends Plugin {
     }
 
     // Event wiring: vault events invalidate cache and refresh views
-    // (Spec acceptance criterion 9: main.ts wires events, not WorkspaceService)
-    const refresh = () => {
+    // Debounced at 400ms trailing, scoped to planning directory only
+    this.debouncedRefresh = debounce(() => {
       this.workspaceService.invalidate();
       void this.refreshViews();
-    };
+    }, 400, true);
 
-    this.registerEvent(this.app.vault.on('create', refresh));
-    this.registerEvent(this.app.vault.on('delete', refresh));
-    this.registerEvent(this.app.vault.on('rename', refresh));
+    const handler = createScopedHandler(
+      this.settings.planningDir || DEFAULT_SETTINGS.planningDir,
+      () => this.debouncedRefresh!(),
+    );
+
+    this.registerEvent(this.app.vault.on('create', handler));
+    this.registerEvent(this.app.vault.on('modify', handler));
+    this.registerEvent(this.app.vault.on('delete', handler));
+    this.registerEvent(this.app.vault.on('rename', handler));
   }
 
   onunload(): void {
+    this.debouncedRefresh?.cancel();
     this.mcpClient.disconnect();
     this.eventBus.removeAllListeners();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);
@@ -123,6 +133,14 @@ export default class ThruntGodPlugin extends Plugin {
   async loadSettings(): Promise<void> {
     const stored = (await this.loadData()) as Partial<ThruntGodPluginSettings> | null;
     this.settings = { ...DEFAULT_SETTINGS, ...stored };
+    // Deep-merge sidebarState to preserve defaults for new sections
+    this.settings.sidebarState = {
+      ...DEFAULT_SIDEBAR_STATE,
+      expandedSections: {
+        ...DEFAULT_SIDEBAR_STATE.expandedSections,
+        ...(stored?.sidebarState?.expandedSections ?? {}),
+      },
+    };
   }
 
   async saveSettings(): Promise<void> {
