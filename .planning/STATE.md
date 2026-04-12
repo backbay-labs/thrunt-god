@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
-status: active
-stopped_at: "Completed 21-02-PLAN.md"
-last_updated: "2026-04-12T13:14:29Z"
-last_activity: 2026-04-12 — Completed Phase 21 Plan 02 (Bridge Hardening)
+status: in-progress
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-04-12T13:50:27.988Z"
+last_activity: 2026-04-12 — Completed Phase 22 Plan 01
 progress:
   total_phases: 16
   completed_phases: 7
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 22
+  completed_plans: 20
   percent: 100
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Close the loop from evidence capture to detection deployment — every hunt produces evidence chains, intelligence updates, and deployable detection rules
-**Current focus:** v5.0 Phase 21 — Bridge Hardening (complete)
+**Current focus:** v5.0 Phase 22 — MCP Event Bridge (in progress)
 
 ## Current Position
 
-Phase: 21 of 26 (Bridge Hardening)
-Plan: 2 of 2 complete
-Status: Phase Complete
-Last activity: 2026-04-12 — Completed Phase 21 Plan 02
+Phase: 22 of 26 (MCP Event Bridge)
+Plan: 1 of 3 complete
+Status: In Progress
+Last activity: 2026-04-12 — Completed Phase 22 Plan 01
 
-Progress: [██████████] 100%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -56,6 +56,10 @@ Recent decisions affecting current work:
 - [21-02]: Consecutive failure threshold of 2 before marking subprocess unavailable (transient tolerance)
 - [21-02]: Certification routes excluded from subprocess gate (filesystem-only operations)
 - [21-02]: onStateChange callback broadcasts BRIDGE_DEGRADED to WebSocket clients
+- [22-01]: Ring buffer with write pointer wrapping for O(1) append and bounded memory
+- [22-01]: MD5 content hashing for lightweight non-security change detection
+- [22-01]: Frontmatter key diffing for meaningful change classification without full content over WS
+- [22-01]: Exported classifyArtifactType for testability and reuse
 
 ### Pending Todos
 
@@ -71,9 +75,10 @@ Recent decisions affecting current work:
 |-------|------|----------|-------|-------|
 | 21    | 01   | 11min    | 3     | 9     |
 | 21    | 02   | 3min     | 3     | 3     |
+| 22    | 01   | 3min     | 3     | 4     |
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:14:29Z
-Stopped at: Completed 21-02-PLAN.md
+Last session: 2026-04-12T13:45:42Z
+Stopped at: Completed 22-01-PLAN.md
 Resume file: None
