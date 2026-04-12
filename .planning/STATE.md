@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
-status: executing
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-04-12T17:23:53.980Z"
-last_activity: 2026-04-12 — Completed Phase 25 Plan 01 (M365 Defender adapter)
+status: completed
+stopped_at: Completed 25-02-PLAN.md
+last_updated: "2026-04-12T17:28:04.328Z"
+last_activity: 2026-04-12 — Completed Phase 25 Plan 02 (M365 content script consolidation + sidepanel messaging)
 progress:
   total_phases: 16
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 29
-  completed_plans: 28
-  percent: 97
+  completed_plans: 29
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 25 of 26 (Extraction Adapters)
-Plan: 1 of 2 complete
-Status: In Progress
-Last activity: 2026-04-12 — Completed Phase 25 Plan 01 (M365 Defender adapter)
+Plan: 2 of 2 complete
+Status: Phase Complete
+Last activity: 2026-04-12 — Completed Phase 25 Plan 02 (M365 content script consolidation + sidepanel messaging)
 
-Progress: [██████████] 97%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 24]: Click-to-navigate uses data-* attributes on rendered HTML + querySelectorAll delegation in bindActions()
 - [Phase 25]: M365 detect() uses hasAnySelector for app selectors plus hostname+o365cs-base combo for generic portal detection
 - [Phase 25]: Incident pages without query editor get failure reason for partial completeness, following CrowdStrike/Elastic alert_detail pattern
+- [Phase 25]: M365 content script slimmed to 4-line thin wrapper, completing all-vendor consolidation pattern
+- [Phase 25]: Sidepanel shows navigational guidance for no-adapter state rather than empty space
+- [Phase 25]: vendor:loading clears detectedVendor to null, briefly showing no-adapter state until vendor:detected arrives
 
 ### Pending Todos
 
@@ -101,9 +104,10 @@ Recent decisions affecting current work:
 | 24    | 01   | 3min     | 2     | 5     |
 | Phase 24 P02 | 2min | 2 tasks | 1 files |
 | Phase 25 P01 | 3min | 3 tasks | 7 files |
+| Phase 25 P02 | 2min | 2 tasks | 2 files |
 
 ## Session Continuity
 
-Last session: 2026-04-12T17:23:53.977Z
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-04-12T17:28:04.324Z
+Stopped at: Completed 25-02-PLAN.md
 Resume file: None
