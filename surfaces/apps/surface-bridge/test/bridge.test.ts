@@ -66,8 +66,8 @@ beforeAll(() => {
   realExampleRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'thrunt-surfaces-example-'));
   fs.cpSync(EXAMPLE_ROOT, realExampleRoot, { recursive: true });
 
-  process.env.BRIDGE_TEST_OKTA_API_KEY = 'okta-test-key';
-  process.env.BRIDGE_TEST_SENTINEL_TOKEN = 'sentinel-test-token';
+  process.env.BRIDGE_TEST_OKTA_CREDENTIAL = 'okta-test-placeholder';
+  process.env.BRIDGE_TEST_SENTINEL_CREDENTIAL = 'sentinel-test-placeholder';
   process.env.BRIDGE_TEST_AWS_ACCESS_KEY_ID = 'AKIATESTKEY123456';
   process.env.BRIDGE_TEST_AWS_SECRET_ACCESS_KEY = 'aws-secret-key';
 
@@ -124,7 +124,7 @@ function writeRuntimeConfig(root: string) {
           auth_type: 'api_key',
           base_url: `http://127.0.0.1:${OKTA_API_PORT}`,
           secret_refs: {
-            api_key: 'BRIDGE_TEST_OKTA_API_KEY',
+            okta_ref: 'BRIDGE_TEST_OKTA_CREDENTIAL',
           },
         },
       },
@@ -133,7 +133,7 @@ function writeRuntimeConfig(root: string) {
           auth_type: 'bearer',
           base_url: `http://127.0.0.1:${SENTINEL_API_PORT}/v1`,
           secret_refs: {
-            token: 'BRIDGE_TEST_SENTINEL_TOKEN',
+            sentinel_ref: 'BRIDGE_TEST_SENTINEL_CREDENTIAL',
           },
           default_parameters: {
             workspace_id: 'workspace-local',
