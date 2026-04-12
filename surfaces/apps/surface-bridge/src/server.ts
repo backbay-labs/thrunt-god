@@ -44,6 +44,7 @@ import { createMockProvider, createArtifactProvider, type CaseDataProvider } fro
 import { checkCertificationPrerequisites } from './certification-ops.ts';
 import { createLogger } from './logger.ts';
 import { classifyError, errorResponse, type ErrorClass } from './errors.ts';
+import { createSubprocessHealthMonitor } from './subprocess-health.ts';
 
 const VERSION = '0.2.0';
 
@@ -67,6 +68,23 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
   const wsClients = new Set<{ send(data: string): void }>();
   let watcher: fs.FSWatcher | null = null;
   let lastFileWatcherEvent: string | null = null;
+
+  // ─── Subprocess health monitoring ───────────────────────────────────
+  const subprocessHealth = createSubprocessHealthMonitor({
+    projectRoot: cfg.projectRoot,
+    toolsPath: cfg.toolsPath,
+    logger,
+    probeTimeoutMs: 5000,
+    onStateChange: (available) => {
+      if (!available) {
+        logger.warn('lifecycle', 'subprocess became unavailable — entering degraded mode', {});
+        broadcast({ type: 'bridge:error', data: { code: 'BRIDGE_DEGRADED', message: 'Subprocess unavailable' } });
+      } else {
+        logger.info('lifecycle', 'subprocess recovered — resuming full operation', {});
+      }
+    },
+  });
+  if (!cfg.mockMode) { subprocessHealth.startPeriodicProbe(60_000); }
 
   // ─── Auth: session nonce ─────────────────────────────────────────────
   const sessionToken = crypto.randomBytes(16).toString('hex');
@@ -198,7 +216,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
     if (method === 'GET' && reqPath === '/api/health') {
       const health: BridgeHealthResponse = {
-        status: 'ok',
+        status: subprocessHealth.isAvailable() || cfg.mockMode ? 'ok' : 'degraded',
         version: VERSION,
         mockMode: cfg.mockMode,
         projectRoot: cfg.projectRoot,
@@ -206,9 +224,9 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         caseOpen: provider.caseOpen(),
         uptime: Math.floor((Date.now() - startTime) / 1000),
         wsClients: wsClients.size,
-        activeCaseId: null,
+        activeCaseId: provider.caseOpen() ? (await provider.getCase())?.caseRoot ?? null : null,
         lastFileWatcherEvent,
-        subprocessAvailable: !!cfg.toolsPath || !cfg.mockMode,
+        subprocessAvailable: cfg.mockMode ? true : subprocessHealth.isAvailable(),
       };
       return json(health);
     }
@@ -586,6 +604,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     stop: () => {
       clearInterval(heartbeatTimer);
       if (watchDebounce) clearTimeout(watchDebounce);
+      subprocessHealth.stop();
       try { watcher?.close(); } catch {}
       server.stop();
     },
