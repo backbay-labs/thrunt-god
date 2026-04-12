@@ -135,7 +135,11 @@ Plans:
   1. MCP client adapter connects to a configurable MCP server URL with an explicit enable toggle (default: disabled)
   2. Sidebar header shows a connection status indicator -- green dot when connected, grey dot when disabled, red dot with error tooltip when enabled but unreachable
   3. When MCP is unreachable or disabled, all enrichment features show informative messages instead of errors, and all non-MCP plugin features continue working normally
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 72-01-PLAN.md -- McpClient interface/implementation with TDD, settings extension with MCP fields
+- [ ] 72-02-PLAN.md -- Sidebar status indicator, main.ts/workspace.ts wiring, graceful degradation
 
 ### Phase 73: MCP Enrichment + Intelligence Features
 **Goal**: Analysts can enrich entity notes with live intelligence, analyze detection coverage, log institutional decisions/learnings, and search the knowledge graph -- all from within Obsidian
@@ -211,7 +215,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete    | 2026-04-12 | - |
 | 70. Artifact Registry + Parsers | 2/2 | Complete    | 2026-04-12 | - |
 | 71. Ingestion Engine + Agent Activity Timeline | 2/2 | Complete    | 2026-04-12 | - |
-| 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/0 | Not started | - |
+| 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/2 | Planning | - |
 | 73. MCP Enrichment + Intelligence Features | v4.0 | 0/0 | Not started | - |
 | 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |
 | 75. Hyper Copy Commands + Export UX | v4.0 | 0/0 | Not started | - |

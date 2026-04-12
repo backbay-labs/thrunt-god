@@ -1,3 +1,19 @@
+// --- MCP connection types ---
+
+export type McpConnectionStatus = 'disabled' | 'disconnected' | 'connected' | 'error';
+
+export interface McpHealthResponse {
+  status: string;        // "healthy" or "unhealthy"
+  toolCount: number;
+  serverVersion: string;
+  error?: string;        // present when status is "unhealthy"
+}
+
+export interface McpToolResult {
+  content: Array<{ type: string; text: string }>;
+  isError?: boolean;
+}
+
 // --- Workspace status ---
 
 export type WorkspaceStatus = 'healthy' | 'partial' | 'missing';
