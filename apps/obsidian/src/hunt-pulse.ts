@@ -12,6 +12,7 @@
  * @param now - current epoch ms (injected for testability)
  * @param recentArtifactCount - number of artifacts ingested since last reset
  * @param idleThresholdMs - ms after which activity is considered idle (default 5 min)
+ * @param mcpStatus - optional MCP connection status to display
  * @returns formatted status string like "\u26A1 idle" or "\u26A1 3 artifacts (120s ago)"
  */
 export function formatHuntPulse(
@@ -19,12 +20,15 @@ export function formatHuntPulse(
   now: number,
   recentArtifactCount: number,
   idleThresholdMs: number = 5 * 60 * 1000,
+  mcpStatus?: 'online' | 'offline',
 ): string {
+  const mcpSuffix = mcpStatus ? ` | MCP: ${mcpStatus}` : '';
+
   if (lastActivityTimestamp === 0 || now - lastActivityTimestamp > idleThresholdMs) {
-    return '\u26A1 idle';
+    return `\u26A1 idle${mcpSuffix}`;
   }
 
   const secondsAgo = Math.floor((now - lastActivityTimestamp) / 1000);
   const label = recentArtifactCount === 1 ? 'artifact' : 'artifacts';
-  return `\u26A1 ${recentArtifactCount} ${label} (${secondsAgo}s ago)`;
+  return `\u26A1 ${recentArtifactCount} ${label} (${secondsAgo}s ago)${mcpSuffix}`;
 }

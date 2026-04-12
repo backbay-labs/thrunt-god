@@ -17,8 +17,10 @@ export interface ThruntGodPluginSettings {
   autoIngestionEnabled: boolean;
   autoIngestDebounceMs: number;
   huntPulseEnabled: boolean;
-  mcpEventPollingEnabled: boolean;     // Phase 88 placeholder
-  priorHuntSuggestionsEnabled: boolean; // Phase 88 placeholder
+  mcpEventPollingEnabled: boolean;
+  priorHuntSuggestionsEnabled: boolean;
+  mcpPollIntervalMs: number;
+  suggestionMinHunts: number;
 }
 
 export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
@@ -34,6 +36,8 @@ export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
   huntPulseEnabled: true,
   mcpEventPollingEnabled: false,
   priorHuntSuggestionsEnabled: false,
+  mcpPollIntervalMs: 10000,
+  suggestionMinHunts: 2,
 };
 
 export class ThruntGodSettingTab extends PluginSettingTab {
@@ -214,26 +218,62 @@ export class ThruntGodSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('MCP event polling')
-      .setDesc('Poll MCP server for CLI events. (Coming in Phase 88)')
+      .setDesc('Poll MCP server for CLI lifecycle events.')
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.mcpEventPollingEnabled)
-          .setDisabled(true)
           .onChange(async (value) => {
             this.plugin.settings.mcpEventPollingEnabled = value;
+            if (value) {
+              this.plugin.enableMcpEventPolling();
+            } else {
+              this.plugin.disableMcpEventPolling();
+            }
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('MCP poll interval (ms)')
+      .setDesc('How often to poll for CLI events. Default: 10000.')
+      .addText((text) =>
+        text
+          .setPlaceholder('10000')
+          .setValue(String(this.plugin.settings.mcpPollIntervalMs))
+          .onChange(async (value) => {
+            const parsed = parseInt(value, 10);
+            this.plugin.settings.mcpPollIntervalMs = parsed > 0 ? parsed : DEFAULT_SETTINGS.mcpPollIntervalMs;
             await this.plugin.saveSettings();
           }),
       );
 
     new Setting(containerEl)
       .setName('Prior-hunt suggestions')
-      .setDesc('Show suggestions when entities match past hunts. (Coming in Phase 88)')
+      .setDesc('Show suggestions when entities match past hunts.')
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.priorHuntSuggestionsEnabled)
-          .setDisabled(true)
           .onChange(async (value) => {
             this.plugin.settings.priorHuntSuggestionsEnabled = value;
+            if (value) {
+              this.plugin.enablePriorHuntSuggestions();
+            } else {
+              this.plugin.disablePriorHuntSuggestions();
+            }
+            await this.plugin.saveSettings();
+          }),
+      );
+
+    new Setting(containerEl)
+      .setName('Suggestion minimum hunts')
+      .setDesc('Minimum past hunts before suggestions appear. Default: 2.')
+      .addText((text) =>
+        text
+          .setPlaceholder('2')
+          .setValue(String(this.plugin.settings.suggestionMinHunts))
+          .onChange(async (value) => {
+            const parsed = parseInt(value, 10);
+            this.plugin.settings.suggestionMinHunts = parsed > 0 ? parsed : DEFAULT_SETTINGS.suggestionMinHunts;
             await this.plugin.saveSettings();
           }),
       );

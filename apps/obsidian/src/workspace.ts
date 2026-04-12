@@ -63,6 +63,10 @@ export class WorkspaceService {
     return this.watcherService;
   }
 
+  get mcpBridge(): McpBridgeService {
+    return this.mcpBridgeService;
+  }
+
   getMcpClient(): McpClient | undefined {
     return this.mcpClient;
   }

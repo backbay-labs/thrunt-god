@@ -9,11 +9,14 @@ import type { VaultAdapter } from '../vault-adapter';
 import type { EventBus } from './event-bus';
 import type { McpClient } from '../mcp-client';
 import type { EnrichmentData, CoverageReport, CoverageTactic } from '../types';
+import type { CliEvent, VaultEvent } from '../mcp-events';
 import { normalizePath } from '../paths';
 import { mergeEnrichment, buildCoverageReport, formatDecisionEntry, formatLearningEntry } from '../mcp-enrichment';
 import { parseFrontmatterFields } from '../entity-utils';
 
 export class McpBridgeService {
+  private lastEventCursor = 0;
+
   constructor(
     private vaultAdapter: VaultAdapter,
     private getPlanningDir: () => string,
@@ -243,5 +246,61 @@ export class McpBridgeService {
     }
 
     return { success: true, message: `Learning logged for ${topic}.` };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Event bridge methods (Phase 88)
+  // ---------------------------------------------------------------------------
+
+  async pollEvents(): Promise<CliEvent[]> {
+    if (!this.mcpClient || !this.mcpClient.isConnected()) {
+      return [];
+    }
+
+    try {
+      const result = await this.mcpClient.callTool('getEvents', { since: this.lastEventCursor });
+      if (!result || result.isError) {
+        return [];
+      }
+
+      const events: CliEvent[] = JSON.parse(result.content[0]!.text);
+      if (!Array.isArray(events) || events.length === 0) {
+        return [];
+      }
+
+      // Advance cursor to the timestamp of the last event
+      const lastEvent = events[events.length - 1]!;
+      if (lastEvent.timestamp > this.lastEventCursor) {
+        this.lastEventCursor = lastEvent.timestamp;
+      }
+
+      return events;
+    } catch {
+      return [];
+    }
+  }
+
+  async publishEvent(event: VaultEvent): Promise<void> {
+    if (!this.mcpClient || !this.mcpClient.isConnected()) {
+      return;
+    }
+
+    try {
+      await this.mcpClient.callTool('publishVaultEvent', { event });
+    } catch {
+      // Fire-and-forget: swallow errors
+    }
+  }
+
+  async publishEvents(events: VaultEvent[]): Promise<void> {
+    if (!this.mcpClient || !this.mcpClient.isConnected()) {
+      return;
+    }
+
+    try {
+      await this.mcpClient.callTool('publishVaultEvent', { events });
+    } catch {
+      // Fire-and-forget: swallow errors
+    }
   }
 }

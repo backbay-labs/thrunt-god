@@ -13,6 +13,8 @@ import { EventBus } from './services/event-bus';
 import { registerCommands } from './commands';
 import { createScopedHandler } from './sidebar-events';
 import { formatHuntPulse } from './hunt-pulse';
+import { mapCliEventToAction } from './mcp-events';
+import type { VaultEvent } from './mcp-events';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -27,6 +29,9 @@ export default class ThruntGodPlugin extends Plugin {
   private autoIngestEventRef?: EventRef;
   private huntPulseEl?: HTMLElement;
   private huntPulseInterval?: number;
+  private mcpPollInterval?: number;
+  private outboundEventBuffer: VaultEvent[] = [];
+  private outboundFlushTimeout?: number;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -157,6 +162,11 @@ export default class ThruntGodPlugin extends Plugin {
     if (this.settings.huntPulseEnabled) {
       this.enableHuntPulse();
     }
+
+    // --- MCP event polling (Phase 88) ---
+    if (this.settings.mcpEventPollingEnabled) {
+      this.enableMcpEventPolling();
+    }
   }
 
   onunload(): void {
@@ -165,6 +175,7 @@ export default class ThruntGodPlugin extends Plugin {
     this.debouncedDashboardRefresh?.cancel();
     this.disableAutoIngestion();
     this.disableHuntPulse();
+    this.disableMcpEventPolling();
     this.mcpClient.disconnect();
     this.eventBus.removeAllListeners();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);
@@ -215,13 +226,117 @@ export default class ThruntGodPlugin extends Plugin {
     }
   }
 
+  enableMcpEventPolling(): void {
+    if (this.mcpPollInterval !== undefined) return; // already enabled
+    const intervalMs = this.settings.mcpPollIntervalMs ?? 10000;
+    this.mcpPollInterval = window.setInterval(() => {
+      void this.handleMcpPoll();
+    }, intervalMs);
+    this.registerInterval(this.mcpPollInterval);
+
+    // Wire outbound event listeners
+    this.eventBus.on('entity:created', (data) => {
+      const event: VaultEvent = {
+        type: 'entity:created',
+        timestamp: Date.now(),
+        path: data.sourcePath,
+        entityType: data.entityType,
+      };
+      this.bufferOutboundEvent(event);
+    });
+
+    this.eventBus.on('verdict:set', (data) => {
+      const event: VaultEvent = {
+        type: 'verdict:set',
+        timestamp: Date.now(),
+        path: data.path,
+        verdict: data.verdict,
+      };
+      this.bufferOutboundEvent(event);
+    });
+  }
+
+  disableMcpEventPolling(): void {
+    if (this.mcpPollInterval !== undefined) {
+      window.clearInterval(this.mcpPollInterval);
+      this.mcpPollInterval = undefined;
+    }
+    if (this.outboundFlushTimeout !== undefined) {
+      window.clearTimeout(this.outboundFlushTimeout);
+      this.outboundFlushTimeout = undefined;
+    }
+    this.outboundEventBuffer = [];
+  }
+
+  enablePriorHuntSuggestions(): void {
+    // Phase 88-02 will implement suggestion logic
+  }
+
+  disablePriorHuntSuggestions(): void {
+    // Phase 88-02 will implement suggestion logic
+  }
+
+  private async handleMcpPoll(): Promise<void> {
+    const bridge = this.workspaceService.mcpBridge;
+    const events = await bridge.pollEvents();
+
+    for (const event of events) {
+      const action = mapCliEventToAction(event);
+      if (!action) continue;
+
+      switch (action.type) {
+        case 'trigger-ingestion':
+          this.debouncedAutoIngest?.();
+          break;
+        case 'create-finding':
+          // Create a finding note in the planning directory
+          new Notice(`Finding: ${action.data.title as string ?? 'Untitled'}`);
+          break;
+        case 'update-mission':
+          new Notice(`Hunt ${action.data.huntId as string ?? ''} status: ${action.data.status as string}`);
+          break;
+      }
+    }
+
+    // Update hunt pulse with MCP status
+    this.updateHuntPulse();
+  }
+
+  private bufferOutboundEvent(event: VaultEvent): void {
+    this.outboundEventBuffer.push(event);
+
+    // Debounce: flush after 500ms of inactivity
+    if (this.outboundFlushTimeout !== undefined) {
+      window.clearTimeout(this.outboundFlushTimeout);
+    }
+    this.outboundFlushTimeout = window.setTimeout(() => {
+      void this.flushOutboundEvents();
+    }, 500);
+  }
+
+  private async flushOutboundEvents(): Promise<void> {
+    if (this.outboundEventBuffer.length === 0) return;
+    const events = [...this.outboundEventBuffer];
+    this.outboundEventBuffer = [];
+    this.outboundFlushTimeout = undefined;
+
+    const bridge = this.workspaceService.mcpBridge;
+    await bridge.publishEvents(events);
+  }
+
   private updateHuntPulse(): void {
     if (!this.huntPulseEl) return;
     const watcher = this.workspaceService.watcher;
+    const mcpStatus: 'online' | 'offline' | undefined =
+      this.settings.mcpEventPollingEnabled
+        ? (this.mcpClient.isConnected() ? 'online' : 'offline')
+        : undefined;
     const text = formatHuntPulse(
       watcher.getLastActivityTimestamp(),
       Date.now(),
       watcher.getRecentArtifactCount(),
+      undefined,
+      mcpStatus,
     );
     this.huntPulseEl.setText(text);
   }

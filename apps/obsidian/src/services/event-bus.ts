@@ -17,6 +17,7 @@ export type EventMap = {
   'canvas:generated': { canvasPath: string };
   'canvas:refreshed': { canvasPath: string; changedCount: number };
   'watcher:activity': { artifactCount: number; lastTimestamp: number };
+  'verdict:set': { path: string; verdict: string; entityName: string };
 };
 
 // --- Handler type ---
