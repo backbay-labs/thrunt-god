@@ -22,6 +22,7 @@ import {
   type EdgeGroup,
 } from '../canvas-generator';
 import { parseFrontmatterFields } from '../entity-utils';
+import { resolveEntityColor, patchCanvasNodeColors, parseCanvasRelevantFields } from '../canvas-adapter';
 
 export class CanvasService {
   constructor(
@@ -116,6 +117,109 @@ export class CanvasService {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, message };
     }
+  }
+
+  /**
+   * Check if a file path is under one of the entity folders.
+   */
+  private isEntityPath(filePath: string): boolean {
+    const planningDir = this.getPlanningDir();
+    return ENTITY_FOLDERS.some(folder =>
+      filePath.startsWith(planningDir + '/' + folder + '/'),
+    );
+  }
+
+  /**
+   * List all .canvas files in the planning directory (non-recursive).
+   */
+  async findCanvasFiles(): Promise<string[]> {
+    const planningDir = this.getPlanningDir();
+    const files = await this.vaultAdapter.listFiles(planningDir);
+    return files
+      .filter(f => f.endsWith('.canvas'))
+      .map(f => normalizePath(`${planningDir}/${f}`));
+  }
+
+  /**
+   * Handle a single entity file modification: read its type, resolve color,
+   * then patch all canvas files that reference this entity path.
+   */
+  async handleEntityModified(entityPath: string): Promise<void> {
+    if (!this.isEntityPath(entityPath)) return;
+
+    const content = await this.vaultAdapter.readFile(entityPath);
+    const { type: entityType } = parseCanvasRelevantFields(content);
+    const color = resolveEntityColor(entityType);
+    const colorMap = new Map<string, string>([[entityPath, color]]);
+
+    const canvasFiles = await this.findCanvasFiles();
+    let anyPatched = false;
+
+    for (const canvasPath of canvasFiles) {
+      try {
+        const raw = await this.vaultAdapter.readFile(canvasPath);
+        const canvasData = JSON.parse(raw) as CanvasData;
+        const { patched, changedCount } = patchCanvasNodeColors(canvasData, colorMap);
+        if (changedCount > 0) {
+          await this.vaultAdapter.modifyFile(canvasPath, JSON.stringify(patched, null, '\t'));
+          anyPatched = true;
+          this.eventBus?.emit('canvas:refreshed', { canvasPath, changedCount });
+        }
+      } catch {
+        // Silently skip malformed .canvas files
+      }
+    }
+  }
+
+  /**
+   * Full refresh: scan all entity notes, resolve colors, then patch every
+   * canvas file in one batch pass.
+   */
+  async refreshAllCanvasNodes(): Promise<{ totalPatched: number }> {
+    const planningDir = this.getPlanningDir();
+    const colorMap = new Map<string, string>();
+
+    // Build color map from all entity files
+    for (const folder of ENTITY_FOLDERS) {
+      const folderPath = normalizePath(`${planningDir}/${folder}`);
+      if (!this.vaultAdapter.folderExists(folderPath)) continue;
+
+      const files = await this.vaultAdapter.listFiles(folderPath);
+      const mdFiles = files.filter(f => f.endsWith('.md'));
+
+      for (const fileName of mdFiles) {
+        try {
+          const filePath = normalizePath(`${folderPath}/${fileName}`);
+          const content = await this.vaultAdapter.readFile(filePath);
+          const { type: entityType } = parseCanvasRelevantFields(content);
+          const color = resolveEntityColor(entityType);
+          colorMap.set(filePath, color);
+        } catch {
+          // Skip unreadable entity files
+        }
+      }
+    }
+
+    // Patch all canvas files
+    const canvasFiles = await this.findCanvasFiles();
+    let totalPatched = 0;
+
+    for (const canvasPath of canvasFiles) {
+      try {
+        const raw = await this.vaultAdapter.readFile(canvasPath);
+        const canvasData = JSON.parse(raw) as CanvasData;
+        const { patched, changedCount } = patchCanvasNodeColors(canvasData, colorMap);
+        if (changedCount > 0) {
+          await this.vaultAdapter.modifyFile(canvasPath, JSON.stringify(patched, null, '\t'));
+          totalPatched += changedCount;
+          this.eventBus?.emit('canvas:refreshed', { canvasPath, changedCount });
+        }
+      } catch {
+        // Silently skip malformed .canvas files
+      }
+    }
+
+    return { totalPatched };
   }
 
   async canvasFromCurrentHunt(

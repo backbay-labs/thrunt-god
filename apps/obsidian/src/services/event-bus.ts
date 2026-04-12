@@ -15,6 +15,7 @@ export type EventMap = {
   'entity:modified': { path: string };
   'ingestion:complete': { created: number; updated: number; skipped: number };
   'canvas:generated': { canvasPath: string };
+  'canvas:refreshed': { canvasPath: string; changedCount: number };
 };
 
 // --- Handler type ---
