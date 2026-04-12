@@ -2,17 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
-current_plan: null
-status: ready_to_plan
-stopped_at: null
-last_updated: "2026-04-12T14:00:00Z"
-last_activity: 2026-04-12 -- Roadmap created for v5.0 (12 phases, 79-90)
+status: executing
+stopped_at: Completed 79-01-PLAN.md
+last_updated: "2026-04-12T12:57:41.103Z"
 progress:
-  total_phases: 90
-  completed_phases: 78
-  total_plans: 26
-  completed_plans: 0
-  percent: 0
+  total_phases: 12
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 4
 ---
 
 # Project State
@@ -28,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** Ready to plan Phase 79
+**Status:** Executing Phase 79
 **Phase:** 79 of 90 (Service Decomposition + EventBus)
-**Plan:** 0 of 3 in current phase
+**Plan:** 1 of 3 in current phase complete
 
-Progress: [░░░░░░░░░░░░] 0% (0/26 v5.0 plans)
+Progress: [#░░░░░░░░░░░] 4% (1/26 v5.0 plans)
 
 ## Recently Completed
 
@@ -43,6 +41,9 @@ Progress: [░░░░░░░░░░░░] 0% (0/26 v5.0 plans)
 
 ### Decisions
 
+- Plan 79-01: EventBus uses Map<string, Set<Function>> for zero-dep typed event handling
+- Plan 79-01: Entity-utils extracted as pure functions preserving exact workspace.ts behavior
+- Plan 79-01: Domain service shells use constructor injection with optional EventBus
 - v5.0 shaped via 4-agent debate: polish first, depth, live canvas, live companion, journals/playbooks
 - WorkspaceService decomposition (UX-06, UX-07) is PREREQUISITE for all M2-M5 work
 - FrontmatterEditor (INTEL-10) is PREREQUISITE for verdict lifecycle and confidence
@@ -50,6 +51,7 @@ Progress: [░░░░░░░░░░░░] 0% (0/26 v5.0 plans)
 - Bidirectional MCP uses polling + outbound calls, not SSE (deprecated) or WebSockets (sandbox constraint)
 - Filesystem watcher uses Obsidian vault events, not raw fs.watch (macOS unreliable, breaks mobile)
 - Journal tags use #thrunt/ namespace prefix for Dataview compatibility
+- [Phase 79]: EventBus uses Map<string, Set<Function>> for zero-dep typed event handling
 
 ### Blockers/Concerns
 
@@ -57,6 +59,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Roadmap created, ready to plan Phase 79
+Last session: 2026-04-12T12:57:36.728Z
+Stopped at: Completed 79-01-PLAN.md
 Resume file: None

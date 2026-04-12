@@ -108,12 +108,12 @@
   2. main.ts contains only lifecycle management and command registration at under 300 LOC, with commands extracted to a commands.ts module
   3. All 369 existing tests pass without modification after the decomposition
   4. The ViewModel cache and sidebar rendering continue to work identically from the user's perspective
-**Plans**: TBD
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 79-01: EventBus + domain service interfaces and extraction plan
-- [ ] 79-02: WorkspaceService decomposition (extract IngestionService, IntelligenceService, CanvasService, McpBridgeService)
-- [ ] 79-03: main.ts slimming and commands.ts extraction
+- [ ] 79-01-PLAN.md &mdash; EventBus, entity-utils extraction, domain service class shells
+- [ ] 79-02-PLAN.md &mdash; WorkspaceService facade decomposition into IntelligenceService, CanvasService, McpBridgeService
+- [ ] 79-03-PLAN.md &mdash; main.ts slimming, commands.ts + modals.ts extraction
 
 ### Phase 80: Sidebar Progressive Disclosure + Onboarding
 **Goal**: The sidebar feels native to Obsidian with persistent collapsible sections, context-aware defaults, and a clear first-run experience that gets new users productive immediately
@@ -306,7 +306,7 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 76. Canvas Kill Chain Generator + Templates | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 78. v4.0 Tech Debt Cleanup | v4.0 | 2/2 | Complete | 2026-04-12 |
-| 79. Service Decomposition + EventBus | v5.0 | 0/3 | Not started | - |
+| 79. Service Decomposition + EventBus | 1/3 | In Progress|  | - |
 | 80. Sidebar Progressive Disclosure + Onboarding | v5.0 | 0/2 | Not started | - |
 | 81. Command Consolidation + Modal Polish | v5.0 | 0/2 | Not started | - |
 | 82. Verdict Lifecycle + FrontmatterEditor + Schema Versioning | v5.0 | 0/3 | Not started | - |
