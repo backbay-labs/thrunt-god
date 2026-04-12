@@ -1,6 +1,7 @@
 import { ItemView, Setting, type WorkspaceLeaf } from 'obsidian';
 import type ThruntGodPlugin from './main';
 import type { ViewModel } from './types';
+import { ENTITY_FOLDERS } from './entity-schema';
 
 export const THRUNT_WORKSPACE_VIEW_TYPE = 'thrunt-god-workspace';
 
@@ -77,6 +78,9 @@ export class ThruntWorkspaceView extends ItemView {
 
     // Hunt status card (replaces old hero marketing card)
     this.renderHuntStatusCard(contentEl, vm);
+
+    // Knowledge Base entity counts
+    this.renderKnowledgeBaseSection(contentEl, vm);
 
     // Artifact list
     const artifactCard = contentEl.createDiv({ cls: 'thrunt-god-card' });
@@ -179,6 +183,40 @@ export class ThruntWorkspaceView extends ItemView {
     const field = container.createDiv({ cls: 'thrunt-god-hunt-field' });
     field.createSpan({ cls: 'thrunt-god-field-label', text: label });
     field.createSpan({ cls: 'thrunt-god-field-value', text: value });
+  }
+
+  private renderKnowledgeBaseSection(container: HTMLElement, vm: ViewModel): void {
+    const folderLabels: Record<string, string> = {
+      'entities/iocs': 'IOCs',
+      'entities/ttps': 'TTPs',
+      'entities/actors': 'Actors',
+      'entities/tools': 'Tools',
+      'entities/infra': 'Infrastructure',
+      'entities/datasources': 'Data Sources',
+    };
+
+    const card = container.createDiv({ cls: 'thrunt-god-card thrunt-god-kb-section' });
+
+    const details = card.createEl('details', { cls: 'thrunt-god-kb-details' });
+    details.setAttribute('open', '');
+
+    const summary = details.createEl('summary', { cls: 'thrunt-god-kb-summary' });
+    summary.createEl('h3', { text: 'Knowledge Base', cls: 'thrunt-god-kb-title' });
+
+    const fields = details.createDiv({ cls: 'thrunt-god-hunt-fields' });
+    for (const folder of ENTITY_FOLDERS) {
+      const label = folderLabels[folder] ?? folder;
+      const count = vm.entityCounts[folder] ?? 0;
+      this.renderField(fields, label, String(count));
+    }
+
+    const total = Object.values(vm.entityCounts).reduce((sum, c) => sum + c, 0);
+    this.renderField(fields, 'Total', String(total));
+
+    const actions = details.createDiv({ cls: 'thrunt-god-actions' });
+    this.createActionButton(actions, 'Open dashboard', async () => {
+      await this.plugin.openCoreFile('KNOWLEDGE_BASE.md');
+    });
   }
 
   private createActionButton(
