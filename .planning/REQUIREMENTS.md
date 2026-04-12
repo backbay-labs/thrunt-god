@@ -41,7 +41,7 @@ Requirements for v5.0 Hunt Ecosystem: Evidence In, Detections Out. Each maps to 
 
 - [x] **MCPB-01**: Bridge broadcasts structured events (artifact created, modified, deleted, phase transition, verdict change) via WebSocket when `.planning/` files change
 - [x] **MCPB-02**: Events follow a documented schema contract with event type, artifact path, timestamp, and diff summary
-- [ ] **MCPB-03**: Obsidian plugin can subscribe to bridge events and auto-ingest new receipts, queries, and findings into the vault
+- [x] **MCPB-03**: Obsidian plugin can subscribe to bridge events and auto-ingest new receipts, queries, and findings into the vault
 - [ ] **MCPB-04**: Surfaces (browser extension, Obsidian) can send mutation requests back through the bridge (attach evidence, update hypothesis verdict, add IOC)
 - [ ] **MCPB-05**: Bridge validates inbound mutations against the case model and delegates to `thrunt-tools.cjs` for execution
 - [x] **MCPB-06**: Event protocol supports reconnection with catch-up (missed events replayed from file watcher journal)
@@ -131,7 +131,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HARD-05 | Phase 21 | Complete |
 | MCPB-01 | Phase 22 | Complete |
 | MCPB-02 | Phase 22 | Complete |
-| MCPB-03 | Phase 22 | Pending |
+| MCPB-03 | Phase 22 | Complete |
 | MCPB-04 | Phase 22 | Pending |
 | MCPB-05 | Phase 22 | Pending |
 | MCPB-06 | Phase 22 | Complete |

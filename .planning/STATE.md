@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
 status: in-progress
-stopped_at: Completed 22-01-PLAN.md
+stopped_at: Completed 22-02-PLAN.md
 last_updated: "2026-04-12T13:50:27.988Z"
-last_activity: 2026-04-12 — Completed Phase 22 Plan 01
+last_activity: 2026-04-12 — Completed Phase 22 Plan 02
 progress:
   total_phases: 16
   completed_phases: 7
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 22 of 26 (MCP Event Bridge)
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: In Progress
-Last activity: 2026-04-12 — Completed Phase 22 Plan 01
+Last activity: 2026-04-12 — Completed Phase 22 Plan 02
 
 Progress: [█████████░] 91%
 
@@ -60,6 +60,9 @@ Recent decisions affecting current work:
 - [22-01]: MD5 content hashing for lightweight non-security change detection
 - [22-01]: Frontmatter key diffing for meaningful change classification without full content over WS
 - [22-01]: Exported classifyArtifactType for testability and reuse
+- [22-02]: Dual broadcast -- legacy BridgeEvent for POST routes + versioned EventBridgeEnvelope for watcher events
+- [22-02]: Welcome and heartbeat use seq:0 (not journaled) to avoid inflating sequence numbers
+- [22-02]: Replay guard uses isNaN check instead of > 0 to allow last_seq=0 full replay
 
 ### Pending Todos
 
@@ -76,9 +79,10 @@ Recent decisions affecting current work:
 | 21    | 01   | 11min    | 3     | 9     |
 | 21    | 02   | 3min     | 3     | 3     |
 | 22    | 01   | 3min     | 3     | 4     |
+| 22    | 02   | 7min     | 2     | 3     |
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:45:42Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-04-12T13:52:22Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
