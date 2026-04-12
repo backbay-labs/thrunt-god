@@ -1,4 +1,5 @@
-import { Modal, Notice, Setting } from 'obsidian';
+import { FuzzySuggestModal, Modal, Notice, Setting } from 'obsidian';
+import type { FuzzyMatch } from 'obsidian';
 import type { WorkspaceService } from './workspace';
 
 // ---------------------------------------------------------------------------
@@ -60,40 +61,47 @@ export class PromptModal extends Modal {
 
 export type CanvasTemplateName = 'kill-chain' | 'diamond' | 'lateral-movement' | 'hunt-progression';
 
-export class CanvasTemplateModal extends Modal {
+interface CanvasTemplateItem {
+  label: string;
+  value: CanvasTemplateName;
+  description: string;
+}
+
+const CANVAS_TEMPLATE_ITEMS: readonly CanvasTemplateItem[] = [
+  { label: 'ATT&CK Kill Chain', value: 'kill-chain', description: 'Visualize attack phases in a linear kill chain' },
+  { label: 'Diamond Model', value: 'diamond', description: 'Map adversary-infrastructure-capability-victim relationships' },
+  { label: 'Lateral Movement Map', value: 'lateral-movement', description: 'Track attacker movement across network segments' },
+  { label: 'Hunt Progression', value: 'hunt-progression', description: 'Visualize hunt phases from hypothesis to findings' },
+];
+
+export class CanvasTemplateModal extends FuzzySuggestModal<CanvasTemplateItem> {
+  private onSelect: (template: CanvasTemplateName) => void;
+
   constructor(
     app: import('obsidian').App,
-    private onSelect: (template: CanvasTemplateName) => void,
+    onSelect: (template: CanvasTemplateName) => void,
   ) {
     super(app);
+    this.onSelect = onSelect;
+    this.setPlaceholder('Choose a canvas template...');
   }
 
-  onOpen(): void {
-    this.titleEl.setText('Generate Hunt Canvas');
-
-    const templates: Array<{ label: string; value: CanvasTemplateName }> = [
-      { label: 'ATT&CK Kill Chain', value: 'kill-chain' },
-      { label: 'Diamond Model', value: 'diamond' },
-      { label: 'Lateral Movement Map', value: 'lateral-movement' },
-      { label: 'Hunt Progression', value: 'hunt-progression' },
-    ];
-
-    for (const tmpl of templates) {
-      new Setting(this.contentEl)
-        .setName(tmpl.label)
-        .addButton((btn) => {
-          btn.setButtonText('Generate')
-            .setCta()
-            .onClick(() => {
-              this.close();
-              this.onSelect(tmpl.value);
-            });
-        });
-    }
+  getItems(): CanvasTemplateItem[] {
+    return [...CANVAS_TEMPLATE_ITEMS];
   }
 
-  onClose(): void {
-    this.contentEl.empty();
+  getItemText(item: CanvasTemplateItem): string {
+    return item.label;
+  }
+
+  renderSuggestion(match: FuzzyMatch<CanvasTemplateItem>, el: HTMLElement): void {
+    el.createDiv({ cls: 'thrunt-chooser-item' });
+    el.createDiv({ cls: 'thrunt-chooser-name', text: match.item.label });
+    el.createDiv({ cls: 'thrunt-chooser-desc', text: match.item.description });
+  }
+
+  onChooseItem(item: CanvasTemplateItem): void {
+    this.onSelect(item.value);
   }
 }
 

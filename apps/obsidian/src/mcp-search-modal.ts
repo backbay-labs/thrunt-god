@@ -3,24 +3,6 @@ import type { McpClient } from './mcp-client';
 import type { SearchResult } from './types';
 
 /**
- * Badge background colors per entity type.
- */
-const BADGE_COLORS: Record<string, string> = {
-  ttp: '#4a90d9',
-  'ioc/ip': '#d94a4a',
-  'ioc/domain': '#d94a4a',
-  'ioc/hash': '#d94a4a',
-  actor: '#d9a04a',
-  tool: '#4ad97a',
-  infrastructure: '#9a4ad9',
-  datasource: '#4ad9d9',
-};
-
-function getBadgeColor(entityType: string): string {
-  return BADGE_COLORS[entityType] ?? '#888';
-}
-
-/**
  * Modal for searching the THRUNT knowledge graph via MCP queryKnowledge tool.
  * Renders results with entity-type badges and Open/Create note actions.
  */
@@ -86,18 +68,15 @@ export class McpSearchModal extends Modal {
     for (const item of results) {
       const container = this.resultsEl.createDiv({ cls: 'thrunt-search-result' });
 
-      // Badge
-      const badge = container.createSpan({ text: item.entityType.toUpperCase() });
-      badge.style.backgroundColor = getBadgeColor(item.entityType);
-      badge.style.color = '#fff';
-      badge.style.padding = '2px 6px';
-      badge.style.borderRadius = '3px';
-      badge.style.fontSize = '0.75em';
-      badge.style.marginRight = '8px';
+      // Badge -- styled via CSS class + data-entity-type attribute
+      const badge = container.createSpan({
+        cls: 'thrunt-entity-badge',
+        text: item.entityType.toUpperCase(),
+      });
+      badge.dataset.entityType = item.entityType;
 
       // Name
-      const nameEl = container.createSpan({ text: item.name });
-      nameEl.style.fontWeight = 'bold';
+      container.createSpan({ cls: 'thrunt-result-name', text: item.name });
 
       // Snippet
       container.createEl('p', { text: item.snippet });
@@ -110,8 +89,10 @@ export class McpSearchModal extends Modal {
         this.close();
       });
 
-      const createBtn = actionsEl.createEl('button', { text: 'Create note' });
-      createBtn.style.marginLeft = '8px';
+      const createBtn = actionsEl.createEl('button', {
+        text: 'Create note',
+        cls: 'thrunt-result-action',
+      });
       createBtn.addEventListener('click', () => {
         this.onCreateNote(item.name, item.entityType);
         this.close();

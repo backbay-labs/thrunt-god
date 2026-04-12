@@ -89,6 +89,7 @@ export class FuzzySuggestModal extends SuggestModal {
 
 export type WorkspaceLeaf = any;
 export type App = any;
+export type FuzzyMatch<T> = { item: T; match: { score: number; matches: number[][] } };
 
 export function requestUrl(_opts: any) {
   return Promise.resolve({ json: {}, text: '' });

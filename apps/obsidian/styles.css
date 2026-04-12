@@ -296,3 +296,76 @@
   color: var(--text-muted);
   margin-top: 2px;
 }
+
+/* HyperCopyModal profile list */
+.thrunt-profile-item {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.thrunt-profile-item:hover {
+  background: var(--background-modifier-hover);
+}
+.thrunt-profile-label {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+.thrunt-profile-id {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+.thrunt-token-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.thrunt-token-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+.thrunt-token-warning {
+  color: var(--color-red);
+  font-size: 0.85em;
+}
+.thrunt-copy-row {
+  margin-top: 12px;
+}
+.thrunt-preview {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+/* McpSearchModal results */
+.thrunt-search-result {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.thrunt-entity-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.75em;
+  margin-right: 8px;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+  font-weight: var(--font-semibold, 600);
+  text-transform: uppercase;
+}
+.thrunt-entity-badge[data-entity-type="ttp"] { background: color-mix(in srgb, var(--color-blue) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="ioc/ip"],
+.thrunt-entity-badge[data-entity-type="ioc/domain"],
+.thrunt-entity-badge[data-entity-type="ioc/hash"] { background: color-mix(in srgb, var(--color-red) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="actor"] { background: color-mix(in srgb, var(--color-orange) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="tool"] { background: color-mix(in srgb, var(--color-green) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="infrastructure"] { background: color-mix(in srgb, var(--color-purple) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="datasource"] { background: color-mix(in srgb, var(--color-cyan) 25%, transparent); color: var(--text-normal); }
+.thrunt-result-name {
+  font-weight: var(--font-semibold, 600);
+}
+.thrunt-result-action {
+  margin-left: 8px;
+}

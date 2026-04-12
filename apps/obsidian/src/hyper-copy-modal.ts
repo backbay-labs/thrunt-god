@@ -25,16 +25,9 @@ export class HyperCopyModal extends Modal {
 
     for (const profile of this.profiles) {
       const item = listEl.createDiv({ cls: 'thrunt-profile-item' });
-      item.style.padding = '8px';
-      item.style.cursor = 'pointer';
-      item.style.borderBottom = '1px solid var(--background-modifier-border)';
 
-      const labelEl = item.createEl('div', { text: profile.label });
-      labelEl.style.fontWeight = 'bold';
-
-      const idEl = item.createEl('div', { text: profile.agentId });
-      idEl.style.fontSize = '0.85em';
-      idEl.style.opacity = '0.7';
+      item.createEl('div', { text: profile.label, cls: 'thrunt-profile-label' });
+      item.createEl('div', { text: profile.agentId, cls: 'thrunt-profile-id' });
 
       item.addEventListener('click', () => {
         void this.selectProfile(profile);
@@ -44,7 +37,6 @@ export class HyperCopyModal extends Modal {
 
   private async selectProfile(profile: ExportProfile): Promise<void> {
     // Clear any existing preview (everything after the profile list)
-    const listEl = this.contentEl.querySelector('.thrunt-profile-list');
     const existingPreview = this.contentEl.querySelector('.thrunt-preview');
     if (existingPreview) existingPreview.remove();
     const existingBadge = this.contentEl.querySelector('.thrunt-token-badge');
@@ -80,39 +72,27 @@ export class HyperCopyModal extends Modal {
 
     // Preview container
     const previewEl = this.contentEl.createDiv({ cls: 'thrunt-preview' });
-    previewEl.style.overflowY = 'auto';
-    previewEl.style.maxHeight = '400px';
 
     const preEl = previewEl.createEl('pre');
     preEl.textContent = renderedText;
 
     // Token estimate badge row
-    const badgeRow = this.contentEl.createDiv();
-    badgeRow.style.marginTop = '8px';
-    badgeRow.style.display = 'flex';
-    badgeRow.style.alignItems = 'center';
-    badgeRow.style.gap = '8px';
+    const badgeRow = this.contentEl.createDiv({ cls: 'thrunt-token-row' });
 
-    const badge = badgeRow.createSpan({
+    badgeRow.createSpan({
       cls: 'thrunt-token-badge',
       text: `${assembled.tokenEstimate} tokens`,
     });
-    badge.style.padding = '2px 8px';
-    badge.style.borderRadius = '4px';
-    badge.style.fontSize = '0.9em';
-    badge.style.backgroundColor = 'var(--background-modifier-border)';
 
     if (assembled.tokenEstimate > profile.maxTokenEstimate) {
-      const warningEl = badgeRow.createSpan({
+      badgeRow.createSpan({
+        cls: 'thrunt-token-warning',
         text: `(exceeds ${profile.maxTokenEstimate} budget)`,
       });
-      warningEl.style.color = 'red';
-      warningEl.style.fontSize = '0.85em';
     }
 
     // Copy button
-    const btnRow = this.contentEl.createDiv();
-    btnRow.style.marginTop = '12px';
+    const btnRow = this.contentEl.createDiv({ cls: 'thrunt-copy-row' });
 
     const copyBtn = btnRow.createEl('button', { text: 'Copy to clipboard' });
     copyBtn.classList.add('mod-cta', 'thrunt-copy-btn');
