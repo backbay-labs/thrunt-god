@@ -44,13 +44,30 @@ import { createMockProvider, createArtifactProvider, type CaseDataProvider } fro
 import { createMutationHandler } from './mutation-handler.ts';
 import { checkCertificationPrerequisites } from './certification-ops.ts';
 import { createLogger } from './logger.ts';
-import { classifyError, errorResponse, type ErrorClass } from './errors.ts';
+import { classifyError, corsHeaders, errorResponse, type ErrorClass } from './errors.ts';
 import { createSubprocessHealthMonitor } from './subprocess-health.ts';
 import { createEventJournal } from './event-journal.ts';
 import { createStructuredWatcher, type StructuredWatcher } from './file-watcher.ts';
 import type { EventBridgeEnvelope } from '@thrunt-surfaces/contracts';
 
 const VERSION = '0.2.0';
+
+function createMutex() {
+  let pending = Promise.resolve();
+  return {
+    async run<T>(fn: () => Promise<T>): Promise<T> {
+      const release = pending;
+      let resolve: () => void;
+      pending = new Promise<void>(r => { resolve = r; });
+      await release;
+      try {
+        return await fn();
+      } finally {
+        resolve!();
+      }
+    }
+  };
+}
 
 export interface BridgeInstance {
   stop(): void;
@@ -98,6 +115,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     provider,
     isSubprocessAvailable: () => cfg.mockMode || subprocessHealth.isAvailable(),
   });
+  const mutationMutex = createMutex();
 
   // ─── Auth: session nonce ─────────────────────────────────────────────
   const sessionToken = crypto.randomBytes(16).toString('hex');
@@ -183,23 +201,15 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
   // ─── Response helpers ────────────────────────────────────────────────
 
-  function corsHeaders(): Record<string, string> {
-    return {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-Bridge-Token',
-    };
-  }
-
-  function json(data: unknown, status = 200): Response {
+  function json(data: unknown, status = 200, req?: Request): Response {
     return new Response(JSON.stringify(data), {
       status,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(req) },
     });
   }
 
-  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR'): Response {
-    return errorResponse(message, errorClass, code, status);
+  function error(message: string, status = 400, errorClass: ErrorClass = 'validation', code = 'VALIDATION_ERROR', req?: Request): Response {
+    return errorResponse(message, errorClass, code, status, req);
   }
 
   // ─── Request handler ─────────────────────────────────────────────────
@@ -211,7 +221,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     const reqStart = Date.now();
 
     if (method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders() });
+      return new Response(null, { headers: corsHeaders(req) });
     }
 
     try {
@@ -673,8 +683,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         const raw = typeof message === 'string' ? message : new TextDecoder().decode(message as unknown as ArrayBuffer);
         logger.debug('ws', 'inbound message', { length: raw.length });
 
-        // Handle mutation requests (JSON-RPC format)
-        void mutationHandler.handle(raw).then((response) => {
+        // Handle mutation requests (JSON-RPC format) -- serialized via mutex to prevent TOCTOU races
+        void mutationMutex.run(() => mutationHandler.handle(raw)).then((response) => {
           try { ws.send(response); } catch { /* client disconnected */ }
         }).catch((err) => {
           logger.error('ws', 'mutation handler error', { error: String(err) });
