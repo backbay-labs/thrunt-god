@@ -92,6 +92,23 @@ export interface ReceiptSnapshot {
   confidence: string;        // "Low" | "Medium" | "High" | ""
 }
 
+// --- Parsed query log snapshots ---
+
+/** Parsed snapshot of a query log markdown file */
+export interface QuerySnapshot {
+  query_id: string;
+  dataset: string;           // "events" | "alerts" | "identity" | ... | ""
+  result_status: string;     // "ok" | "partial" | "error" | "empty" | ""
+  related_hypotheses: string[];
+  related_receipts: string[];
+  intent: string;            // first non-empty paragraph from ## Intent
+  entity_refs: {
+    ips: string[];           // IPv4 addresses found in body
+    domains: string[];       // domain names found in body
+    hashes: string[];        // MD5/SHA1/SHA256 hex strings found in body
+  };
+}
+
 // --- Entity schema types ---
 
 export interface FrontmatterFieldDef {
