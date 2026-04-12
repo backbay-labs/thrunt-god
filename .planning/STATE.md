@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 87-01-PLAN.md
-last_updated: "2026-04-12T21:19:42.806Z"
+stopped_at: Completed 87-02-PLAN.md
+last_updated: "2026-04-12T21:25:57.549Z"
 progress:
   total_phases: 12
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 20
-  completed_plans: 19
-  percent: 95
+  completed_plans: 20
+  percent: 100
 ---
 
 # Project State
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** In progress
 **Phase:** 87 of 90 (Filesystem Watcher + Hunt Pulse)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [██████████] 95% (19/20 v5.0 plans)
+Progress: [██████████] 100% (20/20 v5.0 plans)
 
 ## Recently Completed
 
@@ -112,6 +112,10 @@ Progress: [██████████] 95% (19/20 v5.0 plans)
 - [Phase 87]: WatcherService constructor changes from stub (adds getPlanningDir and intelligenceService params); Plan 87-02 updates main.ts
 - [Phase 87]: formatHuntPulse is a pure function with injected now/count for full testability
 - [Phase 87]: handleAutoIngest increments recentArtifactCount by created+updated (not raw entity count)
+- [Phase 87]: Debouncer created ONCE in onload, not per-enable cycle, to avoid stale references per pitfall #5
+- [Phase 87]: enableAutoIngestion/disableAutoIngestion are idempotent with guard checks
+- [Phase 87]: huntPulseEl is separate from existing statusBarItemEl (workspace status)
+- [Phase 87]: MCP event polling and prior-hunt suggestions are disabled placeholder toggles for Phase 88
 
 ### Blockers/Concerns
 
@@ -119,6 +123,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T21:19:42.800Z
-Stopped at: Completed 87-01-PLAN.md
+Last session: 2026-04-12T21:25:57.538Z
+Stopped at: Completed 87-02-PLAN.md
 Resume file: None

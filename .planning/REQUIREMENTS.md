@@ -45,7 +45,7 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 - [ ] **LIVE-03**: Bidirectional MCP event bridge: CLI lifecycle events flow to Obsidian and create/update vault artifacts
 - [ ] **LIVE-04**: Vault changes in Obsidian publish events consumable by CLI and VS Code
 - [ ] **LIVE-05**: Prior-hunt suggestions appear as dismissable sidebar callouts when newly ingested entities match historical knowledge
-- [ ] **LIVE-06**: All live features can be disabled via settings (graceful opt-out)
+- [x] **LIVE-06**: All live features can be disabled via settings (graceful opt-out)
 
 ### Hunt Journal + Playbooks
 
@@ -111,7 +111,7 @@ Deferred beyond v5.0.
 | LIVE-03 | Phase 88 | Pending |
 | LIVE-04 | Phase 88 | Pending |
 | LIVE-05 | Phase 88 | Pending |
-| LIVE-06 | Phase 87 | Pending |
+| LIVE-06 | Phase 87 | Complete |
 | JOURNAL-01 | Phase 89 | Pending |
 | JOURNAL-02 | Phase 89 | Pending |
 | JOURNAL-03 | Phase 89 | Pending |
