@@ -403,10 +403,13 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     // ─── Handshake endpoint ────────────────────────────────────────
 
     if (method === 'POST' && reqPath === '/api/handshake') {
-      // Extension sends its identity, bridge returns token
-      const body = await req.json() as { extensionId?: string; surfaceId?: string };
-      if (!body.extensionId && !body.surfaceId) return error('extensionId or surfaceId required');
-      return json({ token: sessionToken, version: VERSION });
+      // Caller must prove filesystem access by providing the bridge token
+      const body = await req.json() as { token?: string };
+      const providedToken = body.token;
+      if (!providedToken || providedToken !== sessionToken) {
+        return error('Invalid or missing token — read .bridge-token file', 401, 'auth', 'AUTH_INVALID_TOKEN');
+      }
+      return json({ authenticated: true, version: VERSION });
     }
 
     if (method === 'POST' && reqPath === '/api/certification/capture') {
