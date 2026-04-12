@@ -207,31 +207,37 @@ describe('cmdFindingsPromote', () => {
   // ---------------------------------------------------------------------------
 
   it('Test 5: confidence is high with 3+ receipts, medium with 1-2, low with 0', () => {
+    // Use single-finding data to avoid ordering ambiguity
+    const singleFinding = `# Findings\n\n- **F-001**: OAuth token reuse without validation detected via T1078.001 credential access | status: confirmed | hypothesis: HYP-001\n`;
+
     // Test high confidence (3 receipts)
     const tmpHigh = createTempProject();
-    writeFindingsFile(tmpHigh, '01-recon', SAMPLE_FINDINGS);
+    writeFindingsFile(tmpHigh, '01-recon', singleFinding);
     writeReceipts(tmpHigh, 'F-001', 3);
     detection.cmdFindingsPromote(tmpHigh, { format: 'sigma' }, true);
     const detsHigh = readDetections(tmpHigh);
+    assert.ok(detsHigh.length > 0, 'should create detection');
     const fmHigh = parseFrontmatter(detsHigh[0].content);
     assert.equal(fmHigh.confidence, 'high', '3 receipts should yield high confidence');
     cleanup(tmpHigh);
 
     // Test medium confidence (1 receipt)
     const tmpMed = createTempProject();
-    writeFindingsFile(tmpMed, '01-recon', SAMPLE_FINDINGS);
+    writeFindingsFile(tmpMed, '01-recon', singleFinding);
     writeReceipts(tmpMed, 'F-001', 1);
     detection.cmdFindingsPromote(tmpMed, { format: 'sigma' }, true);
     const detsMed = readDetections(tmpMed);
+    assert.ok(detsMed.length > 0, 'should create detection');
     const fmMed = parseFrontmatter(detsMed[0].content);
     assert.equal(fmMed.confidence, 'medium', '1 receipt should yield medium confidence');
     cleanup(tmpMed);
 
     // Test low confidence (0 receipts)
     const tmpLow = createTempProject();
-    writeFindingsFile(tmpLow, '01-recon', SAMPLE_FINDINGS);
+    writeFindingsFile(tmpLow, '01-recon', singleFinding);
     detection.cmdFindingsPromote(tmpLow, { format: 'sigma' }, true);
     const detsLow = readDetections(tmpLow);
+    assert.ok(detsLow.length > 0, 'should create detection');
     const fmLow = parseFrontmatter(detsLow[0].content);
     assert.equal(fmLow.confidence, 'low', '0 receipts should yield low confidence');
     cleanup(tmpLow);
@@ -283,19 +289,25 @@ describe('cmdFindingsPromote', () => {
   // ---------------------------------------------------------------------------
 
   it('Test 8: output markdown has provenance section linking back to source finding', () => {
-    writeReceipts(tmpDir, 'F-001', 2);
+    // Use a dedicated temp to avoid earlier test side-effects
+    const tmpProv = createTempProject();
+    const singleFinding = `# Findings\n\n- **F-001**: OAuth token reuse without validation detected via T1078.001 credential access | status: confirmed | hypothesis: HYP-001\n`;
+    writeFindingsFile(tmpProv, '01-recon', singleFinding);
+    writeReceipts(tmpProv, 'F-001', 2);
 
-    detection.cmdFindingsPromote(tmpDir, { format: 'sigma' }, true);
+    detection.cmdFindingsPromote(tmpProv, { format: 'sigma' }, true);
 
-    const dets = readDetections(tmpDir);
+    const dets = readDetections(tmpProv);
     assert.ok(dets.length > 0);
 
-    const det = dets[0];
+    // Find the detection for F-001
+    const det = dets.find(d => d.content.includes('F-001')) || dets[0];
     assert.ok(det.content.includes('Provenance'), 'markdown should have Provenance section');
     assert.ok(det.content.includes('F-001'), 'provenance should reference finding ID');
     assert.ok(det.content.includes('Source Finding'), 'provenance should have Source Finding');
     assert.ok(det.content.includes('Hunt'), 'provenance should have Hunt reference');
     assert.ok(det.content.includes('Hypothesis'), 'provenance should have Hypothesis reference');
     assert.ok(det.content.includes('Evidence Chain'), 'provenance should have Evidence Chain');
+    cleanup(tmpProv);
   });
 });

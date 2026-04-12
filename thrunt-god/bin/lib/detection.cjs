@@ -1561,6 +1561,380 @@ function cmdDetectionStatus(cwd, options, raw) {
 }
 
 // ---------------------------------------------------------------------------
+// Full-Format Renderers (findings promote)
+// ---------------------------------------------------------------------------
+
+/**
+ * Map technique IDs to logsource metadata for Sigma/SPL/KQL rendering.
+ * Technique-domain heuristic: credential access -> authentication,
+ * lateral movement -> network_connection, etc.
+ */
+function inferLogsource(techniques) {
+  const techStr = techniques.join(',').toUpperCase();
+
+  // Credential access techniques
+  if (/T1078|T1110|T1552|T1556/.test(techStr)) {
+    return { category: 'authentication', product: 'windows', service: 'security' };
+  }
+  // Lateral movement
+  if (/T1021|T1550|T1563/.test(techStr)) {
+    return { category: 'network_connection', product: 'windows', service: 'sysmon' };
+  }
+  // Execution
+  if (/T1059|T1053|T1569/.test(techStr)) {
+    return { category: 'process_creation', product: 'windows', service: 'sysmon' };
+  }
+  // Cloud-oriented
+  if (/T1538|T1526|T1580/.test(techStr)) {
+    return { category: 'cloud', product: 'cloud', service: 'audit' };
+  }
+  // Default
+  return { category: 'process_creation', product: 'windows', service: 'sysmon' };
+}
+
+/**
+ * Extract keyword tokens from a finding description for detection field matching.
+ */
+function extractKeywords(description) {
+  const stopwords = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'is', 'was', 'were', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+    'should', 'may', 'might', 'shall', 'can', 'via', 'detected', 'observed',
+  ]);
+  return description
+    .replace(/T\d{4}(\.\d{3})?/gi, '')
+    .split(/\s+/)
+    .map(w => w.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase())
+    .filter(w => w.length > 2 && !stopwords.has(w));
+}
+
+/**
+ * Infer KQL table name from techniques.
+ */
+function inferKqlTable(techniques) {
+  const techStr = techniques.join(',').toUpperCase();
+  if (/T1078|T1110|T1556/.test(techStr)) return 'SigninLogs';
+  if (/T1550/.test(techStr)) return 'SigninLogs';
+  return 'SecurityEvent';
+}
+
+/**
+ * Infer Splunk datamodel from techniques.
+ */
+function inferSplunkDatamodel(techniques) {
+  const techStr = techniques.join(',').toUpperCase();
+  if (/T1078|T1110|T1552|T1556/.test(techStr)) return 'Authentication';
+  if (/T1021|T1550|T1563/.test(techStr)) return 'Network_Sessions';
+  return 'Endpoint';
+}
+
+/**
+ * Render full Sigma YAML rule from a finding.
+ *
+ * @param {object} finding - { id, description, hypothesis_id }
+ * @param {string[]} techniques - ATT&CK technique IDs
+ * @param {string} confidence - high|medium|low
+ * @returns {string} Sigma YAML
+ */
+function renderSigmaFull(finding, techniques, confidence) {
+  const logsource = inferLogsource(techniques);
+  const keywords = extractKeywords(finding.description);
+  const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+  const candidateUuid = crypto.randomUUID();
+
+  // Build selection from keywords
+  const selection = {};
+  if (keywords.length > 0) {
+    selection['keywords'] = keywords.length === 1 ? `*${keywords[0]}*` : keywords.map(k => `*${k}*`);
+  } else {
+    selection['EventType'] = '*';
+  }
+
+  const rule = {
+    title: `THRUNT: ${finding.description.slice(0, 80)}`,
+    id: candidateUuid,
+    status: 'experimental',
+    description: `Detection from finding ${finding.id}: ${finding.description}`,
+    author: 'THRUNT',
+    date: dateStr,
+    tags: techniques.map(t => `attack.${t.toLowerCase()}`),
+    logsource,
+    detection: {
+      selection,
+      condition: 'selection',
+    },
+    level: confidence,
+    falsepositives: ['Legitimate administrative activity'],
+  };
+
+  return toYaml(rule);
+}
+
+/**
+ * Render full Splunk SPL correlation search from a finding.
+ *
+ * @param {object} finding - { id, description, hypothesis_id }
+ * @param {string[]} techniques - ATT&CK technique IDs
+ * @param {string} confidence - high|medium|low
+ * @returns {string} SPL query
+ */
+function renderSplunkFull(finding, techniques, confidence) {
+  const datamodel = inferSplunkDatamodel(techniques);
+  const keywords = extractKeywords(finding.description);
+  const conditions = keywords.length > 0
+    ? keywords.map(k => `*${k}*`).join(' OR ')
+    : '*';
+  const threshold = confidence === 'high' ? 1 : confidence === 'medium' ? 3 : 5;
+
+  const entityFields = datamodel === 'Authentication'
+    ? 'src, user, dest'
+    : datamodel === 'Network_Sessions'
+      ? 'src_ip, dest_ip, dest_port'
+      : 'host, process_name, user';
+
+  return [
+    `| tstats count from datamodel=${datamodel} where index=* sourcetype=* ${conditions}`,
+    `| stats count by ${entityFields}`,
+    `| where count > ${threshold}`,
+    `| eval attack_technique="${techniques.join(',')}"`,
+    `| eval confidence="${confidence}"`,
+    `| eval finding_ref="${finding.id}"`,
+    `| eval alert_condition="count > ${threshold}"`,
+  ].join('\n');
+}
+
+/**
+ * Render full KQL analytics rule from a finding.
+ *
+ * @param {object} finding - { id, description, hypothesis_id }
+ * @param {string[]} techniques - ATT&CK technique IDs
+ * @param {string} confidence - high|medium|low
+ * @returns {string} KQL query
+ */
+function renderKqlFull(finding, techniques, confidence) {
+  const table = inferKqlTable(techniques);
+  const keywords = extractKeywords(finding.description);
+  const conditions = keywords.length > 0
+    ? keywords.map(k => `tostring(Message) contains "${k}" or tostring(Activity) contains "${k}"`).join('\n    or ')
+    : 'true';
+  const threshold = confidence === 'high' ? 1 : confidence === 'medium' ? 3 : 5;
+
+  const entityFields = table === 'SigninLogs'
+    ? 'TimeGenerated, UserPrincipalName, IPAddress, Location, ResultType'
+    : 'TimeGenerated, Computer, Account, EventID, Activity';
+
+  const groupFields = table === 'SigninLogs'
+    ? 'UserPrincipalName, IPAddress'
+    : 'Computer, Account';
+
+  return [
+    `// Detection: ${finding.description}`,
+    `// ATT&CK: ${techniques.join(', ')}`,
+    `// Confidence: ${confidence}`,
+    table,
+    `| where TimeGenerated > ago(1h)`,
+    `| where ${conditions}`,
+    `| project ${entityFields}`,
+    `| summarize Count=count() by ${groupFields}`,
+    `| where Count > ${threshold}`,
+  ].join('\n');
+}
+
+const FULL_RENDERERS = {
+  sigma: renderSigmaFull,
+  splunk: renderSplunkFull,
+  kql: renderKqlFull,
+};
+
+// ---------------------------------------------------------------------------
+// Detection Markdown Writer (findings promote)
+// ---------------------------------------------------------------------------
+
+/**
+ * Write a detection markdown artifact to .planning/DETECTIONS/.
+ *
+ * @param {string} detDir - DETECTIONS/ directory path
+ * @param {object} finding - { id, description, hypothesis_id }
+ * @param {string} format - sigma|splunk|kql
+ * @param {string} renderedBody - rendered detection rule
+ * @param {string[]} techniques - ATT&CK technique IDs
+ * @param {string} confidence - high|medium|low
+ * @param {string} huntId - case/hunt name
+ * @param {Array} evidenceChain - receipt evidence links
+ * @returns {string} path to written file
+ */
+function writeDetectionMarkdown(detDir, finding, format, renderedBody, techniques, confidence, huntId, evidenceChain) {
+  const detId = makeCandidateId();
+  const filename = `${detId}.md`;
+  const filePath = path.join(detDir, filename);
+  const createdAt = nowUtc();
+  const receiptIds = (evidenceChain || []).map(e => e.id).join(', ') || 'none';
+  const techList = techniques.length > 0 ? techniques.join(', ') : 'none';
+
+  // Format technique_ids for frontmatter
+  const techFm = techniques.length > 0 ? `[${techniques.join(', ')}]` : '[]';
+
+  const md = [
+    '---',
+    `detection_id: ${detId}`,
+    `format: ${format}`,
+    `finding_id: ${finding.id}`,
+    `technique_ids: ${techFm}`,
+    `confidence: ${confidence}`,
+    `created_at: ${createdAt}`,
+    `hunt_id: ${huntId}`,
+    '---',
+    '',
+    `# Detection: ${finding.description}`,
+    '',
+    '## Rule',
+    '',
+    `\`\`\`${format}`,
+    renderedBody,
+    '```',
+    '',
+    '## Provenance',
+    '',
+    `- **Source Finding:** ${finding.id}`,
+    `- **Hunt:** ${huntId}`,
+    `- **Hypothesis:** ${finding.hypothesis_id}`,
+    `- **Evidence Chain:** ${receiptIds}`,
+    `- **ATT&CK Techniques:** ${techList}`,
+    '',
+  ].join('\n');
+
+  tryMkdir(detDir);
+  fs.writeFileSync(filePath, md, 'utf-8');
+  return filePath;
+}
+
+// ---------------------------------------------------------------------------
+// CLI: findings promote
+// ---------------------------------------------------------------------------
+
+/**
+ * CLI: findings promote -- read FINDINGS.md, generate detection rules in
+ * Sigma/SPL/KQL format, write versioned markdown artifacts to DETECTIONS/.
+ *
+ * @param {string} cwd - project root
+ * @param {object} options - { format: 'sigma'|'splunk'|'kql', phase?: string }
+ * @param {boolean} raw - if true, output JSON
+ */
+function cmdFindingsPromote(cwd, options, raw) {
+  if (!options || !options.format) {
+    error('--format required. Available: sigma, splunk, kql');
+    return;
+  }
+
+  const validFormats = ['sigma', 'splunk', 'kql'];
+  if (!validFormats.includes(options.format)) {
+    error(`Unknown format: ${options.format}. Available: sigma, splunk, kql`);
+    return;
+  }
+
+  const format = options.format;
+
+  // Scan findings
+  const findings = scanFindingsForDetection(cwd, options);
+  if (findings.length === 0) {
+    if (raw) {
+      output([], raw);
+    } else {
+      output([], true, 'No findings found to promote. Ensure FINDINGS.md exists in a phase directory.');
+    }
+    return;
+  }
+
+  const paths = planningPaths(cwd);
+  const detDir = paths.detections;
+
+  // Resolve hunt ID from config
+  let huntId = 'unknown';
+  try {
+    const config = loadConfig(cwd);
+    huntId = config.hunt_id || config.case_name || config.program || 'unknown';
+  } catch {
+    // Use default
+  }
+  // Try case slug from env
+  if (huntId === 'unknown' && process.env.THRUNT_CASE) {
+    huntId = process.env.THRUNT_CASE;
+  }
+
+  const renderer = FULL_RENDERERS[format];
+  const results = [];
+
+  for (const finding of findings) {
+    // Skip refuted findings
+    if (finding.status === 'refuted') continue;
+
+    // Resolve ATT&CK techniques
+    const techniques = resolveAttackTechniques(finding, cwd);
+
+    // Resolve evidence chain and compute confidence
+    const evidenceChain = resolveEvidenceChain(finding, cwd);
+    const receiptCount = evidenceChain.length;
+    let confidence;
+    if (receiptCount >= 3) {
+      confidence = 'high';
+    } else if (receiptCount >= 1) {
+      confidence = 'medium';
+    } else {
+      confidence = 'low';
+    }
+
+    // Render detection
+    const renderedBody = renderer(finding, techniques, confidence);
+
+    // Write markdown artifact
+    const filePath = writeDetectionMarkdown(
+      detDir, finding, format, renderedBody,
+      techniques, confidence, huntId, evidenceChain
+    );
+
+    results.push({
+      finding_id: finding.id,
+      detection_file: path.basename(filePath),
+      format,
+      techniques,
+      confidence,
+      evidence_count: receiptCount,
+    });
+  }
+
+  if (raw) {
+    output(results, raw);
+    return;
+  }
+
+  if (results.length === 0) {
+    output(results, true, 'No qualifying findings to promote (all refuted or skipped).');
+    return;
+  }
+
+  const lines = [
+    '# Findings Promote Results',
+    '',
+    `**Format:** ${format}`,
+    `**Detections created:** ${results.length}`,
+    '',
+  ];
+
+  for (const r of results) {
+    lines.push(`## ${r.finding_id}`);
+    lines.push('');
+    lines.push(`- **Detection:** ${r.detection_file}`);
+    lines.push(`- **Techniques:** ${r.techniques.join(', ') || 'none'}`);
+    lines.push(`- **Confidence:** ${r.confidence}`);
+    lines.push(`- **Evidence Count:** ${r.evidence_count}`);
+    lines.push('');
+  }
+
+  output(results, true, lines.join('\n'));
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -1590,4 +1964,10 @@ module.exports = {
   cmdDetectionPromote,
   cmdDetectionReject,
   cmdDetectionStatus,
+  // findings promote
+  cmdFindingsPromote,
+  renderSigmaFull,
+  renderSplunkFull,
+  renderKqlFull,
+  writeDetectionMarkdown,
 };
