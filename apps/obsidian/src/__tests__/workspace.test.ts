@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { VaultAdapter } from '../vault-adapter';
 import { WorkspaceService, formatStatusBarText } from '../workspace';
-import { CORE_ARTIFACTS } from '../artifacts';
+import { CORE_ARTIFACTS, KNOWLEDGE_BASE_TEMPLATE } from '../artifacts';
 import { getCoreFilePath } from '../paths';
 
 // ---------------------------------------------------------------------------
@@ -12,6 +12,7 @@ class StubVaultAdapter implements VaultAdapter {
   private files = new Map<string, string>();
   private folders = new Set<string>();
   private folderChildren = new Map<string, string[]>();
+  private filesByFolder = new Map<string, string[]>();
 
   addFolder(path: string): void {
     this.folders.add(path);
@@ -27,6 +28,11 @@ class StubVaultAdapter implements VaultAdapter {
   }
   setFolderChildren(path: string, children: string[]): void {
     this.folderChildren.set(path, children);
+  }
+  addFileToFolder(folderPath: string, fileName: string): void {
+    const existing = this.filesByFolder.get(folderPath) ?? [];
+    existing.push(fileName);
+    this.filesByFolder.set(folderPath, existing);
   }
 
   fileExists(path: string): boolean {
@@ -51,6 +57,9 @@ class StubVaultAdapter implements VaultAdapter {
   }
   async listFolders(path: string): Promise<string[]> {
     return this.folderChildren.get(path) ?? [];
+  }
+  async listFiles(path: string): Promise<string[]> {
+    return this.filesByFolder.get(path) ?? [];
   }
 }
 
@@ -425,6 +434,43 @@ describe('WorkspaceService', () => {
       // hypothesisSnapshot depends on whether the starter template has a table
       // Just verify the field is present
       expect(vm).toHaveProperty('hypothesisSnapshot');
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // StubVaultAdapter.listFiles
+  // -------------------------------------------------------------------------
+
+  describe('StubVaultAdapter.listFiles', () => {
+    it('returns file names for a folder with files', async () => {
+      adapter.addFileToFolder('entities/iocs', 'evil-ip.md');
+      adapter.addFileToFolder('entities/iocs', 'bad-domain.md');
+      const files = await adapter.listFiles('entities/iocs');
+      expect(files).toEqual(['evil-ip.md', 'bad-domain.md']);
+    });
+
+    it('returns empty array for non-existent folder', async () => {
+      const files = await adapter.listFiles('nonexistent/folder');
+      expect(files).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // KNOWLEDGE_BASE_TEMPLATE
+  // -------------------------------------------------------------------------
+
+  describe('KNOWLEDGE_BASE_TEMPLATE', () => {
+    it('contains at least 6 Dataview query blocks', () => {
+      const matches = KNOWLEDGE_BASE_TEMPLATE.match(/```dataview/g);
+      expect(matches).not.toBeNull();
+      expect(matches!.length).toBeGreaterThanOrEqual(6);
+    });
+
+    it('is not included in CORE_ARTIFACTS', () => {
+      const kbArtifact = CORE_ARTIFACTS.find(
+        (a) => a.fileName === 'KNOWLEDGE_BASE.md',
+      );
+      expect(kbArtifact).toBeUndefined();
     });
   });
 });
