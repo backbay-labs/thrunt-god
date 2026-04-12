@@ -11,6 +11,7 @@ import { WorkspaceService, formatStatusBarText } from './workspace';
 import { normalizePath, getEntityFolder, getPlanningDir } from './paths';
 import { HttpMcpClient } from './mcp-client';
 import { McpSearchModal } from './mcp-search-modal';
+import { HyperCopyModal } from './hyper-copy-modal';
 import { ENTITY_TYPES } from './entity-schema';
 
 export default class ThruntGodPlugin extends Plugin {
@@ -147,6 +148,48 @@ export default class ThruntGodPlugin extends Plugin {
       callback: () => {
         void this.openSearchModal();
       },
+    });
+
+    // --- Hyper Copy commands (Phase 75) ---
+
+    this.addCommand({
+      id: 'hyper-copy-for-agent',
+      name: 'Hyper Copy for Agent',
+      callback: () => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice('No active file. Open a note first.');
+          return;
+        }
+        const profiles = this.workspaceService.getAvailableProfiles();
+        new HyperCopyModal(
+          this.app,
+          profiles,
+          (agentId: string) =>
+            this.workspaceService.assembleContextForProfile(file.path, agentId),
+          (text: string, entry) => {
+            void this.workspaceService.logExport(entry);
+          },
+        ).open();
+      },
+    });
+
+    this.addCommand({
+      id: 'copy-for-query-writer',
+      name: 'Copy for Query Writer',
+      callback: () => { void this.quickExport('query-writer', 'Query Writer'); },
+    });
+
+    this.addCommand({
+      id: 'copy-for-intel-advisor',
+      name: 'Copy for Intel Advisor',
+      callback: () => { void this.quickExport('intel-advisor', 'Intel Advisor'); },
+    });
+
+    this.addCommand({
+      id: 'copy-ioc-context',
+      name: 'Copy IOC context',
+      callback: () => { void this.quickExport('signal-triager', 'Signal Triager'); },
     });
 
     this.addSettingTab(new ThruntGodSettingTab(this.app, this));
@@ -383,6 +426,25 @@ export default class ThruntGodPlugin extends Plugin {
         })();
       },
     ).open();
+  }
+
+  private async quickExport(agentId: string, label: string): Promise<void> {
+    const file = this.app.workspace.getActiveFile();
+    if (!file) {
+      new Notice('No active file. Open a note first.');
+      return;
+    }
+    const result = await this.workspaceService.assembleContextForProfile(file.path, agentId);
+    if ('error' in result) {
+      new Notice(`Export failed: ${result.error}`);
+      return;
+    }
+    const text = this.workspaceService.renderAssembledContext(result);
+    await navigator.clipboard.writeText(text);
+    const { buildExportLogEntry } = await import('./export-log');
+    const entry = buildExportLogEntry(result, label);
+    void this.workspaceService.logExport(entry);
+    new Notice(`Copied ${result.tokenEstimate} tokens for ${label}`);
   }
 
   async activateView(): Promise<void> {
