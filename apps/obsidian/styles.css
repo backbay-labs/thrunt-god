@@ -282,3 +282,17 @@
   color: var(--text-accent);
   flex-shrink: 0;
 }
+
+/* Chooser modal items */
+.thrunt-chooser-item {
+  padding: 4px 0;
+}
+.thrunt-chooser-name {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+.thrunt-chooser-desc {
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
