@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 85-01-PLAN.md
-last_updated: "2026-04-12T19:30:04.935Z"
+stopped_at: Completed 85-02-PLAN.md
+last_updated: "2026-04-12T19:37:43.626Z"
 progress:
   total_phases: 12
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 16
-  completed_plans: 15
-  percent: 94
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** executing
 **Phase:** 85 of 90 (Canvas Adapter + Reactive Nodes)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [█████████░] 94% (15/16 v5.0 plans)
+Progress: [██████████] 100% (16/16 v5.0 plans)
 
 ## Recently Completed
 
@@ -96,6 +96,11 @@ Progress: [█████████░] 94% (15/16 v5.0 plans)
 - [Phase 85]: Confidence tiers: low (<0.4), medium (0.4-0.7), high (>0.7 or undefined)
 - [Phase 85]: CSS verdict borders use :has() selectors on cssclasses frontmatter (Chromium 112+ compatible)
 - [Phase 85]: canvas-generator ENTITY_COLORS removed; getEntityColor delegates to resolveEntityColor (single source of truth)
+- [Phase 85]: Entity-scoped handler uses planningDir + '/entities/' prefix for fast path matching
+- [Phase 85]: Canvas refresh debounced at 500ms with Set-based path batching
+- [Phase 85]: Tab indentation for all canvas JSON output matching Obsidian format
+- [Phase 85]: Malformed canvas files silently skipped to avoid breaking patch cycles
+- [Phase 85]: refresh-canvas-nodes added as both top-level command and CanvasChooserModal item
 
 ### Blockers/Concerns
 
@@ -103,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T19:30:04.928Z
-Stopped at: Completed 85-01-PLAN.md
+Last session: 2026-04-12T19:37:43.622Z
+Stopped at: Completed 85-02-PLAN.md
 Resume file: None
