@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CanvasService } from '../services/canvas-service';
+import { IntelligenceService } from '../services/intelligence-service';
 import { EventBus } from '../services/event-bus';
 import { computeNewNodePosition, isSubstantiveEntityChange } from '../services/canvas-service';
 import type { VaultAdapter } from '../vault-adapter';
@@ -522,5 +523,131 @@ describe('isSubstantiveEntityChange', () => {
     const oldContent = `---\ntype: actor\nverdict: unknown\n---\n# Entity\n\nSome body text`;
     const newContent = `---\ntype: actor\nverdict: unknown\n---\n# Entity\n\nDifferent body text with more details`;
     expect(isSubstantiveEntityChange(oldContent, newContent)).toBe(false);
+  });
+});
+
+// --- IntelligenceService entity:created emission tests ---
+
+describe('IntelligenceService.runIngestion entity:created emission', () => {
+  it('emits entity:created for each new entity created during ingestion', async () => {
+    const receiptContent = [
+      '---',
+      'receipt_id: RCT-001',
+      'claim_status: supports',
+      'result_status: ok',
+      'related_hypotheses:',
+      '  - H1',
+      'related_queries:',
+      '  - QRY-001',
+      'confidence: High',
+      '---',
+      '# RCT-001',
+      '',
+      '## Claim',
+      '',
+      'Lateral movement observed via PsExec',
+      '',
+      '## Evidence',
+      '',
+      'Process execution logs show PsExec activity T1059.001',
+      '',
+    ].join('\n');
+
+    const files: Record<string, string> = {
+      [`${PLANNING_DIR}/RECEIPTS/RCT-001.md`]: receiptContent,
+    };
+
+    const vault = createMockVault(files);
+    const eventBus = new EventBus();
+    const service = new IntelligenceService(vault, () => PLANNING_DIR, eventBus);
+
+    const entityCreatedSpy = vi.fn();
+    eventBus.on('entity:created', entityCreatedSpy);
+
+    const ingestionCompleteSpy = vi.fn();
+    eventBus.on('ingestion:complete', ingestionCompleteSpy);
+
+    await service.runIngestion();
+
+    // entity:created should have been emitted for the new T1059.001 entity
+    expect(entityCreatedSpy).toHaveBeenCalled();
+    expect(entityCreatedSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
+
+    // Find the call for T1059.001
+    const t1059Call = entityCreatedSpy.mock.calls.find(
+      (call: unknown[]) => (call[0] as { name: string }).name === 'T1059.001',
+    );
+    expect(t1059Call).toBeDefined();
+    expect(t1059Call![0]).toMatchObject({
+      name: 'T1059.001',
+      entityType: 'ttp',
+      sourcePath: `${PLANNING_DIR}/entities/ttps/T1059.001.md`,
+    });
+
+    // ingestion:complete should also be emitted
+    expect(ingestionCompleteSpy).toHaveBeenCalledTimes(1);
+    expect(ingestionCompleteSpy.mock.calls[0]![0]).toMatchObject({
+      created: expect.any(Number),
+      updated: expect.any(Number),
+      skipped: expect.any(Number),
+    });
+  });
+
+  it('does not emit entity:created for updated (existing) entities', async () => {
+    const receiptContent = [
+      '---',
+      'receipt_id: RCT-002',
+      'claim_status: supports',
+      'result_status: ok',
+      'related_hypotheses:',
+      '  - H1',
+      'related_queries: []',
+      'confidence: Medium',
+      '---',
+      '# RCT-002',
+      '',
+      '## Claim',
+      '',
+      'Found T1021.002 activity',
+      '',
+      '## Evidence',
+      '',
+      'Evidence text',
+      '',
+    ].join('\n');
+
+    // Entity note already exists (update path, not create)
+    const existingEntityContent = [
+      '---',
+      'type: ttp',
+      'mitre_id: T1021.002',
+      'verdict: unknown',
+      '---',
+      '# T1021.002',
+      '',
+      '## Sightings',
+      '',
+      '_No sightings recorded yet._',
+      '',
+      '## Related',
+      '',
+    ].join('\n');
+
+    const files: Record<string, string> = {
+      [`${PLANNING_DIR}/RECEIPTS/RCT-002.md`]: receiptContent,
+      [`${PLANNING_DIR}/entities/ttps/T1021.002.md`]: existingEntityContent,
+    };
+
+    const vault = createMockVault(files);
+    const eventBus = new EventBus();
+    const service = new IntelligenceService(vault, () => PLANNING_DIR, eventBus);
+
+    const entityCreatedSpy = vi.fn();
+    eventBus.on('entity:created', entityCreatedSpy);
+
+    await service.runIngestion();
+
+    // Should NOT emit entity:created since it's an update, not a create
+    expect(entityCreatedSpy).not.toHaveBeenCalled();
   });
 });

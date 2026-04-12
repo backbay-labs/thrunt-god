@@ -162,6 +162,13 @@ export class IntelligenceService {
         await this.vaultAdapter.createFile(entityNotePath, content);
 
         created++;
+
+        // Emit entity:created for live canvas auto-population
+        this.eventBus?.emit('entity:created', {
+          name: instruction.name,
+          entityType: instruction.entityType,
+          sourcePath: entityNotePath,
+        });
       }
     }
 
@@ -187,6 +194,8 @@ export class IntelligenceService {
         '# Ingestion Log\n\n' + logEntry,
       );
     }
+
+    this.eventBus?.emit('ingestion:complete', { created, updated, skipped });
 
     return result;
   }
