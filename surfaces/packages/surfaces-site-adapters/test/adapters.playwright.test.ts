@@ -63,7 +63,7 @@ afterAll(async () => {
 });
 
 describe('fixture metadata', () => {
-  for (const vendorId of ['okta', 'sentinel', 'aws', 'elastic', 'crowdstrike']) {
+  for (const vendorId of ['okta', 'sentinel', 'aws', 'elastic', 'crowdstrike', 'm365-defender']) {
     test(`${vendorId} has at least three variants`, () => {
       const manifest = readManifest(vendorId);
       expect(manifest.fixtures.length).toBeGreaterThanOrEqual(3);
@@ -72,7 +72,7 @@ describe('fixture metadata', () => {
 });
 
 describe('site adapters in a real browser', () => {
-  for (const vendorId of ['okta', 'sentinel', 'aws', 'elastic', 'crowdstrike']) {
+  for (const vendorId of ['okta', 'sentinel', 'aws', 'elastic', 'crowdstrike', 'm365-defender']) {
     const manifest = readManifest(vendorId);
 
     for (const fixture of manifest.fixtures) {

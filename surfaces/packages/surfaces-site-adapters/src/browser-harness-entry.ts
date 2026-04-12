@@ -8,6 +8,9 @@ import {
   createElasticAdapter,
 } from './adapters/elastic.ts';
 import {
+  createM365DefenderAdapter,
+} from './adapters/m365-defender.ts';
+import {
   createOktaAdapter,
 } from './adapters/okta.ts';
 import {
@@ -26,6 +29,7 @@ const factories = {
   aws: createAwsAdapter,
   crowdstrike: createCrowdStrikeAdapter,
   elastic: createElasticAdapter,
+  'm365-defender': createM365DefenderAdapter,
   okta: createOktaAdapter,
   sentinel: createSentinelAdapter,
 };
