@@ -215,8 +215,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 21-01-PLAN.md -- Structured logger, error classification, subprocess timeout with SIGTERM/SIGKILL escalation
-- [ ] 21-02-PLAN.md -- Extended health endpoint, subprocess health monitor, graceful degradation
+- [x] 21-01-PLAN.md -- Structured logger, error classification, subprocess timeout with SIGTERM/SIGKILL escalation
+- [x] 21-02-PLAN.md -- Extended health endpoint, subprocess health monitor, graceful degradation
 
 ### Phase 22: MCP Event Bridge
 **Goal**: All surfaces (browser extension, Obsidian, future clients) receive real-time structured events when `.planning/` artifacts change, and can send mutations back through a validated protocol — making the bridge the single synchronization point for the hunt ecosystem
@@ -228,7 +228,12 @@ Plans:
   3. An Obsidian plugin (or any WebSocket client) can subscribe to the bridge and receive new receipts, queries, and findings as they appear without polling
   4. A connected surface can send a mutation request (attach evidence, update verdict, add IOC) and the bridge validates it against the case model before delegating execution to `thrunt-tools.cjs`
   5. A client that disconnects and reconnects receives missed events replayed from the file watcher journal, ensuring no data loss during transient network interruptions
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 22-01-PLAN.md -- Event schema types, event journal ring buffer, structured file watcher
+- [ ] 22-02-PLAN.md -- WebSocket broadcast with envelopes, welcome handshake, reconnection replay
+- [ ] 22-03-PLAN.md -- Inbound mutation protocol (JSON-RPC), validation, thrunt-tools delegation
 
 ### Phase 23: Certified Adapters (Elastic + CrowdStrike)
 **Goal**: Hunters investigating in Elastic/Kibana or CrowdStrike Falcon consoles get automatic extraction of queries, results, and entities — backed by fixture tests and a certification campaign that detects when vendor UIs drift
@@ -293,8 +298,8 @@ Plans:
 | 18. SLA Countdown Timer | v4.0 | 1/1 | Complete | 2026-04-03 |
 | 19. IOC Quick-Entry | v4.0 | 1/1 | Complete | 2026-04-03 |
 | 20. CLI Bridge | v4.0 | 2/2 | Complete | 2026-04-03 |
-| 21. Bridge Hardening | 2/2 | Complete   | 2026-04-12 | - |
-| 22. MCP Event Bridge | v5.0 | 0/? | Not started | - |
+| 21. Bridge Hardening | v5.0 | 2/2 | Complete | 2026-04-12 |
+| 22. MCP Event Bridge | v5.0 | 0/3 | In Progress | - |
 | 23. Certified Adapters (Elastic + CrowdStrike) | v5.0 | 0/? | Not started | - |
 | 24. Sidepanel UI | v5.0 | 0/? | Not started | - |
 | 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/? | Not started | - |

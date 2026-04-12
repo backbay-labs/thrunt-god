@@ -341,6 +341,60 @@ export type BridgeEvent =
   | { type: 'bridge:heartbeat'; data: { ts: string } }
   | { type: 'bridge:error'; data: { code: string; message: string } };
 
+// --- Versioned artifact event types (Phase 22) ---
+
+export type ArtifactType = 'query' | 'receipt' | 'evidence' | 'finding' | 'hypothesis' | 'manifest' | 'metric' | 'config' | 'unknown';
+
+export type ArtifactEventType = 'artifact.created' | 'artifact.modified' | 'artifact.deleted';
+export type SemanticEventType = 'phase.transition' | 'verdict.changed';
+export type BridgeProtocolEventType = 'bridge:heartbeat' | 'bridge:error' | 'bridge:welcome' | 'bridge:journal_overflow';
+
+export type EventBridgeEventType = ArtifactEventType | SemanticEventType | BridgeProtocolEventType;
+
+export interface ArtifactDiff {
+  previousHash: string | null;
+  currentHash: string | null;
+  changedFrontmatterKeys: string[];
+}
+
+export interface ArtifactEventPayload {
+  artifactPath: string;
+  artifactType: ArtifactType;
+  diff: ArtifactDiff;
+}
+
+export interface PhaseTransitionPayload {
+  previousPhase: string | null;
+  currentPhase: string;
+  artifactPath: string;
+}
+
+export interface VerdictChangedPayload {
+  hypothesisId: string;
+  previousVerdict: string | null;
+  currentVerdict: string;
+  artifactPath: string;
+}
+
+export interface EventBridgeEnvelope {
+  v: 1;
+  seq: number;
+  ts: string;
+  type: EventBridgeEventType;
+  data: ArtifactEventPayload | PhaseTransitionPayload | VerdictChangedPayload | { ts: string } | { code: string; message: string } | { protocolVersions: number[]; seq: number };
+}
+
+export interface WelcomePayload {
+  protocolVersions: number[];
+  seq: number;
+}
+
+export interface JournalOverflowPayload {
+  oldestSeq: number;
+  currentSeq: number;
+  message: string;
+}
+
 // --- Vendor context (from browser extension) ---
 
 export interface VendorContext {
