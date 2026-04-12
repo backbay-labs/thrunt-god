@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 89-01-PLAN.md
-last_updated: "2026-04-12T23:22:49.834Z"
+stopped_at: Completed 89-02-PLAN.md
+last_updated: "2026-04-12T23:30:55.299Z"
 progress:
   total_phases: 12
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 24
-  completed_plans: 23
-  percent: 96
+  completed_plans: 24
+  percent: 100
 ---
 
 # Project State
@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 89 (Hunt Journal Engine)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 89 (Hunt Journal Engine) -- COMPLETE
 
 ## Current Milestone
 
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** Executing
 **Phase:** 89 of 90 (Hunt Journal Engine)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [██████████] 96% (23/24 v5.0 plans)
+Progress: [██████████] 100% (24/24 v5.0 plans)
 
 ## Recently Completed
 
@@ -132,6 +132,10 @@ Progress: [██████████] 96% (23/24 v5.0 plans)
 - [Phase 89]: replaceSummarySection appends at EOF when missing, splice-replaces when present
 - [Phase 89]: appendJournalEntry insertion priority: before ## Summary > end of ## Reasoning Log > EOF
 - [Phase 89]: Journal tags use #thrunt/ namespace prefix for Dataview compatibility
+- [Phase 89]: JournalService uses VaultAdapter API (ensureFolder/createFile/modifyFile/readFile/fileExists) not raw fs
+- [Phase 89]: Journal commands detect huntId via MISSION.md > planning dir > manual fallback, same as verdict commands
+- [Phase 89]: JournalChooserModal delegates to executeCommandById for consistent command routing
+- [Phase 89]: appendEntry emits hypothesis:changed for ALL hypothesis tags in journal content, not just new entry
 
 ### Blockers/Concerns
 
@@ -139,6 +143,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:22:43.111Z
-Stopped at: Completed 89-01-PLAN.md
+Last session: 2026-04-12T23:30:55.292Z
+Stopped at: Completed 89-02-PLAN.md
 Resume file: None

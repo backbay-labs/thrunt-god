@@ -94,7 +94,7 @@
 
 #### M5: Hunt Journal + Playbooks
 
-- [ ] **Phase 89: Hunt Journal Engine** - Journal note type with frontmatter, inline tagging syntax, timestamped entries, reasoning chain summary
+- [x] **Phase 89: Hunt Journal Engine** - Journal note type with frontmatter, inline tagging syntax, timestamped entries, reasoning chain summary (completed 2026-04-12)
 - [ ] **Phase 90: Playbook Distillation + Detection Pipeline** - Generate reusable playbooks from journals, apply playbooks to new hunts, detection note type
 
 ## Phase Details
@@ -316,5 +316,5 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 86. Live Hunt Canvas + Reactive Dashboard | 2/2 | Complete    | 2026-04-12 | - |
 | 87. Filesystem Watcher + Hunt Pulse | 2/2 | Complete    | 2026-04-12 | - |
 | 88. Bidirectional MCP Event Bridge + Prior-Hunt Suggester | 2/2 | Complete    | 2026-04-12 | - |
-| 89. Hunt Journal Engine | 1/2 | In Progress|  | - |
+| 89. Hunt Journal Engine | 2/2 | Complete   | 2026-04-12 | - |
 | 90. Playbook Distillation + Detection Pipeline | v5.0 | 0/2 | Not started | - |
