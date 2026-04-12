@@ -138,3 +138,34 @@ export interface EntityTypeDefinition {
   frontmatterFields: FrontmatterFieldDef[];
   starterTemplate: (name: string) => string;
 }
+
+// --- Ingestion engine types ---
+
+/** Instruction to create or update an entity note in the vault */
+export interface EntityInstruction {
+  action: 'create' | 'update';
+  entityType: string;       // matches EntityTypeDefinition.type (e.g. 'ioc/ip', 'ttp')
+  name: string;             // entity value (e.g. '192.168.1.100', 'T1059.001')
+  folder: string;           // resolved folder (e.g. 'entities/iocs', 'entities/ttps')
+  sightingLine: string;     // markdown line to append under ## Sightings
+  sourceId: string;         // receipt_id or query_id used for deduplication
+}
+
+/** Result of an ingestion run */
+export interface IngestionResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  entities: EntityInstruction[];
+  timestamp: string;        // ISO 8601
+}
+
+/** Timeline entry for a receipt artifact */
+export interface ReceiptTimelineEntry {
+  receipt_id: string;
+  claim_status: string;     // "supports" | "disproves" | "context" | ""
+  claim: string;            // truncated claim text
+  technique_refs: string[];
+  hypothesis: string;       // related_hypotheses[0] or "Ungrouped"
+  fileName: string;         // e.g. "RCT-001.md"
+}

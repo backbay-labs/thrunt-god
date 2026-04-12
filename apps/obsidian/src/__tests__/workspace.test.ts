@@ -62,6 +62,10 @@ class StubVaultAdapter implements VaultAdapter {
   async listFiles(path: string): Promise<string[]> {
     return this.filesByFolder.get(path) ?? [];
   }
+  async modifyFile(path: string, content: string): Promise<void> {
+    if (!this.files.has(path)) throw new Error(`File not found: ${path}`);
+    this.files.set(path, content);
+  }
 }
 
 // ---------------------------------------------------------------------------
