@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 79-03-PLAN.md
-last_updated: "2026-04-12T13:16:22.699Z"
+stopped_at: Completed 80-02-PLAN.md
+last_updated: "2026-04-12T13:54:10.327Z"
 progress:
   total_phases: 12
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 8
+  total_plans: 5
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 79 (Service Decomposition + EventBus)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 80 (Sidebar Progressive Disclosure + Onboarding)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** Executing Phase 79
-**Phase:** 79 of 90 (Service Decomposition + EventBus)
-**Plan:** 2 of 3 in current phase complete
+**Status:** Executing
+**Phase:** 80 of 90 (Sidebar Progressive Disclosure + Onboarding)
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [##░░░░░░░░░░] 8% (2/26 v5.0 plans)
+Progress: [████████░░] 80% (4/5 v5.0 plans)
 
 ## Recently Completed
 
@@ -56,6 +56,7 @@ Progress: [##░░░░░░░░░░] 8% (2/26 v5.0 plans)
 - Plan 79-02: Domain services receive planningDirGetter closure for settings independence
 - [Phase 79]: Commands receive plugin parameter instead of this binding to avoid circular dependency
 - [Phase 79]: main.ts slimmed to 138 LOC lifecycle-only orchestration with registerCommands(this) delegation
+- [Phase 80]: Created obsidian API mock stub + vitest alias to enable testing modules that import from types-only obsidian package
 
 ### Blockers/Concerns
 
@@ -63,6 +64,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:16:22.697Z
-Stopped at: Completed 79-03-PLAN.md
+Last session: 2026-04-12T13:54:10.324Z
+Stopped at: Completed 80-02-PLAN.md
 Resume file: None

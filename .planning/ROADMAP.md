@@ -124,11 +124,11 @@ Plans:
   2. A new user installing the plugin sees a welcome screen with explanation text and a one-click "Initialize Hunt Workspace" button when no .planning directory exists
   3. At least 3 default hotkeys ship: hyper copy (Ctrl+Shift+H), toggle sidebar (Ctrl+Shift+T), and ingest (Ctrl+Shift+I)
   4. Vault events are debounced (300-500ms trailing) to prevent sidebar flicker during active ingestion
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 80-01: Collapsible sidebar sections with persistent state and context-aware expansion
-- [ ] 80-02: Onboarding welcome screen, empty states, default hotkey registration
+- [ ] 80-01-PLAN.md &mdash; Collapsible sidebar, persistent state, welcome screen, empty states, debounced vault events
+- [ ] 80-02-PLAN.md &mdash; Default hotkeys for 3 commands (Hyper Copy, Toggle Sidebar, Ingest)
 
 ### Phase 81: Command Consolidation + Modal Polish
 **Goal**: The command palette is clean and discoverable with ~10 grouped entries instead of 19, and every modal uses Obsidian's native base classes with full keyboard navigation
@@ -139,7 +139,7 @@ Plans:
   2. All modals use Obsidian base classes (SuggestModal/FuzzySuggestModal) with arrow key navigation, Enter to select, Escape to close, and Obsidian CSS variables for styling
   3. Old command IDs remain as aliases that delegate to the new chooser modals, preserving any user-configured hotkey bindings
   4. Direct sub-commands remain individually accessible for power users who bind specific actions to hotkeys
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 81-01: FuzzySuggestModal chooser modals (Copy, Canvas, MCP) and command consolidation
@@ -154,7 +154,7 @@ Plans:
   2. Entity notes track verdict lifecycle (unknown -> suspicious -> confirmed_malicious -> remediated -> resurfaced) with each transition timestamped, attributed to a hunt ID, and appended to an immutable history log
   3. "Set entity verdict" command prompts for new verdict and rationale, appends to the lifecycle log, updates frontmatter, and shows a confirmation Notice
   4. Entity frontmatter includes schema_version field, and the migration command updates all entity notes to latest schema without losing analyst content or existing field values
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 82-01: FrontmatterEditor utility with surgical text manipulation (pure module + tests)
@@ -170,7 +170,7 @@ Plans:
   2. When entities co-occur across multiple hunts, the related infrastructure is surfaced in both entity notes (e.g., "This IP was seen alongside these 4 domains in 3 hunts")
   3. Entity confidence is computed from inspectable factors (source_count, reliability, corroboration, days_since_validation) with configurable half-life decay, and each factor is visible in frontmatter
   4. Confidence is advisory -- analysts can see WHY confidence is a given value and can override it by editing frontmatter
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 83-01: Cross-hunt entity aggregation and Hunt History section builder (pure module + tests)
@@ -184,7 +184,7 @@ Plans:
   1. ATT&CK technique notes accumulate hunt linkbacks in a Hunt History section showing queries used, data sources, and outcomes (TP/FP/inconclusive) for each hunt
   2. Analysts can add false positive annotations to technique notes via a command, building a Known False Positives section with pattern descriptions
   3. Techniques not hunted in N months (configurable, default 90 days) are flagged as stale coverage, surfaceable via Dataview queries in KNOWLEDGE_BASE.md
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 84-01: ATT&CK hunt linkback indexing and technique Hunt History builder (pure module + tests)
@@ -199,7 +199,7 @@ Plans:
   2. Modifying an entity note's frontmatter triggers a file-level JSON patch of the corresponding Canvas node, updating its appearance without disturbing analyst-arranged node positions
   3. Clicking canvas nodes navigates to the corresponding vault note (using Obsidian's native file-node behavior)
   4. All canvas manipulation uses the official canvas.d.ts types and file-level JSON read/write -- no undocumented internal Canvas API calls
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 85-01: Canvas live adapter pure module (frontmatter-to-appearance mapping, JSON diff/patch)
@@ -213,7 +213,7 @@ Plans:
   1. "Open live hunt canvas" command creates a canvas that auto-populates with new entity nodes as they are ingested during a hunt, without disturbing existing node positions
   2. Dashboard canvas updates reactively when entity notes change (new hunts, new entities, verdict updates), debounced to avoid write storms during batch operations
   3. Analyst node arrangements persist across all canvas updates -- the plugin only adds or updates node content, never repositions existing nodes
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 86-01: Live hunt canvas with auto-population from EventBus entity:created events
@@ -228,7 +228,7 @@ Plans:
   2. Status bar shows a "hunt pulse" indicator when recent agent activity is detected (artifact count and recency)
   3. All live features (auto-ingestion, hunt pulse, MCP event polling, prior-hunt suggestions) can be individually disabled via settings with graceful degradation
   4. Duplicate ingestion is prevented -- the watcher uses the existing sighting deduplication path
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 87-01: WatcherService with vault event filtering, debounced auto-ingestion, hunt pulse status bar
@@ -243,7 +243,7 @@ Plans:
   2. Vault changes in Obsidian (entity created, verdict set, hypothesis changed) publish events consumable by CLI and VS Code via MCP outbound calls
   3. Prior-hunt suggestions appear as dismissable sidebar callouts when newly ingested entities match historical knowledge (e.g., "This IP appeared in Hunt-037 linked to APT29 staging")
   4. Suggestions are non-blocking and appear in a dedicated sidebar section, with configurable relevance threshold
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 88-01: McpBridgeService bidirectional event bridge (inbound polling + outbound publishing + event schema)
@@ -258,7 +258,7 @@ Plans:
   2. Inline tagging syntax (#thrunt/h/, #thrunt/ev/, #thrunt/dp/) works for hypotheses, evidence strength, and decision points, and tags are indexed by Obsidian and queryable by Dataview
   3. "New journal entry" command appends a timestamped block to the active hunt journal with a template for hypothesis/evidence/decision tagging
   4. Journal summary command extracts the reasoning chain from tagged entries and produces a structured narrative showing hypothesis evolution, evidence accumulation, and decision points
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 89-01: Journal parser pure module (tag extraction, entry parsing, summary generation) with TDD
@@ -272,7 +272,7 @@ Plans:
   1. Post-hunt "Generate playbook" command produces a reusable template with trigger conditions, recommended query sequences, expected entity types, and decision trees extracted from journal and receipt timeline
   2. "Apply playbook" command pre-populates a new hunt's hypotheses and huntmap from a selected playbook, giving analysts a head start on recurring hunt patterns
   3. Detection note type links Sigma/KQL/SPL rules to source hunts, TTPs, and entities, with coverage status visible on ATT&CK technique notes
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 90-01: Playbook generator pure module (journal + receipt timeline walking, template production) with TDD
@@ -306,8 +306,8 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 76. Canvas Kill Chain Generator + Templates | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 78. v4.0 Tech Debt Cleanup | v4.0 | 2/2 | Complete | 2026-04-12 |
-| 79. Service Decomposition + EventBus | 3/3 | Complete   | 2026-04-12 | - |
-| 80. Sidebar Progressive Disclosure + Onboarding | v5.0 | 0/2 | Not started | - |
+| 79. Service Decomposition + EventBus | 3/3 | Complete    | 2026-04-12 | - |
+| 80. Sidebar Progressive Disclosure + Onboarding | 1/2 | In Progress|  | - |
 | 81. Command Consolidation + Modal Polish | v5.0 | 0/2 | Not started | - |
 | 82. Verdict Lifecycle + FrontmatterEditor + Schema Versioning | v5.0 | 0/3 | Not started | - |
 | 83. Cross-Hunt Aggregation + Computed Confidence | v5.0 | 0/2 | Not started | - |
