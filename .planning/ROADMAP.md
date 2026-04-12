@@ -194,7 +194,11 @@ Plans:
   2. At least 4 canvas templates ship: ATT&CK kill chain (horizontal tactic timeline), diamond model (adversary/capability/infrastructure/victim quadrants), lateral movement map (network topology with IOC nodes), and hunt progression (vertical investigation timeline)
   3. "Canvas from current hunt" reads FINDINGS.md and RECEIPTS/ to auto-extract validated techniques and associated IOCs, then generates a kill chain canvas with connection arrows based on receipt linkage
   4. All generated canvases are standard Obsidian .canvas files that the analyst can rearrange and annotate after generation
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 76-01-PLAN.md -- Canvas generation engine with TDD: 4 template generators, entity color mapping, edge groups
+- [ ] 76-02-PLAN.md -- WorkspaceService canvas methods, 2 command registrations (generate-hunt-canvas, canvas-from-current-hunt)
 
 ### Phase 77: Cross-Hunt Intelligence + Knowledge Dashboard
 **Goal**: The vault surfaces patterns no single hunt could reveal -- recurring IOCs, coverage gaps, actor convergence -- and provides a visual program overview
@@ -231,5 +235,5 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 73. MCP Enrichment + Intelligence Features | 2/2 | Complete    | 2026-04-12 | - |
 | 74. Export Profile Registry + Context Assembly Engine | 2/2 | Complete    | 2026-04-12 | - |
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
-| 76. Canvas Kill Chain Generator + Templates | v4.0 | 0/0 | Not started | - |
+| 76. Canvas Kill Chain Generator + Templates | v4.0 | 0/2 | Not started | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/0 | Not started | - |
