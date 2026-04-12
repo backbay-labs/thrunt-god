@@ -34,7 +34,7 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 
 <!-- Current scope. Building toward these. -->
 
-(None yet — run `$gsd-new-milestone` to define the next milestone.)
+- v5.0 Obsidian Intelligence Platform — Comprehensive milestone: polish UX (sidebar redesign, command consolidation, onboarding), deepen intelligence (living entity dossiers, ATT&CK institutional memory, computed confidence), live canvas (Canvas API integration, reactive nodes), live hunt companion (filesystem watcher, bidirectional MCP event bridge, prior-hunt suggester), hunt journal + playbook distillation (structured reasoning capture, reusable tradecraft).
 
 ### Out of Scope
 
@@ -45,9 +45,18 @@ Hunters can move from signal intake to executable hunts, evidence-grade receipts
 - Defender XDR via Graph API — Microsoft's forward path but different OAuth scope; v1.6 uses direct API
 - Cross-language query translation (SPL to ES|QL) — too error-prone; retargeting via packs only
 
-## Current Milestone
+## Current Milestone: v5.0 Obsidian Intelligence Platform
 
-No active milestone. v4.0 Obsidian Knowledge Weapon shipped on 2026-04-12.
+**Goal:** Graduate from knowledge weapon to intelligence platform — polish the UX, deepen entity intelligence, make canvas alive, add live hunt companion with bidirectional MCP, and capture analyst reasoning in structured journals that distill into reusable playbooks.
+
+**Target features:**
+- UX foundation: sidebar progressive disclosure, command consolidation (19→~10), modal polish, onboarding, hotkeys
+- Living entity dossiers: verdict lifecycle, cross-hunt aggregation, related infrastructure, schema versioning
+- ATT&CK institutional memory: hunt linkbacks, false positive registry, coverage decay, detection linkbacks
+- Computed confidence: multi-factor model with decay, provenance chains
+- Live Canvas: Canvas API adapter, reactive nodes, live hunt canvas, interactive dashboard
+- Live hunt companion: filesystem watcher, bidirectional MCP event bridge, prior-hunt suggester
+- Hunt journal: structured reasoning capture with inline tags, playbook distillation
 
 **Next step:** Run `$gsd-new-milestone` to define the next roadmap slice.
 
@@ -133,4 +142,4 @@ No active milestone. v4.0 Obsidian Knowledge Weapon shipped on 2026-04-12.
 | Entity notes as typed frontmatter | IOCs, TTPs, actors, tools, infra, datasources — each with canonical folder and YAML schema | Planned |
 
 ---
-*Last updated: 2026-04-12 after v4.0 milestone completion*
+*Last updated: 2026-04-12 after v5.0 milestone start*
