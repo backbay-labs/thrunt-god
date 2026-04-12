@@ -7,12 +7,14 @@ import {
   type WorkspaceStatus,
   type ArtifactStatus,
   type ViewModel,
+  type McpConnectionStatus,
   type EntityCounts,
   type ExtendedArtifacts,
   type IngestionResult,
   type EntityInstruction,
   type ReceiptTimelineEntry,
 } from './types';
+import type { McpClient } from './mcp-client';
 import { parseState, parseHypotheses } from './parsers';
 import { parseReceipt } from './parsers/receipt';
 import { parseQueryLog } from './parsers/query-log';
@@ -33,7 +35,12 @@ export class WorkspaceService {
     readonly vaultAdapter: VaultAdapter,
     private getSettings: () => { planningDir: string },
     private defaultPlanningDir: string,
+    private mcpClient?: McpClient,
   ) {}
+
+  getMcpClient(): McpClient | undefined {
+    return this.mcpClient;
+  }
 
   async getViewModel(): Promise<ViewModel> {
     if (this.cachedViewModel) {
@@ -142,6 +149,7 @@ export class WorkspaceService {
       entityCounts,
       extendedArtifacts,
       receiptTimeline,
+      mcpStatus: this.mcpClient ? this.mcpClient.getStatus() : 'disabled' as McpConnectionStatus,
     };
 
     this.cachedViewModel = viewModel;

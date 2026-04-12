@@ -96,6 +96,8 @@ export interface ViewModel {
   entityCounts: EntityCounts;
   extendedArtifacts: ExtendedArtifacts;
   receiptTimeline: ReceiptTimelineEntry[];
+  // Phase 72: MCP connection status
+  mcpStatus: McpConnectionStatus;
 }
 
 // --- Error types ---

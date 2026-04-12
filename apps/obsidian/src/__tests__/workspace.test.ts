@@ -209,6 +209,11 @@ describe('WorkspaceService', () => {
       expect(vm.hypothesisSnapshot).toBeNull();
       expect(vm.phaseDirectories.count).toBe(0);
     });
+
+    it('getViewModel includes mcpStatus disabled when no mcpClient', async () => {
+      const vm = await service.getViewModel();
+      expect(vm.mcpStatus).toBe('disabled');
+    });
   });
 
   describe('invalidate', () => {
@@ -352,6 +357,7 @@ describe('WorkspaceService', () => {
       entityCounts: {},
       extendedArtifacts: defaultExtendedArtifacts,
       receiptTimeline: [],
+      mcpStatus: 'disabled' as const,
     };
 
     it('returns "THRUNT not detected" for missing workspace', () => {
@@ -367,6 +373,7 @@ describe('WorkspaceService', () => {
         entityCounts: {},
         extendedArtifacts: defaultExtendedArtifacts,
         receiptTimeline: [],
+        mcpStatus: 'disabled' as const,
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT not detected');
     });
@@ -384,6 +391,7 @@ describe('WorkspaceService', () => {
         entityCounts: {},
         extendedArtifacts: defaultExtendedArtifacts,
         receiptTimeline: [],
+        mcpStatus: 'disabled' as const,
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT .planning (3/5)');
     });
@@ -401,6 +409,7 @@ describe('WorkspaceService', () => {
         entityCounts: {},
         extendedArtifacts: defaultExtendedArtifacts,
         receiptTimeline: [],
+        mcpStatus: 'disabled' as const,
       };
       expect(formatStatusBarText(vm)).toBe('Phase 3 | 2/5 hypotheses active | 1 blocker');
     });
@@ -428,6 +437,7 @@ describe('WorkspaceService', () => {
         ...healthyBase,
         stateSnapshot: { currentPhase: 'Recon', blockers: ['a', 'b'], nextActions: [] },
         hypothesisSnapshot: null,
+        mcpStatus: 'disabled' as const,
       };
       expect(formatStatusBarText(vm)).toBe('Recon | 2 blockers');
     });
@@ -437,6 +447,7 @@ describe('WorkspaceService', () => {
         ...healthyBase,
         stateSnapshot: { currentPhase: 'Recon', blockers: [], nextActions: [] },
         hypothesisSnapshot: null,
+        mcpStatus: 'disabled' as const,
       };
       expect(formatStatusBarText(vm)).toBe('Recon');
     });

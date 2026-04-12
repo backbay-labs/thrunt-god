@@ -1,4 +1,4 @@
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, requestUrl } from 'obsidian';
 import {
   DEFAULT_SETTINGS,
   type ThruntGodPluginSettings,
@@ -9,14 +9,29 @@ import { CORE_ARTIFACTS } from './artifacts';
 import { ObsidianVaultAdapter } from './vault-adapter';
 import { WorkspaceService, formatStatusBarText } from './workspace';
 import { normalizePath, getEntityFolder, getPlanningDir } from './paths';
+import { HttpMcpClient } from './mcp-client';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
   workspaceService!: WorkspaceService;
+  mcpClient!: HttpMcpClient;
   private statusBarItemEl?: HTMLElement;
 
   async onload(): Promise<void> {
     await this.loadSettings();
+
+    this.mcpClient = new HttpMcpClient(
+      () => this.settings,
+      async (opts) => {
+        const response = await requestUrl({
+          url: opts.url,
+          method: opts.method,
+          body: opts.body,
+          headers: opts.headers,
+        });
+        return { status: response.status, text: response.text };
+      },
+    );
 
     const vaultAdapter = new ObsidianVaultAdapter(this.app);
     this.workspaceService = new WorkspaceService(
@@ -24,6 +39,7 @@ export default class ThruntGodPlugin extends Plugin {
       vaultAdapter,
       () => this.settings,
       DEFAULT_SETTINGS.planningDir,
+      this.mcpClient,
     );
 
     this.registerView(
@@ -83,6 +99,11 @@ export default class ThruntGodPlugin extends Plugin {
 
     this.addSettingTab(new ThruntGodSettingTab(this.app, this));
 
+    // Connect MCP if enabled (fire-and-forget -- connect never throws)
+    if (this.settings.mcpEnabled) {
+      void this.mcpClient.connect();
+    }
+
     // Event wiring: vault events invalidate cache and refresh views
     // (Spec acceptance criterion 9: main.ts wires events, not WorkspaceService)
     const refresh = () => {
@@ -96,6 +117,7 @@ export default class ThruntGodPlugin extends Plugin {
   }
 
   onunload(): void {
+    this.mcpClient.disconnect();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);
   }
 
