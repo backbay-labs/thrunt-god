@@ -188,3 +188,38 @@ export interface ReceiptTimelineEntry {
   hypothesis: string;       // related_hypotheses[0] or "Ungrouped"
   fileName: string;         // e.g. "RCT-001.md"
 }
+
+// --- MCP enrichment types ---
+
+/** Shape of parsed MCP lookupTechnique response */
+export interface EnrichmentData {
+  description: string;           // technique description text
+  groups: string[];              // associated threat actor groups
+  detectionSources: string[];    // data sources that detect this technique
+  relatedTechniques: string[];   // related technique IDs (e.g. T1059.001)
+}
+
+/** One row in the coverage report */
+export interface CoverageTactic {
+  tactic: string;     // tactic name (e.g. "Initial Access")
+  total: number;      // total techniques in this tactic
+  hunted: number;     // techniques with hunt_count > 0
+  percentage: number; // hunted/total * 100, rounded to 1 decimal
+}
+
+/** Full coverage analysis output */
+export interface CoverageReport {
+  tactics: CoverageTactic[];
+  totalTechniques: number;
+  huntedTechniques: number;
+  overallPercentage: number;
+  gaps: string[];    // technique IDs with hunt_count === 0
+}
+
+/** One result from knowledge graph search */
+export interface SearchResult {
+  id: string;         // entity identifier
+  name: string;       // display name
+  entityType: string; // e.g. 'ttp', 'ioc/ip', 'actor'
+  snippet: string;    // context snippet from search hit
+}
