@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 68-02-PLAN.md
-last_updated: "2026-04-12T04:45:02.579Z"
+status: executing
+stopped_at: Completed 69-01-PLAN.md
+last_updated: "2026-04-12T05:02:28.186Z"
 progress:
   total_phases: 10
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_plans: 5
+  completed_plans: 4
+  percent: 50
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 68 Plan 03 next
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 69 Plan 02 next
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 68 of 77 (Entity Note Schema + ATT&CK Ontology Scaffold)
-**Plan:** 3 of 3 complete
+**Status:** Executing
+**Phase:** 69 of 77 (Knowledge Base Dashboard + Sidebar Entity Summary)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (3/3 phase 68 plans)
+Progress: [█████░░░░░] 50% (1/2 phase 69 plans)
 
 ## Recently Completed
 
@@ -41,7 +41,7 @@ Progress: [██████████] 100% (3/3 phase 68 plans)
 
 **Velocity:**
 - Total plans completed: 67 phases across 14 milestones
-- v4.0 plans completed: 0
+- v4.0 plans completed: 1
 
 ## Accumulated Context
 
@@ -59,6 +59,8 @@ Progress: [██████████] 100% (3/3 phase 68 plans)
 - [Phase 68-02]: Physical JSON copy over symlink -- symlinks break production builds
 - [Phase 68-02]: Dynamic import for scaffold module defers 85KB JSON loading until command invoked
 - [Phase 68-02]: YAML array for multi-tactic techniques enables Dataview queries
+- [Phase 69-01]: KNOWLEDGE_BASE.md is not a core artifact -- created during bootstrap but not tracked in 5-artifact detection
+- [Phase 69-01]: listFiles returns file names only (not full paths), consistent with ObsidianVaultAdapter TFile.name
 
 ### Blockers/Concerns
 
@@ -66,6 +68,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T04:41:23.090Z
-Stopped at: Completed 68-02-PLAN.md
+Last session: 2026-04-12T05:02:28.182Z
+Stopped at: Completed 69-01-PLAN.md
 Resume file: None

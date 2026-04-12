@@ -91,7 +91,7 @@ Plans:
   1. KNOWLEDGE_BASE.md ships with embedded Dataview queries that return results when entity notes exist (IOCs by confidence, TTPs by hunt frequency, coverage gaps, cross-hunt entity references)
   2. Sidebar shows a collapsible "Knowledge Base" section displaying entity counts by type (e.g., "23 IOCs, 14 TTPs, 3 actors") with a link to KNOWLEDGE_BASE.md
   3. Sidebar entity counts update when the analyst creates, deletes, or modifies entity notes in the vault
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 69-01-PLAN.md -- KNOWLEDGE_BASE.md template with 6 Dataview queries, listFiles on VaultAdapter, bootstrap creation
@@ -200,7 +200,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 66. Release Artifact Pipeline | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 3/3 | Complete | 2026-04-12 |
-| 69. Knowledge Base Dashboard + Sidebar Entity Summary | v4.0 | 0/2 | Planning | - |
+| 69. Knowledge Base Dashboard + Sidebar Entity Summary | 1/2 | In Progress|  | - |
 | 70. Artifact Registry + Parsers | v4.0 | 0/0 | Not started | - |
 | 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
 | 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/0 | Not started | - |
