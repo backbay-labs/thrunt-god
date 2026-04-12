@@ -1052,6 +1052,33 @@ OAuth abuse cases benefit from a program-level view.
     expect(mission!.signal).toBe("acme.corp OAuth abuse response program")
     expect(mission!.scope).toContain("**Cases**")
   })
+
+  test("does not leak top-level mission metadata into signal or scope sections", async () => {
+    await scaffold({
+      ".planning/MISSION.md": `# Mission: Metadata Guard
+
+## Signal
+
+Primary signal line.
+**Status**: Ignore this metadata
+
+## Scope
+
+- Production tenant
+**Owner**: <@U12345> (via Slack)
+**Mode**: Ignore this metadata too
+`,
+    })
+
+    const mission = await readMission(tmpDir)
+
+    expect(mission!.owner).toBe("<@U12345> (via Slack)")
+    expect(mission!.signal).toContain("Primary signal line.")
+    expect(mission!.signal).not.toContain("Ignore this metadata")
+    expect(mission!.scope).toContain("- Production tenant")
+    expect(mission!.scope).not.toContain("**Owner**")
+    expect(mission!.scope).not.toContain("**Mode**")
+  })
 })
 
 // =============================================================================

@@ -452,6 +452,10 @@ export interface MissionSummary {
   owner: string | null
 }
 
+function isMissionMetadataLine(line: string): boolean {
+  return /^\*\*(?:Mode|Opened|Owner|Status)\*\*:\s*/i.test(line)
+}
+
 /** Parse MISSION.md for case title and scope */
 export async function readMission(workspaceRoot: string): Promise<MissionSummary | null> {
   const planningDir = await resolvePlanningDir(workspaceRoot)
@@ -470,18 +474,19 @@ export async function readMission(workspaceRoot: string): Promise<MissionSummary
     const titleMatch = trimmed.match(/^#\s+Mission:\s*(.+)/i)
     if (titleMatch) title = titleMatch[1]
 
-    if (/^\*\*Owner\*\*:\s*/i.test(trimmed)) {
-      owner = trimmed.replace(/^\*\*Owner\*\*:\s*/i, "").trim()
+    const ownerMatch = trimmed.match(/^\*\*Owner\*\*:\s*(.+)$/i)
+    if (ownerMatch) {
+      owner = ownerMatch[1].trim()
     }
 
     if (/^##\s+Signal/i.test(trimmed)) section = "signal"
     else if (/^##\s+Scope/i.test(trimmed)) section = "scope"
     else if (/^##\s/.test(trimmed)) section = ""
 
-    if (section === "signal" && trimmed && !trimmed.startsWith("#")) {
+    if (section === "signal" && trimmed && !trimmed.startsWith("#") && !isMissionMetadataLine(trimmed)) {
       signal += (signal ? " " : "") + trimmed
     }
-    if (section === "scope" && trimmed && !trimmed.startsWith("#")) {
+    if (section === "scope" && trimmed && !trimmed.startsWith("#") && !isMissionMetadataLine(trimmed)) {
       scope += (scope ? "\n" : "") + trimmed
     }
   }

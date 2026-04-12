@@ -29,20 +29,23 @@ export function serializeCaseModalMetadata(meta: CaseModalMetadata): string {
     return fallback
   }
 
+  const full = serializeWithRawText(base, rawText)
+  if (full.length <= CASE_MODAL_PRIVATE_METADATA_LIMIT) {
+    return full
+  }
+
   let best = emptyRawText
-  let low = 0
-  let high = rawText.length
+  let truncated = ""
 
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2)
-    const candidate = serializeWithRawText(base, rawText.slice(0, mid))
-
+  for (const char of rawText) {
+    const candidate = serializeWithRawText(base, truncated + char)
     if (candidate.length <= CASE_MODAL_PRIVATE_METADATA_LIMIT) {
       best = candidate
-      low = mid + 1
-    } else {
-      high = mid - 1
+      truncated += char
+      continue
     }
+
+    break
   }
 
   return best.length > CASE_MODAL_PRIVATE_METADATA_LIMIT ? fallback : best
