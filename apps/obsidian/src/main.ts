@@ -1,4 +1,4 @@
-import { Notice, Plugin, requestUrl } from 'obsidian';
+import { Modal, Notice, Plugin, Setting, requestUrl } from 'obsidian';
 import {
   DEFAULT_SETTINGS,
   type ThruntGodPluginSettings,
@@ -10,6 +10,8 @@ import { ObsidianVaultAdapter } from './vault-adapter';
 import { WorkspaceService, formatStatusBarText } from './workspace';
 import { normalizePath, getEntityFolder, getPlanningDir } from './paths';
 import { HttpMcpClient } from './mcp-client';
+import { McpSearchModal } from './mcp-search-modal';
+import { ENTITY_TYPES } from './entity-schema';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -94,6 +96,56 @@ export default class ThruntGodPlugin extends Plugin {
       name: 'Scaffold ATT&CK ontology',
       callback: () => {
         void this.scaffoldAttack();
+      },
+    });
+
+    // --- MCP enrichment commands (Plan 02) ---
+
+    this.addCommand({
+      id: 'enrich-from-mcp',
+      name: 'Enrich from MCP',
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || !file.path.includes('entities/ttps/')) return false;
+        if (checking) return true;
+        void this.enrichFromMcp(file.path);
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: 'analyze-detection-coverage',
+      name: 'Analyze detection coverage',
+      callback: () => {
+        void this.runCoverageAnalysis();
+      },
+    });
+
+    this.addCommand({
+      id: 'log-hunt-decision',
+      name: 'Log hunt decision',
+      checkCallback: (checking: boolean) => {
+        const file = this.app.workspace.getActiveFile();
+        if (!file || !file.path.includes('entities/ttps/')) return false;
+        if (checking) return true;
+        void this.promptAndLogDecision(file.path);
+        return true;
+      },
+    });
+
+    this.addCommand({
+      id: 'log-hunt-learning',
+      name: 'Log hunt learning',
+      callback: () => {
+        void this.promptAndLogLearning();
+      },
+    });
+
+    this.addCommand({
+      id: 'search-knowledge-graph',
+      name: 'Search THRUNT knowledge graph',
+      callback: () => {
+        void this.openSearchModal();
       },
     });
 
@@ -187,6 +239,152 @@ export default class ThruntGodPlugin extends Plugin {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // MCP command helpers (Plan 02)
+  // ---------------------------------------------------------------------------
+
+  private async enrichFromMcp(path: string): Promise<void> {
+    if (!this.mcpClient.isConnected()) {
+      new Notice('MCP is not connected. Enable in Settings > THRUNT God.');
+      return;
+    }
+    const result = await this.workspaceService.enrichFromMcp(path);
+    new Notice(result.message);
+    if (result.success) {
+      await this.refreshViews();
+    }
+  }
+
+  private async runCoverageAnalysis(): Promise<void> {
+    if (!this.mcpClient.isConnected()) {
+      new Notice('MCP is not connected. Enable in Settings > THRUNT God.');
+      return;
+    }
+    const result = await this.workspaceService.analyzeCoverage();
+    new Notice(result.message);
+    if (result.success) {
+      const planningDir = getPlanningDir(
+        this.settings.planningDir,
+        DEFAULT_SETTINGS.planningDir,
+      );
+      const reportPath = normalizePath(`${planningDir}/COVERAGE_REPORT.md`);
+      const file = this.workspaceService.vaultAdapter.getFile(reportPath);
+      if (file) {
+        await this.app.workspace.getLeaf(true).openFile(file);
+      }
+    }
+  }
+
+  private async promptAndLogDecision(path: string): Promise<void> {
+    if (!this.mcpClient.isConnected()) {
+      new Notice('MCP is not connected. Enable in Settings > THRUNT God.');
+      return;
+    }
+    new PromptModal(
+      this.app,
+      'Log Hunt Decision',
+      [
+        { label: 'Decision', placeholder: 'What did you decide?' },
+        { label: 'Rationale', placeholder: 'Why?' },
+      ],
+      async (values) => {
+        const [decision, rationale] = values;
+        if (!decision || !rationale) {
+          new Notice('Both fields are required.');
+          return;
+        }
+        const result = await this.workspaceService.logDecision(path, decision, rationale);
+        new Notice(result.message);
+        if (result.success) {
+          await this.refreshViews();
+        }
+      },
+    ).open();
+  }
+
+  private async promptAndLogLearning(): Promise<void> {
+    if (!this.mcpClient.isConnected()) {
+      new Notice('MCP is not connected. Enable in Settings > THRUNT God.');
+      return;
+    }
+    new PromptModal(
+      this.app,
+      'Log Hunt Learning',
+      [
+        { label: 'Topic', placeholder: 'What topic?' },
+        { label: 'Learning', placeholder: 'What did you learn?' },
+      ],
+      async (values) => {
+        const [topic, learning] = values;
+        if (!topic || !learning) {
+          new Notice('Both fields are required.');
+          return;
+        }
+        const result = await this.workspaceService.logLearning(topic, learning);
+        new Notice(result.message);
+        if (result.success) {
+          await this.refreshViews();
+        }
+      },
+    ).open();
+  }
+
+  private async openSearchModal(): Promise<void> {
+    if (!this.mcpClient.isConnected()) {
+      new Notice('MCP is not connected. Enable in Settings > THRUNT God.');
+      return;
+    }
+
+    const planningDir = getPlanningDir(
+      this.settings.planningDir,
+      DEFAULT_SETTINGS.planningDir,
+    );
+
+    new McpSearchModal(
+      this.app,
+      this.mcpClient,
+      // onOpenNote: find file by path and open in new leaf
+      (notePath: string) => {
+        const file = this.workspaceService.vaultAdapter.getFile(notePath);
+        if (file) {
+          void this.app.workspace.getLeaf(true).openFile(file);
+        } else {
+          new Notice(`Note not found: ${notePath}`);
+        }
+      },
+      // onCreateNote: create entity note in appropriate folder and open it
+      (name: string, entityType: string) => {
+        void (async () => {
+          const entityDef = ENTITY_TYPES.find((def) => def.type === entityType);
+          const folder = entityDef ? entityDef.folder : 'entities/ttps';
+          const folderPath = normalizePath(`${planningDir}/${folder}`);
+          const notePath = normalizePath(`${folderPath}/${name}.md`);
+
+          if (this.workspaceService.vaultAdapter.fileExists(notePath)) {
+            const file = this.workspaceService.vaultAdapter.getFile(notePath);
+            if (file) {
+              await this.app.workspace.getLeaf(true).openFile(file);
+            }
+            return;
+          }
+
+          const content = entityDef
+            ? entityDef.starterTemplate(name)
+            : `# ${name}\n\n## Sightings\n\n_No sightings recorded yet._\n\n## Related\n\n`;
+
+          await this.workspaceService.vaultAdapter.ensureFolder(folderPath);
+          await this.workspaceService.vaultAdapter.createFile(notePath, content);
+          this.workspaceService.invalidate();
+
+          const file = this.workspaceService.vaultAdapter.getFile(notePath);
+          if (file) {
+            await this.app.workspace.getLeaf(true).openFile(file);
+          }
+        })();
+      },
+    ).open();
+  }
+
   async activateView(): Promise<void> {
     let leaf = this.app.workspace.getLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE)[0];
 
@@ -236,5 +434,58 @@ export default class ThruntGodPlugin extends Plugin {
     if (!this.statusBarItemEl) return;
     const vm = await this.workspaceService.getViewModel();
     this.statusBarItemEl.setText(formatStatusBarText(vm));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PromptModal -- simple multi-field text input modal
+// ---------------------------------------------------------------------------
+
+interface PromptField {
+  label: string;
+  placeholder: string;
+}
+
+class PromptModal extends Modal {
+  private values: string[];
+
+  constructor(
+    app: import('obsidian').App,
+    private title: string,
+    private fields: PromptField[],
+    private onSubmit: (values: string[]) => void,
+  ) {
+    super(app);
+    this.values = fields.map(() => '');
+  }
+
+  onOpen(): void {
+    this.titleEl.setText(this.title);
+
+    for (let i = 0; i < this.fields.length; i++) {
+      const field = this.fields[i]!;
+      new Setting(this.contentEl)
+        .setName(field.label)
+        .addText((text) => {
+          text.setPlaceholder(field.placeholder);
+          text.onChange((value) => {
+            this.values[i] = value;
+          });
+        });
+    }
+
+    new Setting(this.contentEl)
+      .addButton((btn) => {
+        btn.setButtonText('Submit')
+          .setCta()
+          .onClick(() => {
+            this.close();
+            this.onSubmit(this.values);
+          });
+      });
+  }
+
+  onClose(): void {
+    this.contentEl.empty();
   }
 }
