@@ -63,7 +63,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 - [x] **Phase 74: Export Profile Registry + Context Assembly Engine** - Define per-agent export profiles, build wiki-link-following context assembler with configurable depth and provenance markers (completed 2026-04-12)
 - [x] **Phase 75: Hyper Copy Commands + Export UX** - "Hyper Copy for Agent" modal with preview and token estimate, quick export shortcuts, extensible profile config, and export audit log (completed 2026-04-12)
 - [x] **Phase 76: Canvas Kill Chain Generator + Templates** - Canvas generation engine with entity cards positioned by ATT&CK tactic, 4 canvas templates, and auto-generation from hunt findings (completed 2026-04-12)
-- [ ] **Phase 77: Cross-Hunt Intelligence + Knowledge Dashboard** - Cross-hunt analytical queries, hunt comparison command, and knowledge dashboard canvas for program overview
+- [x] **Phase 77: Cross-Hunt Intelligence + Knowledge Dashboard** - Cross-hunt analytical queries, hunt comparison command, and knowledge dashboard canvas for program overview (completed 2026-04-12)
 
 ## Phase Details
 
@@ -208,7 +208,7 @@ Plans:
   1. Cross-hunt intelligence queries surface recurring IOCs (seen in 2+ hunts), TTP coverage gaps (hunt_count: 0 grouped by tactic), and actor convergence (hunts sharing 3+ IOCs)
   2. "Compare hunts" command identifies shared entities, divergent findings, and combined technique coverage across two hunt workspaces
   3. Knowledge dashboard canvas provides a visual program overview with hunts by recency, top entities by sighting count, and hunt-to-entity connections
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 77-01-PLAN.md -- Cross-hunt intelligence pure module with TDD (recurring IOCs, coverage gaps, actor convergence, hunt comparison, dashboard canvas)
@@ -240,4 +240,4 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 74. Export Profile Registry + Context Assembly Engine | 2/2 | Complete    | 2026-04-12 | - |
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
 | 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete    | 2026-04-12 | - |
-| 77. Cross-Hunt Intelligence + Knowledge Dashboard | 1/2 | In Progress|  | - |
+| 77. Cross-Hunt Intelligence + Knowledge Dashboard | 2/2 | Complete   | 2026-04-12 | - |
