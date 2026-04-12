@@ -1242,4 +1242,264 @@ High
       expect(t1059Nodes).toHaveLength(1);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // cross-hunt intelligence (Phase 77 Plan 02)
+  // -------------------------------------------------------------------------
+
+  describe('cross-hunt intelligence', () => {
+    const IOC_NOTE_TEMPLATE = (name: string, type: string, huntRefs: string[], sightings: string[]) => {
+      const refsStr = huntRefs.length > 0 ? `[${huntRefs.join(', ')}]` : '[]';
+      const sightingsBlock = sightings.length > 0
+        ? sightings.map(s => `- ${s}`).join('\n')
+        : '_No sightings recorded yet._';
+      return `---
+type: ${type}
+value: "${name}"
+hunt_refs: ${refsStr}
+hunt_count: ${huntRefs.length}
+confidence: "high"
+---
+# ${name}
+
+## Sightings
+${sightingsBlock}
+
+## Related
+
+`;
+    };
+
+    const TTP_NOTE_TEMPLATE = (name: string, tactic: string, huntCount: number) => `---
+type: ttp
+mitre_id: "${name}"
+tactic: "${tactic}"
+hunt_count: ${huntCount}
+hunt_refs: []
+---
+# ${name}
+
+## Sightings
+_No sightings recorded yet._
+
+## Related
+
+`;
+
+    function setupEntityWorkspace(a: StubVaultAdapter): void {
+      a.addFolder(PLANNING_DIR);
+      addAllArtifacts(a);
+      for (const folder of ENTITY_FOLDERS) {
+        a.addFolder(normalizePath(`${PLANNING_DIR}/${folder}`));
+      }
+    }
+
+    it('crossHuntIntel generates CROSS_HUNT_INTEL.md with recurring IOCs table', async () => {
+      setupEntityWorkspace(adapter);
+
+      // Add IOC notes with hunt refs
+      const iocContent = IOC_NOTE_TEMPLATE('evil-ip', 'ioc/ip', ['hunt-alpha', 'hunt-bravo'], ['RCT-001: seen at 10:00', 'RCT-002: seen at 11:00']);
+      adapter.addFile('.planning/entities/iocs/evil-ip.md', iocContent);
+      adapter.addFileToFolder('.planning/entities/iocs', 'evil-ip.md');
+
+      const ioc2Content = IOC_NOTE_TEMPLATE('bad-domain', 'ioc/domain', ['hunt-alpha', 'hunt-bravo', 'hunt-charlie'], ['RCT-003: resolved']);
+      adapter.addFile('.planning/entities/iocs/bad-domain.md', ioc2Content);
+      adapter.addFileToFolder('.planning/entities/iocs', 'bad-domain.md');
+
+      const result = await service.crossHuntIntel();
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('Cross-hunt intelligence report generated');
+      expect(result.reportPath).toBe('.planning/CROSS_HUNT_INTEL.md');
+
+      const content = await adapter.readFile('.planning/CROSS_HUNT_INTEL.md');
+      expect(content).toContain('# Cross-Hunt Intelligence Report');
+      expect(content).toContain('## Recurring IOCs');
+      expect(content).toContain('bad-domain');
+      expect(content).toContain('evil-ip');
+      expect(content).toContain('| IOC | Type | Hunt Count | Hunts |');
+    });
+
+    it('crossHuntIntel with no entities produces report with empty tables', async () => {
+      setupEntityWorkspace(adapter);
+
+      const result = await service.crossHuntIntel();
+
+      expect(result.success).toBe(true);
+      const content = await adapter.readFile('.planning/CROSS_HUNT_INTEL.md');
+      expect(content).toContain('# Cross-Hunt Intelligence Report');
+      expect(content).toContain('## Recurring IOCs');
+      expect(content).toContain('## TTP Coverage Gaps');
+      expect(content).toContain('## Actor Convergence');
+    });
+
+    it('crossHuntIntel includes coverage gaps for unhunted TTPs', async () => {
+      setupEntityWorkspace(adapter);
+
+      const ttpContent = TTP_NOTE_TEMPLATE('T1059', 'Execution', 0);
+      adapter.addFile('.planning/entities/ttps/T1059.md', ttpContent);
+      adapter.addFileToFolder('.planning/entities/ttps', 'T1059.md');
+
+      const result = await service.crossHuntIntel();
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CROSS_HUNT_INTEL.md');
+      expect(content).toContain('### Execution');
+      expect(content).toContain('- T1059');
+    });
+
+    it('compareHuntsReport generates HUNT_COMPARISON.md with shared entities', async () => {
+      // Setup two separate hunt workspaces
+      const huntAPath = 'hunt-alpha';
+      const huntBPath = 'hunt-bravo';
+
+      // Set up entity folders for hunt A
+      for (const folder of ENTITY_FOLDERS) {
+        adapter.addFolder(normalizePath(`${huntAPath}/${folder}`));
+      }
+      adapter.addFile(`${huntAPath}/entities/iocs/evil-ip.md`, IOC_NOTE_TEMPLATE('evil-ip', 'ioc/ip', [], []));
+      adapter.addFileToFolder(`${huntAPath}/entities/iocs`, 'evil-ip.md');
+      adapter.addFile(`${huntAPath}/entities/iocs/unique-a.md`, IOC_NOTE_TEMPLATE('unique-a', 'ioc/ip', [], []));
+      adapter.addFileToFolder(`${huntAPath}/entities/iocs`, 'unique-a.md');
+
+      // Set up entity folders for hunt B
+      for (const folder of ENTITY_FOLDERS) {
+        adapter.addFolder(normalizePath(`${huntBPath}/${folder}`));
+      }
+      adapter.addFile(`${huntBPath}/entities/iocs/evil-ip.md`, IOC_NOTE_TEMPLATE('evil-ip', 'ioc/ip', [], []));
+      adapter.addFileToFolder(`${huntBPath}/entities/iocs`, 'evil-ip.md');
+      adapter.addFile(`${huntBPath}/entities/iocs/unique-b.md`, IOC_NOTE_TEMPLATE('unique-b', 'ioc/ip', [], []));
+      adapter.addFileToFolder(`${huntBPath}/entities/iocs`, 'unique-b.md');
+
+      // Need planning dir for output
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+
+      const result = await service.compareHuntsReport(huntAPath, huntBPath);
+
+      expect(result.success).toBe(true);
+      expect(result.reportPath).toBe('.planning/HUNT_COMPARISON.md');
+
+      const content = await adapter.readFile('.planning/HUNT_COMPARISON.md');
+      expect(content).toContain('# Hunt Comparison: hunt-alpha vs hunt-bravo');
+      expect(content).toContain('## Shared Entities (1)');
+      expect(content).toContain('evil-ip');
+      expect(content).toContain('## Unique to hunt-alpha (1)');
+      expect(content).toContain('unique-a');
+      expect(content).toContain('## Unique to hunt-bravo (1)');
+      expect(content).toContain('unique-b');
+    });
+
+    it('compareHuntsReport with no overlap shows all entities as unique', async () => {
+      const huntAPath = 'hunt-x';
+      const huntBPath = 'hunt-y';
+
+      for (const folder of ENTITY_FOLDERS) {
+        adapter.addFolder(normalizePath(`${huntAPath}/${folder}`));
+        adapter.addFolder(normalizePath(`${huntBPath}/${folder}`));
+      }
+
+      adapter.addFile(`${huntAPath}/entities/iocs/ip-a.md`, IOC_NOTE_TEMPLATE('ip-a', 'ioc/ip', [], []));
+      adapter.addFileToFolder(`${huntAPath}/entities/iocs`, 'ip-a.md');
+
+      adapter.addFile(`${huntBPath}/entities/iocs/ip-b.md`, IOC_NOTE_TEMPLATE('ip-b', 'ioc/ip', [], []));
+      adapter.addFileToFolder(`${huntBPath}/entities/iocs`, 'ip-b.md');
+
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+
+      const result = await service.compareHuntsReport(huntAPath, huntBPath);
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/HUNT_COMPARISON.md');
+      expect(content).toContain('## Shared Entities (0)');
+      expect(content).toContain('## Unique to hunt-x (1)');
+      expect(content).toContain('## Unique to hunt-y (1)');
+    });
+
+    it('generateKnowledgeDashboard creates CANVAS_DASHBOARD.canvas with center node', async () => {
+      setupEntityWorkspace(adapter);
+
+      // Add a case with MISSION.md
+      adapter.addFolder('.planning/cases');
+      adapter.addSubFolder('.planning/cases', 'case-alpha');
+      adapter.addFile('.planning/cases/case-alpha/MISSION.md', '# Operation Alpha\n\nSome mission.');
+
+      const result = await service.generateKnowledgeDashboard();
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_DASHBOARD.canvas');
+
+      const content = await adapter.readFile('.planning/CANVAS_DASHBOARD.canvas');
+      const parsed = JSON.parse(content);
+      expect(parsed).toHaveProperty('nodes');
+      expect(parsed).toHaveProperty('edges');
+
+      // Should have center node
+      const centerNode = parsed.nodes.find((n: { id: string }) => n.id === 'dashboard-center');
+      expect(centerNode).toBeDefined();
+      expect(centerNode.text).toBe('Program Overview');
+
+      // Should have hunt node
+      const huntNode = parsed.nodes.find((n: { id: string }) => n.id === 'hunt-Operation Alpha');
+      expect(huntNode).toBeDefined();
+    });
+
+    it('generateKnowledgeDashboard with no cases uses current workspace', async () => {
+      setupEntityWorkspace(adapter);
+
+      // No cases/ folder -- should use MISSION.md from current workspace
+      // MISSION.md is already present from addAllArtifacts
+
+      const result = await service.generateKnowledgeDashboard();
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CANVAS_DASHBOARD.canvas');
+      const parsed = JSON.parse(content);
+
+      // Should have at least center node + 1 hunt node
+      expect(parsed.nodes.length).toBeGreaterThanOrEqual(2);
+
+      // Center node
+      const centerNode = parsed.nodes.find((n: { id: string }) => n.id === 'dashboard-center');
+      expect(centerNode).toBeDefined();
+    });
+
+    it('crossHuntIntel includes actor convergence for hunts sharing 3+ IOCs', async () => {
+      setupEntityWorkspace(adapter);
+
+      // Create IOCs shared across the same two hunts
+      for (const name of ['ioc-a', 'ioc-b', 'ioc-c']) {
+        const content = IOC_NOTE_TEMPLATE(name, 'ioc/ip', ['hunt-1', 'hunt-2'], [`Seen in ${name}`]);
+        adapter.addFile(`.planning/entities/iocs/${name}.md`, content);
+        adapter.addFileToFolder('.planning/entities/iocs', `${name}.md`);
+      }
+
+      const result = await service.crossHuntIntel();
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CROSS_HUNT_INTEL.md');
+      expect(content).toContain('## Actor Convergence');
+      expect(content).toContain('hunt-1');
+      expect(content).toContain('hunt-2');
+    });
+
+    it('generateKnowledgeDashboard includes top entities with sightings', async () => {
+      setupEntityWorkspace(adapter);
+
+      // Add IOC with sightings
+      const iocContent = IOC_NOTE_TEMPLATE('top-ioc', 'ioc/ip', [], ['Seen once', 'Seen twice', 'Seen thrice']);
+      adapter.addFile('.planning/entities/iocs/top-ioc.md', iocContent);
+      adapter.addFileToFolder('.planning/entities/iocs', 'top-ioc.md');
+
+      const result = await service.generateKnowledgeDashboard();
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CANVAS_DASHBOARD.canvas');
+      const parsed = JSON.parse(content);
+
+      // Should have an entity node for top-ioc
+      const entityNode = parsed.nodes.find((n: { id: string }) => n.id === 'entity-top-ioc');
+      expect(entityNode).toBeDefined();
+    });
+  });
 });

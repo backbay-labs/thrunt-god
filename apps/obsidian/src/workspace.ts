@@ -44,6 +44,16 @@ import {
   buildReceiptTimeline,
 } from './ingestion';
 import type { StateSnapshot, HypothesisSnapshot, PhaseDirectoryInfo } from './types';
+import {
+  type EntityNote,
+  buildRecurringIocs,
+  buildCoverageGaps,
+  buildActorConvergence,
+  compareHunts,
+  generateDashboardCanvas,
+  type HuntSummary,
+  type TopEntity,
+} from './cross-hunt';
 
 export class WorkspaceService {
   private cachedViewModel: ViewModel | null = null;
@@ -871,6 +881,411 @@ export class WorkspaceService {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, message };
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Cross-hunt intelligence methods (Phase 77 Plan 02)
+  // ---------------------------------------------------------------------------
+
+  async crossHuntIntel(): Promise<{ success: boolean; message: string; reportPath?: string }> {
+    try {
+      const planningDir = getPlanningDir(
+        this.getSettings().planningDir,
+        this.defaultPlanningDir,
+      );
+
+      const allNotes = await this.scanEntityNotes(planningDir);
+
+      const recurringIocs = buildRecurringIocs(allNotes);
+      const ttpNotes = allNotes.filter(n => n.entityType === 'ttp');
+      const coverageGaps = buildCoverageGaps(ttpNotes);
+      const iocNotes = allNotes.filter(n => n.entityType.startsWith('ioc'));
+      const actorConvergence = buildActorConvergence(iocNotes);
+
+      // Format markdown report
+      const lines: string[] = [];
+      lines.push('# Cross-Hunt Intelligence Report');
+      lines.push('');
+      lines.push(`Generated: ${new Date().toISOString()}`);
+      lines.push('');
+
+      // Recurring IOCs table
+      lines.push('## Recurring IOCs');
+      lines.push('');
+      lines.push('IOCs seen across multiple hunts (2+ hunt references).');
+      lines.push('');
+      lines.push('| IOC | Type | Hunt Count | Hunts |');
+      lines.push('|-----|------|------------|-------|');
+      for (const ioc of recurringIocs) {
+        lines.push(`| ${ioc.name} | ${ioc.entityType} | ${ioc.huntRefs.length} | ${ioc.huntRefs.join(', ')} |`);
+      }
+      lines.push('');
+
+      // Coverage gaps
+      lines.push('## TTP Coverage Gaps');
+      lines.push('');
+      lines.push('Techniques with zero hunts, grouped by ATT&CK tactic.');
+      lines.push('');
+      for (const gap of coverageGaps) {
+        lines.push(`### ${gap.tactic}`);
+        for (const g of gap.gaps) {
+          lines.push(`- ${g}`);
+        }
+        lines.push('');
+      }
+
+      // Actor convergence table
+      lines.push('## Actor Convergence');
+      lines.push('');
+      lines.push('Hunt pairs sharing 3+ IOCs (potential campaign linkage).');
+      lines.push('');
+      lines.push('| Hunt A | Hunt B | Shared IOCs |');
+      lines.push('|--------|--------|-------------|');
+      for (const pair of actorConvergence) {
+        lines.push(`| ${pair.huntA} | ${pair.huntB} | ${pair.sharedIocs.join(', ')} |`);
+      }
+      lines.push('');
+
+      const reportContent = lines.join('\n');
+      const reportPath = normalizePath(`${planningDir}/CROSS_HUNT_INTEL.md`);
+
+      if (this.vaultAdapter.fileExists(reportPath)) {
+        await this.vaultAdapter.modifyFile(reportPath, reportContent);
+      } else {
+        await this.vaultAdapter.createFile(reportPath, reportContent);
+      }
+
+      this.invalidate();
+      return { success: true, message: 'Cross-hunt intelligence report generated', reportPath };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, message };
+    }
+  }
+
+  async compareHuntsReport(
+    huntAPath: string,
+    huntBPath: string,
+  ): Promise<{ success: boolean; message: string; reportPath?: string }> {
+    try {
+      const planningDir = getPlanningDir(
+        this.getSettings().planningDir,
+        this.defaultPlanningDir,
+      );
+
+      const huntAEntities = await this.scanEntityNotes(huntAPath);
+      const huntBEntities = await this.scanEntityNotes(huntBPath);
+
+      const huntAName = huntAPath.split('/').pop() ?? huntAPath;
+      const huntBName = huntBPath.split('/').pop() ?? huntBPath;
+
+      const result = compareHunts({
+        huntAName,
+        huntAEntities,
+        huntBName,
+        huntBEntities,
+      });
+
+      const lines: string[] = [];
+      lines.push(`# Hunt Comparison: ${huntAName} vs ${huntBName}`);
+      lines.push('');
+      lines.push(`Generated: ${new Date().toISOString()}`);
+      lines.push('');
+
+      lines.push(`## Shared Entities (${result.shared.length})`);
+      lines.push('');
+      lines.push('| Entity |');
+      lines.push('|--------|');
+      for (const name of result.shared) {
+        lines.push(`| ${name} |`);
+      }
+      lines.push('');
+
+      lines.push(`## Unique to ${huntAName} (${result.uniqueA.length})`);
+      lines.push('');
+      lines.push('| Entity |');
+      lines.push('|--------|');
+      for (const name of result.uniqueA) {
+        lines.push(`| ${name} |`);
+      }
+      lines.push('');
+
+      lines.push(`## Unique to ${huntBName} (${result.uniqueB.length})`);
+      lines.push('');
+      lines.push('| Entity |');
+      lines.push('|--------|');
+      for (const name of result.uniqueB) {
+        lines.push(`| ${name} |`);
+      }
+      lines.push('');
+
+      lines.push('## Combined Technique Coverage');
+      lines.push('');
+      lines.push('| Tactic | Techniques |');
+      lines.push('|--------|------------|');
+      for (const row of result.combinedTacticCoverage) {
+        lines.push(`| ${row.tactic} | ${row.count} |`);
+      }
+      lines.push('');
+
+      const reportContent = lines.join('\n');
+      const reportPath = normalizePath(`${planningDir}/HUNT_COMPARISON.md`);
+
+      if (this.vaultAdapter.fileExists(reportPath)) {
+        await this.vaultAdapter.modifyFile(reportPath, reportContent);
+      } else {
+        await this.vaultAdapter.createFile(reportPath, reportContent);
+      }
+
+      this.invalidate();
+      return { success: true, message: 'Hunt comparison report generated', reportPath };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, message };
+    }
+  }
+
+  async generateKnowledgeDashboard(): Promise<{ success: boolean; message: string; canvasPath?: string }> {
+    try {
+      const planningDir = getPlanningDir(
+        this.getSettings().planningDir,
+        this.defaultPlanningDir,
+      );
+
+      // Build HuntSummary[] from cases/*/MISSION.md
+      const hunts: HuntSummary[] = [];
+      const casesPath = normalizePath(`${planningDir}/cases`);
+      if (this.vaultAdapter.folderExists(casesPath)) {
+        const subfolders = await this.vaultAdapter.listFolders(casesPath);
+        for (const subfolder of subfolders) {
+          const missionPath = normalizePath(`${planningDir}/cases/${subfolder}/MISSION.md`);
+          if (this.vaultAdapter.fileExists(missionPath)) {
+            const missionContent = await this.vaultAdapter.readFile(missionPath);
+            const h1Match = missionContent.match(/^#\s+(.+)$/m);
+            const huntName = h1Match ? h1Match[1]!.trim() : subfolder;
+
+            // Count entity files across entity folders in this case
+            let entityCount = 0;
+            for (const folder of ENTITY_FOLDERS) {
+              const entityFolderPath = normalizePath(`${planningDir}/cases/${subfolder}/${folder}`);
+              if (this.vaultAdapter.folderExists(entityFolderPath)) {
+                const files = await this.vaultAdapter.listFiles(entityFolderPath);
+                entityCount += files.filter(f => f.endsWith('.md')).length;
+              }
+            }
+
+            hunts.push({
+              name: huntName,
+              entityCount,
+              lastModified: new Date().toISOString(),
+            });
+          }
+        }
+      }
+
+      // If no cases, use current workspace as single hunt
+      if (hunts.length === 0) {
+        const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+        let huntName = 'Current Hunt';
+        if (this.vaultAdapter.fileExists(missionPath)) {
+          const missionContent = await this.vaultAdapter.readFile(missionPath);
+          const h1Match = missionContent.match(/^#\s+(.+)$/m);
+          if (h1Match) {
+            huntName = h1Match[1]!.trim();
+          }
+        }
+
+        let entityCount = 0;
+        for (const folder of ENTITY_FOLDERS) {
+          const folderPath = normalizePath(`${planningDir}/${folder}`);
+          if (this.vaultAdapter.folderExists(folderPath)) {
+            const files = await this.vaultAdapter.listFiles(folderPath);
+            entityCount += files.filter(f => f.endsWith('.md')).length;
+          }
+        }
+
+        hunts.push({
+          name: huntName,
+          entityCount,
+          lastModified: new Date().toISOString(),
+        });
+      }
+
+      // Build TopEntity[] from all entity notes
+      const allNotes = await this.scanEntityNotes(planningDir);
+      const sortedNotes = [...allNotes].sort((a, b) => b.sightingsCount - a.sightingsCount);
+      const topEntities: TopEntity[] = sortedNotes.slice(0, 10).map(n => ({
+        name: n.name,
+        entityType: n.entityType,
+        sightingsCount: n.sightingsCount,
+      }));
+
+      // Build huntEntityLinks
+      const huntEntityLinks = new Map<string, string[]>();
+      const topEntityNames = new Set(topEntities.map(e => e.name));
+
+      if (this.vaultAdapter.folderExists(casesPath)) {
+        const subfolders = await this.vaultAdapter.listFolders(casesPath);
+        for (const subfolder of subfolders) {
+          const missionPath = normalizePath(`${planningDir}/cases/${subfolder}/MISSION.md`);
+          if (!this.vaultAdapter.fileExists(missionPath)) continue;
+
+          const missionContent = await this.vaultAdapter.readFile(missionPath);
+          const h1Match = missionContent.match(/^#\s+(.+)$/m);
+          const huntName = h1Match ? h1Match[1]!.trim() : subfolder;
+
+          const linked: string[] = [];
+          for (const folder of ENTITY_FOLDERS) {
+            const entityFolderPath = normalizePath(`${planningDir}/cases/${subfolder}/${folder}`);
+            if (!this.vaultAdapter.folderExists(entityFolderPath)) continue;
+            const files = await this.vaultAdapter.listFiles(entityFolderPath);
+            for (const f of files.filter(fn => fn.endsWith('.md'))) {
+              const name = f.replace(/\.md$/, '');
+              if (topEntityNames.has(name)) {
+                linked.push(name);
+              }
+            }
+          }
+
+          if (linked.length > 0) {
+            huntEntityLinks.set(huntName, linked);
+          }
+        }
+      } else {
+        // Single hunt: link to any matching top entities
+        const huntName = hunts[0]?.name ?? 'Current Hunt';
+        const linked: string[] = [];
+        for (const folder of ENTITY_FOLDERS) {
+          const folderPath = normalizePath(`${planningDir}/${folder}`);
+          if (!this.vaultAdapter.folderExists(folderPath)) continue;
+          const files = await this.vaultAdapter.listFiles(folderPath);
+          for (const f of files.filter(fn => fn.endsWith('.md'))) {
+            const name = f.replace(/\.md$/, '');
+            if (topEntityNames.has(name)) {
+              linked.push(name);
+            }
+          }
+        }
+        if (linked.length > 0) {
+          huntEntityLinks.set(huntName, linked);
+        }
+      }
+
+      const canvasData = generateDashboardCanvas(hunts, topEntities, huntEntityLinks);
+
+      const canvasPath = normalizePath(`${planningDir}/CANVAS_DASHBOARD.canvas`);
+      const canvasJson = JSON.stringify(canvasData, null, 2);
+
+      if (this.vaultAdapter.fileExists(canvasPath)) {
+        await this.vaultAdapter.modifyFile(canvasPath, canvasJson);
+      } else {
+        await this.vaultAdapter.createFile(canvasPath, canvasJson);
+      }
+
+      this.invalidate();
+      return { success: true, message: 'Knowledge dashboard generated', canvasPath };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, message };
+    }
+  }
+
+  /**
+   * Parse an entity note's content into an EntityNote object.
+   * Extracts frontmatter fields and counts sightings lines.
+   */
+  private parseEntityNote(content: string, fileName: string): EntityNote {
+    const name = fileName.replace(/\.md$/, '');
+    const result: EntityNote = {
+      name,
+      entityType: '',
+      frontmatter: {},
+      sightingsCount: 0,
+      huntRefs: [],
+    };
+
+    // Parse frontmatter
+    if (content.startsWith('---')) {
+      const end = content.indexOf('\n---', 3);
+      if (end !== -1) {
+        const block = content.slice(4, end);
+        const lines = block.split(/\r?\n/);
+
+        for (const line of lines) {
+          const typeMatch = line.match(/^type:\s*(.+)$/);
+          if (typeMatch && typeMatch[1]) {
+            const val = typeMatch[1].trim().replace(/^["']|["']$/g, '');
+            result.entityType = val;
+            result.frontmatter['type'] = val;
+          }
+
+          const tacticMatch = line.match(/^tactic:\s*(.+)$/);
+          if (tacticMatch && tacticMatch[1]) {
+            let val = tacticMatch[1].trim().replace(/^["']|["']$/g, '');
+            if (val.startsWith('[') && val.endsWith(']')) {
+              val = val.slice(1, -1).split(',')[0]?.trim() ?? '';
+            }
+            if (val) {
+              result.frontmatter['tactic'] = val;
+            }
+          }
+
+          const huntCountMatch = line.match(/^hunt_count:\s*(\d+)$/);
+          if (huntCountMatch && huntCountMatch[1]) {
+            result.frontmatter['hunt_count'] = parseInt(huntCountMatch[1], 10);
+          }
+
+          const confidenceMatch = line.match(/^confidence:\s*(.+)$/);
+          if (confidenceMatch && confidenceMatch[1]) {
+            result.frontmatter['confidence'] = confidenceMatch[1].trim().replace(/^["']|["']$/g, '');
+          }
+
+          const huntRefsMatch = line.match(/^hunt_refs:\s*\[(.+)\]$/);
+          if (huntRefsMatch && huntRefsMatch[1]) {
+            result.huntRefs = huntRefsMatch[1].split(',').map(r => r.trim().replace(/^["']|["']$/g, ''));
+          }
+        }
+      }
+    }
+
+    // Count sightings
+    const sightingsSection = content.match(/^## Sightings\s*$([\s\S]*?)(?=^## |\n$|$)/m);
+    if (sightingsSection && sightingsSection[1]) {
+      const sightingLines = sightingsSection[1]
+        .split(/\r?\n/)
+        .filter(l => l.startsWith('- ') && !l.includes('_No sightings recorded yet._'));
+      result.sightingsCount = sightingLines.length;
+    }
+
+    return result;
+  }
+
+  /**
+   * Scan ENTITY_FOLDERS for .md files and parse each into an EntityNote.
+   */
+  private async scanEntityNotes(basePath: string): Promise<EntityNote[]> {
+    const notes: EntityNote[] = [];
+
+    for (const folder of ENTITY_FOLDERS) {
+      const folderPath = normalizePath(`${basePath}/${folder}`);
+      if (!this.vaultAdapter.folderExists(folderPath)) continue;
+
+      const files = await this.vaultAdapter.listFiles(folderPath);
+      const mdFiles = files.filter(f => f.endsWith('.md'));
+
+      for (const fileName of mdFiles) {
+        try {
+          const filePath = normalizePath(`${folderPath}/${fileName}`);
+          const content = await this.vaultAdapter.readFile(filePath);
+          const note = this.parseEntityNote(content, fileName);
+          notes.push(note);
+        } catch {
+          // Skip unreadable files
+        }
+      }
+    }
+
+    return notes;
   }
 
   /**
