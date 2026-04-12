@@ -95,7 +95,7 @@ function parsePhaseFromStateContent(content: string): string | null {
 
 // ─── Verdict detection ────────────────────────────────────────────────────
 
-function parseVerdictFromContent(content: string): { hypothesisId: string; verdict: string } | null {
+function parseVerdictFromContent(content: string, relativePath: string): { hypothesisId: string; verdict: string } | null {
   if (!content.startsWith('---')) return null;
   const endIdx = content.indexOf('---', 3);
   if (endIdx === -1) return null;
@@ -106,7 +106,7 @@ function parseVerdictFromContent(content: string): { hypothesisId: string; verdi
 
   if (verdictMatch) {
     return {
-      hypothesisId: idMatch ? idMatch[1].trim() : path.basename(content).replace(/\.md$/, ''),
+      hypothesisId: idMatch ? idMatch[1].trim() : path.basename(relativePath).replace(/\.md$/, ''),
       verdict: verdictMatch[1].trim(),
     };
   }
@@ -297,8 +297,8 @@ export function createStructuredWatcher(options: StructuredWatcherOptions): Stru
 
     // Verdict changed: hypothesis file changed
     if (artifactType === 'hypothesis' || relativePath.includes('HYPOTHESES.md')) {
-      const previousVerdict = previousContent ? parseVerdictFromContent(previousContent) : null;
-      const currentVerdictInfo = parseVerdictFromContent(currentContent);
+      const previousVerdict = previousContent ? parseVerdictFromContent(previousContent, relativePath) : null;
+      const currentVerdictInfo = parseVerdictFromContent(currentContent, relativePath);
       if (currentVerdictInfo && currentVerdictInfo.verdict !== (previousVerdict?.verdict ?? null)) {
         logger.info('file-watcher', 'verdict changed', {
           hypothesisId: currentVerdictInfo.hypothesisId,
