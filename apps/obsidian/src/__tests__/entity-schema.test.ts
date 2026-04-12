@@ -141,6 +141,58 @@ describe('ENTITY_TYPES', () => {
       expect(template).toContain('## Related');
     }
   });
+
+  // --- Schema versioning tests (Phase 82-03) ---
+
+  it('every template includes schema_version: 1 as first frontmatter field', () => {
+    for (const entity of ENTITY_TYPES) {
+      const template = entity.starterTemplate('test');
+      // schema_version: 1 should appear in all 8 templates
+      expect(template).toContain('schema_version: 1');
+      // Should be the first field after opening ---
+      const lines = template.split('\n');
+      expect(lines[0]).toBe('---');
+      expect(lines[1]).toBe('schema_version: 1');
+    }
+  });
+
+  it('every template includes verdict: unknown (not verdict: "")', () => {
+    for (const entity of ENTITY_TYPES) {
+      const template = entity.starterTemplate('test');
+      expect(template).toContain('verdict: unknown');
+      expect(template).not.toContain('verdict: ""');
+    }
+  });
+
+  it('every template has ## Verdict History section before ## Sightings', () => {
+    for (const entity of ENTITY_TYPES) {
+      const template = entity.starterTemplate('test');
+      expect(template).toContain('## Verdict History');
+      expect(template).toContain('_No verdict changes recorded._');
+      const historyIdx = template.indexOf('## Verdict History');
+      const sightingsIdx = template.indexOf('## Sightings');
+      expect(historyIdx).toBeLessThan(sightingsIdx);
+    }
+  });
+
+  it('every type has schema_version in frontmatterFields', () => {
+    for (const entity of ENTITY_TYPES) {
+      const svField = entity.frontmatterFields.find(f => f.key === 'schema_version');
+      expect(svField).toBeDefined();
+      expect(svField!.type).toBe('number');
+      expect(svField!.default).toBe(1);
+      expect(svField!.required).toBe(true);
+    }
+  });
+
+  it('every type has verdict in frontmatterFields', () => {
+    for (const entity of ENTITY_TYPES) {
+      const verdictField = entity.frontmatterFields.find(f => f.key === 'verdict');
+      expect(verdictField).toBeDefined();
+      expect(verdictField!.type).toBe('string');
+      expect(verdictField!.default).toBe('unknown');
+    }
+  });
 });
 
 describe('ENTITY_FOLDERS', () => {

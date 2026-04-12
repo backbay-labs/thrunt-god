@@ -3,11 +3,14 @@ import type ThruntGodPlugin from './main';
 import { CORE_ARTIFACTS } from './artifacts';
 import { DEFAULT_SETTINGS } from './settings';
 import { normalizePath, getEntityFolder, getPlanningDir } from './paths';
-import { ENTITY_TYPES } from './entity-schema';
+import { ENTITY_TYPES, ENTITY_FOLDERS } from './entity-schema';
 import { McpSearchModal } from './mcp-search-modal';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { PromptModal, CanvasTemplateModal, CompareHuntsModal } from './modals';
-import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal } from './chooser-modals';
+import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, VerdictSuggestModal } from './chooser-modals';
+import { appendVerdictEntry, formatTimestamp, detectHuntId, type VerdictEntry } from './verdict';
+import { updateFrontmatter } from './frontmatter-editor';
+import { previewMigration, applyMigration, CURRENT_SCHEMA_VERSION } from './schema-migration';
 
 // ---------------------------------------------------------------------------
 // registerCommands -- called once from plugin.onload()
@@ -114,6 +117,73 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
         }
         await plugin.refreshViews();
       }).open();
+    },
+  });
+
+  // --- Verdict lifecycle command (Phase 82) ---
+
+  plugin.addCommand({
+    id: 'set-entity-verdict',
+    name: 'Set entity verdict',
+    checkCallback: (checking: boolean) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file) return false;
+      const isEntity = ENTITY_FOLDERS.some((folder) => file.path.includes(folder));
+      if (!isEntity) return false;
+      if (checking) return true;
+      void setEntityVerdict(plugin, file.path);
+      return true;
+    },
+  });
+
+  // --- Schema migration command (Phase 82-03) ---
+
+  plugin.addCommand({
+    id: 'migrate-entity-schema',
+    name: 'Migrate entity schema',
+    callback: () => {
+      void (async () => {
+        const planningDir = getPlanningDir(
+          plugin.settings.planningDir,
+          DEFAULT_SETTINGS.planningDir,
+        );
+
+        // Scan all entity folders for .md files
+        const previews: Array<{ filePath: string; content: string }> = [];
+        for (const folder of ENTITY_FOLDERS) {
+          const folderPath = normalizePath(`${planningDir}/${folder}`);
+          if (!plugin.workspaceService.vaultAdapter.folderExists(folderPath)) continue;
+          const files = await plugin.workspaceService.vaultAdapter.listFiles(folderPath);
+          const mdFiles = files.filter((f) => f.endsWith('.md'));
+          for (const fileName of mdFiles) {
+            const filePath = normalizePath(`${folderPath}/${fileName}`);
+            try {
+              const content = await plugin.workspaceService.vaultAdapter.readFile(filePath);
+              const preview = previewMigration(content, filePath);
+              if (preview) {
+                previews.push({ filePath, content });
+              }
+            } catch {
+              // Skip unreadable files
+            }
+          }
+        }
+
+        if (previews.length === 0) {
+          new Notice(`All entity notes are up to date (schema v${CURRENT_SCHEMA_VERSION})`);
+          return;
+        }
+
+        new Notice(`Found ${previews.length} notes to migrate. Applying...`);
+
+        for (const { filePath, content } of previews) {
+          const migrated = applyMigration(content);
+          await plugin.workspaceService.vaultAdapter.modifyFile(filePath, migrated);
+        }
+
+        new Notice(`Migration complete: ${previews.length} notes updated to schema v${CURRENT_SCHEMA_VERSION}`);
+        await plugin.refreshViews();
+      })();
     },
   });
 
@@ -487,6 +557,61 @@ async function openSearchModal(plugin: ThruntGodPlugin): Promise<void> {
       })();
     },
   ).open();
+}
+
+// ---------------------------------------------------------------------------
+// Verdict command helper (Plan 82-02)
+// ---------------------------------------------------------------------------
+
+async function setEntityVerdict(plugin: ThruntGodPlugin, filePath: string): Promise<void> {
+  new VerdictSuggestModal(plugin.app, (selectedVerdict) => {
+    new PromptModal(
+      plugin.app,
+      'Verdict Rationale',
+      [{ label: 'Rationale', placeholder: 'Why this verdict?' }],
+      (values) => {
+        const rationale = values[0] || '';
+        void (async () => {
+          // Read current file content
+          let content = await plugin.workspaceService.vaultAdapter.readFile(filePath);
+
+          // Detect hunt ID from MISSION.md or planning dir
+          const planningDir = getPlanningDir(
+            plugin.settings.planningDir,
+            DEFAULT_SETTINGS.planningDir,
+          );
+          let missionContent: string | null = null;
+          try {
+            const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+            missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+          } catch {
+            // MISSION.md not found -- will fall back to planning dir
+          }
+          const huntId = detectHuntId(missionContent, planningDir);
+
+          // Build verdict entry
+          const entry: VerdictEntry = {
+            timestamp: formatTimestamp(new Date()),
+            verdict: selectedVerdict,
+            rationale,
+            huntId,
+          };
+
+          // Append verdict history entry
+          content = appendVerdictEntry(content, entry);
+
+          // Update frontmatter verdict field
+          content = updateFrontmatter(content, { verdict: selectedVerdict });
+
+          // Write back
+          await plugin.workspaceService.vaultAdapter.modifyFile(filePath, content);
+
+          new Notice(`Verdict set to ${selectedVerdict}`);
+          await plugin.refreshViews();
+        })();
+      },
+    ).open();
+  }).open();
 }
 
 export async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {

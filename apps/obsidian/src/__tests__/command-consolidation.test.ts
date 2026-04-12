@@ -16,6 +16,7 @@ vi.mock('../chooser-modals', () => ({
   CopyChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   CanvasChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   IntelligenceChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
+  VerdictSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
 }));
 
 import { registerCommands } from '../commands';
@@ -63,9 +64,9 @@ describe('command consolidation', () => {
   // Visible top-level commands
   // -----------------------------------------------------------------------
 
-  it('registers exactly 9 visible top-level commands (non-empty name)', () => {
+  it('registers exactly 11 visible top-level commands (non-empty name)', () => {
     const visible = commands.filter((c) => c.name !== '');
-    expect(visible).toHaveLength(9);
+    expect(visible).toHaveLength(11);
   });
 
   it('visible commands include the expected IDs', () => {
@@ -79,8 +80,10 @@ describe('command consolidation', () => {
       'cross-hunt-intel',
       'ingest-agent-output',
       'intelligence-chooser',
+      'migrate-entity-schema',
       'open-thrunt-workspace',
       'scaffold-attack-ontology',
+      'set-entity-verdict',
     ]);
   });
 
