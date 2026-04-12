@@ -16,6 +16,7 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
   plugin.addCommand({
     id: 'open-thrunt-workspace',
     name: 'Open workspace',
+    hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 't' }],
     callback: () => {
       void plugin.activateView();
     },
@@ -43,6 +44,7 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
   plugin.addCommand({
     id: 'ingest-agent-output',
     name: 'Ingest agent output',
+    hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'i' }],
     callback: () => {
       void runIngestion(plugin);
     },
@@ -111,6 +113,7 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
   plugin.addCommand({
     id: 'hyper-copy-for-agent',
     name: 'Hyper Copy for Agent',
+    hotkeys: [{ modifiers: ['Mod', 'Shift'], key: 'h' }],
     callback: () => {
       const file = plugin.app.workspace.getActiveFile();
       if (!file) {
