@@ -1,6 +1,10 @@
 import { basename, dirname, join } from "node:path"
 import { resolvePlanningDir } from "./state.ts"
 
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\"'\"'`)}'`
+}
+
 function isCasePlanningDir(planningDir: string): boolean {
   const parent = dirname(planningDir)
   return basename(parent) === "cases" && basename(dirname(parent)) === ".planning"
@@ -32,5 +36,5 @@ export async function resolveCaseDir(
 }
 
 export function startHuntCommand(workspaceRoot: string, slug: string): string {
-  return `cd "${workspaceRoot}" && THRUNT_CASE="${slug}" thrunt-god`
+  return `cd -- ${shellQuote(workspaceRoot)} && THRUNT_CASE=${shellQuote(slug)} thrunt-god`
 }

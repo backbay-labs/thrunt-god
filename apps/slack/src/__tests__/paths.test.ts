@@ -52,7 +52,13 @@ describe("resolveCaseDir", () => {
 describe("startHuntCommand", () => {
   test("uses workspace root plus THRUNT_CASE context", () => {
     expect(startHuntCommand("/workspace/root", "alpha-case")).toBe(
-      'cd "/workspace/root" && THRUNT_CASE="alpha-case" thrunt-god',
+      "cd -- '/workspace/root' && THRUNT_CASE='alpha-case' thrunt-god",
+    )
+  })
+
+  test("shell-quotes dangerous workspace roots and slugs", () => {
+    expect(startHuntCommand(`/tmp/"$(whoami)"\`pwd\`/o'hare`, `alpha'$(rm -rf /)`)).toBe(
+      `cd -- '/tmp/"$(whoami)"\`pwd\`/o'"'"'hare' && THRUNT_CASE='alpha'"'"'$(rm -rf /)' thrunt-god`,
     )
   })
 })
