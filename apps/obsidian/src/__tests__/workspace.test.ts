@@ -231,6 +231,40 @@ describe('WorkspaceService', () => {
       const vm2 = await service.getViewModel();
       expect(vm2.workspaceStatus).toBe('healthy');
     });
+
+    it('creates all 6 entity folders', async () => {
+      await service.bootstrap();
+      expect(adapter.folderExists('.planning/entities/iocs')).toBe(true);
+      expect(adapter.folderExists('.planning/entities/ttps')).toBe(true);
+      expect(adapter.folderExists('.planning/entities/actors')).toBe(true);
+      expect(adapter.folderExists('.planning/entities/tools')).toBe(true);
+      expect(adapter.folderExists('.planning/entities/infra')).toBe(true);
+      expect(adapter.folderExists('.planning/entities/datasources')).toBe(true);
+    });
+
+    it('entity folder creation is idempotent', async () => {
+      await service.bootstrap();
+      // Second bootstrap should not throw
+      await service.bootstrap();
+      expect(adapter.folderExists('.planning/entities/iocs')).toBe(true);
+      expect(adapter.folderExists('.planning/entities/ttps')).toBe(true);
+    });
+
+    it('creates entity folders under planningDir not vault root', async () => {
+      // Recreate service with custom planningDir
+      const customService = new WorkspaceService(
+        null as any,
+        adapter,
+        () => ({ planningDir: '.hunt' }),
+        '.hunt',
+      );
+      await customService.bootstrap();
+      expect(adapter.folderExists('.hunt/entities/iocs')).toBe(true);
+      expect(adapter.folderExists('.hunt/entities/ttps')).toBe(true);
+      expect(adapter.folderExists('.hunt/entities/actors')).toBe(true);
+      // Verify NOT at vault root
+      expect(adapter.folderExists('entities/iocs')).toBe(false);
+    });
   });
 
   describe('ensureCoreFile', () => {
