@@ -1,4 +1,4 @@
-import { debounce, Notice, Plugin, requestUrl, type Debouncer } from 'obsidian';
+import { debounce, Notice, Plugin, requestUrl, type Debouncer, type EventRef } from 'obsidian';
 import {
   DEFAULT_SETTINGS,
   DEFAULT_SIDEBAR_STATE,
@@ -12,6 +12,7 @@ import { HttpMcpClient } from './mcp-client';
 import { EventBus } from './services/event-bus';
 import { registerCommands } from './commands';
 import { createScopedHandler } from './sidebar-events';
+import { formatHuntPulse } from './hunt-pulse';
 
 export default class ThruntGodPlugin extends Plugin {
   settings: ThruntGodPluginSettings = DEFAULT_SETTINGS;
@@ -22,6 +23,10 @@ export default class ThruntGodPlugin extends Plugin {
   private debouncedRefresh?: Debouncer<[], void>;
   private debouncedCanvasRefresh?: Debouncer<[], void>;
   private debouncedDashboardRefresh?: Debouncer<[], void>;
+  private debouncedAutoIngest?: Debouncer<[], void>;
+  private autoIngestEventRef?: EventRef;
+  private huntPulseEl?: HTMLElement;
+  private huntPulseInterval?: number;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -131,15 +136,94 @@ export default class ThruntGodPlugin extends Plugin {
         }
       }));
     }
+
+    // --- Auto-ingestion debouncer (Phase 87) ---
+    // Created ONCE in onload, not per-enable cycle, to avoid stale references
+    this.debouncedAutoIngest = debounce(async () => {
+      const watcher = this.workspaceService.watcher;
+      const result = await watcher.handleAutoIngest();
+      const total = result.created + result.updated;
+      if (total > 0) {
+        new Notice(`Ingested ${total} new artifact${total !== 1 ? 's' : ''}`);
+      }
+    }, this.settings.autoIngestDebounceMs ?? 2000, true);
+
+    // --- Auto-ingestion (Phase 87) ---
+    if (this.settings.autoIngestionEnabled) {
+      this.enableAutoIngestion();
+    }
+
+    // --- Hunt pulse status bar (Phase 87) ---
+    if (this.settings.huntPulseEnabled) {
+      this.enableHuntPulse();
+    }
   }
 
   onunload(): void {
     this.debouncedRefresh?.cancel();
     this.debouncedCanvasRefresh?.cancel();
     this.debouncedDashboardRefresh?.cancel();
+    this.disableAutoIngestion();
+    this.disableHuntPulse();
     this.mcpClient.disconnect();
     this.eventBus.removeAllListeners();
     this.app.workspace.detachLeavesOfType(THRUNT_WORKSPACE_VIEW_TYPE);
+  }
+
+  enableAutoIngestion(): void {
+    if (this.autoIngestEventRef) return; // already enabled
+    const watcher = this.workspaceService.watcher;
+    const handler = (file: { path: string }) => {
+      if (watcher.isAutoIngestTarget(file.path)) {
+        watcher.recordActivity();
+        this.debouncedAutoIngest!();
+      }
+    };
+    this.autoIngestEventRef = this.app.vault.on('create', handler);
+    this.registerEvent(this.autoIngestEventRef);
+  }
+
+  disableAutoIngestion(): void {
+    if (this.autoIngestEventRef) {
+      this.app.vault.offref(this.autoIngestEventRef);
+      this.autoIngestEventRef = undefined;
+    }
+    this.debouncedAutoIngest?.cancel();
+  }
+
+  enableHuntPulse(): void {
+    if (this.huntPulseEl) return; // already enabled
+    this.huntPulseEl = this.addStatusBarItem();
+    this.huntPulseEl.addClass('thrunt-hunt-pulse');
+    this.huntPulseEl.addEventListener('click', () => {
+      void this.activateView();
+    });
+    this.updateHuntPulse();
+    this.huntPulseInterval = window.setInterval(() => {
+      this.updateHuntPulse();
+    }, 30_000);
+  }
+
+  disableHuntPulse(): void {
+    if (this.huntPulseInterval !== undefined) {
+      window.clearInterval(this.huntPulseInterval);
+      this.huntPulseInterval = undefined;
+    }
+    if (this.huntPulseEl) {
+      this.huntPulseEl.remove();
+      this.huntPulseEl = undefined;
+    }
+  }
+
+  private updateHuntPulse(): void {
+    if (!this.huntPulseEl) return;
+    const watcher = this.workspaceService.watcher;
+    const text = formatHuntPulse(
+      watcher.getLastActivityTimestamp(),
+      Date.now(),
+      watcher.getRecentArtifactCount(),
+    );
+    this.huntPulseEl.setText(text);
   }
 
   async activateView(): Promise<void> {
