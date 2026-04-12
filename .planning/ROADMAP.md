@@ -121,7 +121,11 @@ Plans:
   2. "Ingest agent output" command scans RECEIPTS/ and QUERIES/, extracts entities (IPs, domains, hashes, technique IDs), and creates or updates entity notes with sightings and wiki-link backlinks
   3. Running ingestion twice on the same artifacts does not create duplicate sightings -- idempotency is enforced via content hashing or sighting deduplication
   4. INGESTION_LOG.md records every ingestion run with counts of entities created, updated, and skipped
-**Plans**: TBD
+**Plans:** 1/2 plans executed
+
+Plans:
+- [ ] 71-01-PLAN.md -- Ingestion engine pure module with TDD (entity extraction, sighting deduplication, log formatting)
+- [ ] 71-02-PLAN.md -- Receipt timeline sidebar, ingestion command wiring, entity note vault I/O
 
 ### Phase 72: MCP Client Adapter + Connection Infrastructure
 **Goal**: The plugin can connect to the THRUNT MCP server with clear status feedback, and every MCP-dependent feature fails gracefully when the server is unreachable
@@ -206,7 +210,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 3/3 | Complete | 2026-04-12 |
 | 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete    | 2026-04-12 | - |
 | 70. Artifact Registry + Parsers | 2/2 | Complete    | 2026-04-12 | - |
-| 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
+| 71. Ingestion Engine + Agent Activity Timeline | 1/2 | In Progress|  | - |
 | 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/0 | Not started | - |
 | 73. MCP Enrichment + Intelligence Features | v4.0 | 0/0 | Not started | - |
 | 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |

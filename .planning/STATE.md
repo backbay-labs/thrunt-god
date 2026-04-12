@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 70-02-PLAN.md
-last_updated: "2026-04-12T05:37:09.068Z"
+status: executing
+stopped_at: Completed 71-01-PLAN.md
+last_updated: "2026-04-12T05:50:03.223Z"
 progress:
   total_phases: 10
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_plans: 9
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 70 complete (2/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 71 in progress (1/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 70 of 77 (Artifact Registry Parsers)
-**Plan:** 2 of 2 complete
+**Status:** Executing
+**Phase:** 71 of 77 (Ingestion Engine + Agent Activity Timeline)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (2/2 phase 70 plans)
+Progress: [█████████░] 89% (8/9 v4.0 plans)
 
 ## Recently Completed
 
@@ -41,7 +41,7 @@ Progress: [██████████] 100% (2/2 phase 70 plans)
 
 **Velocity:**
 - Total plans completed: 67 phases across 14 milestones
-- v4.0 plans completed: 3
+- v4.0 plans completed: 4
 
 ## Accumulated Context
 
@@ -69,6 +69,9 @@ Progress: [██████████] 100% (2/2 phase 70 plans)
 - [Phase 70-02]: Extended artifact detection reuses VaultAdapter.listFiles/fileExists/listFolders -- no direct filesystem access
 - [Phase 70-02]: Receipt counting filters by /^RCT-.*\.md$/ and query counting by /^QRY-.*\.md$/ to avoid false positives
 - [Phase 70-02]: Agent Artifacts section placed between Knowledge Base and Core artifacts in sidebar render order
+- [Phase 71]: [Phase 71-01]: Sighting deduplication scoped to ## Sightings section only -- prevents false positives from sourceId in other sections
+- [Phase 71]: [Phase 71-01]: buildSightingLine truncates claim to 80 chars -- keeps entity notes scannable
+- [Phase 71]: [Phase 71-01]: deduplicateSightings returns true (is-new) for empty/missing Sightings section -- safe default for new notes
 
 ### Blockers/Concerns
 
@@ -76,6 +79,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T05:32:10Z
-Stopped at: Completed 70-02-PLAN.md
+Last session: 2026-04-12T05:50:03.220Z
+Stopped at: Completed 71-01-PLAN.md
 Resume file: None
