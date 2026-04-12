@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 79-02-PLAN.md
-last_updated: "2026-04-12T13:09:30.000Z"
+stopped_at: Completed 79-03-PLAN.md
+last_updated: "2026-04-12T13:16:22.699Z"
 progress:
   total_phases: 12
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 8
 ---
 
@@ -54,6 +54,8 @@ Progress: [##░░░░░░░░░░] 8% (2/26 v5.0 plans)
 - [Phase 79]: EventBus uses Map<string, Set<Function>> for zero-dep typed event handling
 - Plan 79-02: WorkspaceService decomposed to 493 LOC facade delegating 10 methods to 3 domain services
 - Plan 79-02: Domain services receive planningDirGetter closure for settings independence
+- [Phase 79]: Commands receive plugin parameter instead of this binding to avoid circular dependency
+- [Phase 79]: main.ts slimmed to 138 LOC lifecycle-only orchestration with registerCommands(this) delegation
 
 ### Blockers/Concerns
 
@@ -61,6 +63,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T12:57:36.728Z
-Stopped at: Completed 79-02-PLAN.md
+Last session: 2026-04-12T13:16:22.697Z
+Stopped at: Completed 79-03-PLAN.md
 Resume file: None

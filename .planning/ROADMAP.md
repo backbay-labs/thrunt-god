@@ -72,7 +72,7 @@
 
 #### M1: UX Foundation + Service Decomposition
 
-- [ ] **Phase 79: Service Decomposition + EventBus** - Extract WorkspaceService god object into domain services, create typed EventBus, extract commands to commands.ts
+- [x] **Phase 79: Service Decomposition + EventBus** - Extract WorkspaceService god object into domain services, create typed EventBus, extract commands to commands.ts (completed 2026-04-12)
 - [ ] **Phase 80: Sidebar Progressive Disclosure + Onboarding** - Collapsible sections with persistent state, welcome screen, default hotkeys, context-aware defaults
 - [ ] **Phase 81: Command Consolidation + Modal Polish** - Merge 19 commands to ~10 via FuzzySuggestModal choosers, rebuild modals on Obsidian base classes
 
@@ -108,7 +108,7 @@
   2. main.ts contains only lifecycle management and command registration at under 300 LOC, with commands extracted to a commands.ts module
   3. All 369 existing tests pass without modification after the decomposition
   4. The ViewModel cache and sidebar rendering continue to work identically from the user's perspective
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 79-01-PLAN.md &mdash; EventBus, entity-utils extraction, domain service class shells
@@ -306,7 +306,7 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 76. Canvas Kill Chain Generator + Templates | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 2/2 | Complete | 2026-04-12 |
 | 78. v4.0 Tech Debt Cleanup | v4.0 | 2/2 | Complete | 2026-04-12 |
-| 79. Service Decomposition + EventBus | 2/3 | In Progress|  | - |
+| 79. Service Decomposition + EventBus | 3/3 | Complete   | 2026-04-12 | - |
 | 80. Sidebar Progressive Disclosure + Onboarding | v5.0 | 0/2 | Not started | - |
 | 81. Command Consolidation + Modal Polish | v5.0 | 0/2 | Not started | - |
 | 82. Verdict Lifecycle + FrontmatterEditor + Schema Versioning | v5.0 | 0/3 | Not started | - |
