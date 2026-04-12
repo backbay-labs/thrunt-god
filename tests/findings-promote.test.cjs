@@ -195,7 +195,9 @@ describe('cmdFindingsPromote', () => {
     assert.ok(/category:/.test(sigmaBody), 'logsource should have category');
     assert.ok(/product:/.test(sigmaBody), 'logsource should have product');
     assert.ok(sigmaBody.includes('detection:'), 'sigma should have detection');
-    assert.ok(sigmaBody.includes('selection:'), 'sigma should have selection in detection');
+    // Standard Sigma uses 'keywords:' for keyword-based detection or 'selection:' for field-based
+    assert.ok(sigmaBody.includes('keywords:') || sigmaBody.includes('selection:'),
+      'sigma should have keywords or selection in detection');
     assert.ok(sigmaBody.includes('condition:'), 'sigma should have condition in detection');
     assert.ok(sigmaBody.includes('tags:'), 'sigma should have tags');
     assert.ok(/attack\.t\d{4}/i.test(sigmaBody), 'tags should contain attack.tXXXX');

@@ -1600,24 +1600,28 @@ function escapeForKql(value) {
 function inferLogsource(techniques) {
   const techStr = techniques.join(',').toUpperCase();
 
-  // Credential access techniques
+  // Credential access techniques -> authentication
   if (/T1078|T1110|T1552|T1556/.test(techStr)) {
     return { category: 'authentication', product: 'windows', service: 'security' };
   }
-  // Lateral movement
+  // Lateral movement -> network_connection (standard Sigma category)
   if (/T1021|T1550|T1563/.test(techStr)) {
     return { category: 'network_connection', product: 'windows', service: 'sysmon' };
   }
-  // Execution
+  // Execution -> process_creation (standard Sigma category)
   if (/T1059|T1053|T1569/.test(techStr)) {
     return { category: 'process_creation', product: 'windows', service: 'sysmon' };
   }
-  // Cloud-oriented
-  if (/T1538|T1526|T1580/.test(techStr)) {
-    return { category: 'cloud', product: 'cloud', service: 'audit' };
+  // Network-related (proxy/firewall) techniques
+  if (/T1071|T1090|T1572|T1573/.test(techStr)) {
+    return { category: 'proxy' };
   }
-  // Default
-  return { category: 'process_creation', product: 'windows', service: 'sysmon' };
+  // Cloud-oriented -> use standard 'generic' category (no Sigma-standard 'cloud' category)
+  if (/T1538|T1526|T1580/.test(techStr)) {
+    return { category: 'generic' };
+  }
+  // Default: generic (safe fallback for unknown technique domains)
+  return { category: 'generic' };
 }
 
 /**
@@ -1680,12 +1684,21 @@ function renderSigmaFull(finding, techniques, confidence) {
   const safeDescription = escapeForSigma(finding.description);
   const safeId = escapeForSigma(finding.id);
 
-  // Build selection from keywords (keywords already filtered by extractKeywords)
-  const selection = {};
+  // Build detection block using standard Sigma keyword search format.
+  // Standard Sigma uses 'keywords' as a top-level search identifier
+  // with 'condition: keywords' (not nested under selection).
+  let detection;
   if (keywords.length > 0) {
-    selection['keywords'] = keywords.length === 1 ? `*${keywords[0]}*` : keywords.map(k => `*${k}*`);
+    detection = {
+      keywords: keywords.map(k => `*${k}*`),
+      condition: 'keywords',
+    };
   } else {
-    selection['EventType'] = '*';
+    // No keywords: fall back to field-based selection
+    detection = {
+      selection: { EventType: '*' },
+      condition: 'selection',
+    };
   }
 
   const rule = {
@@ -1697,10 +1710,7 @@ function renderSigmaFull(finding, techniques, confidence) {
     date: dateStr,
     tags: techniques.map(t => `attack.${t.toLowerCase()}`),
     logsource,
-    detection: {
-      selection,
-      condition: 'selection',
-    },
+    detection,
     level: confidence,
     falsepositives: ['Legitimate administrative activity'],
   };
