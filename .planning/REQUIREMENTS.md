@@ -50,9 +50,9 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 - [x] **CANVAS-01**: "Generate hunt canvas" command creates Canvas file with entity cards positioned by ATT&CK tactic
 - [x] **CANVAS-02**: At least 4 canvas templates ship (kill chain, diamond model, lateral movement map, hunt progression)
 - [x] **CANVAS-03**: "Canvas from current hunt" reads FINDINGS.md and RECEIPTS/ to auto-generate a kill chain canvas
-- [ ] **CANVAS-04**: Cross-hunt intelligence queries surface recurring IOCs, TTP coverage gaps, and actor convergence
-- [ ] **CANVAS-05**: "Compare hunts" command identifies shared and divergent entities across two workspaces
-- [ ] **CANVAS-06**: Knowledge dashboard canvas provides a visual program overview
+- [x] **CANVAS-04**: Cross-hunt intelligence queries surface recurring IOCs, TTP coverage gaps, and actor convergence
+- [x] **CANVAS-05**: "Compare hunts" command identifies shared and divergent entities across two workspaces
+- [x] **CANVAS-06**: Knowledge dashboard canvas provides a visual program overview
 
 ## Future Requirements
 
@@ -109,9 +109,9 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | CANVAS-01 | Phase 76 | Complete |
 | CANVAS-02 | Phase 76 | Complete |
 | CANVAS-03 | Phase 76 | Complete |
-| CANVAS-04 | Phase 77 | Pending |
-| CANVAS-05 | Phase 77 | Pending |
-| CANVAS-06 | Phase 77 | Pending |
+| CANVAS-04 | Phase 77 | Complete |
+| CANVAS-05 | Phase 77 | Complete |
+| CANVAS-06 | Phase 77 | Complete |
 
 **Coverage:**
 - v4.0 requirements: 32 total

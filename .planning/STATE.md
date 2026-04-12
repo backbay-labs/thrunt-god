@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 76-02-PLAN.md
-last_updated: "2026-04-12T07:56:20.780Z"
+status: Active
+stopped_at: Completed 77-01-PLAN.md
+last_updated: "2026-04-12T08:10:55.913Z"
 progress:
   total_phases: 10
   completed_phases: 9
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_plans: 21
+  completed_plans: 20
+  percent: 95
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 76 complete (2/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 77 in progress (1/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 76 of 77 (Canvas Kill Chain Generator Templates -- COMPLETE)
-**Plan:** 2 of 2 complete
+**Status:** Active
+**Phase:** 77 of 77 (Cross-Hunt Intelligence Knowledge Dashboard -- IN PROGRESS)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (19/19 v4.0 plans)
+Progress: [██████████] 95% (20/21 v4.0 plans)
 
 ## Recently Completed
 
@@ -103,6 +103,11 @@ Progress: [██████████] 100% (19/19 v4.0 plans)
 - [Phase 76]: [Phase 76-02]: canvasFromCurrentHunt filters receipts by claim_status === "supports" to only include validated evidence
 - [Phase 76]: [Phase 76-02]: CanvasTemplateModal as inline class in main.ts -- lightweight, consistent with PromptModal pattern
 - [Phase 76]: [Phase 76-02]: Entity deduplication by Map key in canvasFromCurrentHunt prevents duplicate nodes from findings+receipts overlap
+- [Phase 77]: [Phase 77-01]: Hunt pair key uses sorted alphabetical ordering with ||| separator for consistent deduplication
+- [Phase 77]: [Phase 77-01]: Dashboard hunt node width scales linearly between 140-220px based on recency timestamp
+- [Phase 77]: [Phase 77-01]: Entity color resolution inlined in generateDashboardCanvas rather than importing getEntityColor to avoid hunt type fallback
+- [Phase 77]: [Phase 77-01]: Coverage gaps include TTPs with missing hunt_count (treated same as 0) for defensive completeness
+- [Phase 77]: Hunt pair key uses sorted alphabetical ordering with ||| separator for consistent deduplication
 
 ### Blockers/Concerns
 
@@ -110,6 +115,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T07:53:03.619Z
-Stopped at: Completed 76-02-PLAN.md
+Last session: 2026-04-12T08:10:51.720Z
+Stopped at: Completed 77-01-PLAN.md
 Resume file: None
