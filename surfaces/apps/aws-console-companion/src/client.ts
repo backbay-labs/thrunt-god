@@ -140,7 +140,7 @@ export class AwsCompanion {
       conditions.push(`eventtime >= '${escapeAthenaString(params.startTime)}'`);
     }
     if (params.endTime) {
-      conditions.push(`eventtime <= '${params.endTime}'`);
+      conditions.push(`eventtime <= '${escapeAthenaString(params.endTime)}'`);
     }
 
     if (params.eventSource) {

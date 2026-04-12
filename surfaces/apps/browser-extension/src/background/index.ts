@@ -98,7 +98,7 @@ const ALLOWED_SENDER_DOMAINS = [
   'splunk.com', 'splunkcloud.com',
   'elastic.co', 'cloud.es.io', 'kb.elastic.co',
   'crowdstrike.com',
-  'microsoft.com', 'portal.azure.com',
+  'security.microsoft.com', 'portal.azure.com',
   'okta.com', 'oktapreview.com',
   'aws.amazon.com', 'console.aws.amazon.com',
   'console.cloud.google.com',

@@ -171,9 +171,7 @@ export function createGcpAdapter(): SiteAdapter {
 // --- helpers ---
 
 function extractGcpService(path: string): string | null {
-  // GCP paths typically have the service name after /
-  const match = path.match(/console\.cloud\.google\.com\/([a-z-]+)/);
-  if (match) return match[1];
+  // GCP paths: first segment is typically the service name (e.g., /logs, /kubernetes, /compute)
   const segments = path.split('/').filter(Boolean);
   return segments.length > 0 ? segments[0] : null;
 }
