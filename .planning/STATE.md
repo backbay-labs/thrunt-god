@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 81-01-PLAN.md
-last_updated: "2026-04-12T14:32:10Z"
+stopped_at: Completed 81-02-PLAN.md
+last_updated: "2026-04-12T14:39:35.650Z"
 progress:
   total_phases: 12
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
   percent: 86
 ---
 
@@ -63,6 +63,8 @@ Progress: [████████░░] 86% (6/7 v5.0 plans)
 - [Phase 81]: FuzzySuggestModal chooser pattern with ChooserItem{id,name,description} for sub-command grouping
 - [Phase 81]: Hidden aliases (name:'') preserve old command IDs for hotkey bindings without palette clutter
 - [Phase 81]: CanvasTemplateChooserModal replaces button-based CanvasTemplateModal for consistent fuzzy UI
+- [Phase 81]: CanvasTemplateModal uses FuzzySuggestModal with CanvasTemplateItem for consistent fuzzy keyboard nav
+- [Phase 81]: Entity badge colors use color-mix(var(--color-X) 25%, transparent) with data-entity-type attribute selectors
 
 ### Blockers/Concerns
 
@@ -70,6 +72,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T14:32:10Z
-Stopped at: Completed 81-01-PLAN.md
+Last session: 2026-04-12T14:39:35.645Z
+Stopped at: Completed 81-02-PLAN.md
 Resume file: None
