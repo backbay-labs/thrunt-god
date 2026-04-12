@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 86-01-PLAN.md
-last_updated: "2026-04-12T20:46:31.663Z"
+stopped_at: Completed 86-02-PLAN.md
+last_updated: "2026-04-12T20:50:49.000Z"
 progress:
   total_phases: 12
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 18
-  completed_plans: 17
-  percent: 94
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -28,9 +28,9 @@ v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelli
 
 **Status:** Executing
 **Phase:** 86 of 90 (Live Hunt Canvas + Reactive Dashboard)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [█████████░] 94% (17/18 v5.0 plans)
+Progress: [██████████] 100% (18/18 v5.0 plans)
 
 ## Recently Completed
 
@@ -105,6 +105,10 @@ Progress: [█████████░] 94% (17/18 v5.0 plans)
 - [Phase 86]: handleEntityCreated reads canvas from disk each call, enabling sequential entity:created events to auto-fill grid columns
 - [Phase 86]: Removed entities grayed out to #757575 via entityPathToColor map injection before patchCanvasNodeColors
 - [Phase 86]: Grid positioning uses maxY-based row detection (not maxBottom-NODE_HEIGHT) for nodes with variable heights
+- [Phase 86]: liveCanvasEnabled setting gates both EventBus listener and dashboard debounce
+- [Phase 86]: Dashboard debounce at 2000ms trailing (vs 500ms for canvas color patcher) for batch-heavy operations
+- [Phase 86]: open-live-hunt-canvas registered as visible top-level command (not hidden alias)
+- [Phase 86]: openLiveHuntCanvas creates live-hunt.canvas with empty {nodes:[],edges:[]} if missing
 
 ### Blockers/Concerns
 
@@ -112,6 +116,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T20:46:25.399Z
-Stopped at: Completed 86-01-PLAN.md
+Last session: 2026-04-12T20:50:49Z
+Stopped at: Completed 86-02-PLAN.md
 Resume file: None

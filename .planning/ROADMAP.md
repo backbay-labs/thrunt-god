@@ -85,7 +85,7 @@
 #### M3: Live Canvas
 
 - [x] **Phase 85: Canvas Adapter + Reactive Nodes** - Frontmatter-driven node appearance, file-level JSON patching for reactive updates, click-to-navigate (completed 2026-04-12)
-- [ ] **Phase 86: Live Hunt Canvas + Reactive Dashboard** - Auto-populating canvas from ingestion events, dashboard that updates on entity changes
+- [x] **Phase 86: Live Hunt Canvas + Reactive Dashboard** - Auto-populating canvas from ingestion events, dashboard that updates on entity changes (completed 2026-04-12)
 
 #### M4: Live Hunt Companion
 
@@ -313,7 +313,7 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 83. Cross-Hunt Aggregation + Computed Confidence | 2/2 | Complete    | 2026-04-12 | - |
 | 84. ATT&CK Institutional Memory | 2/2 | Complete    | 2026-04-12 | - |
 | 85. Canvas Adapter + Reactive Nodes | 2/2 | Complete    | 2026-04-12 | - |
-| 86. Live Hunt Canvas + Reactive Dashboard | 1/2 | In Progress|  | - |
+| 86. Live Hunt Canvas + Reactive Dashboard | 2/2 | Complete   | 2026-04-12 | - |
 | 87. Filesystem Watcher + Hunt Pulse | v5.0 | 0/2 | Not started | - |
 | 88. Bidirectional MCP Event Bridge + Prior-Hunt Suggester | v5.0 | 0/2 | Not started | - |
 | 89. Hunt Journal Engine | v5.0 | 0/2 | Not started | - |
