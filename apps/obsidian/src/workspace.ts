@@ -15,6 +15,7 @@ import {
   type ReceiptTimelineEntry,
   type EnrichmentData,
   type CoverageReport,
+  type CoverageTactic,
   type AssembledContext,
   type ExportProfile,
   type CanvasEntity,
@@ -430,10 +431,6 @@ export class WorkspaceService {
   }
 
   async analyzeCoverage(): Promise<{ success: boolean; message: string }> {
-    if (!this.mcpClient || !this.mcpClient.isConnected()) {
-      return { success: false, message: 'MCP is not connected.' };
-    }
-
     const planningDir = getPlanningDir(
       this.getSettings().planningDir,
       this.defaultPlanningDir,
@@ -447,38 +444,112 @@ export class WorkspaceService {
     const files = await this.vaultAdapter.listFiles(ttpsFolder);
     const mdFiles = files.filter(f => f.endsWith('.md'));
 
-    const techniqueIds: string[] = [];
+    // --- MCP path (when connected) ---
+    if (this.mcpClient && this.mcpClient.isConnected()) {
+      const techniqueIds: string[] = [];
+      for (const fileName of mdFiles) {
+        try {
+          const filePath = normalizePath(`${ttpsFolder}/${fileName}`);
+          const fileContent = await this.vaultAdapter.readFile(filePath);
+          const match = fileContent.match(/^mitre_id:\s*"?([^"\n]+)"?$/m);
+          if (match && match[1]) {
+            techniqueIds.push(match[1].trim());
+          }
+        } catch {
+          // Skip unreadable files
+        }
+      }
+
+      const result = await this.mcpClient.callTool('analyzeCoverage', { techniqueIds });
+      if (!result || result.isError) {
+        return { success: false, message: 'MCP coverage analysis failed.' };
+      }
+
+      let report: CoverageReport;
+      try {
+        report = JSON.parse(result.content[0]!.text) as CoverageReport;
+      } catch {
+        return { success: false, message: 'MCP coverage analysis failed.' };
+      }
+
+      const reportContent = buildCoverageReport(
+        report.tactics,
+        report.totalTechniques,
+        report.huntedTechniques,
+        report.overallPercentage,
+        report.gaps,
+      );
+
+      const reportPath = normalizePath(`${planningDir}/COVERAGE_REPORT.md`);
+      if (this.vaultAdapter.fileExists(reportPath)) {
+        await this.vaultAdapter.modifyFile(reportPath, reportContent);
+      } else {
+        await this.vaultAdapter.createFile(reportPath, reportContent);
+      }
+
+      this.invalidate();
+      return { success: true, message: 'Coverage report written to COVERAGE_REPORT.md' };
+    }
+
+    // --- Offline fallback: build coverage from vault frontmatter ---
+    const tacticMap = new Map<string, { total: number; hunted: number }>();
+    const gaps: string[] = [];
+    let totalTechniques = 0;
+    let huntedTechniques = 0;
+
     for (const fileName of mdFiles) {
       try {
         const filePath = normalizePath(`${ttpsFolder}/${fileName}`);
-        const fileContent = await this.vaultAdapter.readFile(filePath);
-        const match = fileContent.match(/^mitre_id:\s*"?([^"\n]+)"?$/m);
-        if (match && match[1]) {
-          techniqueIds.push(match[1].trim());
+        const content = await this.vaultAdapter.readFile(filePath);
+        const fm = this.parseFrontmatterFields(content);
+
+        const tactic = fm.tactic || 'Unknown';
+        const huntCount = parseInt(fm.hunt_count || '0', 10) || 0;
+        const mitreId = fm.mitre_id || fileName.replace(/\.md$/, '');
+
+        // Handle YAML array tactic values (e.g. "- Initial Access\n- Execution")
+        const tactics = Array.isArray(tactic) ? tactic : [tactic];
+
+        for (const t of tactics) {
+          const tacticName = String(t).trim();
+          if (!tacticMap.has(tacticName)) {
+            tacticMap.set(tacticName, { total: 0, hunted: 0 });
+          }
+          const entry = tacticMap.get(tacticName)!;
+          entry.total++;
+          if (huntCount > 0) entry.hunted++;
+        }
+
+        totalTechniques++;
+        if (huntCount > 0) {
+          huntedTechniques++;
+        } else {
+          gaps.push(mitreId);
         }
       } catch {
         // Skip unreadable files
       }
     }
 
-    const result = await this.mcpClient.callTool('analyzeCoverage', { techniqueIds });
-    if (!result || result.isError) {
-      return { success: false, message: 'MCP coverage analysis failed.' };
-    }
+    const coverageTactics: CoverageTactic[] = [...tacticMap.entries()].map(([tactic, counts]) => ({
+      tactic,
+      total: counts.total,
+      hunted: counts.hunted,
+      percentage: counts.total > 0
+        ? Math.round((counts.hunted / counts.total) * 1000) / 10
+        : 0,
+    }));
 
-    let report: CoverageReport;
-    try {
-      report = JSON.parse(result.content[0]!.text) as CoverageReport;
-    } catch {
-      return { success: false, message: 'MCP coverage analysis failed.' };
-    }
+    const overallPercentage = totalTechniques > 0
+      ? Math.round((huntedTechniques / totalTechniques) * 1000) / 10
+      : 0;
 
     const reportContent = buildCoverageReport(
-      report.tactics,
-      report.totalTechniques,
-      report.huntedTechniques,
-      report.overallPercentage,
-      report.gaps,
+      coverageTactics,
+      totalTechniques,
+      huntedTechniques,
+      overallPercentage,
+      gaps,
     );
 
     const reportPath = normalizePath(`${planningDir}/COVERAGE_REPORT.md`);
@@ -489,7 +560,7 @@ export class WorkspaceService {
     }
 
     this.invalidate();
-    return { success: true, message: 'Coverage report written to COVERAGE_REPORT.md' };
+    return { success: true, message: 'Coverage report written to COVERAGE_REPORT.md (offline)' };
   }
 
   async logDecision(
@@ -1312,8 +1383,8 @@ export class WorkspaceService {
    * Parse simple frontmatter fields (type, tactic) from markdown content.
    * Manual parsing -- no library dependency.
    */
-  private parseFrontmatterFields(content: string): { type: string; tactic: string } {
-    const result = { type: '', tactic: '' };
+  private parseFrontmatterFields(content: string): { type: string; tactic: string; hunt_count: string; mitre_id: string } {
+    const result = { type: '', tactic: '', hunt_count: '', mitre_id: '' };
     if (!content.startsWith('---')) return result;
     const end = content.indexOf('\n---', 3);
     if (end === -1) return result;
@@ -1324,6 +1395,14 @@ export class WorkspaceService {
       const typeMatch = line.match(/^type:\s*(.+)$/);
       if (typeMatch && typeMatch[1]) {
         result.type = typeMatch[1].trim().replace(/^["']|["']$/g, '');
+      }
+      const huntCountMatch = line.match(/^hunt_count:\s*(.+)$/);
+      if (huntCountMatch && huntCountMatch[1]) {
+        result.hunt_count = huntCountMatch[1].trim().replace(/^["']|["']$/g, '');
+      }
+      const mitreIdMatch = line.match(/^mitre_id:\s*(.+)$/);
+      if (mitreIdMatch && mitreIdMatch[1]) {
+        result.mitre_id = mitreIdMatch[1].trim().replace(/^["']|["']$/g, '');
       }
       const tacticMatch = line.match(/^tactic:\s*(.+)$/);
       if (tacticMatch && tacticMatch[1]) {
