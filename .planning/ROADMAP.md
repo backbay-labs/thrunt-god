@@ -179,7 +179,11 @@ Plans:
   1. "Hyper Copy for Agent" command opens a modal showing available export profiles, assembles multi-note context for the selected profile, and displays a preview with token count estimate and a "Copy to clipboard" action
   2. Quick export commands ("Copy for Query Writer", "Copy for Intel Advisor", "Copy IOC context") work from the command palette without opening a modal
   3. EXPORT_LOG.md records each export with source note, context assembled (entity/receipt counts), token estimate, and target agent profile
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 75-01-PLAN.md -- Export log formatter (formatExportLog, buildExportLogEntry) with TDD, HyperCopyModal class
+- [ ] 75-02-PLAN.md -- WorkspaceService.logExport, 4 command registrations in main.ts (hyper-copy + 3 quick exports)
 
 ### Phase 76: Canvas Kill Chain Generator + Templates
 **Goal**: Analysts can generate visual attack narratives as Obsidian Canvas files, with entity cards positioned by ATT&CK tactic and auto-generated from hunt findings
@@ -226,6 +230,6 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 72. MCP Client Adapter + Connection Infrastructure | 2/2 | Complete    | 2026-04-12 | - |
 | 73. MCP Enrichment + Intelligence Features | 2/2 | Complete    | 2026-04-12 | - |
 | 74. Export Profile Registry + Context Assembly Engine | 2/2 | Complete    | 2026-04-12 | - |
-| 75. Hyper Copy Commands + Export UX | v4.0 | 0/0 | Not started | - |
+| 75. Hyper Copy Commands + Export UX | v4.0 | 0/2 | Not started | - |
 | 76. Canvas Kill Chain Generator + Templates | v4.0 | 0/0 | Not started | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/0 | Not started | - |
