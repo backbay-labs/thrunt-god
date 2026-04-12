@@ -202,6 +202,15 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
   }
 
+  // Routes that require subprocess availability for write operations
+  const SUBPROCESS_REQUIRED_ROUTES = new Set([
+    '/api/case/open',
+    '/api/evidence/attach',
+    '/api/execute/pack',
+    '/api/execute/target',
+    '/api/execute/next',
+  ]);
+
   async function handleRequestInner(_req: Request, _url: URL, reqPath: string, method: string): Promise<Response> {
     const req = _req;
 
@@ -210,6 +219,17 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     const isPublic = reqPath === '/api/health' || reqPath === '/api/handshake';
     if (!checkAuth(req, isWrite) && !isPublic) {
       return error('Unauthorized — provide X-Bridge-Token header', 401, 'auth', 'AUTH_MISSING_TOKEN');
+    }
+
+    // ─── Subprocess degradation gate ──────────────────────────────────
+    if (method === 'POST' && !cfg.mockMode && SUBPROCESS_REQUIRED_ROUTES.has(reqPath) && !subprocessHealth.isAvailable()) {
+      logger.warn('http', 'write rejected — bridge degraded', { path: reqPath });
+      return error(
+        'Bridge is in degraded mode — thrunt-tools subprocess is unavailable. Read operations continue to work. Write operations will resume when the subprocess recovers.',
+        503,
+        'subprocess',
+        'BRIDGE_DEGRADED'
+      );
     }
 
     // ─── GET routes ────────────────────────────────────────────────
