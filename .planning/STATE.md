@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
 status: Active
-stopped_at: Completed 70-01-PLAN.md
-last_updated: "2026-04-12T05:27:51.235Z"
+stopped_at: Completed 70-02-PLAN.md
+last_updated: "2026-04-12T05:32:10.000Z"
 progress:
   total_phases: 10
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 50
+  completed_plans: 7
+  percent: 60
 ---
 
 # Project State
@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 70 in progress (plan 01 of 02 complete)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 70 complete (2/2 plans)
 
 ## Current Milestone
 
@@ -28,9 +28,9 @@ v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelli
 
 **Status:** Active
 **Phase:** 70 of 77 (Artifact Registry Parsers)
-**Plan:** 1 of 2 complete
+**Plan:** 2 of 2 complete
 
-Progress: [█████░░░░░] 50% (1/2 phase 70 plans)
+Progress: [██████████] 100% (2/2 phase 70 plans)
 
 ## Recently Completed
 
@@ -66,6 +66,9 @@ Progress: [█████░░░░░] 50% (1/2 phase 70 plans)
 - [Phase 70-01]: Manual YAML frontmatter parsing (no library) consistent with existing parser pattern
 - [Phase 70-01]: Entity extraction uses regex with validation (IPv4 octet check, TLD alpha requirement) to reduce false positives
 - [Phase 70-01]: Technique refs regex matches T1234 and T1234.567 -- sub-technique consumes parent in same match
+- [Phase 70-02]: Extended artifact detection reuses VaultAdapter.listFiles/fileExists/listFolders -- no direct filesystem access
+- [Phase 70-02]: Receipt counting filters by /^RCT-.*\.md$/ and query counting by /^QRY-.*\.md$/ to avoid false positives
+- [Phase 70-02]: Agent Artifacts section placed between Knowledge Base and Core artifacts in sidebar render order
 
 ### Blockers/Concerns
 
@@ -73,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T05:27:51.232Z
-Stopped at: Completed 70-01-PLAN.md
+Last session: 2026-04-12T05:32:10Z
+Stopped at: Completed 70-02-PLAN.md
 Resume file: None
