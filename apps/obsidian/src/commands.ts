@@ -7,7 +7,7 @@ import { ENTITY_TYPES, ENTITY_FOLDERS } from './entity-schema';
 import { McpSearchModal } from './mcp-search-modal';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { PromptModal, CanvasTemplateModal, CompareHuntsModal } from './modals';
-import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, VerdictSuggestModal, TechniqueSuggestModal, buildTechniqueItems } from './chooser-modals';
+import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, JournalChooserModal, VerdictSuggestModal, TechniqueSuggestModal, buildTechniqueItems } from './chooser-modals';
 import { appendVerdictEntry, formatTimestamp, detectHuntId, type VerdictEntry } from './verdict';
 import { updateFrontmatter } from './frontmatter-editor';
 import { previewMigration, applyMigration, CURRENT_SCHEMA_VERSION } from './schema-migration';
@@ -85,6 +85,40 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     name: 'Intelligence...',
     callback: () => {
       new IntelligenceChooserModal(plugin.app, plugin).open();
+    },
+  });
+
+  // --- Journal chooser and commands (Phase 89) ---
+
+  plugin.addCommand({
+    id: 'journal-chooser',
+    name: 'Journal...',
+    callback: () => {
+      new JournalChooserModal(plugin.app, plugin).open();
+    },
+  });
+
+  plugin.addCommand({
+    id: 'create-journal',
+    name: '',  // Hidden alias -- accessed via Journal... chooser
+    callback: () => {
+      void createJournal(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'new-journal-entry',
+    name: '',  // Hidden alias -- accessed via Journal... chooser
+    callback: () => {
+      void newJournalEntry(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'journal-summary',
+    name: '',  // Hidden alias -- accessed via Journal... chooser
+    callback: () => {
+      void journalSummary(plugin);
     },
   });
 
@@ -869,6 +903,159 @@ async function addFalsePositive(plugin: ThruntGodPlugin): Promise<void> {
     const filePath = normalizePath(`${ttpsFolder}/${fileName}`);
     promptForPattern(filePath, selected.fullName);
   }).open();
+}
+
+// ---------------------------------------------------------------------------
+// Journal command helpers (Phase 89-02)
+// ---------------------------------------------------------------------------
+
+async function createJournal(plugin: ThruntGodPlugin): Promise<void> {
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  // Detect hunt ID from MISSION.md or planning dir
+  let missionContent: string | null = null;
+  try {
+    const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+    missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+  } catch {
+    // MISSION.md not found -- will fall back to planning dir
+  }
+  let huntId = detectHuntId(missionContent, planningDir);
+
+  // If huntId is "manual", prompt the user for a hunt ID
+  if (huntId === 'manual') {
+    await new Promise<void>((resolve) => {
+      new PromptModal(
+        plugin.app,
+        'Hunt ID',
+        [{ label: 'Hunt ID', placeholder: 'HUNT-042' }],
+        (values) => {
+          huntId = values[0] || 'HUNT-001';
+          resolve();
+        },
+      ).open();
+    });
+  }
+
+  // Prompt for hypothesis
+  new PromptModal(
+    plugin.app,
+    'Create Journal',
+    [{ label: 'Primary Hypothesis', placeholder: 'Describe your initial hypothesis' }],
+    (values) => {
+      const hypothesis = values[0] || 'To be determined';
+      void (async () => {
+        const result = await plugin.workspaceService.journal.createJournal(huntId, hypothesis);
+        new Notice(`Journal created: JOURNAL-${huntId}.md`);
+        await plugin.app.workspace.openLinkText(result.path, '', true);
+        await plugin.refreshViews();
+      })();
+    },
+  ).open();
+}
+
+async function newJournalEntry(plugin: ThruntGodPlugin): Promise<void> {
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  // Detect hunt ID
+  let missionContent: string | null = null;
+  try {
+    const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+    missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+  } catch {
+    // MISSION.md not found
+  }
+  let huntId = detectHuntId(missionContent, planningDir);
+
+  // If huntId is "manual", try to find existing journals
+  if (huntId === 'manual') {
+    const journals = await plugin.workspaceService.journal.listJournals();
+    if (journals.length === 0) {
+      // No journals exist -- create one first
+      await createJournal(plugin);
+      return;
+    } else if (journals.length === 1) {
+      huntId = journals[0]!;
+    } else {
+      // Multiple journals -- use the first one with a notice
+      huntId = journals[0]!;
+      new Notice(`Using journal for hunt ${huntId} (${journals.length} journals found)`);
+    }
+  }
+
+  // Ensure journal exists
+  const exists = await plugin.workspaceService.journal.journalExists(huntId);
+  if (!exists) {
+    await plugin.workspaceService.journal.createJournal(huntId, 'To be determined');
+  }
+
+  // Prompt for entry text
+  new PromptModal(
+    plugin.app,
+    'New Journal Entry',
+    [{ label: 'Journal Entry', placeholder: 'What did you observe or decide?' }],
+    (values) => {
+      const entryText = values[0] || '';
+      if (!entryText) {
+        new Notice('Entry text is required.');
+        return;
+      }
+      void (async () => {
+        await plugin.workspaceService.journal.appendEntry(huntId, entryText);
+        new Notice('Journal entry added');
+        await plugin.refreshViews();
+      })();
+    },
+  ).open();
+}
+
+async function journalSummary(plugin: ThruntGodPlugin): Promise<void> {
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  // Detect hunt ID
+  let missionContent: string | null = null;
+  try {
+    const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+    missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+  } catch {
+    // MISSION.md not found
+  }
+  let huntId = detectHuntId(missionContent, planningDir);
+
+  // If huntId is "manual", try to find existing journals
+  if (huntId === 'manual') {
+    const journals = await plugin.workspaceService.journal.listJournals();
+    if (journals.length === 0) {
+      new Notice('No journal found for this hunt');
+      return;
+    } else if (journals.length === 1) {
+      huntId = journals[0]!;
+    } else {
+      huntId = journals[0]!;
+      new Notice(`Using journal for hunt ${huntId} (${journals.length} journals found)`);
+    }
+  }
+
+  // Check journal exists
+  const exists = await plugin.workspaceService.journal.journalExists(huntId);
+  if (!exists) {
+    new Notice('No journal found for this hunt');
+    return;
+  }
+
+  const result = await plugin.workspaceService.journal.generateSummary(huntId);
+  new Notice('Journal summary generated');
+  await plugin.app.workspace.openLinkText(result.path, '', true);
+  await plugin.refreshViews();
 }
 
 export async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {

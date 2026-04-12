@@ -16,6 +16,7 @@ vi.mock('../chooser-modals', () => ({
   CopyChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   CanvasChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   IntelligenceChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
+  JournalChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   VerdictSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   TechniqueSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   buildTechniqueItems: vi.fn().mockReturnValue([]),
@@ -51,6 +52,13 @@ function createMockPlugin() {
       getFilePath: () => '',
       vaultAdapter: { getFile: () => null },
       openLiveHuntCanvas: vi.fn().mockResolvedValue({ success: true, message: 'ready', canvasPath: 'test' }),
+      journal: {
+        createJournal: vi.fn().mockResolvedValue({ path: 'test' }),
+        appendEntry: vi.fn().mockResolvedValue({ path: 'test' }),
+        generateSummary: vi.fn().mockResolvedValue({ path: 'test' }),
+        listJournals: vi.fn().mockResolvedValue([]),
+        journalExists: vi.fn().mockResolvedValue(false),
+      },
     },
     mcpClient: { isConnected: () => false },
     addCommand: (cmd: any) => {
@@ -73,9 +81,9 @@ describe('command consolidation', () => {
   // Visible top-level commands
   // -----------------------------------------------------------------------
 
-  it('registers exactly 15 visible top-level commands (non-empty name)', () => {
+  it('registers exactly 16 visible top-level commands (non-empty name)', () => {
     const visible = commands.filter((c) => c.name !== '');
-    expect(visible).toHaveLength(15);
+    expect(visible).toHaveLength(16);
   });
 
   it('visible commands include the expected IDs', () => {
@@ -90,6 +98,7 @@ describe('command consolidation', () => {
       'cross-hunt-intel',
       'ingest-agent-output',
       'intelligence-chooser',
+      'journal-chooser',
       'migrate-entity-schema',
       'open-live-hunt-canvas',
       'open-thrunt-workspace',
@@ -210,8 +219,8 @@ describe('command consolidation', () => {
   // Total hidden alias count
   // -----------------------------------------------------------------------
 
-  it('has at least 18 hidden aliases (13 consolidated + 5 artifacts)', () => {
+  it('has at least 21 hidden aliases (13 consolidated + 3 journal + 5 artifacts)', () => {
     const hidden = commands.filter((c) => c.name === '');
-    expect(hidden.length).toBeGreaterThanOrEqual(18);
+    expect(hidden.length).toBeGreaterThanOrEqual(21);
   });
 });

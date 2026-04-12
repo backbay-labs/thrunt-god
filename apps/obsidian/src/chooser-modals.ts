@@ -438,6 +438,43 @@ export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
 }
 
 // ---------------------------------------------------------------------------
+// JournalChooserModal
+// ---------------------------------------------------------------------------
+
+const JOURNAL_ITEMS: readonly ChooserItem[] = [
+  { id: 'new-journal-entry', name: 'New Entry', description: 'Append a timestamped entry to the active hunt journal' },
+  { id: 'journal-summary', name: 'Generate Summary', description: 'Extract reasoning chain into a structured summary' },
+  { id: 'create-journal', name: 'Create Journal', description: 'Create a new hunt journal for the current hunt' },
+];
+
+export class JournalChooserModal extends FuzzySuggestModal<ChooserItem> {
+  private plugin: ThruntGodPlugin;
+
+  constructor(app: App, plugin: ThruntGodPlugin) {
+    super(app);
+    this.plugin = plugin;
+    this.setPlaceholder('Choose a journal action...');
+  }
+
+  getItems(): ChooserItem[] {
+    return [...JOURNAL_ITEMS];
+  }
+
+  getItemText(item: ChooserItem): string {
+    return item.name;
+  }
+
+  renderSuggestion(match: FuzzyMatch<ChooserItem>, el: HTMLElement): void {
+    el.createDiv({ cls: 'thrunt-chooser-name', text: match.item.name });
+    el.createDiv({ cls: 'thrunt-chooser-desc', text: match.item.description });
+  }
+
+  onChooseItem(item: ChooserItem, _evt: MouseEvent | KeyboardEvent): void {
+    (this.plugin.app as any).commands.executeCommandById('thrunt-god:' + item.id);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // TechniqueSuggestModal
 // ---------------------------------------------------------------------------
 
