@@ -12,6 +12,7 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,
+    "resolveJsonModule": true,
     "strict": true,
     "strictNullChecks": true,
     "target": "ES2020",
