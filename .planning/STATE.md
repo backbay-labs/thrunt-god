@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
-status: planning
-stopped_at: Completed 72-02-PLAN.md
-last_updated: "2026-04-12T06:24:27.853Z"
+status: executing
+stopped_at: Completed 73-01-PLAN.md
+last_updated: "2026-04-12T06:37:34.555Z"
 progress:
   total_phases: 10
   completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 13
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 72 complete (2/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 73 in progress (1/2 plans)
 
 ## Current Milestone
 
 v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting.
 
-**Status:** Ready to plan
-**Phase:** 72 of 77 (MCP Client Adapter + Connection Infrastructure)
-**Plan:** 2 of 2 complete
+**Status:** Executing
+**Phase:** 73 of 77 (MCP Enrichment + Intelligence Features)
+**Plan:** 1 of 2 complete
 
-Progress: [██████████] 100% (11/11 v4.0 plans)
+Progress: [█████████░] 92% (12/13 v4.0 plans)
 
 ## Recently Completed
 
@@ -41,7 +41,7 @@ Progress: [██████████] 100% (11/11 v4.0 plans)
 
 **Velocity:**
 - Total plans completed: 67 phases across 14 milestones
-- v4.0 plans completed: 4
+- v4.0 plans completed: 5
 
 ## Accumulated Context
 
@@ -79,6 +79,8 @@ Progress: [██████████] 100% (11/11 v4.0 plans)
 - [Phase 72]: [Phase 72-02]: McpClient passed as optional 5th parameter to WorkspaceService -- backward-compatible with all existing tests
 - [Phase 72]: [Phase 72-02]: MCP status dot is purely informational with no click handlers -- connection management stays in settings
 - [Phase 72]: [Phase 72-02]: Obsidian requestUrl used as HTTP adapter via injectable requestFn pattern from Plan 01
+- [Phase 73]: [Phase 73-01]: mergeEnrichment uses heading-bounded section replacement to safely edit TTP notes without overwriting analyst content
+- [Phase 73]: [Phase 73-01]: Pure module pattern (zero Obsidian imports) consistent with ingestion.ts for testability
 
 ### Blockers/Concerns
 
@@ -86,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T06:21:48.790Z
-Stopped at: Completed 72-02-PLAN.md
+Last session: 2026-04-12T06:37:00Z
+Stopped at: Completed 73-01-PLAN.md
 Resume file: None

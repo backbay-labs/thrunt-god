@@ -150,7 +150,7 @@ Plans:
   2. "Analyze detection coverage" command produces COVERAGE_REPORT.md with per-tactic coverage percentages, detection gaps, and cross-reference with hunt_count frontmatter
   3. "Log hunt decision" and "Log hunt learning" commands write to both the MCP server (for cross-hunt surfacing) and the local vault (TTP entity note or LEARNINGS.md)
   4. "Search THRUNT knowledge graph" opens a modal with search input, displays results with entity type badges, and offers "Create note" or "Open note" actions for each result
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 73-01-PLAN.md -- MCP enrichment types and pure functions (mergeEnrichment, buildCoverageReport, formatDecisionEntry, formatLearningEntry) with TDD
@@ -220,7 +220,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 70. Artifact Registry + Parsers | 2/2 | Complete    | 2026-04-12 | - |
 | 71. Ingestion Engine + Agent Activity Timeline | 2/2 | Complete    | 2026-04-12 | - |
 | 72. MCP Client Adapter + Connection Infrastructure | 2/2 | Complete    | 2026-04-12 | - |
-| 73. MCP Enrichment + Intelligence Features | v4.0 | 0/2 | Not started | - |
+| 73. MCP Enrichment + Intelligence Features | 1/2 | In Progress|  | - |
 | 74. Export Profile Registry + Context Assembly Engine | v4.0 | 0/0 | Not started | - |
 | 75. Hyper Copy Commands + Export UX | v4.0 | 0/0 | Not started | - |
 | 76. Canvas Kill Chain Generator + Templates | v4.0 | 0/0 | Not started | - |

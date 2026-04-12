@@ -29,9 +29,9 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 
 - [x] **MCP-01**: MCP client adapter connects to THRUNT MCP server with configurable URL and explicit enable toggle
 - [x] **MCP-02**: Connection status indicator in sidebar header (green/grey/red dot)
-- [ ] **MCP-03**: "Enrich from MCP" action on TTP entity notes pulls technique description, groups, detections, and related techniques
-- [ ] **MCP-04**: "Analyze detection coverage" command produces COVERAGE_REPORT.md with per-tactic coverage and gaps
-- [ ] **MCP-05**: "Log hunt decision" and "Log hunt learning" commands write to both MCP server and local vault
+- [x] **MCP-03**: "Enrich from MCP" action on TTP entity notes pulls technique description, groups, detections, and related techniques
+- [x] **MCP-04**: "Analyze detection coverage" command produces COVERAGE_REPORT.md with per-tactic coverage and gaps
+- [x] **MCP-05**: "Log hunt decision" and "Log hunt learning" commands write to both MCP server and local vault
 - [ ] **MCP-06**: "Search THRUNT knowledge graph" command opens a modal with results and note creation/navigation actions
 - [x] **MCP-07**: All MCP features degrade gracefully when server is unreachable
 
@@ -95,9 +95,9 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | MCP-01 | Phase 72 | Complete |
 | MCP-02 | Phase 72 | Complete |
 | MCP-07 | Phase 72 | Complete |
-| MCP-03 | Phase 73 | Pending |
-| MCP-04 | Phase 73 | Pending |
-| MCP-05 | Phase 73 | Pending |
+| MCP-03 | Phase 73 | Complete |
+| MCP-04 | Phase 73 | Complete |
+| MCP-05 | Phase 73 | Complete |
 | MCP-06 | Phase 73 | Pending |
 | HCOPY-01 | Phase 74 | Pending |
 | HCOPY-03 | Phase 74 | Pending |
