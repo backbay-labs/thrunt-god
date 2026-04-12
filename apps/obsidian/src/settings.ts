@@ -1,17 +1,23 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type ThruntGodPlugin from './main';
 import type { McpClient } from './mcp-client';
+import { DEFAULT_SIDEBAR_STATE, type SidebarState } from './sidebar-state';
+
+// Re-export sidebar state types/values for convenience
+export { DEFAULT_SIDEBAR_STATE, getEffectiveExpandedSections, type SidebarState } from './sidebar-state';
 
 export interface ThruntGodPluginSettings {
   planningDir: string;
   mcpServerUrl: string;
   mcpEnabled: boolean;
+  sidebarState: SidebarState;
 }
 
 export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
   planningDir: '.planning',
   mcpServerUrl: 'http://localhost:3100',
   mcpEnabled: false,
+  sidebarState: DEFAULT_SIDEBAR_STATE,
 };
 
 export class ThruntGodSettingTab extends PluginSettingTab {
