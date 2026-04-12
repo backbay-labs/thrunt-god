@@ -441,13 +441,13 @@ function renderVendorContext(): string {
     </div>`;
   }
   const extraction = vendor.extraction;
-  const certification = caseView?.certification.find((item) => item.vendorId === vendor.vendorId);
-  const campaign = caseView?.certificationCampaigns.find((item) => item.vendorId === vendor.vendorId);
-  const history = caseView?.certificationHistory.find((item) => item.vendorId === vendor.vendorId);
-  const trend = caseView?.certificationDriftTrends.find((item) => item.vendorId === vendor.vendorId);
-  const baseline = caseView?.certificationBaselines.find((item) => item.vendorId === vendor.vendorId && item.active);
-  const freshness = caseView?.certificationFreshness.find((item) => item.vendorId === vendor.vendorId);
-  const churn = caseView?.certificationBaselineChurn.find((item) => item.vendorId === vendor.vendorId);
+  const certification = caseView?.certification?.certification.find((item) => item.vendorId === vendor.vendorId);
+  const campaign = caseView?.certification?.certificationCampaigns.find((item) => item.vendorId === vendor.vendorId);
+  const history = caseView?.certification?.certificationHistory.find((item) => item.vendorId === vendor.vendorId);
+  const trend = caseView?.certification?.certificationDriftTrends.find((item) => item.vendorId === vendor.vendorId);
+  const baseline = caseView?.certification?.certificationBaselines.find((item) => item.vendorId === vendor.vendorId && item.active);
+  const freshness = caseView?.certification?.certificationFreshness.find((item) => item.vendorId === vendor.vendorId);
+  const churn = caseView?.certification?.certificationBaselineChurn.find((item) => item.vendorId === vendor.vendorId);
   const extractionSummary = extraction ? `${extraction.confidence} / ${extraction.completeness}` : 'unrated';
   const latestCampaign = campaign ? `${campaign.status} · ${campaign.tenantLabel}` : 'no campaign yet';
   const historySummary = history
@@ -517,14 +517,14 @@ function renderDiagnostics(): string {
     pageUrl: vendor.pageUrl,
     extraction,
     metadata: vendor.metadata ?? {},
-    certificationCampaigns: caseView?.certificationCampaigns
+    certificationCampaigns: caseView?.certification?.certificationCampaigns
       .filter((campaign) => campaign.vendorId === vendor.vendorId)
       .slice(0, 3) ?? [],
-    certificationHistory: caseView?.certificationHistory.find((item) => item.vendorId === vendor.vendorId) ?? null,
-    certificationTrend: caseView?.certificationDriftTrends.find((item) => item.vendorId === vendor.vendorId) ?? null,
-    certificationFreshness: caseView?.certificationFreshness.find((item) => item.vendorId === vendor.vendorId) ?? null,
-    certificationBaselineChurn: caseView?.certificationBaselineChurn.find((item) => item.vendorId === vendor.vendorId) ?? null,
-    activeBaseline: caseView?.certificationBaselines.find((item) => item.vendorId === vendor.vendorId && item.active) ?? null,
+    certificationHistory: caseView?.certification?.certificationHistory.find((item) => item.vendorId === vendor.vendorId) ?? null,
+    certificationTrend: caseView?.certification?.certificationDriftTrends.find((item) => item.vendorId === vendor.vendorId) ?? null,
+    certificationFreshness: caseView?.certification?.certificationFreshness.find((item) => item.vendorId === vendor.vendorId) ?? null,
+    certificationBaselineChurn: caseView?.certification?.certificationBaselineChurn.find((item) => item.vendorId === vendor.vendorId) ?? null,
+    activeBaseline: caseView?.certification?.certificationBaselines.find((item) => item.vendorId === vendor.vendorId && item.active) ?? null,
   };
 
   return `

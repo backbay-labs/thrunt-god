@@ -546,6 +546,25 @@ export interface EvidenceTimelineEntry {
   relatedHypotheses: string[];
 }
 
+// --- Certification view model segment (optional enrichment) ---
+
+export interface CertificationViewModel {
+  /** Certification status for supported vendors */
+  certification: CertificationStatusSummary[];
+  /** Recent live certification campaigns for diagnostics/review */
+  certificationCampaigns: CertificationCampaignSummary[];
+  /** Vendor-level certification history summaries */
+  certificationHistory: CertificationVendorHistorySummary[];
+  /** Vendor-level drift trend summaries */
+  certificationDriftTrends: CertificationDriftTrendSummary[];
+  /** Active and superseded promoted baselines */
+  certificationBaselines: CertificationBaselineRecord[];
+  /** Vendor freshness posture derived from approved live certification */
+  certificationFreshness: CertificationFreshnessSummary[];
+  /** Vendor baseline replacement/churn posture */
+  certificationBaselineChurn: CertificationBaselineChurnSummary[];
+}
+
 // --- Full case view model (what surfaces render) ---
 
 export interface CaseViewModel {
@@ -566,20 +585,8 @@ export interface CaseViewModel {
   runtimePreview: RuntimePreviewSummary | null;
   /** Most recent bridge execution summary */
   lastExecution: LastExecutionSummary | null;
-  /** Certification status for supported vendors */
-  certification: CertificationStatusSummary[];
-  /** Recent live certification campaigns for diagnostics/review */
-  certificationCampaigns: CertificationCampaignSummary[];
-  /** Vendor-level certification history summaries */
-  certificationHistory: CertificationVendorHistorySummary[];
-  /** Vendor-level drift trend summaries */
-  certificationDriftTrends: CertificationDriftTrendSummary[];
-  /** Active and superseded promoted baselines */
-  certificationBaselines: CertificationBaselineRecord[];
-  /** Vendor freshness posture derived from approved live certification */
-  certificationFreshness: CertificationFreshnessSummary[];
-  /** Vendor baseline replacement/churn posture */
-  certificationBaselineChurn: CertificationBaselineChurnSummary[];
+  /** Certification segment (optional — only populated when requested) */
+  certification?: CertificationViewModel;
   /** Derived recommended actions based on case state analysis */
   recommendedActions: RecommendedAction[];
   /** Merged chronological evidence timeline */
