@@ -235,5 +235,5 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 73. MCP Enrichment + Intelligence Features | 2/2 | Complete    | 2026-04-12 | - |
 | 74. Export Profile Registry + Context Assembly Engine | 2/2 | Complete    | 2026-04-12 | - |
 | 75. Hyper Copy Commands + Export UX | 2/2 | Complete    | 2026-04-12 | - |
-| 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete   | 2026-04-12 | - |
+| 76. Canvas Kill Chain Generator + Templates | 2/2 | Complete    | 2026-04-12 | - |
 | 77. Cross-Hunt Intelligence + Knowledge Dashboard | v4.0 | 0/0 | Not started | - |
