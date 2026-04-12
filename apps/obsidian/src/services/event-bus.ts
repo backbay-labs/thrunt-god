@@ -16,6 +16,7 @@ export type EventMap = {
   'ingestion:complete': { created: number; updated: number; skipped: number };
   'canvas:generated': { canvasPath: string };
   'canvas:refreshed': { canvasPath: string; changedCount: number };
+  'watcher:activity': { artifactCount: number; lastTimestamp: number };
 };
 
 // --- Handler type ---
