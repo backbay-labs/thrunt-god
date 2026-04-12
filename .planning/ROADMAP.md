@@ -55,7 +55,7 @@ Detailed phase archive: `.planning/milestones/v3.3-ROADMAP.md`
 **Milestone Goal:** Transform the Obsidian plugin into the intelligence preparation and knowledge compounding surface for threat hunting -- where every hunt makes the next one smarter, analysts prepare context that makes agents more effective, and the knowledge graph grows organically from structured markdown.
 
 - [x] **Phase 68: Entity Note Schema + ATT&CK Ontology Scaffold** - Define typed entity notes with YAML frontmatter schemas, scaffold ~200 ATT&CK technique stubs, and update workspace bootstrap with entity folder structure (completed 2026-04-12)
-- [ ] **Phase 69: Knowledge Base Dashboard + Sidebar Entity Summary** - Ship KNOWLEDGE_BASE.md with embedded Dataview queries and add collapsible Knowledge Base section to sidebar with entity counts
+- [x] **Phase 69: Knowledge Base Dashboard + Sidebar Entity Summary** - Ship KNOWLEDGE_BASE.md with embedded Dataview queries and add collapsible Knowledge Base section to sidebar with entity counts (completed 2026-04-12)
 - [ ] **Phase 70: Artifact Registry + Parsers** - Extend artifact recognition to RECEIPTS/, QUERIES/, evidence reviews, cases; build receipt and query log parsers with entity extraction
 - [ ] **Phase 71: Ingestion Engine + Agent Activity Timeline** - "Ingest agent output" command with idempotent entity creation/update, ingestion logging, and receipt timeline sidebar view
 - [ ] **Phase 72: MCP Client Adapter + Connection Infrastructure** - MCP client interface with configurable URL, enable toggle, connection status indicator, and graceful degradation for all MCP-dependent features
@@ -91,7 +91,7 @@ Plans:
   1. KNOWLEDGE_BASE.md ships with embedded Dataview queries that return results when entity notes exist (IOCs by confidence, TTPs by hunt frequency, coverage gaps, cross-hunt entity references)
   2. Sidebar shows a collapsible "Knowledge Base" section displaying entity counts by type (e.g., "23 IOCs, 14 TTPs, 3 actors") with a link to KNOWLEDGE_BASE.md
   3. Sidebar entity counts update when the analyst creates, deletes, or modifies entity notes in the vault
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 69-01-PLAN.md -- KNOWLEDGE_BASE.md template with 6 Dataview queries, listFiles on VaultAdapter, bootstrap creation
@@ -200,7 +200,7 @@ Phases execute in numeric order: 68 -> 69 -> 70 -> 71 -> 72 -> 73 -> 74 -> 75 ->
 | 66. Release Artifact Pipeline | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 67. Community Directory Submission Readiness | v3.3 | 3/3 | Complete | 2026-04-11 |
 | 68. Entity Note Schema + ATT&CK Ontology Scaffold | v4.0 | 3/3 | Complete | 2026-04-12 |
-| 69. Knowledge Base Dashboard + Sidebar Entity Summary | 1/2 | In Progress|  | - |
+| 69. Knowledge Base Dashboard + Sidebar Entity Summary | 2/2 | Complete   | 2026-04-12 | - |
 | 70. Artifact Registry + Parsers | v4.0 | 0/0 | Not started | - |
 | 71. Ingestion Engine + Agent Activity Timeline | v4.0 | 0/0 | Not started | - |
 | 72. MCP Client Adapter + Connection Infrastructure | v4.0 | 0/0 | Not started | - |
