@@ -39,8 +39,8 @@ Requirements for the Obsidian Knowledge Weapon milestone. Each maps to roadmap p
 
 - [x] **HCOPY-01**: Export profile registry defines per-agent context needs (at least 5 default profiles: query-writer, intel-advisor, findings-validator, signal-triager, hunt-planner)
 - [ ] **HCOPY-02**: "Hyper Copy for Agent" command assembles multi-note context by following wiki-links, shows preview with token estimate
-- [ ] **HCOPY-03**: Context assembly engine follows wiki-links to related entity notes up to configurable depth
-- [ ] **HCOPY-04**: Assembled prompts include provenance markers tracing each section to its source file
+- [x] **HCOPY-03**: Context assembly engine follows wiki-links to related entity notes up to configurable depth
+- [x] **HCOPY-04**: Assembled prompts include provenance markers tracing each section to its source file
 - [ ] **HCOPY-05**: Quick export commands skip modal for common flows (copy for query writer, copy for intel advisor, copy IOC context)
 - [x] **HCOPY-06**: Export profiles are extensible via JSON config file
 - [ ] **HCOPY-07**: EXPORT_LOG.md records each export with source, context assembled, token estimate, target agent
@@ -100,8 +100,8 @@ Deferred beyond v4.0. Tracked but not in current roadmap.
 | MCP-05 | Phase 73 | Complete |
 | MCP-06 | Phase 73 | Complete |
 | HCOPY-01 | Phase 74 | Complete |
-| HCOPY-03 | Phase 74 | Pending |
-| HCOPY-04 | Phase 74 | Pending |
+| HCOPY-03 | Phase 74 | Complete |
+| HCOPY-04 | Phase 74 | Complete |
 | HCOPY-06 | Phase 74 | Complete |
 | HCOPY-02 | Phase 75 | Pending |
 | HCOPY-05 | Phase 75 | Pending |

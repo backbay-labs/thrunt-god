@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v4.0
 milestone_name: Obsidian Knowledge Weapon
 status: active
-stopped_at: Completed 74-01-PLAN.md
-last_updated: "2026-04-12T06:58:32Z"
+stopped_at: Completed 74-02-PLAN.md
+last_updated: "2026-04-12T07:05:30Z"
 progress:
   total_phases: 10
   completed_phases: 6
@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 74 in progress (1/2 plans)
+**Current focus:** v4.0 Obsidian Knowledge Weapon -- Phase 74 complete (2/2 plans)
 
 ## Current Milestone
 
@@ -28,9 +28,9 @@ v4.0 Obsidian Knowledge Weapon -- Transform the Obsidian plugin into the intelli
 
 **Status:** Active
 **Phase:** 74 of 77 (Export Profile Registry + Context Assembly Engine)
-**Plan:** 1 of 2 complete
+**Plan:** 2 of 2 complete
 
-Progress: [██████████] 100% (14/15 v4.0 plans)
+Progress: [██████████] 100% (15/15 v4.0 plans)
 
 ## Recently Completed
 
@@ -87,6 +87,10 @@ Progress: [██████████] 100% (14/15 v4.0 plans)
 - [Phase 73]: [Phase 73-02]: Search modal onCreateNote uses ENTITY_TYPES registry to find correct template and folder
 - [Phase 74]: [Phase 74-01]: Pure data module pattern for export-profiles.ts -- zero Obsidian imports, consistent with entity-schema.ts
 - [Phase 74]: [Phase 74-01]: loadProfiles validates required fields before accepting custom profiles -- silently skips invalid entries
+- [Phase 74]: [Phase 74-02]: Wiki-link resolution tries direct path then .md extension -- matches Obsidian vault path conventions
+- [Phase 74]: [Phase 74-02]: Entity type filtering uses folder prefix matching rather than frontmatter parsing -- faster, no file read needed
+- [Phase 74]: [Phase 74-02]: Linked notes contribute ALL sections (not filtered by includeSections) -- only source note is section-filtered
+- [Phase 74]: [Phase 74-02]: assembleContext uses callback-based I/O (readFile/fileExists) for pure testability without VaultAdapter dependency
 
 ### Blockers/Concerns
 
@@ -94,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T06:58:32Z
-Stopped at: Completed 74-01-PLAN.md
+Last session: 2026-04-12T07:05:30Z
+Stopped at: Completed 74-02-PLAN.md
 Resume file: None
