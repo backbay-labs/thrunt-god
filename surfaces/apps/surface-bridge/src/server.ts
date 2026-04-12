@@ -45,6 +45,9 @@ import { checkCertificationPrerequisites } from './certification-ops.ts';
 import { createLogger } from './logger.ts';
 import { classifyError, errorResponse, type ErrorClass } from './errors.ts';
 import { createSubprocessHealthMonitor } from './subprocess-health.ts';
+import { createEventJournal } from './event-journal.ts';
+import { createStructuredWatcher, type StructuredWatcher } from './file-watcher.ts';
+import type { EventBridgeEnvelope } from '@thrunt-surfaces/contracts';
 
 const VERSION = '0.2.0';
 
@@ -66,8 +69,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     : createArtifactProvider(cfg.projectRoot, { toolsPath: cfg.toolsPath, logger });
   const startTime = Date.now();
   const wsClients = new Set<{ send(data: string): void }>();
-  let watcher: fs.FSWatcher | null = null;
   let lastFileWatcherEvent: string | null = null;
+  const journal = createEventJournal(1000);
 
   // ─── Subprocess health monitoring ───────────────────────────────────
   const subprocessHealth = createSubprocessHealthMonitor({
@@ -116,32 +119,28 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
 
   writeTokenFile();
 
-  // ─── File watcher ────────────────────────────────────────────────────
-  let watchDebounce: ReturnType<typeof setTimeout> | null = null;
+  // ─── Structured file watcher ──────────────────────────────────────────
+  let structuredWatcher: StructuredWatcher | null = null;
 
-  function ensureWatcher(): void {
-    if (cfg.mockMode || watcher) return;
+  function ensureStructuredWatcher(): void {
+    if (cfg.mockMode || structuredWatcher) return;
     const paths = resolvePlanningPaths(cfg.projectRoot);
-    if (fs.existsSync(paths.programRoot)) {
-      try {
-        watcher = fs.watch(paths.programRoot, { recursive: true }, () => {
-          if (watchDebounce) clearTimeout(watchDebounce);
-          lastFileWatcherEvent = new Date().toISOString();
-          logger.info('file-watcher', 'change detected', {});
-          watchDebounce = setTimeout(() => {
-            provider.invalidate();
-            const view = provider.getCaseView();
-            void view.then((nextView) => {
-              if (nextView) {
-                broadcast({ type: 'case:updated', data: nextView.case });
-              }
-            }).catch(() => {});
-          }, 500);
-        });
-      } catch { /* fs.watch not available on all platforms */ }
-    }
+    if (!fs.existsSync(paths.programRoot)) return;
+
+    structuredWatcher = createStructuredWatcher({
+      planningRoot: paths.programRoot,
+      logger,
+      onEvent: (event) => {
+        lastFileWatcherEvent = new Date().toISOString();
+        const envelope = journal.append(event);
+        broadcastEnvelope(envelope);
+        // Also trigger provider invalidation for backward compat with existing BridgeEvent consumers
+        provider.invalidate();
+      },
+    });
+    structuredWatcher.start();
   }
-  ensureWatcher();
+  ensureStructuredWatcher();
 
   // ─── Broadcasting ────────────────────────────────────────────────────
 
@@ -153,8 +152,23 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
     }
   }
 
+  function broadcastEnvelope(envelope: EventBridgeEnvelope): void {
+    logger.debug('ws', 'broadcast envelope', { type: envelope.type, seq: envelope.seq, clients: wsClients.size });
+    const data = JSON.stringify(envelope);
+    for (const client of wsClients) {
+      try { client.send(data); } catch { wsClients.delete(client); }
+    }
+  }
+
   const heartbeatTimer = setInterval(() => {
-    broadcast({ type: 'bridge:heartbeat', data: { ts: new Date().toISOString() } });
+    const hb: EventBridgeEnvelope = {
+      v: 1,
+      seq: 0, // Heartbeats don't consume journal sequence numbers
+      ts: new Date().toISOString(),
+      type: 'bridge:heartbeat',
+      data: { ts: new Date().toISOString() },
+    };
+    broadcastEnvelope(hb);
   }, 1_000);
 
   // ─── Response helpers ────────────────────────────────────────────────
@@ -295,7 +309,7 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       const result = await provider.openCase(body);
       provider.invalidate();
       writeTokenFile();
-      ensureWatcher();
+      ensureStructuredWatcher();
       broadcast({ type: 'case:updated', data: result.case });
       return json(result, 201);
     }
@@ -596,7 +610,9 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
         if (!checkWsAuth(req)) {
           return new Response('Unauthorized — provide bridge token', { status: 401 });
         }
-        if (server.upgrade(req)) return undefined as unknown as Response;
+        const lastSeqStr = new URL(req.url).searchParams.get('last_seq');
+        const lastSeq = lastSeqStr ? parseInt(lastSeqStr, 10) : undefined;
+        if (server.upgrade(req, { data: { lastSeq } } as any)) return undefined as unknown as Response;
         return new Response('WebSocket upgrade failed', { status: 400 });
       }
       return handleRequest(req);
@@ -605,6 +621,36 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
       open(ws) {
         wsClients.add(ws);
         logger.info('ws', 'client connected', { clients: wsClients.size });
+
+        // Send welcome with protocol version and current seq
+        const welcome: EventBridgeEnvelope = {
+          v: 1,
+          seq: 0, // Welcome is not a journal event
+          ts: new Date().toISOString(),
+          type: 'bridge:welcome',
+          data: { protocolVersions: [1], seq: journal.currentSeq() },
+        };
+        try { ws.send(JSON.stringify(welcome)); } catch {}
+
+        // Check for replay request (last_seq passed as query param on WS connect)
+        const lastSeq = (ws as any).data?.lastSeq as number | undefined;
+        if (lastSeq !== undefined && lastSeq > 0) {
+          const result = journal.replayFrom(lastSeq);
+          if ('overflow' in result) {
+            const overflow: EventBridgeEnvelope = {
+              v: 1,
+              seq: 0,
+              ts: new Date().toISOString(),
+              type: 'bridge:journal_overflow',
+              data: { oldestSeq: result.oldestSeq, currentSeq: result.currentSeq, message: 'Requested sequence too old; perform full refresh' },
+            };
+            try { ws.send(JSON.stringify(overflow)); } catch {}
+          } else {
+            for (const event of result.events) {
+              try { ws.send(JSON.stringify(event)); } catch { break; }
+            }
+          }
+        }
       },
       close(ws) {
         wsClients.delete(ws);
@@ -623,9 +669,8 @@ export function startBridge(config: Partial<BridgeConfig> = {}): BridgeInstance 
   return {
     stop: () => {
       clearInterval(heartbeatTimer);
-      if (watchDebounce) clearTimeout(watchDebounce);
       subprocessHealth.stop();
-      try { watcher?.close(); } catch {}
+      structuredWatcher?.stop();
       server.stop();
     },
     token: sessionToken,

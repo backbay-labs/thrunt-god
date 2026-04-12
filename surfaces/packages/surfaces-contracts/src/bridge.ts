@@ -381,7 +381,7 @@ export interface EventBridgeEnvelope {
   seq: number;
   ts: string;
   type: EventBridgeEventType;
-  data: ArtifactEventPayload | PhaseTransitionPayload | VerdictChangedPayload | { ts: string } | { code: string; message: string } | { protocolVersions: number[]; seq: number };
+  data: ArtifactEventPayload | PhaseTransitionPayload | VerdictChangedPayload | JournalOverflowPayload | { ts: string } | { code: string; message: string } | { protocolVersions: number[]; seq: number };
 }
 
 export interface WelcomePayload {
