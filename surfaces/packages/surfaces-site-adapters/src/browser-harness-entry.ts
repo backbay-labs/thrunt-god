@@ -2,6 +2,9 @@ import {
   createAwsAdapter,
 } from './adapters/aws.ts';
 import {
+  createCrowdStrikeAdapter,
+} from './adapters/crowdstrike.ts';
+import {
   createElasticAdapter,
 } from './adapters/elastic.ts';
 import {
@@ -21,6 +24,7 @@ declare global {
 
 const factories = {
   aws: createAwsAdapter,
+  crowdstrike: createCrowdStrikeAdapter,
   elastic: createElasticAdapter,
   okta: createOktaAdapter,
   sentinel: createSentinelAdapter,

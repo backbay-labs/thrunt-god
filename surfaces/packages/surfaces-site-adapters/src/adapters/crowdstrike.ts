@@ -59,6 +59,9 @@ export function createCrowdStrikeAdapter(): SiteAdapter {
         if (!table && pageType === 'search') {
           failureReasons.push('No events table detected');
         }
+        if (!query && pageType === 'alert_detail') {
+          failureReasons.push('No FQL query editor detected on detection page');
+        }
       }
 
       const extraction = buildAssessment({
@@ -211,14 +214,17 @@ function computeCrowdStrikeSupportedActions(): CaptureAction[] {
   const extraction = buildAssessment({
     supported: detected && pageType !== 'unknown',
     pageType,
-    failureReasons:
-      pageType === 'unknown' || !detected
-        ? ['This Falcon page is not a supported CrowdStrike surface']
-        : !query && pageType === 'search'
-          ? ['No FQL query editor detected']
-          : !table && pageType === 'search'
-            ? ['No events table detected']
-            : [],
+    failureReasons: (() => {
+      const reasons: string[] = [];
+      if (pageType === 'unknown' || !detected) {
+        reasons.push('This Falcon page is not a supported CrowdStrike surface');
+      } else {
+        if (!query && pageType === 'search') reasons.push('No FQL query editor detected');
+        if (!table && pageType === 'search') reasons.push('No events table detected');
+        if (!query && pageType === 'alert_detail') reasons.push('No FQL query editor detected on detection page');
+      }
+      return reasons;
+    })(),
     detectedSignals: [],
     queryPresent: Boolean(query),
     tablePresent: Boolean(table),
