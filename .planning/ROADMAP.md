@@ -33,7 +33,7 @@
 ### v5.0 Hunt Ecosystem: Evidence In, Detections Out
 
 - [x] **Phase 21: Bridge Hardening** - Subprocess timeouts, structured JSON logging, health endpoint, error classification, graceful degradation (completed 2026-04-12)
-- [ ] **Phase 22: MCP Event Bridge** - File watcher events, schema contract, WebSocket broadcast, bidirectional mutations, reconnection with catch-up
+- [x] **Phase 22: MCP Event Bridge** - File watcher events, schema contract, WebSocket broadcast, bidirectional mutations, reconnection with catch-up (completed 2026-04-12)
 - [ ] **Phase 23: Certified Adapters (Elastic + CrowdStrike)** - DOM extraction, fixture-backed tests, certification campaigns for the top-3 SIEM/EDR stack
 - [ ] **Phase 24: Sidepanel UI** - Live case state, evidence timeline, vendor status, hypothesis cards, recommended actions, artifact navigation
 - [ ] **Phase 25: Extraction Adapters (AWS, Okta, M365)** - DOM extraction with fixture tests for CloudTrail, Okta Admin Console, and M365 Defender; stub vendor messaging
@@ -299,7 +299,7 @@ Plans:
 | 19. IOC Quick-Entry | v4.0 | 1/1 | Complete | 2026-04-03 |
 | 20. CLI Bridge | v4.0 | 2/2 | Complete | 2026-04-03 |
 | 21. Bridge Hardening | v5.0 | 2/2 | Complete | 2026-04-12 |
-| 22. MCP Event Bridge | 2/3 | In Progress|  | - |
+| 22. MCP Event Bridge | 3/3 | Complete   | 2026-04-12 | - |
 | 23. Certified Adapters (Elastic + CrowdStrike) | v5.0 | 0/? | Not started | - |
 | 24. Sidepanel UI | v5.0 | 0/? | Not started | - |
 | 25. Extraction Adapters (AWS, Okta, M365) | v5.0 | 0/? | Not started | - |

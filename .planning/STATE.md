@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: "Hunt Ecosystem: Evidence In, Detections Out"
 status: in-progress
-stopped_at: Completed 22-02-PLAN.md
-last_updated: "2026-04-12T13:50:27.988Z"
-last_activity: 2026-04-12 — Completed Phase 22 Plan 02
+stopped_at: Completed 22-03-PLAN.md
+last_updated: "2026-04-12T14:09:00.000Z"
+last_activity: 2026-04-12 — Completed Phase 22 Plan 03 (phase complete)
 progress:
   total_phases: 16
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 22
-  completed_plans: 20
-  percent: 100
+  completed_plans: 22
+  percent: 91
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 22 of 26 (MCP Event Bridge)
-Plan: 2 of 3 complete
-Status: In Progress
-Last activity: 2026-04-12 — Completed Phase 22 Plan 02
+Plan: 3 of 3 complete
+Status: Phase Complete
+Last activity: 2026-04-12 — Completed Phase 22 Plan 03 (phase complete)
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -63,6 +63,9 @@ Recent decisions affecting current work:
 - [22-02]: Dual broadcast -- legacy BridgeEvent for POST routes + versioned EventBridgeEnvelope for watcher events
 - [22-02]: Welcome and heartbeat use seq:0 (not journaled) to avoid inflating sequence numbers
 - [22-02]: Replay guard uses isNaN check instead of > 0 to allow last_seq=0 full replay
+- [22-03]: ErrorClass literal union duplicated in contracts to avoid cross-package import for type-only concern
+- [22-03]: evidence.attach maps to manual_note EvidenceAttachment for content-based mutation attach
+- [22-03]: Custom error classes (ParamValidationError, HypothesisNotFoundError) for distinct JSON-RPC error codes
 
 ### Pending Todos
 
@@ -80,9 +83,10 @@ Recent decisions affecting current work:
 | 21    | 02   | 3min     | 3     | 3     |
 | 22    | 01   | 3min     | 3     | 4     |
 | 22    | 02   | 7min     | 2     | 3     |
+| 22    | 03   | 6min     | 3     | 4     |
 
 ## Session Continuity
 
-Last session: 2026-04-12T13:52:22Z
-Stopped at: Completed 22-02-PLAN.md
+Last session: 2026-04-12T14:09:00Z
+Stopped at: Completed 22-03-PLAN.md
 Resume file: None
