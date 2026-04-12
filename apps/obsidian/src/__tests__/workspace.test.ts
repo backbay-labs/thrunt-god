@@ -1002,4 +1002,244 @@ High
       expect(runHeadings!.length).toBeGreaterThanOrEqual(2);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // generateHuntCanvas
+  // -------------------------------------------------------------------------
+
+  describe('generateHuntCanvas', () => {
+    function setupEntityFiles(a: StubVaultAdapter): void {
+      a.addFolder(PLANNING_DIR);
+      addAllArtifacts(a);
+      // TTP entity folder
+      a.addFolder('.planning/entities/ttps');
+      a.addFileToFolder('.planning/entities/ttps', 'T1059.md');
+      a.addFile('.planning/entities/ttps/T1059.md', `---
+type: ttp
+mitre_id: "T1059"
+tactic: "Execution"
+---
+# T1059
+`);
+      a.addFileToFolder('.planning/entities/ttps', 'T1566.md');
+      a.addFile('.planning/entities/ttps/T1566.md', `---
+type: ttp
+mitre_id: "T1566"
+tactic: "Initial Access"
+---
+# T1566
+`);
+      // IOC entity folder
+      a.addFolder('.planning/entities/iocs');
+      a.addFileToFolder('.planning/entities/iocs', '192.168.1.1.md');
+      a.addFile('.planning/entities/iocs/192.168.1.1.md', `---
+type: ioc/ip
+value: "192.168.1.1"
+---
+# 192.168.1.1
+`);
+      // Empty folders for other entity types
+      a.addFolder('.planning/entities/actors');
+      a.addFolder('.planning/entities/tools');
+      a.addFolder('.planning/entities/infra');
+      a.addFolder('.planning/entities/datasources');
+    }
+
+    it('generates a kill-chain canvas with valid JSON', async () => {
+      setupEntityFiles(adapter);
+      const result = await service.generateHuntCanvas('kill-chain');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('CANVAS_KILL_CHAIN.canvas');
+      expect(result.canvasPath).toBe('.planning/CANVAS_KILL_CHAIN.canvas');
+
+      // Verify file was created with valid JSON
+      const content = await adapter.readFile('.planning/CANVAS_KILL_CHAIN.canvas');
+      const parsed = JSON.parse(content);
+      expect(parsed).toHaveProperty('nodes');
+      expect(parsed).toHaveProperty('edges');
+      expect(Array.isArray(parsed.nodes)).toBe(true);
+      expect(parsed.nodes.length).toBe(3); // 2 TTPs + 1 IOC
+    });
+
+    it('generates a diamond canvas', async () => {
+      setupEntityFiles(adapter);
+      const result = await service.generateHuntCanvas('diamond');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_DIAMOND.canvas');
+    });
+
+    it('generates a lateral-movement canvas', async () => {
+      setupEntityFiles(adapter);
+      const result = await service.generateHuntCanvas('lateral-movement');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_LATERAL_MOVEMENT.canvas');
+    });
+
+    it('generates a hunt-progression canvas', async () => {
+      setupEntityFiles(adapter);
+      const result = await service.generateHuntCanvas('hunt-progression');
+      expect(result.success).toBe(true);
+      expect(result.canvasPath).toBe('.planning/CANVAS_HUNT_PROGRESSION.canvas');
+    });
+
+    it('produces canvas with 0 nodes when no entity files exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      // Add empty entity folders
+      for (const folder of ENTITY_FOLDERS) {
+        adapter.addFolder(normalizePath(`${PLANNING_DIR}/${folder}`));
+      }
+      const result = await service.generateHuntCanvas('kill-chain');
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CANVAS_KILL_CHAIN.canvas');
+      const parsed = JSON.parse(content);
+      expect(parsed.nodes).toHaveLength(0);
+      expect(parsed.edges).toHaveLength(0);
+    });
+
+    it('overwrites existing canvas file', async () => {
+      setupEntityFiles(adapter);
+      adapter.addFile('.planning/CANVAS_KILL_CHAIN.canvas', '{}');
+
+      const result = await service.generateHuntCanvas('kill-chain');
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CANVAS_KILL_CHAIN.canvas');
+      const parsed = JSON.parse(content);
+      expect(parsed.nodes.length).toBeGreaterThan(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // canvasFromCurrentHunt
+  // -------------------------------------------------------------------------
+
+  describe('canvasFromCurrentHunt', () => {
+    it('returns error when no findings or receipts exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      // Do NOT add core artifacts -- FINDINGS.md is a core artifact and would be detected
+      const result = await service.canvasFromCurrentHunt();
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('No findings or receipts found');
+    });
+
+    it('creates canvas from FINDINGS.md with technique refs', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/FINDINGS.md', `# Findings
+
+## Key Findings
+
+Observed T1059 and T1566.001 in the environment.
+Links to [[SuspectActor]] and [[malware.exe]].
+`);
+      // Add TTP note for tactic lookup
+      adapter.addFolder('.planning/entities/ttps');
+      adapter.addFile('.planning/entities/ttps/T1059.md', `---
+type: ttp
+mitre_id: "T1059"
+tactic: "Execution"
+---
+# T1059
+`);
+
+      const result = await service.canvasFromCurrentHunt();
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('entities');
+      expect(result.canvasPath).toBe('.planning/CANVAS_HUNT_KILL_CHAIN.canvas');
+
+      const content = await adapter.readFile('.planning/CANVAS_HUNT_KILL_CHAIN.canvas');
+      const parsed = JSON.parse(content);
+      expect(parsed.nodes.length).toBeGreaterThan(0);
+      // Should contain technique entities
+      const nodeIds = parsed.nodes.map((n: { id: string }) => n.id);
+      expect(nodeIds).toContain('T1059');
+    });
+
+    it('creates canvas from validated receipts only', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+      adapter.addFile('.planning/RECEIPTS/RCT-001.md', `---
+receipt_id: "RCT-001"
+claim_status: "supports"
+result_status: "ok"
+related_hypotheses:
+  - H1
+related_queries: []
+---
+## Claim
+Lateral movement via T1021 detected.
+
+## Evidence
+Logs show RDP sessions from 192.168.1.1.
+
+## Confidence
+High
+`);
+      // A non-validated receipt that should be excluded
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-002.md');
+      adapter.addFile('.planning/RECEIPTS/RCT-002.md', `---
+receipt_id: "RCT-002"
+claim_status: "context"
+result_status: "ok"
+related_hypotheses: []
+related_queries: []
+---
+## Claim
+Background noise with T1082.
+
+## Evidence
+Process listing.
+
+## Confidence
+Low
+`);
+
+      const result = await service.canvasFromCurrentHunt();
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CANVAS_HUNT_KILL_CHAIN.canvas');
+      const parsed = JSON.parse(content);
+      // Should include T1021 from validated receipt but NOT T1082 from context receipt
+      const nodeIds = parsed.nodes.map((n: { id: string }) => n.id);
+      expect(nodeIds).toContain('T1021');
+      expect(nodeIds).not.toContain('T1082');
+    });
+
+    it('deduplicates entities across findings and receipts', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFile('.planning/FINDINGS.md', `# Findings\nObserved T1059 in environment.\n`);
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+      adapter.addFile('.planning/RECEIPTS/RCT-001.md', `---
+receipt_id: "RCT-001"
+claim_status: "supports"
+result_status: "ok"
+related_hypotheses: []
+related_queries: []
+---
+## Claim
+T1059 confirmed.
+
+## Evidence
+Evidence.
+
+## Confidence
+High
+`);
+
+      const result = await service.canvasFromCurrentHunt();
+      expect(result.success).toBe(true);
+
+      const content = await adapter.readFile('.planning/CANVAS_HUNT_KILL_CHAIN.canvas');
+      const parsed = JSON.parse(content);
+      // T1059 should appear only once (deduplicated)
+      const t1059Nodes = parsed.nodes.filter((n: { id: string }) => n.id === 'T1059');
+      expect(t1059Nodes).toHaveLength(1);
+    });
+  });
 });
