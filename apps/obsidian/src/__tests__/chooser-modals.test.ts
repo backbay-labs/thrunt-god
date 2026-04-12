@@ -35,6 +35,9 @@ function createMockPlugin() {
         getLeaf: () => ({ openFile: vi.fn() }),
         openLinkText: vi.fn(),
       },
+      commands: {
+        executeCommandById: vi.fn(),
+      },
     },
     settings: { planningDir: '' },
     workspaceService: {
@@ -216,9 +219,9 @@ describe('IntelligenceChooserModal', () => {
     expect(modal).toBeInstanceOf(FuzzySuggestModal);
   });
 
-  it('getItems() returns 5 items with correct ids', () => {
+  it('getItems() returns 6 items with correct ids', () => {
     const items = modal.getItems();
-    expect(items).toHaveLength(5);
+    expect(items).toHaveLength(6);
     const ids = items.map((i: ChooserItem) => i.id);
     expect(ids).toEqual([
       'enrich-from-mcp',
@@ -226,6 +229,7 @@ describe('IntelligenceChooserModal', () => {
       'log-hunt-decision',
       'log-hunt-learning',
       'search-knowledge-graph',
+      'refresh-entity-intelligence',
     ]);
   });
 

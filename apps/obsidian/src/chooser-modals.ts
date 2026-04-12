@@ -4,6 +4,7 @@ import type ThruntGodPlugin from './main';
 import type { CanvasTemplateName } from './modals';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { VERDICT_VALUES, type VerdictValue } from './verdict';
+import { ENTITY_FOLDERS } from './entity-schema';
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -219,6 +220,7 @@ const INTELLIGENCE_ITEMS: readonly ChooserItem[] = [
   { id: 'log-hunt-decision', name: 'Log hunt decision', description: 'Record a hunt decision on current technique' },
   { id: 'log-hunt-learning', name: 'Log hunt learning', description: 'Record a learning from the current hunt' },
   { id: 'search-knowledge-graph', name: 'Search knowledge graph', description: 'Search entities, techniques, and actors via MCP' },
+  { id: 'refresh-entity-intelligence', name: 'Refresh entity intelligence', description: 'Update hunt history, co-occurrence, and confidence for current entity' },
 ];
 
 export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
@@ -335,6 +337,21 @@ export class IntelligenceChooserModal extends FuzzySuggestModal<ChooserItem> {
             },
           ).open();
         });
+        break;
+      }
+      case 'refresh-entity-intelligence': {
+        const file = this.plugin.app.workspace.getActiveFile();
+        if (!file) {
+          new Notice('Open an entity note first.');
+          return;
+        }
+        const isEntity = ENTITY_FOLDERS.some((folder) => file.path.includes(folder));
+        if (!isEntity) {
+          new Notice('Active file is not an entity note.');
+          return;
+        }
+        // Delegate to the command callback (it will handle the rest)
+        (this.plugin.app as any).commands.executeCommandById('thrunt-god:refresh-entity-intelligence');
         break;
       }
       case 'search-knowledge-graph': {

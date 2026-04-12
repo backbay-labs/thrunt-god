@@ -28,7 +28,13 @@ import {
   type HuntSummary,
   type TopEntity,
 } from '../cross-hunt';
-import { scanEntityNotes } from '../entity-utils';
+import { parseEntityNote, scanEntityNotes } from '../entity-utils';
+import {
+  refreshEntityIntelligence as refreshEntityIntelCoordinator,
+  type RefreshInput,
+} from '../entity-intelligence';
+import type { ConfidenceFactors } from '../confidence';
+import type { HuntHistoryEntry } from '../hunt-history';
 
 export class IntelligenceService {
   constructor(
@@ -474,6 +480,87 @@ export class IntelligenceService {
       }
 
       return { success: true, message: 'Knowledge dashboard generated', canvasPath };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return { success: false, message };
+    }
+  }
+
+  async refreshEntityIntelligence(
+    filePath: string,
+    halfLifeDays: number,
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const planningDir = this.getPlanningDir();
+
+      // Read and parse the entity note
+      const content = await this.vaultAdapter.readFile(filePath);
+      const fileName = filePath.split('/').pop() ?? filePath;
+      const entity = parseEntityNote(content, fileName);
+
+      // Scan all entity notes for co-occurrence
+      const allEntities = await scanEntityNotes(
+        this.vaultAdapter,
+        planningDir,
+        planningDir,
+      );
+
+      // Build HuntHistoryEntry[] from the entity's huntRefs
+      const huntEntries: HuntHistoryEntry[] = entity.huntRefs.map((ref) => {
+        const lastSeen = entity.frontmatter['last_seen'];
+        const date =
+          typeof lastSeen === 'string' && lastSeen
+            ? lastSeen
+            : new Date().toISOString().slice(0, 10);
+        const verdict = entity.frontmatter['verdict'];
+        const outcome =
+          typeof verdict === 'string' && verdict ? verdict : 'unknown';
+        return {
+          huntId: ref,
+          date,
+          role: 'indicator' as const,
+          outcome,
+        };
+      });
+
+      // Extract confidence factors from frontmatter
+      const confidenceFactors: ConfidenceFactors = {
+        source_count:
+          typeof entity.frontmatter['source_count'] === 'number'
+            ? entity.frontmatter['source_count']
+            : 0,
+        reliability:
+          typeof entity.frontmatter['reliability'] === 'number'
+            ? entity.frontmatter['reliability']
+            : 0,
+        corroboration:
+          typeof entity.frontmatter['corroboration'] === 'number'
+            ? entity.frontmatter['corroboration']
+            : 0,
+        days_since_validation:
+          typeof entity.frontmatter['days_since_validation'] === 'number'
+            ? entity.frontmatter['days_since_validation']
+            : 0,
+      };
+
+      const input: RefreshInput = {
+        entityContent: content,
+        entityName: entity.name,
+        entityHuntRefs: entity.huntRefs,
+        huntEntries,
+        allEntities,
+        confidenceFactors,
+        confidenceConfig: { half_life_days: halfLifeDays },
+      };
+
+      const result = refreshEntityIntelCoordinator(input);
+
+      await this.vaultAdapter.modifyFile(filePath, result.content);
+
+      return {
+        success: true,
+        message: `Entity intelligence refreshed (${result.huntHistoryCount} hunts, ${result.coOccurrenceCount} co-occurrences, confidence: ${result.confidenceScore})`,
+      };
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return { success: false, message };

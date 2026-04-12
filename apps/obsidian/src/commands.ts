@@ -11,6 +11,10 @@ import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, Verdict
 import { appendVerdictEntry, formatTimestamp, detectHuntId, type VerdictEntry } from './verdict';
 import { updateFrontmatter } from './frontmatter-editor';
 import { previewMigration, applyMigration, CURRENT_SCHEMA_VERSION } from './schema-migration';
+import { refreshEntityIntelligence, type RefreshInput } from './entity-intelligence';
+import type { ConfidenceFactors } from './confidence';
+import { parseEntityNote, scanEntityNotes } from './entity-utils';
+import type { HuntHistoryEntry } from './hunt-history';
 
 // ---------------------------------------------------------------------------
 // registerCommands -- called once from plugin.onload()
@@ -132,6 +136,22 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
       if (!isEntity) return false;
       if (checking) return true;
       void setEntityVerdict(plugin, file.path);
+      return true;
+    },
+  });
+
+  // --- Refresh entity intelligence command (Phase 83-02) ---
+
+  plugin.addCommand({
+    id: 'refresh-entity-intelligence',
+    name: 'Refresh entity intelligence',
+    checkCallback: (checking: boolean) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file) return false;
+      const isEntity = ENTITY_FOLDERS.some((folder) => file.path.includes(folder));
+      if (!isEntity) return false;
+      if (checking) return true;
+      void refreshEntityIntel(plugin, file.path);
       return true;
     },
   });
@@ -339,6 +359,20 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     name: '',
     callback: () => {
       void openSearchModal(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'refresh-entity-intel-alias',
+    name: '',
+    checkCallback: (checking: boolean) => {
+      const file = plugin.app.workspace.getActiveFile();
+      if (!file) return false;
+      const isEntity = ENTITY_FOLDERS.some((folder) => file.path.includes(folder));
+      if (!isEntity) return false;
+      if (checking) return true;
+      void refreshEntityIntel(plugin, file.path);
+      return true;
     },
   });
 }
@@ -612,6 +646,91 @@ async function setEntityVerdict(plugin: ThruntGodPlugin, filePath: string): Prom
       },
     ).open();
   }).open();
+}
+
+// ---------------------------------------------------------------------------
+// Refresh entity intelligence helper (Plan 83-02)
+// ---------------------------------------------------------------------------
+
+async function refreshEntityIntel(plugin: ThruntGodPlugin, filePath: string): Promise<void> {
+  try {
+    const planningDir = getPlanningDir(
+      plugin.settings.planningDir,
+      DEFAULT_SETTINGS.planningDir,
+    );
+
+    // Read and parse the entity note
+    const content = await plugin.workspaceService.vaultAdapter.readFile(filePath);
+    const fileName = filePath.split('/').pop() ?? filePath;
+    const entity = parseEntityNote(content, fileName);
+
+    // Scan all entity notes for co-occurrence
+    const allEntities = await scanEntityNotes(
+      plugin.workspaceService.vaultAdapter,
+      planningDir,
+      planningDir,
+    );
+
+    // Build HuntHistoryEntry[] from the entity's huntRefs
+    const huntEntries: HuntHistoryEntry[] = entity.huntRefs.map((ref) => {
+      const lastSeen = entity.frontmatter['last_seen'];
+      const date = typeof lastSeen === 'string' && lastSeen
+        ? lastSeen
+        : new Date().toISOString().slice(0, 10);
+      const verdict = entity.frontmatter['verdict'];
+      const outcome = typeof verdict === 'string' && verdict
+        ? verdict
+        : 'unknown';
+      return {
+        huntId: ref,
+        date,
+        role: 'indicator' as const,
+        outcome,
+      };
+    });
+
+    // Extract confidence factors from frontmatter
+    const confidenceFactors: ConfidenceFactors = {
+      source_count:
+        typeof entity.frontmatter['source_count'] === 'number'
+          ? entity.frontmatter['source_count']
+          : 0,
+      reliability:
+        typeof entity.frontmatter['reliability'] === 'number'
+          ? entity.frontmatter['reliability']
+          : 0,
+      corroboration:
+        typeof entity.frontmatter['corroboration'] === 'number'
+          ? entity.frontmatter['corroboration']
+          : 0,
+      days_since_validation:
+        typeof entity.frontmatter['days_since_validation'] === 'number'
+          ? entity.frontmatter['days_since_validation']
+          : 0,
+    };
+
+    const input: RefreshInput = {
+      entityContent: content,
+      entityName: entity.name,
+      entityHuntRefs: entity.huntRefs,
+      huntEntries,
+      allEntities,
+      confidenceFactors,
+      confidenceConfig: { half_life_days: plugin.settings.halfLifeDays },
+    };
+
+    const result = refreshEntityIntelligence(input);
+
+    await plugin.workspaceService.vaultAdapter.modifyFile(filePath, result.content);
+
+    new Notice(
+      `Entity intelligence refreshed (${result.huntHistoryCount} hunts, ${result.coOccurrenceCount} co-occurrences, confidence: ${result.confidenceScore})`,
+    );
+    await plugin.refreshViews();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    new Notice(`Refresh failed: ${message}`);
+  }
 }
 
 export async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {

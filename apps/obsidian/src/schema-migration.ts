@@ -37,7 +37,7 @@ export interface MigrationPreview {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export const MIGRATIONS: SchemaMigration[] = [
   {
@@ -52,6 +52,36 @@ export const MIGRATIONS: SchemaMigration[] = [
       {
         heading: '## Verdict History',
         defaultContent: '_No verdict changes recorded._',
+        beforeSection: '## Sightings',
+      },
+    ],
+  },
+  {
+    version: 2,
+    description:
+      'Add confidence factors, Hunt History, and Related Infrastructure sections',
+    addFields: [
+      { key: 'confidence_score', defaultValue: 0 },
+      { key: 'source_count', defaultValue: 0 },
+      { key: 'reliability', defaultValue: 0 },
+      { key: 'corroboration', defaultValue: 0 },
+      { key: 'days_since_validation', defaultValue: 0 },
+      {
+        key: 'confidence_factors',
+        defaultValue:
+          '{source_count: 0, reliability: 0, corroboration: 0, days_since_validation: 0}',
+      },
+    ],
+    addSections: [
+      {
+        heading: '## Hunt History',
+        defaultContent: '_No hunt references found._',
+        beforeSection: '## Sightings',
+      },
+      {
+        heading: '## Related Infrastructure',
+        defaultContent:
+          '_No co-occurring entities found (2+ shared hunts required)._',
         beforeSection: '## Sightings',
       },
     ],

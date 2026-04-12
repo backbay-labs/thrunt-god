@@ -33,8 +33,8 @@ verdict: ""
 - [[T1059.001]]
 `;
 
-/** Entity note already at current schema version */
-const CURRENT_NOTE = `---
+/** Entity note at schema version 1 (needs v2 migration) */
+const V1_NOTE = `---
 schema_version: 1
 type: ioc/ip
 value: "192.168.1.100"
@@ -49,6 +49,46 @@ verdict: unknown
 ## Verdict History
 
 _No verdict changes recorded._
+
+## Sightings
+
+- 2024-01-15: Seen in hunt-001 log analysis
+
+## Related
+
+- [[T1059.001]]
+`;
+
+/** Entity note already at current schema version (v2) */
+const CURRENT_NOTE = `---
+schema_version: 2
+type: ioc/ip
+value: "192.168.1.100"
+first_seen: "2024-01-15"
+last_seen: ""
+hunt_refs: [hunt-001]
+confidence: "high"
+verdict: unknown
+confidence_score: 0
+source_count: 0
+reliability: 0
+corroboration: 0
+days_since_validation: 0
+confidence_factors: {source_count: 0, reliability: 0, corroboration: 0, days_since_validation: 0}
+---
+# 192.168.1.100
+
+## Verdict History
+
+_No verdict changes recorded._
+
+## Hunt History
+
+_No hunt references found._
+
+## Related Infrastructure
+
+_No co-occurring entities found (2+ shared hunts required)._
 
 ## Sightings
 
@@ -105,7 +145,11 @@ describe('extractSchemaVersion', () => {
   });
 
   it('returns 1 for content with schema_version: 1', () => {
-    expect(extractSchemaVersion(CURRENT_NOTE)).toBe(1);
+    expect(extractSchemaVersion(V1_NOTE)).toBe(1);
+  });
+
+  it('returns 2 for content with schema_version: 2', () => {
+    expect(extractSchemaVersion(CURRENT_NOTE)).toBe(2);
   });
 
   it('returns correct version for higher schema versions', () => {
@@ -207,13 +251,14 @@ describe('previewMigration', () => {
 describe('applyMigration', () => {
   it('adds schema_version and verdict fields to old note without verdict', () => {
     const result = applyMigration(OLD_NOTE_NO_VERDICT);
-    expect(result).toContain('schema_version: 1');
+    // Both migrations apply: schema_version goes to 2 (current)
+    expect(result).toContain('schema_version: 2');
     expect(result).toContain('verdict: unknown');
   });
 
   it('adds schema_version to old note that already has verdict', () => {
     const result = applyMigration(OLD_NOTE);
-    expect(result).toContain('schema_version: 1');
+    expect(result).toContain('schema_version: 2');
     // Should NOT duplicate verdict since it already exists
     const verdictMatches = result.match(/^verdict:/gm);
     expect(verdictMatches).toHaveLength(1);
@@ -271,9 +316,12 @@ describe('applyMigration', () => {
 
   it('handles minimal note with just type and aliases', () => {
     const result = applyMigration(MINIMAL_NOTE);
-    expect(result).toContain('schema_version: 1');
+    expect(result).toContain('schema_version: 2');
     expect(result).toContain('verdict: unknown');
     expect(result).toContain('## Verdict History');
+    // v2 sections too
+    expect(result).toContain('## Hunt History');
+    expect(result).toContain('## Related Infrastructure');
   });
 });
 
@@ -282,15 +330,16 @@ describe('applyMigration', () => {
 // ---------------------------------------------------------------------------
 
 describe('CURRENT_SCHEMA_VERSION', () => {
-  it('equals 1', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(1);
+  it('equals 2', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(2);
   });
 });
 
 describe('MIGRATIONS', () => {
-  it('has exactly 1 entry for version 1', () => {
-    expect(MIGRATIONS).toHaveLength(1);
+  it('has exactly 2 entries for versions 1 and 2', () => {
+    expect(MIGRATIONS).toHaveLength(2);
     expect(MIGRATIONS[0]!.version).toBe(1);
+    expect(MIGRATIONS[1]!.version).toBe(2);
   });
 
   it('version 1 migration adds schema_version and verdict fields', () => {
@@ -305,5 +354,85 @@ describe('MIGRATIONS', () => {
     expect(m.addSections).toBeDefined();
     const sectionHeadings = m.addSections!.map((s) => s.heading);
     expect(sectionHeadings).toContain('## Verdict History');
+  });
+
+  it('version 2 migration adds confidence fields', () => {
+    const m = MIGRATIONS[1]!;
+    const fieldKeys = m.addFields.map((f) => f.key);
+    expect(fieldKeys).toContain('confidence_score');
+    expect(fieldKeys).toContain('source_count');
+    expect(fieldKeys).toContain('reliability');
+    expect(fieldKeys).toContain('corroboration');
+    expect(fieldKeys).toContain('days_since_validation');
+    expect(fieldKeys).toContain('confidence_factors');
+  });
+
+  it('version 2 migration adds Hunt History and Related Infrastructure sections', () => {
+    const m = MIGRATIONS[1]!;
+    expect(m.addSections).toBeDefined();
+    const sectionHeadings = m.addSections!.map((s) => s.heading);
+    expect(sectionHeadings).toContain('## Hunt History');
+    expect(sectionHeadings).toContain('## Related Infrastructure');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2 migration integration tests
+// ---------------------------------------------------------------------------
+
+describe('applyMigration v1 -> v2', () => {
+  it('adds 6 new confidence fields to v1 note', () => {
+    const result = applyMigration(V1_NOTE);
+    expect(result).toContain('confidence_score: 0');
+    expect(result).toContain('source_count: 0');
+    expect(result).toContain('reliability: 0');
+    expect(result).toContain('corroboration: 0');
+    expect(result).toContain('days_since_validation: 0');
+    expect(result).toContain('confidence_factors:');
+    expect(result).toContain('schema_version: 2');
+  });
+
+  it('inserts Hunt History and Related Infrastructure sections before ## Sightings', () => {
+    const result = applyMigration(V1_NOTE);
+    expect(result).toContain('## Hunt History');
+    expect(result).toContain('## Related Infrastructure');
+    const huntHistoryIdx = result.indexOf('## Hunt History');
+    const relatedInfraIdx = result.indexOf('## Related Infrastructure');
+    const sightingsIdx = result.indexOf('## Sightings');
+    expect(huntHistoryIdx).toBeLessThan(sightingsIdx);
+    expect(relatedInfraIdx).toBeLessThan(sightingsIdx);
+  });
+
+  it('preserves existing Verdict History section', () => {
+    const result = applyMigration(V1_NOTE);
+    expect(result).toContain('## Verdict History');
+    expect(result).toContain('_No verdict changes recorded._');
+  });
+});
+
+describe('applyMigration v0 -> v2', () => {
+  it('applies both migrations in sequence', () => {
+    const result = applyMigration(OLD_NOTE);
+    // v1 fields
+    expect(result).toContain('schema_version: 2');
+    expect(result).toContain('## Verdict History');
+    // v2 fields
+    expect(result).toContain('confidence_score: 0');
+    expect(result).toContain('source_count: 0');
+    expect(result).toContain('## Hunt History');
+    expect(result).toContain('## Related Infrastructure');
+  });
+});
+
+describe('applyMigration v2 idempotent', () => {
+  it('returns already-v2 notes unchanged', () => {
+    const v2Note = applyMigration(V1_NOTE);
+    const second = applyMigration(v2Note);
+    expect(second).toBe(v2Note);
+  });
+
+  it('returns CURRENT_NOTE (v2) unchanged', () => {
+    const result = applyMigration(CURRENT_NOTE);
+    expect(result).toBe(CURRENT_NOTE);
   });
 });

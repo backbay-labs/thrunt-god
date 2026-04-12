@@ -11,6 +11,7 @@ export interface ThruntGodPluginSettings {
   mcpServerUrl: string;
   mcpEnabled: boolean;
   sidebarState: SidebarState;
+  halfLifeDays: number;
 }
 
 export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: ThruntGodPluginSettings = {
   mcpServerUrl: 'http://localhost:3100',
   mcpEnabled: false,
   sidebarState: DEFAULT_SIDEBAR_STATE,
+  halfLifeDays: 90,
 };
 
 export class ThruntGodSettingTab extends PluginSettingTab {
@@ -93,6 +95,24 @@ export class ThruntGodSettingTab extends PluginSettingTab {
             } else {
               new Notice('MCP connection failed. Check URL and server status.');
             }
+          }),
+      );
+
+    // --- Intelligence ---
+
+    containerEl.createEl('h3', { text: 'Intelligence' });
+
+    new Setting(containerEl)
+      .setName('Confidence decay half-life (days)')
+      .setDesc('Days until confidence score decays to 50%. Default: 90.')
+      .addText((text) =>
+        text
+          .setPlaceholder('90')
+          .setValue(String(this.plugin.settings.halfLifeDays))
+          .onChange(async (value) => {
+            const parsed = parseInt(value, 10);
+            this.plugin.settings.halfLifeDays = parsed > 0 ? parsed : DEFAULT_SETTINGS.halfLifeDays;
+            await this.plugin.saveSettings();
           }),
       );
   }
