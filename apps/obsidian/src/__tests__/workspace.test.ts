@@ -911,4 +911,45 @@ High
       expect(vm.receiptTimeline).toEqual([]);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Context assembly (Phase 74 Plan 02)
+  // -------------------------------------------------------------------------
+
+  describe('assembleContextForProfile', () => {
+    it('returns error for unknown agentId', async () => {
+      const result = await service.assembleContextForProfile('notes/test.md', 'nonexistent-agent');
+      expect(result).toHaveProperty('error');
+      expect((result as { error: string }).error).toContain('Unknown agent profile');
+    });
+  });
+
+  describe('getAvailableProfiles', () => {
+    it('returns 5 default profiles', () => {
+      const profiles = service.getAvailableProfiles();
+      expect(profiles).toHaveLength(5);
+      expect(profiles[0]!.agentId).toBe('query-writer');
+    });
+  });
+
+  describe('renderAssembledContext', () => {
+    it('includes provenance comments with <!-- source: --> markers', () => {
+      const assembled = {
+        sections: [
+          { heading: 'Hypothesis', content: 'Test content', sourcePath: 'notes/hunt.md' },
+          { heading: 'Evidence', content: 'Some evidence', sourcePath: 'notes/evidence.md' },
+        ],
+        tokenEstimate: 10,
+        profileUsed: 'test-agent',
+        sourceNote: 'notes/hunt.md',
+      };
+      const rendered = service.renderAssembledContext(assembled);
+      expect(rendered).toContain('<!-- source: notes/hunt.md -->');
+      expect(rendered).toContain('<!-- source: notes/evidence.md -->');
+      expect(rendered).toContain('## Hypothesis');
+      expect(rendered).toContain('## Evidence');
+      expect(rendered).toContain('Test content');
+      expect(rendered).toContain('Some evidence');
+    });
+  });
 });

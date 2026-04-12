@@ -15,9 +15,13 @@ import {
   type ReceiptTimelineEntry,
   type EnrichmentData,
   type CoverageReport,
+  type AssembledContext,
+  type ExportProfile,
 } from './types';
 import type { McpClient } from './mcp-client';
 import { mergeEnrichment, buildCoverageReport, formatDecisionEntry, formatLearningEntry } from './mcp-enrichment';
+import { assembleContext } from './context-assembly';
+import { loadProfiles } from './export-profiles';
 import { parseState, parseHypotheses } from './parsers';
 import { parseReceipt } from './parsers/receipt';
 import { parseQueryLog } from './parsers/query-log';
@@ -535,6 +539,58 @@ export class WorkspaceService {
 
     this.invalidate();
     return { success: true, message: `Learning logged for ${topic}.` };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Context assembly methods (Phase 74 Plan 02)
+  // ---------------------------------------------------------------------------
+
+  async assembleContextForProfile(
+    sourceNotePath: string,
+    agentId: string,
+    customProfilesJson?: string | null,
+  ): Promise<AssembledContext | { error: string }> {
+    const profiles = loadProfiles(customProfilesJson ?? null);
+    const profile = profiles.find(p => p.agentId === agentId);
+    if (!profile) {
+      return { error: `Unknown agent profile: ${agentId}` };
+    }
+
+    const planningDir = getPlanningDir(
+      this.getSettings().planningDir,
+      this.defaultPlanningDir,
+    );
+
+    const result = await assembleContext({
+      sourceNotePath,
+      profile,
+      readFile: async (path: string) => {
+        try {
+          return await this.vaultAdapter.readFile(path);
+        } catch {
+          return null;
+        }
+      },
+      fileExists: (path: string) => this.vaultAdapter.fileExists(path),
+      planningDir,
+    });
+
+    return result;
+  }
+
+  getAvailableProfiles(customProfilesJson?: string | null): ExportProfile[] {
+    return loadProfiles(customProfilesJson ?? null);
+  }
+
+  renderAssembledContext(assembled: AssembledContext): string {
+    const lines: string[] = [];
+    for (const section of assembled.sections) {
+      lines.push(`<!-- source: ${section.sourcePath} -->`);
+      lines.push(`## ${section.heading}`);
+      lines.push(section.content);
+      lines.push('');
+    }
+    return lines.join('\n');
   }
 
   private async detectExtendedArtifacts(planningDir: string): Promise<ExtendedArtifacts> {
