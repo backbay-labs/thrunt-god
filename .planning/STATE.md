@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 86-02-PLAN.md
-last_updated: "2026-04-12T20:50:49.000Z"
+stopped_at: Completed 87-01-PLAN.md
+last_updated: "2026-04-12T21:19:42.806Z"
 progress:
   total_phases: 12
   completed_phases: 8
-  total_plans: 18
-  completed_plans: 18
-  percent: 100
+  total_plans: 20
+  completed_plans: 19
+  percent: 95
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 86 (Live Hunt Canvas + Reactive Dashboard)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 87 (Filesystem Watcher + Hunt Pulse)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** Executing
-**Phase:** 86 of 90 (Live Hunt Canvas + Reactive Dashboard)
-**Plan:** 2 of 2 in current phase complete
+**Status:** In progress
+**Phase:** 87 of 90 (Filesystem Watcher + Hunt Pulse)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (18/18 v5.0 plans)
+Progress: [██████████] 95% (19/20 v5.0 plans)
 
 ## Recently Completed
 
@@ -109,6 +109,9 @@ Progress: [██████████] 100% (18/18 v5.0 plans)
 - [Phase 86]: Dashboard debounce at 2000ms trailing (vs 500ms for canvas color patcher) for batch-heavy operations
 - [Phase 86]: open-live-hunt-canvas registered as visible top-level command (not hidden alias)
 - [Phase 86]: openLiveHuntCanvas creates live-hunt.canvas with empty {nodes:[],edges:[]} if missing
+- [Phase 87]: WatcherService constructor changes from stub (adds getPlanningDir and intelligenceService params); Plan 87-02 updates main.ts
+- [Phase 87]: formatHuntPulse is a pure function with injected now/count for full testability
+- [Phase 87]: handleAutoIngest increments recentArtifactCount by created+updated (not raw entity count)
 
 ### Blockers/Concerns
 
@@ -116,6 +119,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T20:50:49Z
-Stopped at: Completed 86-02-PLAN.md
+Last session: 2026-04-12T21:19:42.800Z
+Stopped at: Completed 87-01-PLAN.md
 Resume file: None
