@@ -79,6 +79,7 @@ export interface ViewModel {
   phaseDirectories: PhaseDirectoryInfo;
   entityCounts: EntityCounts;
   extendedArtifacts: ExtendedArtifacts;
+  receiptTimeline: ReceiptTimelineEntry[];
 }
 
 // --- Error types ---

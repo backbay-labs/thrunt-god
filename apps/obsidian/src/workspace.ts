@@ -2,15 +2,27 @@ import type { App } from 'obsidian';
 import { type VaultAdapter } from './vault-adapter';
 import { CORE_ARTIFACTS, KNOWLEDGE_BASE_TEMPLATE } from './artifacts';
 import { getPlanningDir, getCoreFilePath, normalizePath } from './paths';
-import { ENTITY_FOLDERS } from './entity-schema';
+import { ENTITY_FOLDERS, ENTITY_TYPES } from './entity-schema';
 import {
   type WorkspaceStatus,
   type ArtifactStatus,
   type ViewModel,
   type EntityCounts,
   type ExtendedArtifacts,
+  type IngestionResult,
+  type EntityInstruction,
+  type ReceiptTimelineEntry,
 } from './types';
 import { parseState, parseHypotheses } from './parsers';
+import { parseReceipt } from './parsers/receipt';
+import { parseQueryLog } from './parsers/query-log';
+import {
+  extractEntitiesFromReceipt,
+  extractEntitiesFromQuery,
+  deduplicateSightings,
+  formatIngestionLog,
+  buildReceiptTimeline,
+} from './ingestion';
 import type { StateSnapshot, HypothesisSnapshot, PhaseDirectoryInfo } from './types';
 
 export class WorkspaceService {
@@ -98,6 +110,26 @@ export class WorkspaceService {
     // Detect extended artifacts
     const extendedArtifacts = await this.detectExtendedArtifacts(planningDir);
 
+    // Build receipt timeline
+    let receiptTimeline: ReceiptTimelineEntry[] = [];
+    const receiptsPath = normalizePath(`${planningDir}/RECEIPTS`);
+    if (this.vaultAdapter.folderExists(receiptsPath)) {
+      const receiptFiles = await this.vaultAdapter.listFiles(receiptsPath);
+      const rctFiles = receiptFiles.filter(f => /^RCT-.*\.md$/.test(f));
+      const parsed: Array<{ fileName: string; snapshot: import('./types').ReceiptSnapshot }> = [];
+      for (const fileName of rctFiles) {
+        try {
+          const filePath = normalizePath(`${receiptsPath}/${fileName}`);
+          const content = await this.vaultAdapter.readFile(filePath);
+          const snapshot = parseReceipt(content);
+          parsed.push({ fileName, snapshot });
+        } catch {
+          // Skip unreadable receipts
+        }
+      }
+      receiptTimeline = buildReceiptTimeline(parsed);
+    }
+
     const viewModel: ViewModel = {
       workspaceStatus,
       planningDir,
@@ -109,6 +141,7 @@ export class WorkspaceService {
       phaseDirectories,
       entityCounts,
       extendedArtifacts,
+      receiptTimeline,
     };
 
     this.cachedViewModel = viewModel;
@@ -176,6 +209,152 @@ export class WorkspaceService {
       this.defaultPlanningDir,
     );
     return getCoreFilePath(planningDir, fileName);
+  }
+
+  async runIngestion(): Promise<IngestionResult> {
+    const planningDir = getPlanningDir(
+      this.getSettings().planningDir,
+      this.defaultPlanningDir,
+    );
+
+    const allInstructions: EntityInstruction[] = [];
+
+    // Scan RECEIPTS/ for RCT-*.md files
+    const receiptsPath = normalizePath(`${planningDir}/RECEIPTS`);
+    if (this.vaultAdapter.folderExists(receiptsPath)) {
+      const receiptFiles = await this.vaultAdapter.listFiles(receiptsPath);
+      const rctFiles = receiptFiles.filter(f => /^RCT-.*\.md$/.test(f));
+      for (const fileName of rctFiles) {
+        try {
+          const filePath = normalizePath(`${receiptsPath}/${fileName}`);
+          const content = await this.vaultAdapter.readFile(filePath);
+          const snapshot = parseReceipt(content);
+          const instructions = extractEntitiesFromReceipt(snapshot, fileName);
+          allInstructions.push(...instructions);
+        } catch {
+          // Skip unreadable receipts
+        }
+      }
+    }
+
+    // Scan QUERIES/ for QRY-*.md files
+    const queriesPath = normalizePath(`${planningDir}/QUERIES`);
+    if (this.vaultAdapter.folderExists(queriesPath)) {
+      const queryFiles = await this.vaultAdapter.listFiles(queriesPath);
+      const qryFiles = queryFiles.filter(f => /^QRY-.*\.md$/.test(f));
+      for (const fileName of qryFiles) {
+        try {
+          const filePath = normalizePath(`${queriesPath}/${fileName}`);
+          const content = await this.vaultAdapter.readFile(filePath);
+          const snapshot = parseQueryLog(content);
+          const instructions = extractEntitiesFromQuery(snapshot, fileName);
+          allInstructions.push(...instructions);
+        } catch {
+          // Skip unreadable queries
+        }
+      }
+    }
+
+    // Process entity instructions
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const instruction of allInstructions) {
+      const entityNotePath = normalizePath(
+        `${planningDir}/${instruction.folder}/${instruction.name}.md`,
+      );
+
+      if (this.vaultAdapter.fileExists(entityNotePath)) {
+        // Entity note exists -- check for duplicate sighting
+        const existingContent = await this.vaultAdapter.readFile(entityNotePath);
+        const isNew = deduplicateSightings(existingContent, instruction.sourceId);
+
+        if (!isNew) {
+          skipped++;
+          continue;
+        }
+
+        // Append sighting line after ## Sightings heading
+        const sightingsMatch = existingContent.match(/^## Sightings\s*$/m);
+        if (sightingsMatch && sightingsMatch.index !== undefined) {
+          const insertPos = sightingsMatch.index + sightingsMatch[0].length;
+          let updatedContent = existingContent;
+
+          // Remove placeholder text if present
+          updatedContent = updatedContent.replace(
+            /^## Sightings\s*\n+_No sightings recorded yet\._/m,
+            '## Sightings',
+          );
+
+          // Re-find ## Sightings position after placeholder removal
+          const newMatch = updatedContent.match(/^## Sightings\s*$/m);
+          if (newMatch && newMatch.index !== undefined) {
+            const pos = newMatch.index + newMatch[0].length;
+            updatedContent =
+              updatedContent.slice(0, pos) +
+              '\n' + instruction.sightingLine +
+              updatedContent.slice(pos);
+          }
+
+          await this.vaultAdapter.modifyFile(entityNotePath, updatedContent);
+        }
+
+        updated++;
+      } else {
+        // Entity note does not exist -- create from template
+        const entityDef = ENTITY_TYPES.find(
+          (def) => def.type === instruction.entityType,
+        );
+
+        let content: string;
+        if (entityDef) {
+          content = entityDef.starterTemplate(instruction.name);
+        } else {
+          // Fallback: minimal entity note
+          content = `# ${instruction.name}\n\n## Sightings\n\n_No sightings recorded yet._\n\n## Related\n\n`;
+        }
+
+        // Replace placeholder with sighting line
+        content = content.replace(
+          '_No sightings recorded yet._',
+          instruction.sightingLine,
+        );
+
+        // Ensure entity folder exists
+        const folderPath = normalizePath(`${planningDir}/${instruction.folder}`);
+        await this.vaultAdapter.ensureFolder(folderPath);
+        await this.vaultAdapter.createFile(entityNotePath, content);
+
+        created++;
+      }
+    }
+
+    // Build IngestionResult
+    const result: IngestionResult = {
+      created,
+      updated,
+      skipped,
+      entities: allInstructions,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Append to INGESTION_LOG.md
+    const logPath = normalizePath(`${planningDir}/INGESTION_LOG.md`);
+    const logEntry = formatIngestionLog(result);
+
+    if (this.vaultAdapter.fileExists(logPath)) {
+      const existingLog = await this.vaultAdapter.readFile(logPath);
+      await this.vaultAdapter.modifyFile(logPath, existingLog + '\n' + logEntry);
+    } else {
+      await this.vaultAdapter.createFile(
+        logPath,
+        '# Ingestion Log\n\n' + logEntry,
+      );
+    }
+
+    this.invalidate();
+    return result;
   }
 
   private async detectExtendedArtifacts(planningDir: string): Promise<ExtendedArtifacts> {

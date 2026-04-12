@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { VaultAdapter } from '../vault-adapter';
 import { WorkspaceService, formatStatusBarText } from '../workspace';
 import { CORE_ARTIFACTS, KNOWLEDGE_BASE_TEMPLATE } from '../artifacts';
-import { getCoreFilePath } from '../paths';
+import { getCoreFilePath, normalizePath } from '../paths';
 import { ENTITY_FOLDERS } from '../entity-schema';
 
 // ---------------------------------------------------------------------------
@@ -351,6 +351,7 @@ describe('WorkspaceService', () => {
       phaseDirectories: { count: 0, highest: null, highestName: null },
       entityCounts: {},
       extendedArtifacts: defaultExtendedArtifacts,
+      receiptTimeline: [],
     };
 
     it('returns "THRUNT not detected" for missing workspace', () => {
@@ -365,6 +366,7 @@ describe('WorkspaceService', () => {
         phaseDirectories: { count: 0, highest: null, highestName: null },
         entityCounts: {},
         extendedArtifacts: defaultExtendedArtifacts,
+        receiptTimeline: [],
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT not detected');
     });
@@ -381,6 +383,7 @@ describe('WorkspaceService', () => {
         phaseDirectories: { count: 0, highest: null, highestName: null },
         entityCounts: {},
         extendedArtifacts: defaultExtendedArtifacts,
+        receiptTimeline: [],
       };
       expect(formatStatusBarText(vm)).toBe('THRUNT .planning (3/5)');
     });
@@ -397,6 +400,7 @@ describe('WorkspaceService', () => {
         phaseDirectories: { count: 3, highest: 3, highestName: 'phase-03' },
         entityCounts: {},
         extendedArtifacts: defaultExtendedArtifacts,
+        receiptTimeline: [],
       };
       expect(formatStatusBarText(vm)).toBe('Phase 3 | 2/5 hypotheses active | 1 blocker');
     });
@@ -692,6 +696,208 @@ describe('WorkspaceService', () => {
         (a) => a.fileName === 'KNOWLEDGE_BASE.md',
       );
       expect(kbArtifact).toBeUndefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // runIngestion
+  // -------------------------------------------------------------------------
+
+  describe('runIngestion', () => {
+    const RECEIPT_MD = `---
+receipt_id: RCT-001
+claim_status: supports
+result_status: ok
+related_hypotheses:
+  - H1 Lateral movement
+related_queries:
+  - QRY-001
+---
+
+## Claim
+
+Attacker used T1059.001 for execution.
+
+## Evidence
+
+Process logs show powershell.exe spawning encoded command.
+
+## Confidence
+
+High
+`;
+
+    const QUERY_MD = `---
+query_id: QRY-001
+dataset: events
+result_status: ok
+related_hypotheses:
+  - H1 Lateral movement
+related_receipts:
+  - RCT-001
+---
+
+## Intent
+
+Search for suspicious IPs in firewall logs.
+
+## Query
+
+\`\`\`kql
+FirewallLogs | where SrcIP == "10.0.0.50"
+\`\`\`
+
+## Results
+
+Found connections from 10.0.0.50 to external C2 at 192.168.1.100.
+`;
+
+    function setupHealthyWorkspace(adapter: StubVaultAdapter): void {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      // Entity folders
+      adapter.addFolder('.planning/entities/iocs');
+      adapter.addFolder('.planning/entities/ttps');
+      adapter.addFolder('.planning/entities/actors');
+      adapter.addFolder('.planning/entities/tools');
+      adapter.addFolder('.planning/entities/infra');
+      adapter.addFolder('.planning/entities/datasources');
+    }
+
+    function addReceiptFiles(adapter: StubVaultAdapter): void {
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFile('.planning/RECEIPTS/RCT-001.md', RECEIPT_MD);
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+    }
+
+    function addQueryFiles(adapter: StubVaultAdapter): void {
+      adapter.addFolder('.planning/QUERIES');
+      adapter.addFile('.planning/QUERIES/QRY-001.md', QUERY_MD);
+      adapter.addFileToFolder('.planning/QUERIES', 'QRY-001.md');
+    }
+
+    it('creates entity notes in entities/ttps/ from receipt files', async () => {
+      setupHealthyWorkspace(adapter);
+      addReceiptFiles(adapter);
+
+      const result = await service.runIngestion();
+
+      expect(result.created).toBeGreaterThanOrEqual(1);
+      // T1059.001 extracted from receipt
+      expect(adapter.fileExists('.planning/entities/ttps/T1059.001.md')).toBe(true);
+    });
+
+    it('creates entity notes in entities/iocs/ from query files', async () => {
+      setupHealthyWorkspace(adapter);
+      addQueryFiles(adapter);
+
+      const result = await service.runIngestion();
+
+      expect(result.created).toBeGreaterThanOrEqual(1);
+      // 10.0.0.50 and 192.168.1.100 extracted from query body
+      expect(
+        adapter.fileExists('.planning/entities/iocs/10.0.0.50.md') ||
+        adapter.fileExists('.planning/entities/iocs/192.168.1.100.md'),
+      ).toBe(true);
+    });
+
+    it('does not duplicate sightings on second run', async () => {
+      setupHealthyWorkspace(adapter);
+      addReceiptFiles(adapter);
+
+      const result1 = await service.runIngestion();
+      expect(result1.created).toBeGreaterThanOrEqual(1);
+
+      // Second run should skip (not duplicate)
+      const result2 = await service.runIngestion();
+      expect(result2.skipped).toBeGreaterThanOrEqual(1);
+      expect(result2.created).toBe(0);
+    });
+
+    it('creates INGESTION_LOG.md with run summary', async () => {
+      setupHealthyWorkspace(adapter);
+      addReceiptFiles(adapter);
+
+      await service.runIngestion();
+
+      expect(adapter.fileExists('.planning/INGESTION_LOG.md')).toBe(true);
+      const logContent = await adapter.readFile('.planning/INGESTION_LOG.md');
+      expect(logContent).toContain('# Ingestion Log');
+      expect(logContent).toContain('Created:');
+      expect(logContent).toContain('Updated:');
+      expect(logContent).toContain('Skipped:');
+    });
+
+    it('appends to INGESTION_LOG.md on second run', async () => {
+      setupHealthyWorkspace(adapter);
+      addReceiptFiles(adapter);
+
+      await service.runIngestion();
+      await service.runIngestion();
+
+      const logContent = await adapter.readFile('.planning/INGESTION_LOG.md');
+      // Should contain two run entries (two ## headings beyond the initial # heading)
+      const runHeadings = logContent.match(/^## /gm);
+      expect(runHeadings).not.toBeNull();
+      expect(runHeadings!.length).toBeGreaterThanOrEqual(2);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // receiptTimeline in getViewModel
+  // -------------------------------------------------------------------------
+
+  describe('receiptTimeline', () => {
+    const RECEIPT_MD = `---
+receipt_id: RCT-001
+claim_status: supports
+result_status: ok
+related_hypotheses:
+  - H1 Lateral movement
+related_queries:
+  - QRY-001
+---
+
+## Claim
+
+Attacker used T1059.001 for execution.
+
+## Evidence
+
+Process logs show powershell.exe.
+
+## Confidence
+
+High
+`;
+
+    it('is populated when RECEIPTS/ has files', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addFolder('.planning/RECEIPTS');
+      adapter.addFile('.planning/RECEIPTS/RCT-001.md', RECEIPT_MD);
+      adapter.addFileToFolder('.planning/RECEIPTS', 'RCT-001.md');
+
+      const vm = await service.getViewModel();
+
+      expect(vm.receiptTimeline).toHaveLength(1);
+      expect(vm.receiptTimeline[0]!.receipt_id).toBe('RCT-001');
+      expect(vm.receiptTimeline[0]!.claim_status).toBe('supports');
+      expect(vm.receiptTimeline[0]!.hypothesis).toBe('H1 Lateral movement');
+      expect(vm.receiptTimeline[0]!.fileName).toBe('RCT-001.md');
+    });
+
+    it('is empty when RECEIPTS/ folder does not exist', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+
+      const vm = await service.getViewModel();
+      expect(vm.receiptTimeline).toEqual([]);
+    });
+
+    it('is empty when workspace is missing', async () => {
+      const vm = await service.getViewModel();
+      expect(vm.receiptTimeline).toEqual([]);
     });
   });
 });
