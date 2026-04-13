@@ -7,9 +7,10 @@ import { ENTITY_TYPES, ENTITY_FOLDERS } from './entity-schema';
 import { McpSearchModal } from './mcp-search-modal';
 import { HyperCopyModal } from './hyper-copy-modal';
 import { PromptModal, CanvasTemplateModal, CompareHuntsModal } from './modals';
-import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, JournalChooserModal, VerdictSuggestModal, TechniqueSuggestModal, buildTechniqueItems } from './chooser-modals';
+import { CopyChooserModal, CanvasChooserModal, IntelligenceChooserModal, JournalChooserModal, VerdictSuggestModal, TechniqueSuggestModal, buildTechniqueItems, PlaybookSuggestModal, RuleLanguageSuggestModal } from './chooser-modals';
 import { appendVerdictEntry, formatTimestamp, detectHuntId, type VerdictEntry } from './verdict';
-import { updateFrontmatter } from './frontmatter-editor';
+import { updateFrontmatter, addToArray } from './frontmatter-editor';
+import { createDetectionNote, type DetectionNoteParams } from './detection';
 import { previewMigration, applyMigration, CURRENT_SCHEMA_VERSION } from './schema-migration';
 import { refreshEntityIntelligence, type RefreshInput } from './entity-intelligence';
 import type { ConfidenceFactors } from './confidence';
@@ -119,6 +120,32 @@ export function registerCommands(plugin: ThruntGodPlugin): void {
     name: '',  // Hidden alias -- accessed via Journal... chooser
     callback: () => {
       void journalSummary(plugin);
+    },
+  });
+
+  // --- Playbook + Detection commands (Phase 90) ---
+
+  plugin.addCommand({
+    id: 'generate-playbook',
+    name: '',  // Hidden alias -- accessed via Journal... chooser
+    callback: () => {
+      void generatePlaybookCmd(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'apply-playbook',
+    name: '',  // Hidden alias -- accessed via Journal... chooser
+    callback: () => {
+      void applyPlaybookCmd(plugin);
+    },
+  });
+
+  plugin.addCommand({
+    id: 'create-detection',
+    name: '',  // Hidden alias -- accessed via Journal... chooser
+    callback: () => {
+      void createDetectionCmd(plugin);
     },
   });
 
@@ -1056,6 +1083,217 @@ async function journalSummary(plugin: ThruntGodPlugin): Promise<void> {
   new Notice('Journal summary generated');
   await plugin.app.workspace.openLinkText(result.path, '', true);
   await plugin.refreshViews();
+}
+
+// ---------------------------------------------------------------------------
+// Playbook + Detection command helpers (Phase 90-02)
+// ---------------------------------------------------------------------------
+
+async function generatePlaybookCmd(plugin: ThruntGodPlugin): Promise<void> {
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  // Detect hunt ID
+  let missionContent: string | null = null;
+  try {
+    const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+    missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+  } catch {
+    // MISSION.md not found
+  }
+  const huntId = detectHuntId(missionContent, planningDir);
+
+  if (huntId === 'manual') {
+    new Notice('No active hunt detected. Open a hunt workspace first.');
+    return;
+  }
+
+  // Check journal exists
+  const exists = await plugin.workspaceService.journal.journalExists(huntId);
+  if (!exists) {
+    new Notice(`No journal found for hunt ${huntId}. Create a journal first.`);
+    return;
+  }
+
+  try {
+    const result = await plugin.workspaceService.journal.generatePlaybook(huntId);
+    new Notice(`Playbook generated: ${result.path}`);
+    await plugin.app.workspace.openLinkText(result.path, '', true);
+    await plugin.refreshViews();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    new Notice(`Playbook generation failed: ${message}`);
+  }
+}
+
+async function applyPlaybookCmd(plugin: ThruntGodPlugin): Promise<void> {
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  try {
+    const playbooks = await plugin.workspaceService.journal.listPlaybooks();
+    if (playbooks.length === 0) {
+      new Notice('No playbooks found in .planning/playbooks/');
+      return;
+    }
+
+    // Show playbook selection modal
+    new PlaybookSuggestModal(
+      plugin.app,
+      playbooks,
+      (selectedPlaybook) => {
+        void (async () => {
+          // Detect hunt ID for the new hunt
+          let missionContent: string | null = null;
+          try {
+            const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+            missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+          } catch {
+            // MISSION.md not found
+          }
+          let huntId = detectHuntId(missionContent, planningDir);
+
+          if (huntId === 'manual') {
+            // Prompt for hunt ID
+            await new Promise<void>((resolve) => {
+              new PromptModal(
+                plugin.app,
+                'Hunt ID for Playbook Application',
+                [{ label: 'Hunt ID', placeholder: 'HUNT-042' }],
+                (values) => {
+                  huntId = values[0] || 'HUNT-001';
+                  resolve();
+                },
+              ).open();
+            });
+          }
+
+          try {
+            const result = await plugin.workspaceService.journal.applyPlaybook(
+              selectedPlaybook.id,
+              huntId,
+            );
+            new Notice('Playbook applied. Mission updated, journal created.');
+            await plugin.app.workspace.openLinkText(result.journalPath, '', true);
+            await plugin.refreshViews();
+          } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Unknown error';
+            new Notice(`Playbook application failed: ${message}`);
+          }
+        })();
+      },
+    ).open();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    new Notice(`Failed to list playbooks: ${message}`);
+  }
+}
+
+async function createDetectionCmd(plugin: ThruntGodPlugin): Promise<void> {
+  const planningDir = getPlanningDir(
+    plugin.settings.planningDir,
+    DEFAULT_SETTINGS.planningDir,
+  );
+
+  // Detect hunt ID
+  let missionContent: string | null = null;
+  try {
+    const missionPath = normalizePath(`${planningDir}/MISSION.md`);
+    missionContent = await plugin.workspaceService.vaultAdapter.readFile(missionPath);
+  } catch {
+    // MISSION.md not found
+  }
+  const huntId = detectHuntId(missionContent, planningDir);
+  const sourceHunt = huntId === 'manual' ? '' : huntId;
+
+  // Show rule language selector
+  new RuleLanguageSuggestModal(plugin.app, (selectedLanguage) => {
+    void (async () => {
+      try {
+        // Collect linked techniques from current hunt's receipt timeline
+        const linkedTechniques: string[] = [];
+        const linkedEntities: string[] = [];
+
+        if (huntId !== 'manual') {
+          const receiptsDir = normalizePath(`${planningDir}/RECEIPTS`);
+          if (plugin.workspaceService.vaultAdapter.folderExists(receiptsDir)) {
+            const vm = await plugin.workspaceService.getViewModel();
+            const techniqueSet = new Set<string>();
+            for (const entry of vm.receiptTimeline) {
+              for (const ref of entry.technique_refs) {
+                techniqueSet.add(ref);
+              }
+            }
+            linkedTechniques.push(...techniqueSet);
+          }
+
+          // Collect entity names from entity folders
+          for (const folder of ENTITY_FOLDERS) {
+            const folderPath = normalizePath(`${planningDir}/${folder}`);
+            if (plugin.workspaceService.vaultAdapter.folderExists(folderPath)) {
+              const files = await plugin.workspaceService.vaultAdapter.listFiles(folderPath);
+              for (const f of files) {
+                if (f.endsWith('.md')) {
+                  linkedEntities.push(f.replace(/\.md$/, ''));
+                }
+              }
+            }
+          }
+        }
+
+        // Generate a timestamped detection name
+        const detectionName = `Detection-${sourceHunt || 'manual'}-${Date.now()}`;
+        const ruleLanguage = selectedLanguage.id as DetectionNoteParams['ruleLanguage'];
+
+        const noteContent = createDetectionNote({
+          name: detectionName,
+          ruleLanguage,
+          sourceHunt,
+          linkedTechniques,
+          linkedEntities,
+        });
+
+        // Write to entities/detections/ directory
+        const detectionsDir = normalizePath(`${planningDir}/entities/detections`);
+        await plugin.workspaceService.vaultAdapter.ensureFolder(detectionsDir);
+        const notePath = normalizePath(`${detectionsDir}/${detectionName}.md`);
+        await plugin.workspaceService.vaultAdapter.createFile(notePath, noteContent);
+
+        // Link detection to technique notes' linked_detections
+        if (huntId !== 'manual') {
+          for (const techRef of linkedTechniques) {
+            const techFileName = getTechniqueFileName({ id: techRef, name: '' });
+            const techPath = normalizePath(`${planningDir}/entities/ttps/${techFileName}`);
+            if (plugin.workspaceService.vaultAdapter.fileExists(techPath)) {
+              try {
+                let techContent = await plugin.workspaceService.vaultAdapter.readFile(techPath);
+                techContent = addToArray(techContent, 'linked_detections', detectionName);
+                await plugin.workspaceService.vaultAdapter.modifyFile(techPath, techContent);
+              } catch {
+                // Skip if technique note cannot be updated
+              }
+            }
+          }
+        }
+
+        new Notice(`Detection note created: ${notePath}`);
+        await plugin.app.workspace.openLinkText(notePath, '', true);
+        plugin.workspaceService.invalidate();
+        await plugin.refreshViews();
+
+        if (huntId === 'manual') {
+          new Notice('Hunt context not detected -- source_hunt left empty');
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        new Notice(`Detection creation failed: ${message}`);
+      }
+    })();
+  }).open();
 }
 
 export async function quickExport(plugin: ThruntGodPlugin, agentId: string, label: string): Promise<void> {

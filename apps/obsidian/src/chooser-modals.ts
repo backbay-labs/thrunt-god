@@ -445,6 +445,9 @@ const JOURNAL_ITEMS: readonly ChooserItem[] = [
   { id: 'new-journal-entry', name: 'New Entry', description: 'Append a timestamped entry to the active hunt journal' },
   { id: 'journal-summary', name: 'Generate Summary', description: 'Extract reasoning chain into a structured summary' },
   { id: 'create-journal', name: 'Create Journal', description: 'Create a new hunt journal for the current hunt' },
+  { id: 'generate-playbook', name: 'Generate Playbook', description: 'Distill current hunt into a reusable playbook' },
+  { id: 'apply-playbook', name: 'Apply Playbook', description: 'Pre-populate a new hunt from an existing playbook' },
+  { id: 'create-detection', name: 'Create Detection', description: 'Create a detection note linking rules to hunts and techniques' },
 ];
 
 export class JournalChooserModal extends FuzzySuggestModal<ChooserItem> {
@@ -568,5 +571,75 @@ export class VerdictSuggestModal extends FuzzySuggestModal<VerdictItem> {
 
   onChooseItem(item: VerdictItem, _evt: MouseEvent | KeyboardEvent): void {
     this.onSelect(item.id);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PlaybookSuggestModal (Phase 90)
+// ---------------------------------------------------------------------------
+
+export class PlaybookSuggestModal extends FuzzySuggestModal<ChooserItem> {
+  private playbooks: ChooserItem[];
+  private onSelect: (item: ChooserItem) => void;
+
+  constructor(app: App, playbooks: ChooserItem[], onSelect: (item: ChooserItem) => void) {
+    super(app);
+    this.playbooks = playbooks;
+    this.onSelect = onSelect;
+    this.setPlaceholder('Select a playbook to apply...');
+  }
+
+  getItems(): ChooserItem[] {
+    return this.playbooks;
+  }
+
+  getItemText(item: ChooserItem): string {
+    return item.name;
+  }
+
+  renderSuggestion(match: FuzzyMatch<ChooserItem>, el: HTMLElement): void {
+    el.createDiv({ cls: 'thrunt-chooser-name', text: match.item.name });
+    el.createDiv({ cls: 'thrunt-chooser-desc', text: match.item.description });
+  }
+
+  onChooseItem(item: ChooserItem, _evt: MouseEvent | KeyboardEvent): void {
+    this.onSelect(item);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// RuleLanguageSuggestModal (Phase 90)
+// ---------------------------------------------------------------------------
+
+const RULE_LANGUAGES: readonly ChooserItem[] = [
+  { id: 'sigma', name: 'Sigma', description: 'Vendor-agnostic detection format' },
+  { id: 'kql', name: 'KQL', description: 'Kusto Query Language (Microsoft Sentinel/Defender)' },
+  { id: 'spl', name: 'SPL', description: 'Splunk Processing Language' },
+];
+
+export class RuleLanguageSuggestModal extends FuzzySuggestModal<ChooserItem> {
+  private onSelect: (item: ChooserItem) => void;
+
+  constructor(app: App, onSelect: (item: ChooserItem) => void) {
+    super(app);
+    this.onSelect = onSelect;
+    this.setPlaceholder('Select detection rule language...');
+  }
+
+  getItems(): ChooserItem[] {
+    return [...RULE_LANGUAGES];
+  }
+
+  getItemText(item: ChooserItem): string {
+    return item.name;
+  }
+
+  renderSuggestion(match: FuzzyMatch<ChooserItem>, el: HTMLElement): void {
+    el.createDiv({ cls: 'thrunt-chooser-name', text: match.item.name });
+    el.createDiv({ cls: 'thrunt-chooser-desc', text: match.item.description });
+  }
+
+  onChooseItem(item: ChooserItem, _evt: MouseEvent | KeyboardEvent): void {
+    this.onSelect(item);
   }
 }

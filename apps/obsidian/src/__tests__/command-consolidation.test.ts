@@ -19,10 +19,15 @@ vi.mock('../chooser-modals', () => ({
   JournalChooserModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   VerdictSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   TechniqueSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
+  PlaybookSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
+  RuleLanguageSuggestModal: vi.fn().mockImplementation(() => ({ open: vi.fn() })),
   buildTechniqueItems: vi.fn().mockReturnValue([]),
 }));
 vi.mock('../false-positive', () => ({
   appendFalsePositiveEntry: vi.fn().mockReturnValue(''),
+}));
+vi.mock('../detection', () => ({
+  createDetectionNote: vi.fn().mockReturnValue('---\ntype: detection\n---\n# test'),
 }));
 vi.mock('../scaffold', () => ({
   getTechniqueFileName: vi.fn().mockReturnValue('T1059 -- Command and Scripting Interpreter.md'),
@@ -58,6 +63,9 @@ function createMockPlugin() {
         generateSummary: vi.fn().mockResolvedValue({ path: 'test' }),
         listJournals: vi.fn().mockResolvedValue([]),
         journalExists: vi.fn().mockResolvedValue(false),
+        generatePlaybook: vi.fn().mockResolvedValue({ path: 'test' }),
+        listPlaybooks: vi.fn().mockResolvedValue([]),
+        applyPlaybook: vi.fn().mockResolvedValue({ missionPath: 'test', journalPath: 'test' }),
       },
     },
     mcpClient: { isConnected: () => false },
@@ -219,8 +227,26 @@ describe('command consolidation', () => {
   // Total hidden alias count
   // -----------------------------------------------------------------------
 
-  it('has at least 21 hidden aliases (13 consolidated + 3 journal + 5 artifacts)', () => {
+  it('has at least 24 hidden aliases (13 consolidated + 3 journal + 3 playbook/detection + 5 artifacts)', () => {
     const hidden = commands.filter((c) => c.name === '');
-    expect(hidden.length).toBeGreaterThanOrEqual(21);
+    expect(hidden.length).toBeGreaterThanOrEqual(24);
+  });
+
+  // -----------------------------------------------------------------------
+  // Playbook + Detection command aliases (Phase 90)
+  // -----------------------------------------------------------------------
+
+  const PLAYBOOK_DETECTION_IDS = [
+    'generate-playbook',
+    'apply-playbook',
+    'create-detection',
+  ];
+
+  it('all 3 playbook/detection command IDs exist as hidden aliases (name === "")', () => {
+    for (const id of PLAYBOOK_DETECTION_IDS) {
+      const cmd = commands.find((c) => c.id === id);
+      expect(cmd, `missing hidden alias for ${id}`).toBeDefined();
+      expect(cmd.name, `${id} should have empty name`).toBe('');
+    }
   });
 });
