@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
-status: executing
-stopped_at: Completed 90-01-PLAN.md
-last_updated: "2026-04-13T00:22:32.493Z"
+status: completed
+stopped_at: Completed 90-02-PLAN.md (v5.0 milestone complete)
+last_updated: "2026-04-13T00:32:59.605Z"
 progress:
   total_phases: 12
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 26
-  completed_plans: 25
-  percent: 96
+  completed_plans: 26
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** In progress
+**Status:** Complete
 **Phase:** 90 of 90 (Playbook Distillation & Detection Pipeline)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [██████████] 96% (25/26 v5.0 plans)
+Progress: [██████████] 100% (26/26 v5.0 plans)
 
 ## Recently Completed
 
@@ -143,6 +143,11 @@ Progress: [██████████] 96% (25/26 v5.0 plans)
 - [Phase 90]: applyPlaybookToMission delegates to updateFrontmatter preserving existing quote style
 - [Phase 90]: Detection note uses configurable rule_language with matching fenced code block label (sigma/kql/spl)
 - [Phase 90]: extractPlaybookData reuses extractTags from journal.ts (no duplicate tag parsing logic)
+- [Phase 90]: Detection entity type has no verdict/Sightings/Verdict History sections (different archetype from IOC/TTP)
+- [Phase 90]: Schema migration v4 is field-only (linked_detections), no section additions
+- [Phase 90]: createDetectionCmd uses RuleLanguageSuggestModal for sigma/kql/spl selection
+- [Phase 90]: applyPlaybook checks existing hunt_id before overwriting MISSION.md (pitfall #6 guard)
+- [Phase 90]: Detection name uses timestamped format (Detection-{huntId}-{timestamp}) for uniqueness
 
 ### Blockers/Concerns
 
@@ -150,6 +155,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-13T00:22:27.935Z
-Stopped at: Completed 90-01-PLAN.md
+Last session: 2026-04-13T00:32:59.598Z
+Stopped at: Completed 90-02-PLAN.md (v5.0 milestone complete)
 Resume file: None
