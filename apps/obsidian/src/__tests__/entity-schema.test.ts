@@ -3,11 +3,11 @@ import { ENTITY_TYPES, ENTITY_FOLDERS } from '../entity-schema';
 import { getEntityFolder } from '../paths';
 
 describe('ENTITY_TYPES', () => {
-  it('has exactly 8 entries', () => {
-    expect(ENTITY_TYPES).toHaveLength(8);
+  it('has exactly 9 entries', () => {
+    expect(ENTITY_TYPES).toHaveLength(9);
   });
 
-  it('has all 8 expected type strings', () => {
+  it('has all 9 expected type strings', () => {
     const types = ENTITY_TYPES.map((e) => e.type);
     expect(types).toContain('ioc/ip');
     expect(types).toContain('ioc/domain');
@@ -17,6 +17,7 @@ describe('ENTITY_TYPES', () => {
     expect(types).toContain('tool');
     expect(types).toContain('infrastructure');
     expect(types).toContain('datasource');
+    expect(types).toContain('detection');
   });
 
   it('IOC types share folder "entities/iocs"', () => {
@@ -27,7 +28,7 @@ describe('ENTITY_TYPES', () => {
     }
   });
 
-  it('non-IOC types each have distinct folders', () => {
+  it('non-IOC types each have distinct folders (including detection)', () => {
     const nonIocTypes = ENTITY_TYPES.filter((e) => !e.type.startsWith('ioc/'));
     const folders = nonIocTypes.map((e) => e.folder);
     expect(new Set(folders).size).toBe(folders.length);
@@ -134,12 +135,53 @@ describe('ENTITY_TYPES', () => {
     }
   });
 
-  it('all templates include ## Sightings and ## Related sections', () => {
-    for (const entity of ENTITY_TYPES) {
+  it('all non-detection templates include ## Sightings and ## Related sections', () => {
+    for (const entity of ENTITY_TYPES.filter(e => e.type !== 'detection')) {
       const template = entity.starterTemplate('test');
       expect(template).toContain('## Sightings');
       expect(template).toContain('## Related');
     }
+  });
+
+  it('detection template includes ## Related but not ## Sightings', () => {
+    const detection = ENTITY_TYPES.find((e) => e.type === 'detection')!;
+    const template = detection.starterTemplate('test');
+    expect(template).toContain('## Related');
+    expect(template).not.toContain('## Sightings');
+  });
+
+  // --- Detection entity type tests (Phase 90) ---
+
+  it('ENTITY_TYPES includes detection type', () => {
+    const detection = ENTITY_TYPES.find((e) => e.type === 'detection');
+    expect(detection).toBeDefined();
+    expect(detection!.label).toBe('Detection');
+  });
+
+  it('detection type has correct folder (entities/detections)', () => {
+    const detection = ENTITY_TYPES.find((e) => e.type === 'detection')!;
+    expect(detection.folder).toBe('entities/detections');
+  });
+
+  it('detection type has rule_language and source_hunt frontmatter fields', () => {
+    const detection = ENTITY_TYPES.find((e) => e.type === 'detection')!;
+    const fieldKeys = detection.frontmatterFields.map((f) => f.key);
+    expect(fieldKeys).toContain('rule_language');
+    expect(fieldKeys).toContain('source_hunt');
+    expect(fieldKeys).toContain('linked_techniques');
+    expect(fieldKeys).toContain('linked_entities');
+    expect(fieldKeys).toContain('status');
+    expect(fieldKeys).toContain('rule_content');
+  });
+
+  it('detection starterTemplate produces valid frontmatter with type: detection', () => {
+    const detection = ENTITY_TYPES.find((e) => e.type === 'detection')!;
+    const template = detection.starterTemplate('Test Detection');
+    expect(template).toContain('type: detection');
+    expect(template).toContain('rule_language: sigma');
+    expect(template).toContain('# Test Detection');
+    expect(template).toContain('## Rule');
+    expect(template).toContain('```sigma');
   });
 
   // --- Schema versioning tests (Phase 82-03) ---
@@ -156,16 +198,16 @@ describe('ENTITY_TYPES', () => {
     }
   });
 
-  it('every template includes verdict: unknown (not verdict: "")', () => {
-    for (const entity of ENTITY_TYPES) {
+  it('all non-detection templates include verdict: unknown (not verdict: "")', () => {
+    for (const entity of ENTITY_TYPES.filter(e => e.type !== 'detection')) {
       const template = entity.starterTemplate('test');
       expect(template).toContain('verdict: unknown');
       expect(template).not.toContain('verdict: ""');
     }
   });
 
-  it('every template has ## Verdict History section before ## Sightings', () => {
-    for (const entity of ENTITY_TYPES) {
+  it('all non-detection templates have ## Verdict History section before ## Sightings', () => {
+    for (const entity of ENTITY_TYPES.filter(e => e.type !== 'detection')) {
       const template = entity.starterTemplate('test');
       expect(template).toContain('## Verdict History');
       expect(template).toContain('_No verdict changes recorded._');
@@ -196,8 +238,8 @@ describe('ENTITY_TYPES', () => {
 });
 
 describe('ENTITY_FOLDERS', () => {
-  it('has exactly 6 entries (unique folders)', () => {
-    expect(ENTITY_FOLDERS).toHaveLength(6);
+  it('has exactly 7 entries (unique folders)', () => {
+    expect(ENTITY_FOLDERS).toHaveLength(7);
   });
 
   it('contains all expected folder paths', () => {
@@ -207,6 +249,7 @@ describe('ENTITY_FOLDERS', () => {
     expect(ENTITY_FOLDERS).toContain('entities/tools');
     expect(ENTITY_FOLDERS).toContain('entities/infra');
     expect(ENTITY_FOLDERS).toContain('entities/datasources');
+    expect(ENTITY_FOLDERS).toContain('entities/detections');
   });
 
   it('has no duplicates', () => {

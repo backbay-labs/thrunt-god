@@ -1,4 +1,5 @@
 import type { EntityTypeDefinition } from './types';
+import { createDetectionNote } from './detection';
 
 /**
  * Canonical entity type registry. Single source of truth for all entity
@@ -304,6 +305,30 @@ _No sightings recorded yet._
 
 `,
   },
+  {
+    type: 'detection',
+    label: 'Detection',
+    folder: 'entities/detections',
+    frontmatterFields: [
+      { key: 'schema_version', type: 'number', default: 1, required: true },
+      { key: 'type', type: 'string', default: 'detection', required: true },
+      { key: 'rule_language', type: 'string', default: 'sigma', required: true },
+      { key: 'source_hunt', type: 'string', default: '', required: false },
+      { key: 'linked_techniques', type: 'string[]', default: [], required: false },
+      { key: 'linked_entities', type: 'string[]', default: [], required: false },
+      { key: 'status', type: 'string', default: 'draft', required: false },
+      { key: 'rule_content', type: 'string', default: '', required: false },
+      { key: 'verdict', type: 'string', default: 'unknown', required: false },
+    ],
+    starterTemplate: (name: string) =>
+      createDetectionNote({
+        name,
+        ruleLanguage: 'sigma',
+        sourceHunt: '',
+        linkedTechniques: [],
+        linkedEntities: [],
+      }),
+  },
 ]);
 
 /**
@@ -317,4 +342,5 @@ export const ENTITY_FOLDERS: readonly string[] = Object.freeze([
   'entities/tools',
   'entities/infra',
   'entities/datasources',
+  'entities/detections',
 ]);

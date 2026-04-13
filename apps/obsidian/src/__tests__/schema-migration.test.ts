@@ -99,8 +99,8 @@ _No co-occurring entities found (2+ shared hunts required)._
 - [[T1059.001]]
 `;
 
-/** Entity note already at current schema version (v3) */
-const CURRENT_NOTE = `---
+/** Entity note at schema version 3 (needs v4 migration) */
+const V3_NOTE = `---
 schema_version: 3
 type: ioc/ip
 value: "192.168.1.100"
@@ -117,6 +117,53 @@ days_since_validation: 0
 confidence_factors: {source_count: 0, reliability: 0, corroboration: 0, days_since_validation: 0}
 coverage_status: stale
 fp_count: 0
+---
+# 192.168.1.100
+
+## Verdict History
+
+_No verdict changes recorded._
+
+## Hunt History
+
+_No hunt references found._
+
+## Related Infrastructure
+
+_No co-occurring entities found (2+ shared hunts required)._
+
+## Known False Positives
+
+_No false positives recorded._
+
+## Sightings
+
+- 2024-01-15: Seen in hunt-001 log analysis
+
+## Related
+
+- [[T1059.001]]
+`;
+
+/** Entity note already at current schema version (v4) */
+const CURRENT_NOTE = `---
+schema_version: 4
+type: ioc/ip
+value: "192.168.1.100"
+first_seen: "2024-01-15"
+last_seen: ""
+hunt_refs: [hunt-001]
+confidence: "high"
+verdict: unknown
+confidence_score: 0
+source_count: 0
+reliability: 0
+corroboration: 0
+days_since_validation: 0
+confidence_factors: {source_count: 0, reliability: 0, corroboration: 0, days_since_validation: 0}
+coverage_status: stale
+fp_count: 0
+linked_detections: []
 ---
 # 192.168.1.100
 
@@ -199,7 +246,11 @@ describe('extractSchemaVersion', () => {
   });
 
   it('returns 3 for content with schema_version: 3', () => {
-    expect(extractSchemaVersion(CURRENT_NOTE)).toBe(3);
+    expect(extractSchemaVersion(V3_NOTE)).toBe(3);
+  });
+
+  it('returns 4 for content with schema_version: 4', () => {
+    expect(extractSchemaVersion(CURRENT_NOTE)).toBe(4);
   });
 
   it('returns correct version for higher schema versions', () => {
@@ -302,13 +353,13 @@ describe('applyMigration', () => {
   it('adds schema_version and verdict fields to old note without verdict', () => {
     const result = applyMigration(OLD_NOTE_NO_VERDICT);
     // Both migrations apply: schema_version goes to 2 (current)
-    expect(result).toContain('schema_version: 3');
+    expect(result).toContain('schema_version: 4');
     expect(result).toContain('verdict: unknown');
   });
 
   it('adds schema_version to old note that already has verdict', () => {
     const result = applyMigration(OLD_NOTE);
-    expect(result).toContain('schema_version: 3');
+    expect(result).toContain('schema_version: 4');
     // Should NOT duplicate verdict since it already exists
     const verdictMatches = result.match(/^verdict:/gm);
     expect(verdictMatches).toHaveLength(1);
@@ -366,7 +417,7 @@ describe('applyMigration', () => {
 
   it('handles minimal note with just type and aliases', () => {
     const result = applyMigration(MINIMAL_NOTE);
-    expect(result).toContain('schema_version: 3');
+    expect(result).toContain('schema_version: 4');
     expect(result).toContain('verdict: unknown');
     expect(result).toContain('## Verdict History');
     // v2 sections too
@@ -384,17 +435,18 @@ describe('applyMigration', () => {
 // ---------------------------------------------------------------------------
 
 describe('CURRENT_SCHEMA_VERSION', () => {
-  it('equals 3', () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(3);
+  it('equals 4', () => {
+    expect(CURRENT_SCHEMA_VERSION).toBe(4);
   });
 });
 
 describe('MIGRATIONS', () => {
-  it('has exactly 3 entries for versions 1, 2, and 3', () => {
-    expect(MIGRATIONS).toHaveLength(3);
+  it('has exactly 4 entries for versions 1, 2, 3, and 4', () => {
+    expect(MIGRATIONS).toHaveLength(4);
     expect(MIGRATIONS[0]!.version).toBe(1);
     expect(MIGRATIONS[1]!.version).toBe(2);
     expect(MIGRATIONS[2]!.version).toBe(3);
+    expect(MIGRATIONS[3]!.version).toBe(4);
   });
 
   it('version 1 migration adds schema_version and verdict fields', () => {
@@ -443,6 +495,17 @@ describe('MIGRATIONS', () => {
     const sectionHeadings = m.addSections!.map((s) => s.heading);
     expect(sectionHeadings).toContain('## Known False Positives');
   });
+
+  it('version 4 migration adds linked_detections field', () => {
+    const m = MIGRATIONS[3]!;
+    const fieldKeys = m.addFields.map((f) => f.key);
+    expect(fieldKeys).toContain('linked_detections');
+  });
+
+  it('version 4 migration has no sections to add', () => {
+    const m = MIGRATIONS[3]!;
+    expect(m.addSections).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -462,7 +525,7 @@ describe('applyMigration v1 -> v3 (applies v2 + v3)', () => {
     // v3 fields
     expect(result).toContain('coverage_status: stale');
     expect(result).toContain('fp_count: 0');
-    expect(result).toContain('schema_version: 3');
+    expect(result).toContain('schema_version: 4');
   });
 
   it('inserts Hunt History, Related Infrastructure, and Known False Positives sections before ## Sightings', () => {
@@ -490,7 +553,7 @@ describe('applyMigration v0 -> v3', () => {
   it('applies all three migrations in sequence', () => {
     const result = applyMigration(OLD_NOTE);
     // v1 fields
-    expect(result).toContain('schema_version: 3');
+    expect(result).toContain('schema_version: 4');
     expect(result).toContain('## Verdict History');
     // v2 fields
     expect(result).toContain('confidence_score: 0');
@@ -511,7 +574,7 @@ describe('applyMigration v2 -> v3', () => {
     expect(result).toContain('fp_count: 0');
     expect(result).toContain('## Known False Positives');
     expect(result).toContain('_No false positives recorded._');
-    expect(result).toContain('schema_version: 3');
+    expect(result).toContain('schema_version: 4');
   });
 
   it('inserts Known False Positives section before ## Sightings', () => {
@@ -529,14 +592,38 @@ describe('applyMigration v2 -> v3', () => {
   });
 });
 
-describe('applyMigration v3 idempotent', () => {
-  it('returns already-v3 notes unchanged', () => {
-    const v3Note = applyMigration(V1_NOTE);
-    const second = applyMigration(v3Note);
-    expect(second).toBe(v3Note);
+describe('applyMigration v3 -> v4', () => {
+  it('adds linked_detections field to v3 note', () => {
+    const result = applyMigration(V3_NOTE);
+    expect(result).toContain('linked_detections: []');
+    expect(result).toContain('schema_version: 4');
   });
 
-  it('returns CURRENT_NOTE (v3) unchanged', () => {
+  it('migration v4 is idempotent (running twice produces same result)', () => {
+    const first = applyMigration(V3_NOTE);
+    const second = applyMigration(first);
+    expect(second).toBe(first);
+  });
+
+  it('preserves existing v3 sections and fields', () => {
+    const result = applyMigration(V3_NOTE);
+    expect(result).toContain('coverage_status: stale');
+    expect(result).toContain('fp_count: 0');
+    expect(result).toContain('## Known False Positives');
+    expect(result).toContain('## Verdict History');
+    expect(result).toContain('## Hunt History');
+    expect(result).toContain('## Related Infrastructure');
+  });
+});
+
+describe('applyMigration v4 idempotent', () => {
+  it('returns already-v4 notes unchanged', () => {
+    const v4Note = applyMigration(V1_NOTE);
+    const second = applyMigration(v4Note);
+    expect(second).toBe(v4Note);
+  });
+
+  it('returns CURRENT_NOTE (v4) unchanged', () => {
     const result = applyMigration(CURRENT_NOTE);
     expect(result).toBe(CURRENT_NOTE);
   });

@@ -37,7 +37,7 @@ export interface MigrationPreview {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export const MIGRATIONS: SchemaMigration[] = [
   {
@@ -100,6 +100,13 @@ export const MIGRATIONS: SchemaMigration[] = [
         defaultContent: '_No false positives recorded._',
         beforeSection: '## Sightings',
       },
+    ],
+  },
+  {
+    version: 4,
+    description: 'Add linked_detections array for detection coverage tracking',
+    addFields: [
+      { key: 'linked_detections', defaultValue: '[]' },
     ],
   },
 ];
