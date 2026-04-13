@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: executing
-stopped_at: Completed 89-02-PLAN.md
-last_updated: "2026-04-12T23:30:55.299Z"
+stopped_at: Completed 90-01-PLAN.md
+last_updated: "2026-04-13T00:22:32.493Z"
 progress:
   total_phases: 12
   completed_phases: 11
-  total_plans: 24
-  completed_plans: 24
-  percent: 100
+  total_plans: 26
+  completed_plans: 25
+  percent: 96
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 89 (Hunt Journal Engine) -- COMPLETE
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 90 (Playbook Distillation & Detection Pipeline)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** Executing
-**Phase:** 89 of 90 (Hunt Journal Engine)
-**Plan:** 2 of 2 in current phase complete
+**Status:** In progress
+**Phase:** 90 of 90 (Playbook Distillation & Detection Pipeline)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (24/24 v5.0 plans)
+Progress: [██████████] 96% (25/26 v5.0 plans)
 
 ## Recently Completed
 
@@ -137,12 +137,19 @@ Progress: [██████████] 100% (24/24 v5.0 plans)
 - [Phase 89]: JournalChooserModal delegates to executeCommandById for consistent command routing
 - [Phase 89]: appendEntry emits hypothesis:changed for ALL hypothesis tags in journal content, not just new entry
 
+- [Phase 90]: extractPlaybookData reuses extractTags from journal.ts (no duplicate tag parsing logic)
+- [Phase 90]: Inline array format [val1, val2] used in playbook/detection frontmatter matching entity-schema convention
+- [Phase 90]: parsePlaybookFrontmatter uses regex (no YAML parser) matching FrontmatterEditor pattern
+- [Phase 90]: applyPlaybookToMission delegates to updateFrontmatter preserving existing quote style
+- [Phase 90]: Detection note uses configurable rule_language with matching fenced code block label (sigma/kql/spl)
+- [Phase 90]: extractPlaybookData reuses extractTags from journal.ts (no duplicate tag parsing logic)
+
 ### Blockers/Concerns
 
 None.
 
 ## Session Continuity
 
-Last session: 2026-04-12T23:30:55.292Z
-Stopped at: Completed 89-02-PLAN.md
+Last session: 2026-04-13T00:22:27.935Z
+Stopped at: Completed 90-01-PLAN.md
 Resume file: None

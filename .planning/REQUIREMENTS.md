@@ -53,9 +53,9 @@ Requirements for the Obsidian Intelligence Platform milestone. Each maps to road
 - [x] **JOURNAL-02**: Inline tagging syntax (#thrunt/h/, #thrunt/ev/, #thrunt/dp/) for hypotheses, evidence strength, and decision points
 - [x] **JOURNAL-03**: "New journal entry" command appends a timestamped block to the active hunt journal
 - [x] **JOURNAL-04**: Journal summary command extracts reasoning chain from tagged entries into structured narrative
-- [ ] **JOURNAL-05**: Post-hunt "Generate playbook" command produces reusable template with trigger conditions, query sequences, and decision trees
-- [ ] **JOURNAL-06**: "Apply playbook" command pre-populates new hunt hypotheses and huntmap from a selected playbook
-- [ ] **JOURNAL-07**: Detection note type links Sigma/KQL/SPL rules to source hunts, TTPs, and entities
+- [x] **JOURNAL-05**: Post-hunt "Generate playbook" command produces reusable template with trigger conditions, query sequences, and decision trees
+- [x] **JOURNAL-06**: "Apply playbook" command pre-populates new hunt hypotheses and huntmap from a selected playbook
+- [x] **JOURNAL-07**: Detection note type links Sigma/KQL/SPL rules to source hunts, TTPs, and entities
 
 ## Future Requirements
 
@@ -116,9 +116,9 @@ Deferred beyond v5.0.
 | JOURNAL-02 | Phase 89 | Complete |
 | JOURNAL-03 | Phase 89 | Complete |
 | JOURNAL-04 | Phase 89 | Complete |
-| JOURNAL-05 | Phase 90 | Pending |
-| JOURNAL-06 | Phase 90 | Pending |
-| JOURNAL-07 | Phase 90 | Pending |
+| JOURNAL-05 | Phase 90 | Complete |
+| JOURNAL-06 | Phase 90 | Complete |
+| JOURNAL-07 | Phase 90 | Complete |
 
 **Coverage:**
 - v5.0 requirements: 35 total
