@@ -197,7 +197,7 @@ describe('WorkspaceService', () => {
       expect(vm.hypothesisSnapshot!.rejected).toBe(1);
     });
 
-    it('detects phase directories', async () => {
+    it('detects legacy phase directories', async () => {
       adapter.addFolder(PLANNING_DIR);
       addAllArtifacts(adapter);
       adapter.addSubFolder(PLANNING_DIR, 'phase-01');
@@ -208,6 +208,19 @@ describe('WorkspaceService', () => {
       expect(vm.phaseDirectories.count).toBe(3);
       expect(vm.phaseDirectories.highest).toBe(3);
       expect(vm.phaseDirectories.highestName).toBe('phase-03');
+    });
+
+    it('detects THRUNT phase directories under .planning/phases', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addSubFolder(PLANNING_DIR, 'phases');
+      adapter.addSubFolder(`${PLANNING_DIR}/phases`, '63-structural-foundation');
+      adapter.addSubFolder(`${PLANNING_DIR}/phases`, '63.2-follow-up');
+      adapter.addSubFolder(`${PLANNING_DIR}/phases`, '64-live-hunt-dashboard');
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories.count).toBe(3);
+      expect(vm.phaseDirectories.highest).toBe(64);
+      expect(vm.phaseDirectories.highestName).toBe('64-live-hunt-dashboard');
     });
 
     it('returns null snapshots when artifacts do not exist', async () => {
@@ -473,7 +486,7 @@ describe('WorkspaceService', () => {
       expect(vm.phaseDirectories).toEqual({ count: 0, highest: null, highestName: null });
     });
 
-    it('counts only phase-NN directories in mixed listing', async () => {
+    it('counts only legacy phase-NN directories in mixed listing', async () => {
       adapter.addFolder(PLANNING_DIR);
       addAllArtifacts(adapter);
       adapter.setFolderChildren(PLANNING_DIR, ['phase-01', 'phase-recon', 'notes']);
@@ -495,6 +508,22 @@ describe('WorkspaceService', () => {
       adapter.setFolderChildren(PLANNING_DIR, ['phase-01', 'phase-02', 'phase-03']);
       const vm = await service.getViewModel();
       expect(vm.phaseDirectories).toEqual({ count: 3, highest: 3, highestName: 'phase-03' });
+    });
+
+    it('prefers the THRUNT phases directory and compares multi-segment ids correctly', async () => {
+      adapter.addFolder(PLANNING_DIR);
+      addAllArtifacts(adapter);
+      adapter.addSubFolder(PLANNING_DIR, 'phase-99');
+      adapter.addSubFolder(PLANNING_DIR, 'phases');
+      adapter.setFolderChildren(`${PLANNING_DIR}/phases`, [
+        '03.2.1-dolor-sit',
+        '03.10-amet',
+        '03.2-lorem',
+      ]);
+      const vm = await service.getViewModel();
+      expect(vm.phaseDirectories.count).toBe(3);
+      expect(vm.phaseDirectories.highest).toBe(3.1);
+      expect(vm.phaseDirectories.highestName).toBe('03.10-amet');
     });
 
     it('getViewModel includes parsed snapshots when STATE.md and HYPOTHESES.md exist', async () => {

@@ -278,7 +278,7 @@ describe('obsidian installer helpers', () => {
       logger: logs.logger,
     });
 
-    assert.strictEqual(buildCalls, 1);
+    assert.strictEqual(buildCalls, 0);
     assert.strictEqual(result.status, 'no_vaults');
     assert.deepStrictEqual(fs.readdirSync(result.stageDir).sort(), [...OBSIDIAN_ASSET_FILES].sort());
     assert.ok(!fs.existsSync(path.join(manualVault, '.obsidian', 'plugins', OBSIDIAN_PLUGIN_ID)));
@@ -310,11 +310,44 @@ describe('obsidian installer helpers', () => {
       logger: logs.logger,
     });
 
-    assert.strictEqual(buildCalls, 1);
+    assert.strictEqual(buildCalls, 0);
     assert.strictEqual(result.status, 'success');
     assert.deepStrictEqual(fs.readdirSync(result.stageDir).sort(), [...OBSIDIAN_ASSET_FILES].sort());
     assertVaultSymlinks(vaultPath, result.stageDir);
     assert.match(logs.output(), /Restart Obsidian and enable THRUNT God in Community Plugins\./);
+  });
+
+  test('installObsidian rebuilds when the selected plugin source is missing bundled assets', () => {
+    const dir = makeTempDir();
+    const homeDir = path.join(dir, 'home');
+    const pluginDir = path.join(dir, 'plugin-source');
+    const configPath = path.join(dir, 'obsidian.json');
+    const vaultPath = path.join(dir, 'vault');
+    let buildCalls = 0;
+
+    fs.mkdirSync(homeDir, { recursive: true });
+    fs.mkdirSync(pluginDir, { recursive: true });
+    fs.mkdirSync(vaultPath, { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, 'manifest.json'),
+      JSON.stringify({ id: OBSIDIAN_PLUGIN_ID, name: 'THRUNT God', version: '0.0.0' }, null, 2)
+    );
+    fs.writeFileSync(path.join(pluginDir, 'styles.css'), '/* built later */\n');
+    writeObsidianConfig(configPath, [vaultPath]);
+
+    const result = installObsidian({
+      homeDir,
+      configPath,
+      pluginDir,
+      runBuild() {
+        buildCalls += 1;
+        writeObsidianAssets(pluginDir, 'rebuilt assets');
+      },
+    });
+
+    assert.strictEqual(buildCalls, 1);
+    assert.strictEqual(result.status, 'success');
+    assertVaultSymlinks(vaultPath, result.stageDir);
   });
 });
 
@@ -389,5 +422,21 @@ describe('obsidian installer CLI smoke tests', () => {
     assert.ok(!fs.existsSync(path.join(manualVault, '.obsidian', 'plugins', OBSIDIAN_PLUGIN_ID)));
     assert.match(output, /No Obsidian vaults detected/);
     assert.match(output, /Install manually by copying/);
+  });
+
+  test('CLI exits non-zero when vault linking fails', () => {
+    const fixture = makeCliFixture({ assetLabel: 'cli failure' });
+    fs.writeFileSync(path.join(fixture.vaultPaths[0], '.obsidian'), 'not a directory');
+
+    const result = runInstallCli(['--obsidian'], {
+      THRUNT_HOME: fixture.homeDir,
+      THRUNT_OBSIDIAN_CONFIG: fixture.configPath,
+      THRUNT_OBSIDIAN_PLUGIN_SOURCE: fixture.pluginSourceDir,
+      THRUNT_OBSIDIAN_SKIP_BUILD: '1',
+    });
+    const output = stripAnsi(`${result.stdout}${result.stderr}`);
+
+    assert.notStrictEqual(result.status, 0);
+    assert.match(output, /\bfailed\b/);
   });
 });

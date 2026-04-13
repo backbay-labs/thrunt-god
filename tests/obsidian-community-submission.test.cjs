@@ -3,6 +3,7 @@
 const { test, describe } = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 
@@ -13,14 +14,45 @@ function readJson(relativePath) {
 }
 
 describe('obsidian community submission contract', () => {
-  test('sync script keeps root submission metadata aligned with the app package', () => {
+  test('committed root submission metadata stays aligned with the app package', () => {
+    assert.deepStrictEqual(readJson('manifest.json'), readJson('apps/obsidian/manifest.json'));
+    assert.deepStrictEqual(readJson('versions.json'), readJson('apps/obsidian/versions.json'));
+  });
+
+  test('sync script rewrites stale metadata in an isolated temp repo', () => {
+    const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'obsidian-sync-'));
+    const tmpScriptsDir = path.join(tmpRoot, 'scripts');
+    const tmpAppDir = path.join(tmpRoot, 'apps', 'obsidian');
+
+    fs.mkdirSync(tmpScriptsDir, { recursive: true });
+    fs.mkdirSync(tmpAppDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(repoRoot, 'scripts', 'sync-obsidian-submission-files.cjs'),
+      path.join(tmpScriptsDir, 'sync-obsidian-submission-files.cjs'),
+    );
+
+    const sourceManifest = { id: 'thrunt-god', name: 'THRUNT God', version: '0.3.6' };
+    const sourceVersions = { '0.3.6': '1.6.0' };
+    fs.writeFileSync(path.join(tmpAppDir, 'manifest.json'), `${JSON.stringify(sourceManifest, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmpAppDir, 'versions.json'), `${JSON.stringify(sourceVersions, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmpRoot, 'manifest.json'), `${JSON.stringify({ stale: true }, null, 2)}\n`);
+    fs.writeFileSync(path.join(tmpRoot, 'versions.json'), `${JSON.stringify({ stale: true }, null, 2)}\n`);
+
     execFileSync(process.execPath, ['scripts/sync-obsidian-submission-files.cjs'], {
-      cwd: repoRoot,
+      cwd: tmpRoot,
       stdio: 'pipe',
     });
 
-    assert.deepStrictEqual(readJson('manifest.json'), readJson('apps/obsidian/manifest.json'));
-    assert.deepStrictEqual(readJson('versions.json'), readJson('apps/obsidian/versions.json'));
+    assert.deepStrictEqual(
+      JSON.parse(fs.readFileSync(path.join(tmpRoot, 'manifest.json'), 'utf8')),
+      sourceManifest,
+    );
+    assert.deepStrictEqual(
+      JSON.parse(fs.readFileSync(path.join(tmpRoot, 'versions.json'), 'utf8')),
+      sourceVersions,
+    );
+
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
   });
 
   test('package exposes the sync command and git ignores dist output', () => {

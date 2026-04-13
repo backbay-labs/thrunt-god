@@ -369,6 +369,13 @@ function getObsidianStageDir(homeDir = getDefaultObsidianHomeDir()) {
   return path.join(homeDir, '.thrunt', 'obsidian');
 }
 
+function hasObsidianBundleAssets(dir) {
+  if (!dir || !fs.existsSync(dir)) {
+    return false;
+  }
+  return OBSIDIAN_ASSET_FILES.every((assetFile) => fs.existsSync(path.join(dir, assetFile)));
+}
+
 function getObsidianConfigPath(homeDir = getDefaultObsidianHomeDir()) {
   if (process.env.THRUNT_OBSIDIAN_CONFIG) {
     return expandTilde(process.env.THRUNT_OBSIDIAN_CONFIG);
@@ -379,6 +386,10 @@ function getObsidianConfigPath(homeDir = getDefaultObsidianHomeDir()) {
 function getObsidianPluginSourceDir(repoRoot = path.join(__dirname, '..')) {
   if (process.env.THRUNT_OBSIDIAN_PLUGIN_SOURCE) {
     return expandTilde(process.env.THRUNT_OBSIDIAN_PLUGIN_SOURCE);
+  }
+  const releaseDir = path.join(repoRoot, 'dist', 'obsidian-release');
+  if (hasObsidianBundleAssets(releaseDir)) {
+    return releaseDir;
   }
   return path.join(repoRoot, 'apps', 'obsidian');
 }
@@ -442,9 +453,14 @@ function buildObsidianBundle(repoRootOrOptions, runBuild = execFileSync) {
     : { repoRoot: repoRootOrOptions, runBuild };
   const repoRoot = options.repoRoot || path.join(__dirname, '..');
   const buildRunner = options.runBuild || execFileSync;
+  const pluginDir = options.pluginDir || getObsidianPluginSourceDir(repoRoot);
 
   if (shouldSkipObsidianBuild(options)) {
-    return { skipped: true };
+    return { skipped: true, pluginDir };
+  }
+
+  if (hasObsidianBundleAssets(pluginDir)) {
+    return { skipped: true, pluginDir };
   }
 
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -453,7 +469,7 @@ function buildObsidianBundle(repoRootOrOptions, runBuild = execFileSync) {
     stdio: 'inherit',
   });
 
-  return { skipped: false };
+  return { skipped: false, pluginDir: getObsidianPluginSourceDir(repoRoot) };
 }
 
 function stageObsidianBundle(options = {}) {
@@ -607,6 +623,7 @@ function installObsidian(options = {}) {
   logger(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
   buildBundle({
     repoRoot,
+    pluginDir,
     runBuild,
     logger,
     skipBuild: options.skipBuild,
@@ -5199,7 +5216,10 @@ if (hasObsidian) {
     console.error(`  ${yellow}--obsidian must be run as a standalone mode. Remove ${obsidianConflictFlags.join(', ')} and try again.${reset}`);
     process.exit(1);
   }
-  installObsidian();
+  const obsidianResult = installObsidian();
+  if (obsidianResult.status === 'failure') {
+    process.exit(1);
+  }
 } else if (hasGlobal && hasLocal) {
   console.error(`  ${yellow}Cannot specify both --global and --local${reset}`);
   process.exit(1);

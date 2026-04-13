@@ -503,19 +503,36 @@ export class WorkspaceService {
       return { count: 0, highest: null, highestName: null };
     }
 
-    const children = await this.vaultAdapter.listFolders(planningDir);
-    const phaseRegex = /^phase-(\d+)$/;
+    const phasesDir = normalizePath(`${planningDir}/phases`);
+    const phaseRoot = this.vaultAdapter.folderExists(phasesDir) ? phasesDir : planningDir;
+    const children = await this.vaultAdapter.listFolders(phaseRoot);
+    const compareSegments = (left: number[], right: number[]): number => {
+      const length = Math.max(left.length, right.length);
+      for (let index = 0; index < length; index += 1) {
+        const leftValue = left[index] ?? 0;
+        const rightValue = right[index] ?? 0;
+        if (leftValue !== rightValue) {
+          return leftValue - rightValue;
+        }
+      }
+      return 0;
+    };
     let count = 0;
     let highest: number | null = null;
     let highestName: string | null = null;
+    let highestSegments: number[] | null = null;
 
     for (const name of children) {
-      const match = name.match(phaseRegex);
-      if (!match) continue;
+      const currentLayout = name.match(/^(\d+(?:\.\d+)*)-.+$/);
+      const legacyLayout = name.match(/^phase-(\d+)$/);
+      const phaseId = currentLayout?.[1] ?? legacyLayout?.[1];
+      if (!phaseId) continue;
       count++;
-      const num = parseInt(match[1]!, 10);
-      if (highest === null || num > highest) {
-        highest = num;
+      const segments = phaseId.split('.').map((segment) => parseInt(segment, 10));
+      const numericValue = parseFloat(phaseId);
+      if (highestSegments === null || compareSegments(segments, highestSegments) > 0) {
+        highestSegments = segments;
+        highest = Number.isNaN(numericValue) ? null : numericValue;
         highestName = name;
       }
     }

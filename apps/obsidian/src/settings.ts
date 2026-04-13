@@ -75,10 +75,7 @@ export class ThruntGodSettingTab extends PluginSettingTab {
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.mcpEnabled)
-          .onChange(async (value) => {
-            this.plugin.settings.mcpEnabled = value;
-            await this.plugin.saveSettings();
-          }),
+          .onChange(async (value) => this.plugin.setMcpEnabled(value)),
       );
 
     new Setting(containerEl)

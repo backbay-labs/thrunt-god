@@ -15,10 +15,17 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
 
-function buildReleaseBundle() {
-  const repoRoot = path.join(__dirname, '..');
+function buildReleaseBundle(options = {}) {
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
   const appDir = getObsidianAppDir(repoRoot);
-  const outputDir = path.join(repoRoot, 'dist', 'obsidian-release');
+  const outputDir = options.outputDir || path.join(repoRoot, 'dist', 'obsidian-release');
+  const runBuild = options.runBuild || (() => {
+    const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    execFileSync(npmCommand, ['run', 'build:obsidian'], {
+      cwd: repoRoot,
+      stdio: 'inherit',
+    });
+  });
 
   const rootPackage = readJson(path.join(repoRoot, 'package.json'));
   const obsidianPackage = readJson(path.join(appDir, 'package.json'));
@@ -32,11 +39,7 @@ function buildReleaseBundle() {
     versions,
   });
 
-  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  execFileSync(npmCommand, ['run', 'build:obsidian'], {
-    cwd: repoRoot,
-    stdio: 'inherit',
-  });
+  runBuild({ repoRoot, appDir, outputDir });
 
   fs.mkdirSync(outputDir, { recursive: true });
 
@@ -55,9 +58,13 @@ function buildReleaseBundle() {
     fs.copyFileSync(sourcePath, destinationPath);
   }
 
-  process.stdout.write(
-    `${JSON.stringify({ outputDir, assets: [...OBSIDIAN_RELEASE_ASSETS] }, null, 2)}\n`
-  );
+  return { outputDir, assets: [...OBSIDIAN_RELEASE_ASSETS] };
 }
 
-buildReleaseBundle();
+if (require.main === module) {
+  process.stdout.write(`${JSON.stringify(buildReleaseBundle(), null, 2)}\n`);
+} else {
+  module.exports = {
+    buildReleaseBundle,
+  };
+}

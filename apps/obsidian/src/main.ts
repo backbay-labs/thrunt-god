@@ -34,6 +34,8 @@ export default class ThruntGodPlugin extends Plugin {
   private huntPulseEl?: HTMLElement;
   private huntPulseInterval?: number;
   private mcpPollInterval?: number;
+  private mcpEntityCreatedHandler?: (data: { name: string; entityType: string; sourcePath: string }) => void;
+  private mcpVerdictHandler?: (data: { path: string; verdict: string; entityName: string }) => void;
   private outboundEventBuffer: VaultEvent[] = [];
   private outboundFlushTimeout?: number;
   private priorHuntSuggestions: PriorHuntSuggestion[] = [];
@@ -264,6 +266,23 @@ export default class ThruntGodPlugin extends Plugin {
     }
   }
 
+  async setMcpEnabled(enabled: boolean): Promise<void> {
+    this.settings.mcpEnabled = enabled;
+    await this.saveSettings();
+
+    if (enabled) {
+      await this.mcpClient.connect();
+    } else {
+      this.mcpClient.disconnect();
+    }
+
+    this.updateHuntPulse();
+
+    if (this.workspaceService && this.app?.workspace) {
+      await this.refreshViews();
+    }
+  }
+
   enableMcpEventPolling(): void {
     if (this.mcpPollInterval !== undefined) return; // already enabled
     const intervalMs = this.settings.mcpPollIntervalMs ?? 10000;
@@ -272,8 +291,7 @@ export default class ThruntGodPlugin extends Plugin {
     }, intervalMs);
     this.registerInterval(this.mcpPollInterval);
 
-    // Wire outbound event listeners
-    this.eventBus.on('entity:created', (data) => {
+    this.mcpEntityCreatedHandler = (data) => {
       const event: VaultEvent = {
         type: 'entity:created',
         timestamp: Date.now(),
@@ -281,9 +299,10 @@ export default class ThruntGodPlugin extends Plugin {
         entityType: data.entityType,
       };
       this.bufferOutboundEvent(event);
-    });
+    };
+    this.eventBus.on('entity:created', this.mcpEntityCreatedHandler);
 
-    this.eventBus.on('verdict:set', (data) => {
+    this.mcpVerdictHandler = (data) => {
       const event: VaultEvent = {
         type: 'verdict:set',
         timestamp: Date.now(),
@@ -291,7 +310,8 @@ export default class ThruntGodPlugin extends Plugin {
         verdict: data.verdict,
       };
       this.bufferOutboundEvent(event);
-    });
+    };
+    this.eventBus.on('verdict:set', this.mcpVerdictHandler);
   }
 
   disableMcpEventPolling(): void {
@@ -302,6 +322,14 @@ export default class ThruntGodPlugin extends Plugin {
     if (this.outboundFlushTimeout !== undefined) {
       window.clearTimeout(this.outboundFlushTimeout);
       this.outboundFlushTimeout = undefined;
+    }
+    if (this.mcpEntityCreatedHandler) {
+      this.eventBus.off('entity:created', this.mcpEntityCreatedHandler);
+      this.mcpEntityCreatedHandler = undefined;
+    }
+    if (this.mcpVerdictHandler) {
+      this.eventBus.off('verdict:set', this.mcpVerdictHandler);
+      this.mcpVerdictHandler = undefined;
     }
     this.outboundEventBuffer = [];
   }
@@ -420,6 +448,9 @@ export default class ThruntGodPlugin extends Plugin {
   }
 
   private bufferOutboundEvent(event: VaultEvent): void {
+    if (!this.settings.mcpEventPollingEnabled) {
+      return;
+    }
     this.outboundEventBuffer.push(event);
 
     // Debounce: flush after 500ms of inactivity
@@ -433,6 +464,11 @@ export default class ThruntGodPlugin extends Plugin {
 
   private async flushOutboundEvents(): Promise<void> {
     if (this.outboundEventBuffer.length === 0) return;
+    if (!this.settings.mcpEventPollingEnabled) {
+      this.outboundEventBuffer = [];
+      this.outboundFlushTimeout = undefined;
+      return;
+    }
     const events = [...this.outboundEventBuffer];
     this.outboundEventBuffer = [];
     this.outboundFlushTimeout = undefined;

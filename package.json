@@ -8,6 +8,7 @@
   "files": [
     "bin",
     "commands",
+    "dist/obsidian-release",
     "thrunt-god",
     "apps",
     "agents",

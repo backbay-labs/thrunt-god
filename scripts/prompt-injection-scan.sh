@@ -77,6 +77,7 @@ ALLOWLIST=(
   'thrunt-god/bin/lib/security.cjs'
   'hooks/thrunt-prompt-guard.js'
   'SECURITY.md'
+  'apps/obsidian/data/mitre-attack-enterprise.json'
   'apps/mcp/data/mitre-attack-enterprise.json'
   'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_renamed_binary_highly_relevant.yml'
   'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_w32tm.yml'
