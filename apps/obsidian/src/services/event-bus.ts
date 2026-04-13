@@ -14,9 +14,7 @@ export type EventMap = {
   'entity:created': { name: string; entityType: string; sourcePath: string };
   'entity:modified': { path: string };
   'ingestion:complete': { created: number; updated: number; skipped: number };
-  'canvas:generated': { canvasPath: string };
   'canvas:refreshed': { canvasPath: string; changedCount: number };
-  'watcher:activity': { artifactCount: number; lastTimestamp: number };
   'verdict:set': { path: string; verdict: string; entityName: string };
   'hypothesis:changed': { huntId: string; hypothesis: string; journalPath: string };
 };
