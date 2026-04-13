@@ -53,6 +53,7 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             apps/mcp/package-lock.json
+            apps/obsidian/package-lock.json
             apps/vscode/package-lock.json
           registry-url: 'https://registry.npmjs.org'
 
@@ -61,6 +62,9 @@ jobs:
 
       - name: Install MCP package dependencies
         run: npm --prefix apps/mcp ci
+
+      - name: Install Obsidian plugin dependencies
+        run: npm --prefix apps/obsidian ci
 
       - name: Install VS Code extension dependencies
         run: npm --prefix apps/vscode ci
@@ -131,6 +135,27 @@ jobs:
             exit 1
           fi
 
+      - name: Verify Obsidian release metadata matches release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'EOF'
+          const fs = require('node:fs');
+          const { assertObsidianVersionSync } = require('./scripts/lib/obsidian-artifacts.cjs');
+
+          const rootPackage = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+          const obsidianPackage = JSON.parse(fs.readFileSync('./apps/obsidian/package.json', 'utf8'));
+          const manifest = JSON.parse(fs.readFileSync('./apps/obsidian/manifest.json', 'utf8'));
+          const versions = JSON.parse(fs.readFileSync('./apps/obsidian/versions.json', 'utf8'));
+
+          assertObsidianVersionSync({
+            rootPackage,
+            obsidianPackage,
+            manifest,
+            versions,
+          });
+          EOF
+
       - name: Run tests with coverage
         run: npm run test:coverage
 
@@ -144,6 +169,7 @@ jobs:
         run: |
           rm -f apps/vscode/*.vsix
           npm run build:hooks
+          npm run bundle:obsidian-release
           npm --prefix apps/vscode run package
           npm pack --json > pack-output.json
           (
@@ -196,11 +222,15 @@ jobs:
           PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('pack-output.json','utf8')); console.log(output[0].filename)")"
           MCP_PACKAGE_FILE="$(node -e "const fs=require('fs'); const output=JSON.parse(fs.readFileSync('apps/mcp/pack-output.json','utf8')); console.log('apps/mcp/' + output[0].filename)")"
           VSIX_FILE="$(find apps/vscode -maxdepth 1 -name '*.vsix' | head -n 1)"
+          OBSIDIAN_MAIN_FILE="dist/obsidian-release/main.js"
+          OBSIDIAN_MANIFEST_FILE="dist/obsidian-release/manifest.json"
+          OBSIDIAN_STYLES_FILE="dist/obsidian-release/styles.css"
+          OBSIDIAN_VERSIONS_FILE="dist/obsidian-release/versions.json"
           TAG="${{ steps.release_tag.outputs.tag }}"
-          TITLE="${TAG} - VS Code Extension Alpha"
+          TITLE="${TAG} - THRUNT God Release"
           if gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             gh release edit "${TAG}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}"
-            gh release upload "${TAG}" "${PACKAGE_FILE}" "${MCP_PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --clobber
+            gh release upload "${TAG}" "${PACKAGE_FILE}" "${MCP_PACKAGE_FILE}" "${VSIX_FILE}" "${OBSIDIAN_MAIN_FILE}" "${OBSIDIAN_MANIFEST_FILE}" "${OBSIDIAN_STYLES_FILE}" "${OBSIDIAN_VERSIONS_FILE}" --repo "${GITHUB_REPOSITORY}" --clobber
           else
-            gh release create "${TAG}" "${PACKAGE_FILE}" "${MCP_PACKAGE_FILE}" "${VSIX_FILE}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}" --generate-notes
+            gh release create "${TAG}" "${PACKAGE_FILE}" "${MCP_PACKAGE_FILE}" "${VSIX_FILE}" "${OBSIDIAN_MAIN_FILE}" "${OBSIDIAN_MANIFEST_FILE}" "${OBSIDIAN_STYLES_FILE}" "${OBSIDIAN_VERSIONS_FILE}" --repo "${GITHUB_REPOSITORY}" --title "${TITLE}" --generate-notes
           fi

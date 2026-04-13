@@ -1,0 +1,1938 @@
+{
+  "version": "15.1",
+  "generated": "2026-03-30",
+  "techniques": [
+    {
+      "id": "T1189",
+      "name": "Drive-by Compromise",
+      "tactic": "Initial Access",
+      "description": "Adversaries may gain access to a system through a user visiting a website over the normal course of browsing.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic", "File Creation", "Process Creation"]
+    },
+    {
+      "id": "T1190",
+      "name": "Exploit Public-Facing Application",
+      "tactic": "Initial Access",
+      "description": "Adversaries may attempt to exploit a weakness in an Internet-facing host or system to initially access a network.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Network", "Containers"],
+      "data_sources": ["Application Log", "Network Traffic"]
+    },
+    {
+      "id": "T1133",
+      "name": "External Remote Services",
+      "tactic": "Initial Access, Persistence",
+      "description": "Adversaries may leverage external-facing remote services to initially access or persist within a network.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Logon Session", "Network Traffic"]
+    },
+    {
+      "id": "T1200",
+      "name": "Hardware Additions",
+      "tactic": "Initial Access",
+      "description": "Adversaries may introduce computer accessories or networking hardware into a system that serves as a vector for access.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Drive Creation", "Network Traffic"]
+    },
+    {
+      "id": "T1566",
+      "name": "Phishing",
+      "tactic": "Initial Access",
+      "description": "Adversaries may send phishing messages to gain access to victim systems.",
+      "sub_techniques": [
+        { "id": "T1566.001", "name": "Spearphishing Attachment" },
+        { "id": "T1566.002", "name": "Spearphishing Link" },
+        { "id": "T1566.003", "name": "Spearphishing via Service" },
+        { "id": "T1566.004", "name": "Spearphishing Voice" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "Network Traffic"]
+    },
+    {
+      "id": "T1091",
+      "name": "Replication Through Removable Media",
+      "tactic": "Initial Access, Lateral Movement",
+      "description": "Adversaries may move onto systems by copying malware to removable media and leveraging autorun features.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Drive Creation", "File Creation", "Process Creation"]
+    },
+    {
+      "id": "T1195",
+      "name": "Supply Chain Compromise",
+      "tactic": "Initial Access",
+      "description": "Adversaries may manipulate products or product delivery mechanisms prior to receipt by a final consumer for data or system compromise.",
+      "sub_techniques": [
+        { "id": "T1195.001", "name": "Compromise Software Dependencies and Development Tools" },
+        { "id": "T1195.002", "name": "Compromise Software Supply Chain" },
+        { "id": "T1195.003", "name": "Compromise Hardware Supply Chain" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Creation", "Sensor Health"]
+    },
+    {
+      "id": "T1199",
+      "name": "Trusted Relationship",
+      "tactic": "Initial Access",
+      "description": "Adversaries may breach or leverage organizations with access to intended victims through trusted third-party relationships.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Logon Session", "Network Traffic"]
+    },
+    {
+      "id": "T1078",
+      "name": "Valid Accounts",
+      "tactic": "Defense Evasion, Persistence, Privilege Escalation, Initial Access",
+      "description": "Adversaries may obtain and abuse credentials of existing accounts as a means of gaining initial access, persistence, privilege escalation, or defense evasion.",
+      "sub_techniques": [
+        { "id": "T1078.001", "name": "Default Accounts" },
+        { "id": "T1078.002", "name": "Domain Accounts" },
+        { "id": "T1078.003", "name": "Local Accounts" },
+        { "id": "T1078.004", "name": "Cloud Accounts" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Logon Session", "User Account"]
+    },
+    {
+      "id": "T1059",
+      "name": "Command and Scripting Interpreter",
+      "tactic": "Execution",
+      "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
+      "sub_techniques": [
+        { "id": "T1059.001", "name": "PowerShell" },
+        { "id": "T1059.002", "name": "AppleScript" },
+        { "id": "T1059.003", "name": "Windows Command Shell" },
+        { "id": "T1059.004", "name": "Unix Shell" },
+        { "id": "T1059.005", "name": "Visual Basic" },
+        { "id": "T1059.006", "name": "Python" },
+        { "id": "T1059.007", "name": "JavaScript" },
+        { "id": "T1059.008", "name": "Network Device CLI" },
+        { "id": "T1059.009", "name": "Cloud API" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Network"],
+      "data_sources": ["Command Execution", "Process Creation", "Script Execution"]
+    },
+    {
+      "id": "T1203",
+      "name": "Exploitation for Client Execution",
+      "tactic": "Execution",
+      "description": "Adversaries may exploit software vulnerabilities in client applications to execute code.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Process Creation", "Application Log"]
+    },
+    {
+      "id": "T1559",
+      "name": "Inter-Process Communication",
+      "tactic": "Execution",
+      "description": "Adversaries may abuse inter-process communication mechanisms for local code or command execution.",
+      "sub_techniques": [
+        { "id": "T1559.001", "name": "Component Object Model" },
+        { "id": "T1559.002", "name": "Dynamic Data Exchange" },
+        { "id": "T1559.003", "name": "XPC Services" }
+      ],
+      "platforms": ["Windows", "macOS"],
+      "data_sources": ["Process Creation", "Module Load"]
+    },
+    {
+      "id": "T1106",
+      "name": "Native API",
+      "tactic": "Execution",
+      "description": "Adversaries may interact with the native OS application programming interface to execute behaviors.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["OS API Execution", "Process Creation"]
+    },
+    {
+      "id": "T1053",
+      "name": "Scheduled Task/Job",
+      "tactic": "Execution, Persistence, Privilege Escalation",
+      "description": "Adversaries may abuse task scheduling functionality to facilitate initial or recurring execution of malicious code.",
+      "sub_techniques": [
+        { "id": "T1053.002", "name": "At" },
+        { "id": "T1053.003", "name": "Cron" },
+        { "id": "T1053.005", "name": "Scheduled Task" },
+        { "id": "T1053.006", "name": "Systemd Timers" },
+        { "id": "T1053.007", "name": "Container Orchestration Job" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Containers"],
+      "data_sources": ["Scheduled Job", "Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1129",
+      "name": "Shared Modules",
+      "tactic": "Execution",
+      "description": "Adversaries may execute malicious payloads via loading shared modules.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Module Load", "Process Creation"]
+    },
+    {
+      "id": "T1072",
+      "name": "Software Deployment Tools",
+      "tactic": "Execution, Lateral Movement",
+      "description": "Adversaries may gain access to and use third-party software suites installed within an enterprise network to move laterally.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Process Creation", "Application Log"]
+    },
+    {
+      "id": "T1569",
+      "name": "System Services",
+      "tactic": "Execution",
+      "description": "Adversaries may abuse system services or daemons to execute commands or programs.",
+      "sub_techniques": [
+        { "id": "T1569.001", "name": "Launchctl" },
+        { "id": "T1569.002", "name": "Service Execution" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "Service Creation"]
+    },
+    {
+      "id": "T1204",
+      "name": "User Execution",
+      "tactic": "Execution",
+      "description": "An adversary may rely upon specific actions by a user in order to gain execution.",
+      "sub_techniques": [
+        { "id": "T1204.001", "name": "Malicious Link" },
+        { "id": "T1204.002", "name": "Malicious File" },
+        { "id": "T1204.003", "name": "Malicious Image" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Containers"],
+      "data_sources": ["Process Creation", "File Creation", "Network Traffic"]
+    },
+    {
+      "id": "T1047",
+      "name": "Windows Management Instrumentation",
+      "tactic": "Execution",
+      "description": "Adversaries may abuse Windows Management Instrumentation to execute malicious commands and payloads.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "WMI Creation"]
+    },
+    {
+      "id": "T1098",
+      "name": "Account Manipulation",
+      "tactic": "Persistence, Privilege Escalation",
+      "description": "Adversaries may manipulate accounts to maintain or elevate access to victim systems.",
+      "sub_techniques": [
+        { "id": "T1098.001", "name": "Additional Cloud Credentials" },
+        { "id": "T1098.002", "name": "Additional Email Delegate Permissions" },
+        { "id": "T1098.003", "name": "Additional Cloud Roles" },
+        { "id": "T1098.004", "name": "SSH Authorized Keys" },
+        { "id": "T1098.005", "name": "Device Registration" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["User Account", "Group Modification", "Active Directory"]
+    },
+    {
+      "id": "T1197",
+      "name": "BITS Jobs",
+      "tactic": "Defense Evasion, Persistence",
+      "description": "Adversaries may abuse BITS jobs to persistently execute code and perform various background tasks.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "Network Traffic"]
+    },
+    {
+      "id": "T1547",
+      "name": "Boot or Logon Autostart Execution",
+      "tactic": "Persistence, Privilege Escalation",
+      "description": "Adversaries may configure system settings to automatically execute a program during system boot or logon.",
+      "sub_techniques": [
+        { "id": "T1547.001", "name": "Registry Run Keys / Startup Folder" },
+        { "id": "T1547.002", "name": "Authentication Package" },
+        { "id": "T1547.003", "name": "Time Providers" },
+        { "id": "T1547.004", "name": "Winlogon Helper DLL" },
+        { "id": "T1547.005", "name": "Security Support Provider" },
+        { "id": "T1547.006", "name": "Kernel Modules and Extensions" },
+        { "id": "T1547.009", "name": "Shortcut Modification" },
+        { "id": "T1547.012", "name": "Print Processors" },
+        { "id": "T1547.014", "name": "Active Setup" },
+        { "id": "T1547.015", "name": "Login Items" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Modification", "Windows Registry"]
+    },
+    {
+      "id": "T1037",
+      "name": "Boot or Logon Initialization Scripts",
+      "tactic": "Persistence, Privilege Escalation",
+      "description": "Adversaries may use scripts automatically executed at boot or logon initialization to establish persistence.",
+      "sub_techniques": [
+        { "id": "T1037.001", "name": "Logon Script (Windows)" },
+        { "id": "T1037.002", "name": "Login Hook" },
+        { "id": "T1037.003", "name": "Network Logon Script" },
+        { "id": "T1037.004", "name": "RC Scripts" },
+        { "id": "T1037.005", "name": "Startup Items" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "File Creation"]
+    },
+    {
+      "id": "T1136",
+      "name": "Create Account",
+      "tactic": "Persistence",
+      "description": "Adversaries may create an account to maintain access to victim systems.",
+      "sub_techniques": [
+        { "id": "T1136.001", "name": "Local Account" },
+        { "id": "T1136.002", "name": "Domain Account" },
+        { "id": "T1136.003", "name": "Cloud Account" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["User Account", "Process Creation", "Command Execution"]
+    },
+    {
+      "id": "T1543",
+      "name": "Create or Modify System Process",
+      "tactic": "Persistence, Privilege Escalation",
+      "description": "Adversaries may create or modify system-level processes to repeatedly execute malicious payloads.",
+      "sub_techniques": [
+        { "id": "T1543.001", "name": "Launch Agent" },
+        { "id": "T1543.002", "name": "Systemd Service" },
+        { "id": "T1543.003", "name": "Windows Service" },
+        { "id": "T1543.004", "name": "Launch Daemon" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Service Creation", "Process Creation", "Command Execution"]
+    },
+    {
+      "id": "T1546",
+      "name": "Event Triggered Execution",
+      "tactic": "Persistence, Privilege Escalation",
+      "description": "Adversaries may establish persistence or elevate privileges using system mechanisms that trigger execution based on specific events.",
+      "sub_techniques": [
+        { "id": "T1546.001", "name": "Change Default File Association" },
+        { "id": "T1546.002", "name": "Screensaver" },
+        { "id": "T1546.003", "name": "Windows Management Instrumentation Event Subscription" },
+        { "id": "T1546.004", "name": "Unix Shell Configuration Modification" },
+        { "id": "T1546.005", "name": "Trap" },
+        { "id": "T1546.008", "name": "Accessibility Features" },
+        { "id": "T1546.010", "name": "AppInit DLLs" },
+        { "id": "T1546.011", "name": "Application Shimming" },
+        { "id": "T1546.012", "name": "Image File Execution Options Injection" },
+        { "id": "T1546.013", "name": "PowerShell Profile" },
+        { "id": "T1546.015", "name": "Component Object Model Hijacking" },
+        { "id": "T1546.016", "name": "Installer Packages" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "Windows Registry"]
+    },
+    {
+      "id": "T1574",
+      "name": "Hijack Execution Flow",
+      "tactic": "Persistence, Privilege Escalation, Defense Evasion",
+      "description": "Adversaries may execute their own malicious payloads by hijacking the way operating systems run programs.",
+      "sub_techniques": [
+        { "id": "T1574.001", "name": "DLL Search Order Hijacking" },
+        { "id": "T1574.002", "name": "DLL Side-Loading" },
+        { "id": "T1574.004", "name": "Dylib Hijacking" },
+        { "id": "T1574.005", "name": "Executable Installer File Permissions Weakness" },
+        { "id": "T1574.006", "name": "Dynamic Linker Hijacking" },
+        { "id": "T1574.007", "name": "Path Interception by PATH Environment Variable" },
+        { "id": "T1574.008", "name": "Path Interception by Search Order Hijacking" },
+        { "id": "T1574.009", "name": "Path Interception by Unquoted Path" },
+        { "id": "T1574.010", "name": "Services File Permissions Weakness" },
+        { "id": "T1574.011", "name": "Services Registry Permissions Weakness" },
+        { "id": "T1574.012", "name": "COR_PROFILER" },
+        { "id": "T1574.013", "name": "KernelCallbackTable" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Module Load", "Process Creation", "File Modification"]
+    },
+    {
+      "id": "T1525",
+      "name": "Implant Internal Image",
+      "tactic": "Persistence",
+      "description": "Adversaries may implant cloud or container images with malicious code to establish persistence.",
+      "sub_techniques": [],
+      "platforms": ["Cloud", "Containers"],
+      "data_sources": ["Image Creation", "Image Modification"]
+    },
+    {
+      "id": "T1556",
+      "name": "Modify Authentication Process",
+      "tactic": "Credential Access, Defense Evasion, Persistence",
+      "description": "Adversaries may modify authentication mechanisms and processes to access user credentials or enable unauthorized access.",
+      "sub_techniques": [
+        { "id": "T1556.001", "name": "Domain Controller Authentication" },
+        { "id": "T1556.002", "name": "Password Filter DLL" },
+        { "id": "T1556.003", "name": "Pluggable Authentication Modules" },
+        { "id": "T1556.004", "name": "Network Device Authentication" },
+        { "id": "T1556.006", "name": "Multi-Factor Authentication" },
+        { "id": "T1556.007", "name": "Hybrid Identity" },
+        { "id": "T1556.008", "name": "Network Provider DLL" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Network"],
+      "data_sources": ["Logon Session", "Process Creation", "File Modification"]
+    },
+    {
+      "id": "T1137",
+      "name": "Office Application Startup",
+      "tactic": "Persistence",
+      "description": "Adversaries may leverage Microsoft Office-based applications for persistence between startups.",
+      "sub_techniques": [
+        { "id": "T1137.001", "name": "Office Template Macros" },
+        { "id": "T1137.002", "name": "Office Test" },
+        { "id": "T1137.003", "name": "Outlook Forms" },
+        { "id": "T1137.004", "name": "Outlook Home Page" },
+        { "id": "T1137.005", "name": "Outlook Rules" },
+        { "id": "T1137.006", "name": "Add-ins" }
+      ],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "File Modification"]
+    },
+    {
+      "id": "T1542",
+      "name": "Pre-OS Boot",
+      "tactic": "Persistence, Defense Evasion",
+      "description": "Adversaries may abuse pre-OS boot mechanisms as a way to establish persistence on a system.",
+      "sub_techniques": [
+        { "id": "T1542.001", "name": "System Firmware" },
+        { "id": "T1542.002", "name": "Component Firmware" },
+        { "id": "T1542.003", "name": "Bootkit" },
+        { "id": "T1542.004", "name": "ROMMONkit" },
+        { "id": "T1542.005", "name": "TFTP Boot" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Firmware Modification", "Drive Modification"]
+    },
+    {
+      "id": "T1505",
+      "name": "Server Software Component",
+      "tactic": "Persistence",
+      "description": "Adversaries may abuse legitimate extensible development features of servers to establish persistent access to systems.",
+      "sub_techniques": [
+        { "id": "T1505.001", "name": "SQL Stored Procedures" },
+        { "id": "T1505.002", "name": "Transport Agent" },
+        { "id": "T1505.003", "name": "Web Shell" },
+        { "id": "T1505.004", "name": "IIS Components" },
+        { "id": "T1505.005", "name": "Terminal Services DLL" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Application Log", "File Modification", "Process Creation"]
+    },
+    {
+      "id": "T1205",
+      "name": "Traffic Signaling",
+      "tactic": "Persistence, Defense Evasion, Command and Control",
+      "description": "Adversaries may use traffic signaling to hide open ports used for persistence or C2.",
+      "sub_techniques": [
+        { "id": "T1205.001", "name": "Port Knocking" },
+        { "id": "T1205.002", "name": "Socket Filters" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Network Traffic", "Process Creation"]
+    },
+    {
+      "id": "T1548",
+      "name": "Abuse Elevation Control Mechanism",
+      "tactic": "Privilege Escalation, Defense Evasion",
+      "description": "Adversaries may circumvent mechanisms designed to control elevate privileges to gain higher-level permissions.",
+      "sub_techniques": [
+        { "id": "T1548.001", "name": "Setuid and Setgid" },
+        { "id": "T1548.002", "name": "Bypass User Account Control" },
+        { "id": "T1548.003", "name": "Sudo and Sudo Caching" },
+        { "id": "T1548.004", "name": "Elevated Execution with Prompt" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1134",
+      "name": "Access Token Manipulation",
+      "tactic": "Privilege Escalation, Defense Evasion",
+      "description": "Adversaries may modify access tokens to operate under a different user or system security context.",
+      "sub_techniques": [
+        { "id": "T1134.001", "name": "Token Impersonation/Theft" },
+        { "id": "T1134.002", "name": "Create Process with Token" },
+        { "id": "T1134.003", "name": "Make and Impersonate Token" },
+        { "id": "T1134.004", "name": "Parent PID Spoofing" },
+        { "id": "T1134.005", "name": "SID-History Injection" }
+      ],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "User Account"]
+    },
+    {
+      "id": "T1068",
+      "name": "Exploitation for Privilege Escalation",
+      "tactic": "Privilege Escalation",
+      "description": "Adversaries may exploit software vulnerabilities in an attempt to elevate privileges.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Containers"],
+      "data_sources": ["Process Creation", "Driver Load"]
+    },
+    {
+      "id": "T1484",
+      "name": "Domain or Tenant Policy Modification",
+      "tactic": "Privilege Escalation, Defense Evasion",
+      "description": "Adversaries may modify the configuration settings of a domain or identity tenant to evade defenses or escalate privileges.",
+      "sub_techniques": [
+        { "id": "T1484.001", "name": "Group Policy Modification" },
+        { "id": "T1484.002", "name": "Trust Modification" }
+      ],
+      "platforms": ["Windows", "Cloud"],
+      "data_sources": ["Active Directory", "Command Execution"]
+    },
+    {
+      "id": "T1055",
+      "name": "Process Injection",
+      "tactic": "Privilege Escalation, Defense Evasion",
+      "description": "Adversaries may inject code into processes in order to evade process-based defenses as well as possibly elevate privileges.",
+      "sub_techniques": [
+        { "id": "T1055.001", "name": "Dynamic-link Library Injection" },
+        { "id": "T1055.002", "name": "Portable Executable Injection" },
+        { "id": "T1055.003", "name": "Thread Execution Hijacking" },
+        { "id": "T1055.004", "name": "Asynchronous Procedure Call" },
+        { "id": "T1055.005", "name": "Thread Local Storage" },
+        { "id": "T1055.008", "name": "Ptrace System Calls" },
+        { "id": "T1055.009", "name": "Proc Memory" },
+        { "id": "T1055.011", "name": "Extra Window Memory Injection" },
+        { "id": "T1055.012", "name": "Process Hollowing" },
+        { "id": "T1055.013", "name": "Process Doppelganging" },
+        { "id": "T1055.014", "name": "VDSO Hijacking" },
+        { "id": "T1055.015", "name": "ListPlanting" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Process Access", "Process Modification", "OS API Execution"]
+    },
+    {
+      "id": "T1140",
+      "name": "Deobfuscate/Decode Files or Information",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may use obfuscated files or information to hide artifacts of an intrusion from analysis.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Modification", "Process Creation"]
+    },
+    {
+      "id": "T1006",
+      "name": "Direct Volume Access",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may directly access a volume to bypass file access controls and file system monitoring.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Drive Access", "Command Execution"]
+    },
+    {
+      "id": "T1480",
+      "name": "Execution Guardrails",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may use execution guardrails to constrain execution or actions based on adversary supplied and environment specific conditions.",
+      "sub_techniques": [
+        { "id": "T1480.001", "name": "Environmental Keying" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1211",
+      "name": "Exploitation for Defense Evasion",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may exploit a system or application vulnerability to bypass security features.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Process Creation", "Application Log"]
+    },
+    {
+      "id": "T1222",
+      "name": "File and Directory Permissions Modification",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may modify file or directory permissions to evade access control lists and access protected files.",
+      "sub_techniques": [
+        { "id": "T1222.001", "name": "Windows File and Directory Permissions Modification" },
+        { "id": "T1222.002", "name": "Linux and Mac File and Directory Permissions Modification" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Metadata", "Process Creation"]
+    },
+    {
+      "id": "T1564",
+      "name": "Hide Artifacts",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may attempt to hide artifacts associated with their behaviors to evade detection.",
+      "sub_techniques": [
+        { "id": "T1564.001", "name": "Hidden Files and Directories" },
+        { "id": "T1564.002", "name": "Hidden Users" },
+        { "id": "T1564.003", "name": "Hidden Window" },
+        { "id": "T1564.004", "name": "NTFS File Attributes" },
+        { "id": "T1564.005", "name": "Hidden File System" },
+        { "id": "T1564.006", "name": "Run Virtual Instance" },
+        { "id": "T1564.007", "name": "VBA Stomping" },
+        { "id": "T1564.008", "name": "Email Hiding Rules" },
+        { "id": "T1564.009", "name": "Resource Forking" },
+        { "id": "T1564.010", "name": "Process Argument Spoofing" },
+        { "id": "T1564.011", "name": "Ignore Process Interrupts" },
+        { "id": "T1564.012", "name": "File/Path Exclusions" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "File Creation", "Process Creation"]
+    },
+    {
+      "id": "T1562",
+      "name": "Impair Defenses",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may maliciously modify components of a victim environment in order to hinder or disable defensive mechanisms.",
+      "sub_techniques": [
+        { "id": "T1562.001", "name": "Disable or Modify Tools" },
+        { "id": "T1562.002", "name": "Disable Windows Event Logging" },
+        { "id": "T1562.003", "name": "Impair Command History Logging" },
+        { "id": "T1562.004", "name": "Disable or Modify System Firewall" },
+        { "id": "T1562.006", "name": "Indicator Blocking" },
+        { "id": "T1562.007", "name": "Disable or Modify Cloud Firewall" },
+        { "id": "T1562.008", "name": "Disable or Modify Cloud Logs" },
+        { "id": "T1562.009", "name": "Safe Mode Boot" },
+        { "id": "T1562.010", "name": "Downgrade Attack" },
+        { "id": "T1562.012", "name": "Disable or Modify Linux Audit System" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Containers", "Network"],
+      "data_sources": ["Command Execution", "Process Creation", "Windows Registry", "Cloud Service"]
+    },
+    {
+      "id": "T1070",
+      "name": "Indicator Removal",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may delete or modify artifacts generated within systems to remove evidence of their presence.",
+      "sub_techniques": [
+        { "id": "T1070.001", "name": "Clear Windows Event Logs" },
+        { "id": "T1070.002", "name": "Clear Linux or Mac System Logs" },
+        { "id": "T1070.003", "name": "Clear Command History" },
+        { "id": "T1070.004", "name": "File Deletion" },
+        { "id": "T1070.005", "name": "Network Share Connection Removal" },
+        { "id": "T1070.006", "name": "Timestomp" },
+        { "id": "T1070.009", "name": "Clear Persistence" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Command Execution", "File Deletion", "Process Creation"]
+    },
+    {
+      "id": "T1036",
+      "name": "Masquerading",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may attempt to manipulate features of their artifacts to make them appear legitimate.",
+      "sub_techniques": [
+        { "id": "T1036.001", "name": "Invalid Code Signature" },
+        { "id": "T1036.003", "name": "Rename System Utilities" },
+        { "id": "T1036.004", "name": "Masquerade Task or Service" },
+        { "id": "T1036.005", "name": "Match Legitimate Name or Location" },
+        { "id": "T1036.006", "name": "Space after Filename" },
+        { "id": "T1036.007", "name": "Double File Extension" },
+        { "id": "T1036.008", "name": "Masquerade File Type" },
+        { "id": "T1036.009", "name": "Break Process Trees" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Containers"],
+      "data_sources": ["Command Execution", "File Metadata", "Process Metadata"]
+    },
+    {
+      "id": "T1027",
+      "name": "Obfuscated Files or Information",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may attempt to make an executable or file difficult to discover or analyze by encrypting, encoding, or otherwise obfuscating its contents.",
+      "sub_techniques": [
+        { "id": "T1027.001", "name": "Binary Padding" },
+        { "id": "T1027.002", "name": "Software Packing" },
+        { "id": "T1027.003", "name": "Steganography" },
+        { "id": "T1027.004", "name": "Compile After Delivery" },
+        { "id": "T1027.005", "name": "Indicator Removal from Tools" },
+        { "id": "T1027.006", "name": "HTML Smuggling" },
+        { "id": "T1027.007", "name": "Dynamic API Resolution" },
+        { "id": "T1027.008", "name": "Stripped Payloads" },
+        { "id": "T1027.009", "name": "Embedded Payloads" },
+        { "id": "T1027.010", "name": "Command Obfuscation" },
+        { "id": "T1027.011", "name": "Fileless Storage" },
+        { "id": "T1027.012", "name": "LNK Icon Smuggling" },
+        { "id": "T1027.013", "name": "Encrypted/Encoded File" },
+        { "id": "T1027.014", "name": "Polymorphic Code" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Creation", "Process Creation"]
+    },
+    {
+      "id": "T1218",
+      "name": "System Binary Proxy Execution",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may bypass process or signature-based defenses by proxying execution of malicious content with signed or trusted binaries.",
+      "sub_techniques": [
+        { "id": "T1218.001", "name": "Compiled HTML File" },
+        { "id": "T1218.002", "name": "Control Panel" },
+        { "id": "T1218.003", "name": "CMSTP" },
+        { "id": "T1218.004", "name": "InstallUtil" },
+        { "id": "T1218.005", "name": "Mshta" },
+        { "id": "T1218.007", "name": "Msiexec" },
+        { "id": "T1218.008", "name": "Odbcconf" },
+        { "id": "T1218.009", "name": "Regsvcs/Regasm" },
+        { "id": "T1218.010", "name": "Regsvr32" },
+        { "id": "T1218.011", "name": "Rundll32" },
+        { "id": "T1218.012", "name": "Verclsid" },
+        { "id": "T1218.013", "name": "Mavinject" },
+        { "id": "T1218.014", "name": "MMC" }
+      ],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "Module Load"]
+    },
+    {
+      "id": "T1553",
+      "name": "Subvert Trust Controls",
+      "tactic": "Defense Evasion",
+      "description": "Adversaries may undermine security controls that will either warn users of untrusted activity or prevent execution of untrusted programs.",
+      "sub_techniques": [
+        { "id": "T1553.001", "name": "Gatekeeper Bypass" },
+        { "id": "T1553.002", "name": "Code Signing" },
+        { "id": "T1553.003", "name": "SIP and Trust Provider Hijacking" },
+        { "id": "T1553.004", "name": "Install Root Certificate" },
+        { "id": "T1553.005", "name": "Mark-of-the-Web Bypass" },
+        { "id": "T1553.006", "name": "Code Signing Policy Modification" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Modification", "Windows Registry"]
+    },
+    {
+      "id": "T1550",
+      "name": "Use Alternate Authentication Material",
+      "tactic": "Defense Evasion, Lateral Movement",
+      "description": "Adversaries may use alternate authentication material to move laterally and bypass normal authentication.",
+      "sub_techniques": [
+        { "id": "T1550.001", "name": "Application Access Token" },
+        { "id": "T1550.002", "name": "Pass the Hash" },
+        { "id": "T1550.003", "name": "Pass the Ticket" },
+        { "id": "T1550.004", "name": "Web Session Cookie" }
+      ],
+      "platforms": ["Windows", "Cloud"],
+      "data_sources": ["Logon Session", "User Account", "Web Credential"]
+    },
+    {
+      "id": "T1497",
+      "name": "Virtualization/Sandbox Evasion",
+      "tactic": "Defense Evasion, Discovery",
+      "description": "Adversaries may employ various means to detect and avoid virtualization and analysis environments.",
+      "sub_techniques": [
+        { "id": "T1497.001", "name": "System Checks" },
+        { "id": "T1497.002", "name": "User Activity Based Checks" },
+        { "id": "T1497.003", "name": "Time Based Evasion" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "OS API Execution"]
+    },
+    {
+      "id": "T1110",
+      "name": "Brute Force",
+      "tactic": "Credential Access",
+      "description": "Adversaries may use brute force techniques to gain access to accounts when passwords are unknown or when password hashes are obtained.",
+      "sub_techniques": [
+        { "id": "T1110.001", "name": "Password Guessing" },
+        { "id": "T1110.002", "name": "Password Cracking" },
+        { "id": "T1110.003", "name": "Password Spraying" },
+        { "id": "T1110.004", "name": "Credential Stuffing" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Logon Session", "User Account", "Application Log"]
+    },
+    {
+      "id": "T1112",
+      "name": "Modify Registry",
+      "tactic": "Defense Evasion, Persistence",
+      "description": "Adversaries may modify the Windows Registry to support defense evasion, persistence, or execution.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Windows Registry Key Modification", "Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1555",
+      "name": "Credentials from Password Stores",
+      "tactic": "Credential Access",
+      "description": "Adversaries may search for common password storage locations to obtain user credentials.",
+      "sub_techniques": [
+        { "id": "T1555.001", "name": "Keychain" },
+        { "id": "T1555.002", "name": "Securityd Memory" },
+        { "id": "T1555.003", "name": "Credentials from Web Browsers" },
+        { "id": "T1555.004", "name": "Windows Credential Manager" },
+        { "id": "T1555.005", "name": "Password Managers" },
+        { "id": "T1555.006", "name": "Cloud Secrets Management Stores" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "File Access", "Process Access"]
+    },
+    {
+      "id": "T1212",
+      "name": "Exploitation for Credential Access",
+      "tactic": "Credential Access",
+      "description": "Adversaries may exploit software vulnerabilities in an attempt to collect credentials.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Application Log", "Process Creation"]
+    },
+    {
+      "id": "T1187",
+      "name": "Forced Authentication",
+      "tactic": "Credential Access",
+      "description": "Adversaries may gather credential material by invoking or forcing a user to automatically provide authentication information.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Network Traffic", "File Access"]
+    },
+    {
+      "id": "T1606",
+      "name": "Forge Web Credentials",
+      "tactic": "Credential Access",
+      "description": "Adversaries may forge credential materials that can be used to gain access to web applications or Internet services.",
+      "sub_techniques": [
+        { "id": "T1606.001", "name": "Web Cookies" },
+        { "id": "T1606.002", "name": "SAML Tokens" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Logon Session", "Web Credential"]
+    },
+    {
+      "id": "T1056",
+      "name": "Input Capture",
+      "tactic": "Credential Access, Collection",
+      "description": "Adversaries may use methods of capturing user input to obtain credentials or collect information.",
+      "sub_techniques": [
+        { "id": "T1056.001", "name": "Keylogging" },
+        { "id": "T1056.002", "name": "GUI Input Capture" },
+        { "id": "T1056.003", "name": "Web Portal Capture" },
+        { "id": "T1056.004", "name": "Credential API Hooking" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Process Creation", "OS API Execution"]
+    },
+    {
+      "id": "T1557",
+      "name": "Adversary-in-the-Middle",
+      "tactic": "Credential Access, Collection",
+      "description": "Adversaries may attempt to position themselves between two or more networked devices to support follow-on behaviors such as credential access.",
+      "sub_techniques": [
+        { "id": "T1557.001", "name": "LLMNR/NBT-NS Poisoning and SMB Relay" },
+        { "id": "T1557.002", "name": "ARP Cache Poisoning" },
+        { "id": "T1557.003", "name": "DHCP Spoofing" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic", "Service Creation"]
+    },
+    {
+      "id": "T1003",
+      "name": "OS Credential Dumping",
+      "tactic": "Credential Access",
+      "description": "Adversaries may attempt to dump credentials to obtain account login and credential material from the operating system and software.",
+      "sub_techniques": [
+        { "id": "T1003.001", "name": "LSASS Memory" },
+        { "id": "T1003.002", "name": "Security Account Manager" },
+        { "id": "T1003.003", "name": "NTDS" },
+        { "id": "T1003.004", "name": "LSA Secrets" },
+        { "id": "T1003.005", "name": "Cached Domain Credentials" },
+        { "id": "T1003.006", "name": "DCSync" },
+        { "id": "T1003.007", "name": "Proc Filesystem" },
+        { "id": "T1003.008", "name": "/etc/passwd and /etc/shadow" }
+      ],
+      "platforms": ["Windows", "Linux"],
+      "data_sources": ["Command Execution", "Process Access", "OS API Execution"]
+    },
+    {
+      "id": "T1528",
+      "name": "Steal Application Access Token",
+      "tactic": "Credential Access",
+      "description": "Adversaries can steal application access tokens as a means of acquiring credentials to access remote systems and resources.",
+      "sub_techniques": [],
+      "platforms": ["Cloud"],
+      "data_sources": ["User Account", "Logon Session"]
+    },
+    {
+      "id": "T1558",
+      "name": "Steal or Forge Kerberos Tickets",
+      "tactic": "Credential Access",
+      "description": "Adversaries may attempt to subvert Kerberos authentication by stealing or forging Kerberos tickets.",
+      "sub_techniques": [
+        { "id": "T1558.001", "name": "Golden Ticket" },
+        { "id": "T1558.002", "name": "Silver Ticket" },
+        { "id": "T1558.003", "name": "Kerberoasting" },
+        { "id": "T1558.004", "name": "AS-REP Roasting" }
+      ],
+      "platforms": ["Windows"],
+      "data_sources": ["Logon Session", "Active Directory"]
+    },
+    {
+      "id": "T1539",
+      "name": "Steal Web Session Cookie",
+      "tactic": "Credential Access",
+      "description": "An adversary may steal web application or service session cookies and use them to gain access.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Process Access", "File Access"]
+    },
+    {
+      "id": "T1552",
+      "name": "Unsecured Credentials",
+      "tactic": "Credential Access",
+      "description": "Adversaries may search compromised systems to find and obtain insecurely stored credentials.",
+      "sub_techniques": [
+        { "id": "T1552.001", "name": "Credentials In Files" },
+        { "id": "T1552.002", "name": "Credentials in Registry" },
+        { "id": "T1552.003", "name": "Bash History" },
+        { "id": "T1552.004", "name": "Private Keys" },
+        { "id": "T1552.005", "name": "Cloud Instance Metadata API" },
+        { "id": "T1552.006", "name": "Group Policy Preferences" },
+        { "id": "T1552.007", "name": "Container API" },
+        { "id": "T1552.008", "name": "Chat Messages" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Containers"],
+      "data_sources": ["Command Execution", "File Access", "Process Creation"]
+    },
+    {
+      "id": "T1087",
+      "name": "Account Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to get a listing of valid accounts, usernames, or email addresses on a system or within a compromised environment.",
+      "sub_techniques": [
+        { "id": "T1087.001", "name": "Local Account" },
+        { "id": "T1087.002", "name": "Domain Account" },
+        { "id": "T1087.003", "name": "Email Account" },
+        { "id": "T1087.004", "name": "Cloud Account" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1217",
+      "name": "Browser Information Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may enumerate information about browsers to learn more about compromised environments.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access", "Process Creation"]
+    },
+    {
+      "id": "T1580",
+      "name": "Cloud Infrastructure Discovery",
+      "tactic": "Discovery",
+      "description": "An adversary may attempt to discover infrastructure and resources available within an infrastructure-as-a-service environment.",
+      "sub_techniques": [],
+      "platforms": ["Cloud"],
+      "data_sources": ["Cloud Service", "Instance Enumeration"]
+    },
+    {
+      "id": "T1538",
+      "name": "Cloud Service Dashboard",
+      "tactic": "Discovery",
+      "description": "An adversary may use a cloud service dashboard GUI with stolen credentials to gain useful information from an operational cloud environment.",
+      "sub_techniques": [],
+      "platforms": ["Cloud"],
+      "data_sources": ["Logon Session", "User Account"]
+    },
+    {
+      "id": "T1526",
+      "name": "Cloud Service Discovery",
+      "tactic": "Discovery",
+      "description": "An adversary may attempt to enumerate the cloud services running on a system after gaining access.",
+      "sub_techniques": [],
+      "platforms": ["Cloud"],
+      "data_sources": ["Cloud Service"]
+    },
+    {
+      "id": "T1482",
+      "name": "Domain Trust Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to gather information on domain trust relationships that may be used to identify lateral movement opportunities.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "Active Directory"]
+    },
+    {
+      "id": "T1083",
+      "name": "File and Directory Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may enumerate files and directories or may search in specific locations of a host for certain information.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1046",
+      "name": "Network Service Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to get a listing of services running on remote hosts and local network infrastructure devices.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Network Traffic", "Command Execution"]
+    },
+    {
+      "id": "T1135",
+      "name": "Network Share Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may look for folders and drives shared on remote systems as a means of identifying sources of information to gather.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1040",
+      "name": "Network Sniffing",
+      "tactic": "Credential Access, Discovery",
+      "description": "Adversaries may passively sniff network traffic to capture information about an environment.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1201",
+      "name": "Password Policy Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to access detailed information about the password policy used within an enterprise network.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1120",
+      "name": "Peripheral Device Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to gather information about attached peripheral devices and components connected to a computer system.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1069",
+      "name": "Permission Groups Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to discover group and permission settings.",
+      "sub_techniques": [
+        { "id": "T1069.001", "name": "Local Groups" },
+        { "id": "T1069.002", "name": "Domain Groups" },
+        { "id": "T1069.003", "name": "Cloud Groups" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1057",
+      "name": "Process Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to get information about running processes on a system.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "OS API Execution"]
+    },
+    {
+      "id": "T1012",
+      "name": "Query Registry",
+      "tactic": "Discovery",
+      "description": "Adversaries may interact with the Windows Registry to gather information about the system, configuration, and installed software.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Command Execution", "Process Creation", "Windows Registry"]
+    },
+    {
+      "id": "T1018",
+      "name": "Remote System Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to get a listing of other systems by IP address, hostname, or other logical identifier on a network.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "Network Traffic"]
+    },
+    {
+      "id": "T1518",
+      "name": "Software Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to get a listing of software and software versions that are installed on a system.",
+      "sub_techniques": [
+        { "id": "T1518.001", "name": "Security Software Discovery" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1082",
+      "name": "System Information Discovery",
+      "tactic": "Discovery",
+      "description": "An adversary may attempt to get detailed information about the operating system and hardware.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "Process Creation", "OS API Execution"]
+    },
+    {
+      "id": "T1016",
+      "name": "System Network Configuration Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may look for details about the network configuration and settings of systems they access.",
+      "sub_techniques": [
+        { "id": "T1016.001", "name": "Internet Connection Discovery" },
+        { "id": "T1016.002", "name": "Wi-Fi Discovery" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1049",
+      "name": "System Network Connections Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to get a listing of network connections to or from the compromised system.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1033",
+      "name": "System Owner/User Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may attempt to identify the primary user, currently logged in user, or set of users that commonly use a system.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1007",
+      "name": "System Service Discovery",
+      "tactic": "Discovery",
+      "description": "Adversaries may try to gather information about registered local system services.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1210",
+      "name": "Exploitation of Remote Services",
+      "tactic": "Lateral Movement",
+      "description": "Adversaries may exploit remote services to gain unauthorized access to internal systems.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Application Log", "Network Traffic"]
+    },
+    {
+      "id": "T1534",
+      "name": "Internal Spearphishing",
+      "tactic": "Lateral Movement",
+      "description": "Adversaries may use internal spearphishing to gain access to additional information or exploit other users within the same organization.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "Network Traffic"]
+    },
+    {
+      "id": "T1570",
+      "name": "Lateral Tool Transfer",
+      "tactic": "Lateral Movement",
+      "description": "Adversaries may transfer tools or other files between systems in a compromised environment.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Creation", "Network Traffic", "Named Pipe"]
+    },
+    {
+      "id": "T1563",
+      "name": "Remote Service Session Hijacking",
+      "tactic": "Lateral Movement",
+      "description": "Adversaries may take control of preexisting sessions with remote services to move laterally in an environment.",
+      "sub_techniques": [
+        { "id": "T1563.001", "name": "SSH Hijacking" },
+        { "id": "T1563.002", "name": "RDP Hijacking" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Logon Session", "Network Traffic", "Process Creation"]
+    },
+    {
+      "id": "T1021",
+      "name": "Remote Services",
+      "tactic": "Lateral Movement",
+      "description": "Adversaries may use valid accounts to log into a service specifically designed to accept remote connections.",
+      "sub_techniques": [
+        { "id": "T1021.001", "name": "Remote Desktop Protocol" },
+        { "id": "T1021.002", "name": "SMB/Windows Admin Shares" },
+        { "id": "T1021.003", "name": "Distributed Component Object Model" },
+        { "id": "T1021.004", "name": "SSH" },
+        { "id": "T1021.005", "name": "VNC" },
+        { "id": "T1021.006", "name": "Windows Remote Management" },
+        { "id": "T1021.007", "name": "Cloud Services" },
+        { "id": "T1021.008", "name": "Direct Cloud VM Connections" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Logon Session", "Network Traffic", "Process Creation"]
+    },
+    {
+      "id": "T1080",
+      "name": "Taint Shared Content",
+      "tactic": "Lateral Movement",
+      "description": "Adversaries may deliver payloads to remote systems by adding content to shared storage locations.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Creation", "File Modification", "Network Traffic"]
+    },
+    {
+      "id": "T1560",
+      "name": "Archive Collected Data",
+      "tactic": "Collection",
+      "description": "An adversary may compress or encrypt data that is collected prior to exfiltration.",
+      "sub_techniques": [
+        { "id": "T1560.001", "name": "Archive via Utility" },
+        { "id": "T1560.002", "name": "Archive via Library" },
+        { "id": "T1560.003", "name": "Archive via Custom Method" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Creation", "Process Creation"]
+    },
+    {
+      "id": "T1123",
+      "name": "Audio Capture",
+      "tactic": "Collection",
+      "description": "An adversary can leverage a computer peripheral or software to capture audio recordings.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "OS API Execution"]
+    },
+    {
+      "id": "T1119",
+      "name": "Automated Collection",
+      "tactic": "Collection",
+      "description": "Once established within a system, an adversary may use automated techniques for collecting internal data.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Command Execution", "File Access", "Script Execution"]
+    },
+    {
+      "id": "T1185",
+      "name": "Browser Session Hijacking",
+      "tactic": "Collection",
+      "description": "Adversaries may take advantage of security vulnerabilities and inherent functionality in browser software to change content or modify behavior.",
+      "sub_techniques": [],
+      "platforms": ["Windows"],
+      "data_sources": ["Process Access", "Logon Session"]
+    },
+    {
+      "id": "T1115",
+      "name": "Clipboard Data",
+      "tactic": "Collection",
+      "description": "Adversaries may collect data stored in the clipboard from users copying information within or between applications.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation"]
+    },
+    {
+      "id": "T1530",
+      "name": "Data from Cloud Storage",
+      "tactic": "Collection",
+      "description": "Adversaries may access data from cloud storage.",
+      "sub_techniques": [],
+      "platforms": ["Cloud"],
+      "data_sources": ["Cloud Storage Access", "Cloud Service"]
+    },
+    {
+      "id": "T1602",
+      "name": "Data from Configuration Repository",
+      "tactic": "Collection",
+      "description": "Adversaries may collect data related to managed devices from configuration repositories.",
+      "sub_techniques": [
+        { "id": "T1602.001", "name": "SNMP (MIB Dump)" },
+        { "id": "T1602.002", "name": "Network Device Configuration Dump" }
+      ],
+      "platforms": ["Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1213",
+      "name": "Data from Information Repositories",
+      "tactic": "Collection",
+      "description": "Adversaries may leverage information repositories to mine valuable information.",
+      "sub_techniques": [
+        { "id": "T1213.001", "name": "Confluence" },
+        { "id": "T1213.002", "name": "Sharepoint" },
+        { "id": "T1213.003", "name": "Code Repositories" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "Logon Session"]
+    },
+    {
+      "id": "T1005",
+      "name": "Data from Local System",
+      "tactic": "Collection",
+      "description": "Adversaries may search local system sources such as file systems and configuration files or local databases for files of interest.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access"]
+    },
+    {
+      "id": "T1039",
+      "name": "Data from Network Shared Drive",
+      "tactic": "Collection",
+      "description": "Adversaries may search network shares on computers they have compromised to find files of interest.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1025",
+      "name": "Data from Removable Media",
+      "tactic": "Collection",
+      "description": "Adversaries may search connected removable media on computers they have compromised to find files of interest.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access"]
+    },
+    {
+      "id": "T1114",
+      "name": "Email Collection",
+      "tactic": "Collection",
+      "description": "Adversaries may target user email to collect sensitive information.",
+      "sub_techniques": [
+        { "id": "T1114.001", "name": "Local Email Collection" },
+        { "id": "T1114.002", "name": "Remote Email Collection" },
+        { "id": "T1114.003", "name": "Email Forwarding Rule" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1113",
+      "name": "Screen Capture",
+      "tactic": "Collection",
+      "description": "Adversaries may attempt to take screen captures of the desktop to gather information over the course of an operation.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "OS API Execution"]
+    },
+    {
+      "id": "T1125",
+      "name": "Video Capture",
+      "tactic": "Collection",
+      "description": "An adversary can leverage a computer peripheral or software to capture video recordings.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "OS API Execution"]
+    },
+    {
+      "id": "T1071",
+      "name": "Application Layer Protocol",
+      "tactic": "Command and Control",
+      "description": "Adversaries may communicate using OSI application layer protocols to avoid detection by blending in with existing traffic.",
+      "sub_techniques": [
+        { "id": "T1071.001", "name": "Web Protocols" },
+        { "id": "T1071.002", "name": "File Transfer Protocols" },
+        { "id": "T1071.003", "name": "Mail Protocols" },
+        { "id": "T1071.004", "name": "DNS" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1132",
+      "name": "Data Encoding",
+      "tactic": "Command and Control",
+      "description": "Adversaries may encode data to make the content of command and control traffic more difficult to detect.",
+      "sub_techniques": [
+        { "id": "T1132.001", "name": "Standard Encoding" },
+        { "id": "T1132.002", "name": "Non-Standard Encoding" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1001",
+      "name": "Data Obfuscation",
+      "tactic": "Command and Control",
+      "description": "Adversaries may obfuscate command and control traffic to make it more difficult to detect.",
+      "sub_techniques": [
+        { "id": "T1001.001", "name": "Junk Data" },
+        { "id": "T1001.002", "name": "Steganography" },
+        { "id": "T1001.003", "name": "Protocol Impersonation" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1568",
+      "name": "Dynamic Resolution",
+      "tactic": "Command and Control",
+      "description": "Adversaries may dynamically establish connections to command and control infrastructure to evade common detections and remediations.",
+      "sub_techniques": [
+        { "id": "T1568.001", "name": "Fast Flux DNS" },
+        { "id": "T1568.002", "name": "Domain Generation Algorithms" },
+        { "id": "T1568.003", "name": "DNS Calculation" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1573",
+      "name": "Encrypted Channel",
+      "tactic": "Command and Control",
+      "description": "Adversaries may employ an encryption algorithm to conceal command and control traffic.",
+      "sub_techniques": [
+        { "id": "T1573.001", "name": "Symmetric Cryptography" },
+        { "id": "T1573.002", "name": "Asymmetric Cryptography" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1008",
+      "name": "Fallback Channels",
+      "tactic": "Command and Control",
+      "description": "Adversaries may use fallback or alternate communication channels if the primary channel is compromised.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1105",
+      "name": "Ingress Tool Transfer",
+      "tactic": "Command and Control",
+      "description": "Adversaries may transfer tools or other files from an external system into a compromised environment.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Creation", "Network Traffic"]
+    },
+    {
+      "id": "T1104",
+      "name": "Multi-Stage Channels",
+      "tactic": "Command and Control",
+      "description": "Adversaries may create multiple stages for command and control that are employed under different conditions.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1095",
+      "name": "Non-Application Layer Protocol",
+      "tactic": "Command and Control",
+      "description": "Adversaries may use an OSI non-application layer protocol for communication between host and C2 server.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1571",
+      "name": "Non-Standard Port",
+      "tactic": "Command and Control",
+      "description": "Adversaries may communicate using a protocol and port pairing that are typically not associated.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1572",
+      "name": "Protocol Tunneling",
+      "tactic": "Command and Control",
+      "description": "Adversaries may tunnel network communications to and from a victim system within a separate protocol to avoid detection.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1090",
+      "name": "Proxy",
+      "tactic": "Command and Control",
+      "description": "Adversaries may use a connection proxy to direct network traffic between systems or act as an intermediary.",
+      "sub_techniques": [
+        { "id": "T1090.001", "name": "Internal Proxy" },
+        { "id": "T1090.002", "name": "External Proxy" },
+        { "id": "T1090.003", "name": "Multi-hop Proxy" },
+        { "id": "T1090.004", "name": "Domain Fronting" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1219",
+      "name": "Remote Access Software",
+      "tactic": "Command and Control",
+      "description": "An adversary may use legitimate desktop support and remote access software to establish an interactive command and control channel.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic", "Process Creation"]
+    },
+    {
+      "id": "T1102",
+      "name": "Web Service",
+      "tactic": "Command and Control",
+      "description": "Adversaries may use an existing, legitimate external Web service as a means for relaying data to and from a compromised system.",
+      "sub_techniques": [
+        { "id": "T1102.001", "name": "Dead Drop Resolver" },
+        { "id": "T1102.002", "name": "Bidirectional Communication" },
+        { "id": "T1102.003", "name": "One-Way Communication" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1020",
+      "name": "Automated Exfiltration",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may exfiltrate data, such as sensitive documents, through the use of automated processing after being gathered during Collection.",
+      "sub_techniques": [
+        { "id": "T1020.001", "name": "Traffic Duplication" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Command Execution", "File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1030",
+      "name": "Data Transfer Size Limits",
+      "tactic": "Exfiltration",
+      "description": "An adversary may exfiltrate data in fixed size chunks instead of whole files.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1048",
+      "name": "Exfiltration Over Alternative Protocol",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may steal data by exfiltrating it over a different protocol than that of the existing command and control channel.",
+      "sub_techniques": [
+        { "id": "T1048.001", "name": "Exfiltration Over Symmetric Encrypted Non-C2 Protocol" },
+        { "id": "T1048.002", "name": "Exfiltration Over Asymmetric Encrypted Non-C2 Protocol" },
+        { "id": "T1048.003", "name": "Exfiltration Over Unencrypted Non-C2 Protocol" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1041",
+      "name": "Exfiltration Over C2 Channel",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may steal data by exfiltrating it over an existing command and control channel.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1011",
+      "name": "Exfiltration Over Other Network Medium",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may attempt to exfiltrate data over a different network medium than the command and control channel.",
+      "sub_techniques": [
+        { "id": "T1011.001", "name": "Exfiltration Over Bluetooth" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1052",
+      "name": "Exfiltration Over Physical Medium",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may attempt to exfiltrate data via a physical medium such as a removable drive.",
+      "sub_techniques": [
+        { "id": "T1052.001", "name": "Exfiltration over USB" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Drive Creation", "File Access", "Process Creation"]
+    },
+    {
+      "id": "T1567",
+      "name": "Exfiltration Over Web Service",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may use an existing, legitimate external Web service to exfiltrate data.",
+      "sub_techniques": [
+        { "id": "T1567.001", "name": "Exfiltration to Code Repository" },
+        { "id": "T1567.002", "name": "Exfiltration to Cloud Storage" },
+        { "id": "T1567.003", "name": "Exfiltration to Text Storage Sites" },
+        { "id": "T1567.004", "name": "Exfiltration Over Webhook" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Access", "Network Traffic"]
+    },
+    {
+      "id": "T1029",
+      "name": "Scheduled Transfer",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may schedule data exfiltration to be performed only at certain times of day or at certain intervals.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1537",
+      "name": "Transfer Data to Cloud Account",
+      "tactic": "Exfiltration",
+      "description": "Adversaries may exfiltrate data by transferring the data to another cloud account they control.",
+      "sub_techniques": [],
+      "platforms": ["Cloud"],
+      "data_sources": ["Cloud Storage Access", "Network Traffic"]
+    },
+    {
+      "id": "T1531",
+      "name": "Account Access Removal",
+      "tactic": "Impact",
+      "description": "Adversaries may interrupt availability of system and network resources by inhibiting access to accounts utilized by legitimate users.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["User Account", "Active Directory"]
+    },
+    {
+      "id": "T1485",
+      "name": "Data Destruction",
+      "tactic": "Impact",
+      "description": "Adversaries may destroy data and files on specific systems or in large numbers on a network to interrupt availability.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Deletion", "Process Creation"]
+    },
+    {
+      "id": "T1486",
+      "name": "Data Encrypted for Impact",
+      "tactic": "Impact",
+      "description": "Adversaries may encrypt data on target systems or on large numbers of systems to interrupt availability.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Creation", "File Modification", "Process Creation"]
+    },
+    {
+      "id": "T1565",
+      "name": "Data Manipulation",
+      "tactic": "Impact",
+      "description": "Adversaries may insert, delete, or manipulate data in order to influence external outcomes or hide activity.",
+      "sub_techniques": [
+        { "id": "T1565.001", "name": "Stored Data Manipulation" },
+        { "id": "T1565.002", "name": "Transmitted Data Manipulation" },
+        { "id": "T1565.003", "name": "Runtime Data Manipulation" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["File Modification", "Network Traffic", "Process Creation"]
+    },
+    {
+      "id": "T1491",
+      "name": "Defacement",
+      "tactic": "Impact",
+      "description": "Adversaries may modify visual content available internally or externally to an enterprise network.",
+      "sub_techniques": [
+        { "id": "T1491.001", "name": "Internal Defacement" },
+        { "id": "T1491.002", "name": "External Defacement" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "File Modification", "Network Traffic"]
+    },
+    {
+      "id": "T1561",
+      "name": "Disk Wipe",
+      "tactic": "Impact",
+      "description": "Adversaries may wipe or corrupt raw disk data on specific systems or in large numbers to interrupt availability.",
+      "sub_techniques": [
+        { "id": "T1561.001", "name": "Disk Content Wipe" },
+        { "id": "T1561.002", "name": "Disk Structure Wipe" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Drive Modification", "Process Creation"]
+    },
+    {
+      "id": "T1499",
+      "name": "Endpoint Denial of Service",
+      "tactic": "Impact",
+      "description": "Adversaries may perform Endpoint Denial of Service attacks to degrade or block availability of services to users.",
+      "sub_techniques": [
+        { "id": "T1499.001", "name": "OS Exhaustion Flood" },
+        { "id": "T1499.002", "name": "Service Exhaustion Flood" },
+        { "id": "T1499.003", "name": "Application Exhaustion Flood" },
+        { "id": "T1499.004", "name": "Application or System Exploitation" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "Network Traffic", "Sensor Health"]
+    },
+    {
+      "id": "T1657",
+      "name": "Financial Theft",
+      "tactic": "Impact",
+      "description": "Adversaries may steal monetary resources from targets through extortion, social engineering, technical theft, or other methods.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Application Log", "Network Traffic"]
+    },
+    {
+      "id": "T1495",
+      "name": "Firmware Corruption",
+      "tactic": "Impact",
+      "description": "Adversaries may overwrite or corrupt the flash memory contents of system BIOS or other firmware.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Network"],
+      "data_sources": ["Firmware Modification"]
+    },
+    {
+      "id": "T1490",
+      "name": "Inhibit System Recovery",
+      "tactic": "Impact",
+      "description": "Adversaries may delete or remove built-in data and turn off services designed to aid in the recovery of a corrupted system.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "File Deletion", "Process Creation"]
+    },
+    {
+      "id": "T1498",
+      "name": "Network Denial of Service",
+      "tactic": "Impact",
+      "description": "Adversaries may perform Network Denial of Service attacks to degrade or block availability of targeted resources to users.",
+      "sub_techniques": [
+        { "id": "T1498.001", "name": "Direct Network Flood" },
+        { "id": "T1498.002", "name": "Reflection Amplification" }
+      ],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud"],
+      "data_sources": ["Network Traffic", "Sensor Health"]
+    },
+    {
+      "id": "T1496",
+      "name": "Resource Hijacking",
+      "tactic": "Impact",
+      "description": "Adversaries may leverage the resources of co-opted systems to complete resource-intensive tasks.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS", "Cloud", "Containers"],
+      "data_sources": ["Command Execution", "Network Traffic", "Process Creation"]
+    },
+    {
+      "id": "T1489",
+      "name": "Service Stop",
+      "tactic": "Impact",
+      "description": "Adversaries may stop or disable services on a system to render those services unavailable to legitimate users.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "Service Metadata"]
+    },
+    {
+      "id": "T1529",
+      "name": "System Shutdown/Reboot",
+      "tactic": "Impact",
+      "description": "Adversaries may shutdown or reboot systems to interrupt access to or aid in the destruction of those systems.",
+      "sub_techniques": [],
+      "platforms": ["Windows", "Linux", "macOS"],
+      "data_sources": ["Command Execution", "Process Creation", "Sensor Health"]
+    },
+    {
+      "id": "T1595",
+      "name": "Active Scanning",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may execute active reconnaissance scans to gather information that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1595.001", "name": "Scanning IP Blocks" },
+        { "id": "T1595.002", "name": "Vulnerability Scanning" },
+        { "id": "T1595.003", "name": "Wordlist Scanning" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1592",
+      "name": "Gather Victim Host Information",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may gather information about the victim's hosts that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1592.001", "name": "Hardware" },
+        { "id": "T1592.002", "name": "Software" },
+        { "id": "T1592.003", "name": "Firmware" },
+        { "id": "T1592.004", "name": "Client Configurations" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1589",
+      "name": "Gather Victim Identity Information",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may gather information about the victim's identity that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1589.001", "name": "Credentials" },
+        { "id": "T1589.002", "name": "Email Addresses" },
+        { "id": "T1589.003", "name": "Employee Names" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1590",
+      "name": "Gather Victim Network Information",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may gather information about the victim's networks that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1590.001", "name": "Domain Properties" },
+        { "id": "T1590.002", "name": "DNS" },
+        { "id": "T1590.003", "name": "Network Trust Dependencies" },
+        { "id": "T1590.004", "name": "Network Topology" },
+        { "id": "T1590.005", "name": "IP Addresses" },
+        { "id": "T1590.006", "name": "Network Security Appliances" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1591",
+      "name": "Gather Victim Org Information",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may gather information about the victim's organization that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1591.001", "name": "Determine Physical Locations" },
+        { "id": "T1591.002", "name": "Business Relationships" },
+        { "id": "T1591.003", "name": "Identify Business Tempo" },
+        { "id": "T1591.004", "name": "Identify Roles" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1598",
+      "name": "Phishing for Information",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may send phishing messages to elicit sensitive information that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1598.001", "name": "Spearphishing Service" },
+        { "id": "T1598.002", "name": "Spearphishing Attachment" },
+        { "id": "T1598.003", "name": "Spearphishing Link" },
+        { "id": "T1598.004", "name": "Spearphishing Voice" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Application Log", "Network Traffic"]
+    },
+    {
+      "id": "T1597",
+      "name": "Search Closed Sources",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may search and gather information about victims from closed sources that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1597.001", "name": "Threat Intel Vendors" },
+        { "id": "T1597.002", "name": "Purchase Technical Data" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1596",
+      "name": "Search Open Technical Databases",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may search freely available technical databases for information about victims that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1596.001", "name": "DNS/Passive DNS" },
+        { "id": "T1596.002", "name": "WHOIS" },
+        { "id": "T1596.003", "name": "Digital Certificates" },
+        { "id": "T1596.004", "name": "CDNs" },
+        { "id": "T1596.005", "name": "Scan Databases" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1593",
+      "name": "Search Open Websites/Domains",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may search freely available websites for information about victims that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1593.001", "name": "Social Media" },
+        { "id": "T1593.002", "name": "Search Engines" },
+        { "id": "T1593.003", "name": "Code Repositories" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1594",
+      "name": "Search Victim-Owned Websites",
+      "tactic": "Reconnaissance",
+      "description": "Adversaries may search websites owned by the victim for information that can be used during targeting.",
+      "sub_techniques": [],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    },
+    {
+      "id": "T1583",
+      "name": "Acquire Infrastructure",
+      "tactic": "Resource Development",
+      "description": "Adversaries may buy, lease, rent, or obtain infrastructure that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1583.001", "name": "Domains" },
+        { "id": "T1583.002", "name": "DNS Server" },
+        { "id": "T1583.003", "name": "Virtual Private Server" },
+        { "id": "T1583.004", "name": "Server" },
+        { "id": "T1583.005", "name": "Botnet" },
+        { "id": "T1583.006", "name": "Web Services" },
+        { "id": "T1583.007", "name": "Serverless" },
+        { "id": "T1583.008", "name": "Malvertising" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Domain Registration", "Network Traffic"]
+    },
+    {
+      "id": "T1586",
+      "name": "Compromise Accounts",
+      "tactic": "Resource Development",
+      "description": "Adversaries may compromise accounts with services that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1586.001", "name": "Social Media Accounts" },
+        { "id": "T1586.002", "name": "Email Accounts" },
+        { "id": "T1586.003", "name": "Cloud Accounts" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic", "Social Media"]
+    },
+    {
+      "id": "T1584",
+      "name": "Compromise Infrastructure",
+      "tactic": "Resource Development",
+      "description": "Adversaries may compromise third-party infrastructure that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1584.001", "name": "Domains" },
+        { "id": "T1584.002", "name": "DNS Server" },
+        { "id": "T1584.003", "name": "Virtual Private Server" },
+        { "id": "T1584.004", "name": "Server" },
+        { "id": "T1584.005", "name": "Botnet" },
+        { "id": "T1584.006", "name": "Web Services" },
+        { "id": "T1584.007", "name": "Serverless" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Domain Registration", "Network Traffic"]
+    },
+    {
+      "id": "T1587",
+      "name": "Develop Capabilities",
+      "tactic": "Resource Development",
+      "description": "Adversaries may build capabilities that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1587.001", "name": "Malware" },
+        { "id": "T1587.002", "name": "Code Signing Certificates" },
+        { "id": "T1587.003", "name": "Digital Certificates" },
+        { "id": "T1587.004", "name": "Exploits" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic", "Malware Metadata"]
+    },
+    {
+      "id": "T1585",
+      "name": "Establish Accounts",
+      "tactic": "Resource Development",
+      "description": "Adversaries may create and cultivate accounts with services that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1585.001", "name": "Social Media Accounts" },
+        { "id": "T1585.002", "name": "Email Accounts" },
+        { "id": "T1585.003", "name": "Cloud Accounts" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic", "Social Media"]
+    },
+    {
+      "id": "T1588",
+      "name": "Obtain Capabilities",
+      "tactic": "Resource Development",
+      "description": "Adversaries may buy, steal, or download capabilities that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1588.001", "name": "Malware" },
+        { "id": "T1588.002", "name": "Tool" },
+        { "id": "T1588.003", "name": "Code Signing Certificates" },
+        { "id": "T1588.004", "name": "Digital Certificates" },
+        { "id": "T1588.005", "name": "Exploits" },
+        { "id": "T1588.006", "name": "Vulnerabilities" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic", "Malware Metadata"]
+    },
+    {
+      "id": "T1608",
+      "name": "Stage Capabilities",
+      "tactic": "Resource Development",
+      "description": "Adversaries may upload, install, or otherwise set up capabilities that can be used during targeting.",
+      "sub_techniques": [
+        { "id": "T1608.001", "name": "Upload Malware" },
+        { "id": "T1608.002", "name": "Upload Tool" },
+        { "id": "T1608.003", "name": "Install Digital Certificate" },
+        { "id": "T1608.004", "name": "Drive-by Target" },
+        { "id": "T1608.005", "name": "Link Target" },
+        { "id": "T1608.006", "name": "SEO Poisoning" }
+      ],
+      "platforms": ["Cloud", "Network"],
+      "data_sources": ["Network Traffic"]
+    }
+  ]
+}

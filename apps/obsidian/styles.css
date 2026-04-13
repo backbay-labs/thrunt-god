@@ -1,0 +1,400 @@
+.thrunt-god-view {
+  padding: 1rem;
+}
+
+.thrunt-god-card {
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.thrunt-god-card h3 {
+  margin-top: 0;
+}
+
+.thrunt-god-status {
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.22rem 0.65rem;
+}
+
+.thrunt-god-status.is-healthy {
+  background: color-mix(in srgb, var(--color-green) 18%, transparent);
+  color: var(--color-green);
+}
+
+.thrunt-god-status.is-partial {
+  background: color-mix(in srgb, var(--color-orange) 18%, transparent);
+  color: var(--color-orange);
+}
+
+.thrunt-god-status.is-missing {
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  color: var(--text-muted);
+}
+
+.thrunt-god-path {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 0.85rem;
+}
+
+.thrunt-god-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.thrunt-god-action-button {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+}
+
+/* Hunt status card */
+.thrunt-god-hunt-status {
+  padding: 0.75rem 1rem;
+}
+
+.thrunt-god-hunt-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Hunt fields */
+.thrunt-god-hunt-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.thrunt-god-hunt-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.thrunt-god-field-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 5.5rem;
+  flex-shrink: 0;
+}
+
+.thrunt-god-field-label::after {
+  content: ':';
+}
+
+.thrunt-god-field-value {
+  color: var(--text-normal);
+}
+
+/* Hypothesis scoreboard */
+.thrunt-god-scoreboard {
+  display: inline;
+}
+
+.thrunt-god-score.is-validated {
+  color: var(--color-green);
+}
+
+.thrunt-god-score.is-pending {
+  color: var(--color-orange);
+}
+
+.thrunt-god-score.is-rejected {
+  color: var(--color-red);
+}
+
+.thrunt-god-score-sep {
+  color: var(--text-muted);
+}
+
+/* Unified collapsible section */
+.thrunt-god-section {
+  padding: 0;
+}
+
+.thrunt-god-section-details {
+  padding: 0;
+}
+
+.thrunt-god-section-details[open] > .thrunt-god-section-summary {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.thrunt-god-section-summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 0.75rem 1rem;
+  user-select: none;
+}
+
+.thrunt-god-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.thrunt-god-section-summary::before {
+  content: '\25B6';
+  display: inline-block;
+  font-size: 0.65rem;
+  margin-right: 0.5rem;
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.thrunt-god-section-details[open] > .thrunt-god-section-summary::before {
+  transform: rotate(90deg);
+}
+
+.thrunt-god-section-title {
+  display: inline;
+  font-size: 0.95rem;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.thrunt-god-section-body {
+  padding: 0.5rem 1rem;
+}
+
+.thrunt-god-section-body > .thrunt-god-actions {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+/* Welcome screen */
+.thrunt-god-welcome {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.thrunt-god-welcome-icon {
+  margin-bottom: 0.75rem;
+}
+
+.thrunt-god-welcome-icon svg {
+  width: 48px;
+  height: 48px;
+  color: var(--text-muted);
+}
+
+.thrunt-god-welcome h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.thrunt-god-welcome-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+/* Empty state hints */
+.thrunt-god-empty-state {
+  padding: 0.5rem 0;
+}
+
+.thrunt-god-empty-hint {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* Receipt Timeline content-specific styles */
+.thrunt-god-rt-content {
+  padding: 0;
+}
+
+.thrunt-god-rt-hypothesis {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0.5rem 0 0.25rem;
+}
+
+.thrunt-god-rt-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.thrunt-god-rt-entry:hover {
+  background: var(--background-modifier-hover);
+  border-radius: 4px;
+}
+
+.thrunt-god-rt-status {
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  flex-shrink: 0;
+}
+
+.thrunt-god-rt-status.is-validated {
+  background: color-mix(in srgb, var(--color-green) 18%, transparent);
+  color: var(--color-green);
+}
+
+.thrunt-god-rt-status.is-pending {
+  background: color-mix(in srgb, var(--color-orange) 18%, transparent);
+  color: var(--color-orange);
+}
+
+.thrunt-god-rt-status.is-rejected {
+  background: color-mix(in srgb, var(--color-red) 18%, transparent);
+  color: var(--color-red);
+}
+
+.thrunt-god-rt-id {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 0.78rem;
+}
+
+.thrunt-god-rt-claim {
+  color: var(--text-normal);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thrunt-god-rt-technique {
+  font-family: var(--font-monospace);
+  font-size: 0.7rem;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+/* Chooser modal items */
+.thrunt-chooser-item {
+  padding: 4px 0;
+}
+.thrunt-chooser-name {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+.thrunt-chooser-desc {
+  font-size: var(--font-smallest);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* HyperCopyModal profile list */
+.thrunt-profile-item {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.thrunt-profile-item:hover {
+  background: var(--background-modifier-hover);
+}
+.thrunt-profile-label {
+  font-weight: var(--font-semibold, 600);
+  color: var(--text-normal);
+}
+.thrunt-profile-id {
+  font-size: 0.85em;
+  color: var(--text-muted);
+}
+.thrunt-token-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.thrunt-token-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+}
+.thrunt-token-warning {
+  color: var(--color-red);
+  font-size: 0.85em;
+}
+.thrunt-copy-row {
+  margin-top: 12px;
+}
+.thrunt-preview {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+/* McpSearchModal results */
+.thrunt-search-result {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+.thrunt-entity-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.75em;
+  margin-right: 8px;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+  font-weight: var(--font-semibold, 600);
+  text-transform: uppercase;
+}
+.thrunt-entity-badge[data-entity-type="ttp"] { background: color-mix(in srgb, var(--color-blue) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="ioc/ip"],
+.thrunt-entity-badge[data-entity-type="ioc/domain"],
+.thrunt-entity-badge[data-entity-type="ioc/hash"] { background: color-mix(in srgb, var(--color-red) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="actor"] { background: color-mix(in srgb, var(--color-orange) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="tool"] { background: color-mix(in srgb, var(--color-green) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="infrastructure"] { background: color-mix(in srgb, var(--color-purple) 25%, transparent); color: var(--text-normal); }
+.thrunt-entity-badge[data-entity-type="datasource"] { background: color-mix(in srgb, var(--color-cyan) 25%, transparent); color: var(--text-normal); }
+.thrunt-result-name {
+  font-weight: var(--font-semibold, 600);
+}
+.thrunt-result-action {
+  margin-left: 8px;
+}
+
+/* Canvas entity node styling -- Phase 85 */
+/* Verdict borders via :has() selector on cssclasses frontmatter */
+.canvas-node:has(.thrunt-verdict-unknown) .canvas-node-container {
+  border: 1px solid var(--text-muted);
+}
+.canvas-node:has(.thrunt-verdict-suspicious) .canvas-node-container {
+  border: 2px dashed var(--color-orange);
+}
+.canvas-node:has(.thrunt-verdict-confirmed-malicious) .canvas-node-container {
+  border: 3px solid var(--color-red);
+}
+.canvas-node:has(.thrunt-verdict-remediated) .canvas-node-container {
+  border: 2px solid var(--color-green);
+}
+.canvas-node:has(.thrunt-verdict-resurfaced) .canvas-node-container {
+  border: 3px double var(--color-red);
+}
+
+/* Confidence opacity tiers */
+.canvas-node:has(.thrunt-confidence-low) {
+  opacity: 0.45;
+}
+.canvas-node:has(.thrunt-confidence-medium) {
+  opacity: 0.7;
+}
+.canvas-node:has(.thrunt-confidence-high) {
+  opacity: 1.0;
+}
