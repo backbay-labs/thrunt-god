@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: completed
-stopped_at: Completed 90-02-PLAN.md (v5.0 milestone complete)
-last_updated: "2026-04-13T00:32:59.605Z"
+stopped_at: Completed 91-02-PLAN.md (Phase 91 complete)
+last_updated: "2026-04-13T01:17:46Z"
 progress:
-  total_phases: 12
-  completed_phases: 12
-  total_plans: 26
-  completed_plans: 26
+  total_phases: 13
+  completed_phases: 13
+  total_plans: 28
+  completed_plans: 28
   percent: 100
 ---
 
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-12)
 
 **Core value:** Hunters can move from signal intake to executable hunts, evidence-grade receipts, publishable findings, promotable detections, and data-backed hunt recommendations inside one consistent workflow surface.
-**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 90 (Playbook Distillation & Detection Pipeline)
+**Current focus:** v5.0 Obsidian Intelligence Platform -- Phase 91 (Integration Wiring & Tech Debt Cleanup)
 
 ## Current Milestone
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** Complete
-**Phase:** 90 of 90 (Playbook Distillation & Detection Pipeline)
-**Plan:** 2 of 2 in current phase complete
+**Status:** In progress
+**Phase:** 91 of 91 (Integration Wiring & Tech Debt Cleanup)
+**Plan:** 1 of 2 in current phase complete
 
-Progress: [██████████] 100% (26/26 v5.0 plans)
+Progress: [██████████] 96% (27/28 v5.0 plans)
 
 ## Recently Completed
 
@@ -149,12 +149,15 @@ Progress: [██████████] 100% (26/26 v5.0 plans)
 - [Phase 90]: applyPlaybook checks existing hunt_id before overwriting MISSION.md (pitfall #6 guard)
 - [Phase 90]: Detection name uses timestamped format (Detection-{huntId}-{timestamp}) for uniqueness
 
+- [Phase 91]: verdict:set emission placed after modifyFile, before Notice, ensuring disk write completes before event propagation
+- [Phase 91]: cache:invalidated uses optional chaining (this.eventBus?.emit) since eventBus is an optional constructor parameter
+
 ### Blockers/Concerns
 
 None.
 
 ## Session Continuity
 
-Last session: 2026-04-13T00:32:59.598Z
-Stopped at: Completed 90-02-PLAN.md (v5.0 milestone complete)
+Last session: 2026-04-13T01:17:13Z
+Stopped at: Completed 91-01-PLAN.md
 Resume file: None
