@@ -493,6 +493,16 @@ export default class ThruntGodPlugin extends Plugin {
     }
   }
 
+  async openCoreFile(fileName: string): Promise<void> {
+    const path = this.workspaceService.getFilePath(fileName);
+    const file = this.workspaceService.vaultAdapter.getFile(path);
+    if (!file) {
+      new Notice(`THRUNT file not found: ${path}. Use the workspace view to create it.`);
+      return;
+    }
+    await this.app.workspace.getLeaf(true).openFile(file);
+  }
+
   async loadSettings(): Promise<void> {
     const stored = (await this.loadData()) as Partial<ThruntGodPluginSettings> | null;
     this.settings = { ...DEFAULT_SETTINGS, ...stored };
