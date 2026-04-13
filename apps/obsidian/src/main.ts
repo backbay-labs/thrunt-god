@@ -41,6 +41,8 @@ export default class ThruntGodPlugin extends Plugin {
   private entityNoteCache: EntityNote[] | null = null;
   private suggestionEntityHandler?: (data: { name: string; entityType: string; sourcePath: string }) => void;
   private suggestionCacheHandler?: () => void;
+  private liveCanvasEntityHandler?: (data: { name: string; entityType: string; sourcePath: string }) => void;
+  private liveCanvasDashboardRef?: EventRef;
 
   async onload(): Promise<void> {
     await this.loadSettings();
@@ -129,26 +131,9 @@ export default class ThruntGodPlugin extends Plugin {
       }
     }));
 
-    // --- Live canvas auto-population (Phase 86) ---
+    // --- Live canvas (Phase 86) ---
     if (this.settings.liveCanvasEnabled) {
-      this.eventBus.on('entity:created', (data) => {
-        void this.workspaceService.handleLiveCanvasEntityCreated(data);
-      });
-    }
-
-    // --- Dashboard reactive refresh (Phase 86) ---
-    // Debounced at 2000ms trailing, longer than 500ms canvas color patcher
-    // because dashboard updates are batch-heavy
-    if (this.settings.liveCanvasEnabled) {
-      this.debouncedDashboardRefresh = debounce(async () => {
-        await this.workspaceService.refreshDashboardCanvas();
-      }, 2000, true);
-
-      this.registerEvent(this.app.vault.on('modify', (file) => {
-        if (isEntityFile(file.path)) {
-          this.debouncedDashboardRefresh!();
-        }
-      }));
+      this.enableLiveCanvas();
     }
 
     // --- Auto-ingestion debouncer (Phase 87) ---
@@ -186,7 +171,7 @@ export default class ThruntGodPlugin extends Plugin {
   onunload(): void {
     this.debouncedRefresh?.cancel();
     this.debouncedCanvasRefresh?.cancel();
-    this.debouncedDashboardRefresh?.cancel();
+    this.disableLiveCanvas();
     this.disableAutoIngestion();
     this.disableHuntPulse();
     this.disableMcpEventPolling();
@@ -215,6 +200,44 @@ export default class ThruntGodPlugin extends Plugin {
       this.autoIngestEventRef = undefined;
     }
     this.debouncedAutoIngest?.cancel();
+  }
+
+  enableLiveCanvas(): void {
+    if (this.liveCanvasEntityHandler) return; // already enabled
+
+    // Live canvas auto-population via EventBus
+    this.liveCanvasEntityHandler = (data) => {
+      void this.workspaceService.handleLiveCanvasEntityCreated(data);
+    };
+    this.eventBus.on('entity:created', this.liveCanvasEntityHandler);
+
+    // Dashboard reactive refresh (2000ms debounce)
+    const planningDir = this.settings.planningDir || DEFAULT_SETTINGS.planningDir;
+    const isEntityFile = (path: string): boolean =>
+      path.startsWith(planningDir + '/entities/') && path.endsWith('.md');
+
+    this.debouncedDashboardRefresh = debounce(async () => {
+      await this.workspaceService.refreshDashboardCanvas();
+    }, 2000, true);
+
+    this.liveCanvasDashboardRef = this.app.vault.on('modify', (file) => {
+      if (isEntityFile(file.path)) {
+        this.debouncedDashboardRefresh!();
+      }
+    });
+    this.registerEvent(this.liveCanvasDashboardRef);
+  }
+
+  disableLiveCanvas(): void {
+    if (this.liveCanvasEntityHandler) {
+      this.eventBus.off('entity:created', this.liveCanvasEntityHandler);
+      this.liveCanvasEntityHandler = undefined;
+    }
+    if (this.liveCanvasDashboardRef) {
+      this.app.vault.offref(this.liveCanvasDashboardRef);
+      this.liveCanvasDashboardRef = undefined;
+    }
+    this.debouncedDashboardRefresh?.cancel();
   }
 
   enableHuntPulse(): void {

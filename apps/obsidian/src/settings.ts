@@ -160,6 +160,11 @@ export class ThruntGodSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.liveCanvasEnabled)
           .onChange(async (value) => {
             this.plugin.settings.liveCanvasEnabled = value;
+            if (value) {
+              this.plugin.enableLiveCanvas();
+            } else {
+              this.plugin.disableLiveCanvas();
+            }
             await this.plugin.saveSettings();
           }),
       );
