@@ -17,7 +17,7 @@
 - v3.2 Obsidian Workspace Companion (Phases 63-64) -- shipped 2026-04-11
 - v3.3 Zero-Friction Distribution (Phases 65-67) -- shipped 2026-04-11
 - v4.0 Obsidian Knowledge Weapon (Phases 68-78) -- shipped 2026-04-12
-- v5.0 Obsidian Intelligence Platform (Phases 79-90) -- in progress
+- v5.0 Obsidian Intelligence Platform (Phases 79-91) -- in progress
 
 ## Phases
 
@@ -278,6 +278,24 @@ Plans:
 - [ ] 90-01: Playbook generator pure module (journal + receipt timeline walking, template production) with TDD
 - [ ] 90-02: "Generate playbook" and "Apply playbook" commands, detection note type and coverage overlay
 
+### Phase 91: v5.0 Integration Wiring + Tech Debt Cleanup
+**Goal**: All cross-phase EventBus events are emitted at the correct call sites, runtime feature toggles work without reload, and dead code from the v5.0 build is removed
+**Depends on**: Phase 90
+**Requirements**: LIVE-03, LIVE-04, LIVE-05, LIVE-06, CANVAS-09, CANVAS-10
+**Gap Closure**: Closes integration gaps from v5.0 audit
+**Success Criteria** (what must be TRUE):
+  1. setEntityVerdict in commands.ts emits verdict:set on EventBus after writing the verdict, enabling MCP outbound publishing
+  2. liveCanvasEnabled settings toggle calls enableLiveCanvas/disableLiveCanvas lifecycle methods at runtime without requiring plugin reload
+  3. WorkspaceService.invalidate() emits cache:invalidated on EventBus so prior-hunt suggestion cache refreshes reactively
+  4. Dead EventBus event types (canvas:generated, watcher:activity) are removed from EventMap
+  5. openCoreFile() references in view.ts are resolved (method restored or calls removed)
+  6. All existing tests continue to pass
+**Plans**: 2 plans
+
+Plans:
+- [ ] 91-01: EventBus emission fixes (verdict:set, cache:invalidated) + dead event cleanup
+- [ ] 91-02: liveCanvasEnabled runtime lifecycle + openCoreFile resolution
+
 ## Progress
 
 **Execution Order:**
@@ -317,4 +335,4 @@ Phases execute in numeric order: 79 -> 80 -> 81 -> 82 -> 83 -> 84 -> 85 -> 86 ->
 | 87. Filesystem Watcher + Hunt Pulse | 2/2 | Complete    | 2026-04-12 | - |
 | 88. Bidirectional MCP Event Bridge + Prior-Hunt Suggester | 2/2 | Complete    | 2026-04-12 | - |
 | 89. Hunt Journal Engine | 2/2 | Complete    | 2026-04-12 | - |
-| 90. Playbook Distillation + Detection Pipeline | 2/2 | Complete   | 2026-04-13 | - |
+| 90. Playbook Distillation + Detection Pipeline | 2/2 | Complete    | 2026-04-13 | - |
