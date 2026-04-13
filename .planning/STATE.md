@@ -4,7 +4,7 @@ milestone: v5.0
 milestone_name: Obsidian Intelligence Platform
 status: completed
 stopped_at: Completed 91-02-PLAN.md (Phase 91 complete)
-last_updated: "2026-04-13T01:17:46Z"
+last_updated: "2026-04-13T01:19:29.012Z"
 progress:
   total_phases: 13
   completed_phases: 13
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 v5.0 Obsidian Intelligence Platform -- Graduate from knowledge weapon to intelligence platform.
 
-**Status:** In progress
+**Status:** Milestone complete
 **Phase:** 91 of 91 (Integration Wiring & Tech Debt Cleanup)
-**Plan:** 1 of 2 in current phase complete
+**Plan:** 2 of 2 in current phase complete
 
-Progress: [██████████] 96% (27/28 v5.0 plans)
+Progress: [██████████] 100% (28/28 v5.0 plans)
 
 ## Recently Completed
 
@@ -151,6 +151,9 @@ Progress: [██████████] 96% (27/28 v5.0 plans)
 
 - [Phase 91]: verdict:set emission placed after modifyFile, before Notice, ensuring disk write completes before event propagation
 - [Phase 91]: cache:invalidated uses optional chaining (this.eventBus?.emit) since eventBus is an optional constructor parameter
+- [Phase 91]: enableLiveCanvas follows identical idempotent guard pattern as enableAutoIngestion
+- [Phase 91]: openCoreFile added as class method since view.ts uses this.plugin.openCoreFile pattern
+- [Phase 91]: disableLiveCanvas cleans up both EventBus listener and vault EventRef separately
 
 ### Blockers/Concerns
 
@@ -158,6 +161,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-13T01:17:13Z
-Stopped at: Completed 91-01-PLAN.md
+Last session: 2026-04-13T01:19:24.150Z
+Stopped at: Completed 91-02-PLAN.md (Phase 91 complete)
 Resume file: None
