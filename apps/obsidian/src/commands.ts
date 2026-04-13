@@ -748,6 +748,12 @@ async function setEntityVerdict(plugin: ThruntGodPlugin, filePath: string): Prom
           // Write back
           await plugin.workspaceService.vaultAdapter.modifyFile(filePath, content);
 
+          plugin.eventBus.emit('verdict:set', {
+            path: filePath,
+            verdict: selectedVerdict,
+            entityName: filePath.split('/').pop()?.replace(/\.md$/, '') ?? '',
+          });
+
           new Notice(`Verdict set to ${selectedVerdict}`);
           await plugin.refreshViews();
         })();

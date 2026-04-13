@@ -194,6 +194,7 @@ export class WorkspaceService {
 
   invalidate(): void {
     this.cachedViewModel = null;
+    this.eventBus?.emit('cache:invalidated');
   }
 
   async bootstrap(): Promise<void> {
