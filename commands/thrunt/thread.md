@@ -1,7 +1,7 @@
 ---
 name: thrunt:thread
 description: Manage persistent context threads for cross-session work
-argument-hint: [name | description]
+argument-hint: "[name | description]"
 allowed-tools:
   - Read
   - Write
