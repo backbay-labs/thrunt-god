@@ -5,6 +5,8 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 const crypto = require('crypto');
+const { execFileSync } = require('node:child_process');
+const { OBSIDIAN_INSTALL_ASSETS } = require('../scripts/lib/obsidian-artifacts.cjs');
 
 // Colors
 const cyan = '\x1b[36m';
@@ -68,6 +70,7 @@ const hasCopilot = args.includes('--copilot');
 const hasAntigravity = args.includes('--antigravity');
 const hasCursor = args.includes('--cursor');
 const hasWindsurf = args.includes('--windsurf');
+const hasObsidian = args.includes('--obsidian');
 const hasBoth = args.includes('--both'); // Legacy flag, keeps working
 const hasAll = args.includes('--all');
 const hasUninstall = args.includes('--uninstall') || args.includes('-u');
@@ -319,6 +322,361 @@ function parseConfigDirArg() {
 const explicitConfigDir = parseConfigDirArg();
 const hasHelp = args.includes('--help') || args.includes('-h');
 const forceStatusline = args.includes('--force-statusline');
+const OBSIDIAN_PLUGIN_ID = 'thrunt-god';
+const OBSIDIAN_ASSET_FILES = OBSIDIAN_INSTALL_ASSETS;
+
+function getObsidianConflictFlags() {
+  const conflictFlags = new Set();
+  const obsidianIncompatibleFlags = new Set([
+    '--claude',
+    '--opencode',
+    '--gemini',
+    '--codex',
+    '--copilot',
+    '--antigravity',
+    '--cursor',
+    '--windsurf',
+    '--both',
+    '--all',
+    '--global',
+    '-g',
+    '--local',
+    '-l',
+    '--uninstall',
+    '-u',
+    '--config-dir',
+    '-c',
+  ]);
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (index > 0 && (args[index - 1] === '--config-dir' || args[index - 1] === '-c')) {
+      continue;
+    }
+    if (obsidianIncompatibleFlags.has(arg) || arg.startsWith('--config-dir=') || arg.startsWith('-c=')) {
+      conflictFlags.add(arg);
+    }
+  }
+
+  return [...conflictFlags];
+}
+
+function getDefaultObsidianHomeDir() {
+  return expandTilde(process.env.THRUNT_HOME || os.homedir());
+}
+
+function getObsidianStageDir(homeDir = getDefaultObsidianHomeDir()) {
+  return path.join(homeDir, '.thrunt', 'obsidian');
+}
+
+function hasObsidianBundleAssets(dir) {
+  if (!dir || !fs.existsSync(dir)) {
+    return false;
+  }
+  return OBSIDIAN_ASSET_FILES.every((assetFile) => fs.existsSync(path.join(dir, assetFile)));
+}
+
+function getObsidianConfigPath(homeDir = getDefaultObsidianHomeDir()) {
+  if (process.env.THRUNT_OBSIDIAN_CONFIG) {
+    return expandTilde(process.env.THRUNT_OBSIDIAN_CONFIG);
+  }
+  return path.join(homeDir, 'Library', 'Application Support', 'obsidian', 'obsidian.json');
+}
+
+function getObsidianPluginSourceDir(repoRoot = path.join(__dirname, '..')) {
+  if (process.env.THRUNT_OBSIDIAN_PLUGIN_SOURCE) {
+    return expandTilde(process.env.THRUNT_OBSIDIAN_PLUGIN_SOURCE);
+  }
+  const releaseDir = path.join(repoRoot, 'dist', 'obsidian-release');
+  if (hasObsidianBundleAssets(releaseDir)) {
+    return releaseDir;
+  }
+  return path.join(repoRoot, 'apps', 'obsidian');
+}
+
+function shouldSkipObsidianBuild(options = {}) {
+  return options.skipBuild === true || process.env.THRUNT_OBSIDIAN_SKIP_BUILD === '1';
+}
+
+function discoverObsidianVaults(options = {}) {
+  const homeDir = options.homeDir || getDefaultObsidianHomeDir();
+  const configPath = options.configPath || getObsidianConfigPath(homeDir);
+
+  if (!fs.existsSync(configPath)) {
+    return [];
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch {
+    return [];
+  }
+
+  if (!parsed || typeof parsed !== 'object' || !parsed.vaults || typeof parsed.vaults !== 'object') {
+    return [];
+  }
+
+  const vaultEntries = Array.isArray(parsed.vaults) ? parsed.vaults : Object.values(parsed.vaults);
+  const seenVaultPaths = new Set();
+  const vaultPaths = [];
+
+  for (const entry of vaultEntries) {
+    if (!entry || typeof entry !== 'object' || typeof entry.path !== 'string' || entry.path.trim() === '') {
+      continue;
+    }
+
+    const resolvedPath = path.resolve(entry.path);
+
+    if (seenVaultPaths.has(resolvedPath)) {
+      continue;
+    }
+
+    try {
+      if (!fs.statSync(resolvedPath).isDirectory()) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+
+    seenVaultPaths.add(resolvedPath);
+    vaultPaths.push(resolvedPath);
+  }
+
+  return vaultPaths;
+}
+
+function buildObsidianBundle(repoRootOrOptions, runBuild = execFileSync) {
+  const options = typeof repoRootOrOptions === 'object' && repoRootOrOptions !== null
+    ? repoRootOrOptions
+    : { repoRoot: repoRootOrOptions, runBuild };
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const buildRunner = options.runBuild || execFileSync;
+  const pluginDir = options.pluginDir || getObsidianPluginSourceDir(repoRoot);
+
+  if (shouldSkipObsidianBuild(options)) {
+    return { skipped: true, pluginDir };
+  }
+
+  if (hasObsidianBundleAssets(pluginDir)) {
+    return { skipped: true, pluginDir };
+  }
+
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  buildRunner(npmCommand, ['run', 'build:obsidian'], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+
+  return { skipped: false, pluginDir: getObsidianPluginSourceDir(repoRoot) };
+}
+
+function stageObsidianBundle(options = {}) {
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const homeDir = options.homeDir || getDefaultObsidianHomeDir();
+  const stageDir = options.stageDir || getObsidianStageDir(homeDir);
+  const pluginDir = options.pluginDir || getObsidianPluginSourceDir(repoRoot);
+
+  fs.mkdirSync(stageDir, { recursive: true });
+
+  for (const assetFile of OBSIDIAN_ASSET_FILES) {
+    const sourcePath = path.join(pluginDir, assetFile);
+    const destinationPath = path.join(stageDir, assetFile);
+
+    if (!fs.existsSync(sourcePath)) {
+      throw new Error(`Missing Obsidian bundle asset: ${sourcePath}`);
+    }
+
+    fs.rmSync(destinationPath, { force: true, recursive: true });
+    fs.copyFileSync(sourcePath, destinationPath);
+
+    if (!fs.existsSync(destinationPath)) {
+      throw new Error(`Failed to stage Obsidian asset: ${destinationPath}`);
+    }
+  }
+
+  return {
+    stageDir,
+    stagedFiles: [...OBSIDIAN_ASSET_FILES],
+  };
+}
+
+function getObsidianPluginDir(vaultPath) {
+  return path.join(vaultPath, '.obsidian', 'plugins', OBSIDIAN_PLUGIN_ID);
+}
+
+function linkObsidianBundleIntoVault(vaultPath, stageDir) {
+  const pluginDir = getObsidianPluginDir(vaultPath);
+  const assetResults = [];
+
+  try {
+    fs.mkdirSync(pluginDir, { recursive: true });
+  } catch (error) {
+    return {
+      vaultPath,
+      pluginDir,
+      status: 'failure',
+      assetResults,
+      error: error.message,
+    };
+  }
+
+  for (const assetFile of OBSIDIAN_ASSET_FILES) {
+    const sourcePath = path.join(stageDir, assetFile);
+    const targetPath = path.join(pluginDir, assetFile);
+
+    try {
+      if (!fs.existsSync(sourcePath)) {
+        throw new Error(`Missing staged Obsidian asset: ${sourcePath}`);
+      }
+
+      let targetStat = null;
+      try {
+        targetStat = fs.lstatSync(targetPath);
+      } catch (error) {
+        if (error.code !== 'ENOENT') {
+          throw error;
+        }
+      }
+
+      if (targetStat && targetStat.isSymbolicLink()) {
+        try {
+          if (fs.realpathSync(targetPath) === fs.realpathSync(sourcePath)) {
+            assetResults.push({
+              asset: assetFile,
+              sourcePath,
+              targetPath,
+              status: 'skip',
+            });
+            continue;
+          }
+        } catch (error) {
+          if (error.code !== 'ENOENT') {
+            throw error;
+          }
+        }
+      }
+
+      if (targetStat) {
+        if (targetStat.isDirectory() && !targetStat.isSymbolicLink()) {
+          fs.rmSync(targetPath, { force: true, recursive: true });
+        } else {
+          fs.unlinkSync(targetPath);
+        }
+      }
+
+      fs.symlinkSync(sourcePath, targetPath);
+
+      if (!fs.lstatSync(targetPath).isSymbolicLink()) {
+        throw new Error(`Failed to create Obsidian symlink: ${targetPath}`);
+      }
+
+      assetResults.push({
+        asset: assetFile,
+        sourcePath,
+        targetPath,
+        status: 'success',
+      });
+    } catch (error) {
+      assetResults.push({
+        asset: assetFile,
+        sourcePath,
+        targetPath,
+        status: 'failure',
+        error: error.message,
+      });
+
+      return {
+        vaultPath,
+        pluginDir,
+        status: 'failure',
+        assetResults,
+        error: error.message,
+      };
+    }
+  }
+
+  return {
+    vaultPath,
+    pluginDir,
+    status: assetResults.every((result) => result.status === 'skip') ? 'skip' : 'success',
+    assetResults,
+  };
+}
+
+function installObsidian(options = {}) {
+  const homeDir = options.homeDir || getDefaultObsidianHomeDir();
+  const repoRoot = options.repoRoot || path.join(__dirname, '..');
+  const pluginDir = options.pluginDir || getObsidianPluginSourceDir(repoRoot);
+  const stageDir = options.stageDir || getObsidianStageDir(homeDir);
+  const configPath = options.configPath || getObsidianConfigPath(homeDir);
+  const buildBundle = options.buildBundle || buildObsidianBundle;
+  const stageBundle = options.stageBundle || stageObsidianBundle;
+  const discoverVaults = options.discoverVaults || discoverObsidianVaults;
+  const linkBundle = options.linkBundle || linkObsidianBundleIntoVault;
+  const runBuild = options.runBuild || execFileSync;
+  const logger = options.logger || options.log || console.log;
+  const locationLabel = stageDir.startsWith(homeDir) ? stageDir.replace(homeDir, '~') : stageDir;
+  const configLabel = configPath.startsWith(homeDir) ? configPath.replace(homeDir, '~') : configPath;
+
+  logger(`  Installing THRUNT for Obsidian to ${cyan}${locationLabel}${reset}\n`);
+  buildBundle({
+    repoRoot,
+    pluginDir,
+    runBuild,
+    logger,
+    skipBuild: options.skipBuild,
+  });
+
+  const stagedBundle = stageBundle({
+    homeDir,
+    repoRoot,
+    stageDir,
+    pluginDir,
+    logger,
+  });
+  const vaultPaths = discoverVaults({ homeDir, configPath });
+
+  if (vaultPaths.length === 0) {
+    logger(`  No Obsidian vaults detected from ${cyan}obsidian.json${reset} (${dim}${configLabel}${reset}).`);
+    logger(`  Install manually by copying ${cyan}main.js${reset}, ${cyan}manifest.json${reset}, and ${cyan}styles.css${reset} into ${cyan}VaultFolder/.obsidian/plugins/${OBSIDIAN_PLUGIN_ID}/${reset}.\n`);
+    return {
+      ...stagedBundle,
+      configPath,
+      vaultResults: [],
+      status: 'no_vaults',
+    };
+  }
+
+  const vaultResults = vaultPaths.map((vaultPath) => linkBundle(vaultPath, stagedBundle.stageDir));
+
+  for (const result of vaultResults) {
+    if (result.status === 'success') {
+      logger(`  ${green}installed${reset} ${result.vaultPath}`);
+      continue;
+    }
+
+    if (result.status === 'skip') {
+      logger(`  ${dim}skipped${reset} ${result.vaultPath}`);
+      continue;
+    }
+
+    logger(`  ${yellow}failed${reset} ${result.vaultPath}`);
+  }
+
+  const hadFailure = vaultResults.some((result) => result.status === 'failure');
+  if (!hadFailure) {
+    logger(`\n  Restart Obsidian and enable THRUNT God in Community Plugins.`);
+  }
+
+  return {
+    ...stagedBundle,
+    configPath,
+    vaultResults,
+    status: hadFailure ? 'failure' : 'success',
+  };
+}
 
 console.log(banner);
 
@@ -328,7 +686,7 @@ if (hasUninstall) {
 
 // Show help if requested
 if (hasHelp) {
-  console.log(`  ${yellow}Usage:${reset} npx ${PACKAGE_COMMAND} [options]\n\n  ${yellow}Options:${reset}\n    ${cyan}-g, --global${reset}              Install globally (to config directory)\n    ${cyan}-l, --local${reset}               Install locally (to current directory)\n    ${cyan}--claude${reset}                  Install for Claude Code only\n    ${cyan}--opencode${reset}                Install for OpenCode only\n    ${cyan}--gemini${reset}                  Install for Gemini only\n    ${cyan}--codex${reset}                   Install for Codex only\n    ${cyan}--copilot${reset}                 Install for Copilot only\n    ${cyan}--antigravity${reset}             Install for Antigravity only\n    ${cyan}--cursor${reset}                  Install for Cursor only\n    ${cyan}--windsurf${reset}                Install for Windsurf only\n    ${cyan}--all${reset}                     Install for all runtimes\n    ${cyan}-u, --uninstall${reset}           Uninstall THRUNT assets\n    ${cyan}-c, --config-dir <path>${reset}   Specify custom config directory\n    ${cyan}-h, --help${reset}                Show this help message\n    ${cyan}--force-statusline${reset}        Replace existing statusline config\n\n  ${yellow}Examples:${reset}\n    ${dim}# Interactive install (prompts for runtime and location)${reset}\n    npx ${PACKAGE_COMMAND}\n\n    ${dim}# Install for Claude Code globally${reset}\n    npx ${PACKAGE_COMMAND} --claude --global\n\n    ${dim}# Install for Gemini globally${reset}\n    npx ${PACKAGE_COMMAND} --gemini --global\n\n    ${dim}# Install for Codex globally${reset}\n    npx ${PACKAGE_COMMAND} --codex --global\n\n    ${dim}# Install for Copilot globally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --global\n\n    ${dim}# Install for Copilot locally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --local\n\n    ${dim}# Install for Antigravity globally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --global\n\n    ${dim}# Install for Antigravity locally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --local\n\n    ${dim}# Install for Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global\n\n    ${dim}# Install for Cursor locally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --local\n\n    ${dim}# Install for Windsurf globally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --global\n\n    ${dim}# Install for Windsurf locally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --local\n\n    ${dim}# Install for all runtimes globally${reset}\n    npx ${PACKAGE_COMMAND} --all --global\n\n    ${dim}# Install to custom config directory${reset}\n    npx ${PACKAGE_COMMAND} --codex --global --config-dir ~/.codex-work\n\n    ${dim}# Install to current project only${reset}\n    npx ${PACKAGE_COMMAND} --claude --local\n\n    ${dim}# Uninstall from Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global --uninstall\n\n  ${yellow}Notes:${reset}\n    The --config-dir option is useful when you have multiple configurations.\n    It takes priority over CLAUDE_CONFIG_DIR / GEMINI_CONFIG_DIR / CODEX_HOME / COPILOT_CONFIG_DIR / ANTIGRAVITY_CONFIG_DIR / CURSOR_CONFIG_DIR / WINDSURF_CONFIG_DIR environment variables.\n`);
+  console.log(`  ${yellow}Usage:${reset} npx ${PACKAGE_COMMAND} [options]\n\n  ${yellow}Options:${reset}\n    ${cyan}-g, --global${reset}              Install globally (to config directory)\n    ${cyan}-l, --local${reset}               Install locally (to current directory)\n    ${cyan}--claude${reset}                  Install for Claude Code only\n    ${cyan}--opencode${reset}                Install for OpenCode only\n    ${cyan}--gemini${reset}                  Install for Gemini only\n    ${cyan}--codex${reset}                   Install for Codex only\n    ${cyan}--copilot${reset}                 Install for Copilot only\n    ${cyan}--antigravity${reset}             Install for Antigravity only\n    ${cyan}--cursor${reset}                  Install for Cursor only\n    ${cyan}--windsurf${reset}                Install for Windsurf only\n    ${cyan}--obsidian${reset}                Install the Obsidian plugin bundle\n    ${cyan}--all${reset}                     Install for all runtimes\n    ${cyan}-u, --uninstall${reset}           Uninstall THRUNT assets\n    ${cyan}-c, --config-dir <path>${reset}   Specify custom config directory\n    ${cyan}-h, --help${reset}                Show this help message\n    ${cyan}--force-statusline${reset}        Replace existing statusline config\n\n  ${yellow}Examples:${reset}\n    ${dim}# Interactive install (prompts for runtime and location)${reset}\n    npx ${PACKAGE_COMMAND}\n\n    ${dim}# Install for Claude Code globally${reset}\n    npx ${PACKAGE_COMMAND} --claude --global\n\n    ${dim}# Install for Gemini globally${reset}\n    npx ${PACKAGE_COMMAND} --gemini --global\n\n    ${dim}# Install for Codex globally${reset}\n    npx ${PACKAGE_COMMAND} --codex --global\n\n    ${dim}# Install for Copilot globally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --global\n\n    ${dim}# Install for Copilot locally${reset}\n    npx ${PACKAGE_COMMAND} --copilot --local\n\n    ${dim}# Install for Antigravity globally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --global\n\n    ${dim}# Install for Antigravity locally${reset}\n    npx ${PACKAGE_COMMAND} --antigravity --local\n\n    ${dim}# Install for Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global\n\n    ${dim}# Install for Cursor locally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --local\n\n    ${dim}# Install for Windsurf globally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --global\n\n    ${dim}# Install for Windsurf locally${reset}\n    npx ${PACKAGE_COMMAND} --windsurf --local\n\n    ${dim}# Install the Obsidian plugin bundle${reset}\n    npx ${PACKAGE_COMMAND} --obsidian\n\n    ${dim}# Install for all runtimes globally${reset}\n    npx ${PACKAGE_COMMAND} --all --global\n\n    ${dim}# Install to custom config directory${reset}\n    npx ${PACKAGE_COMMAND} --codex --global --config-dir ~/.codex-work\n\n    ${dim}# Install to current project only${reset}\n    npx ${PACKAGE_COMMAND} --claude --local\n\n    ${dim}# Uninstall from Cursor globally${reset}\n    npx ${PACKAGE_COMMAND} --cursor --global --uninstall\n\n  ${yellow}Notes:${reset}\n    The --config-dir option is useful when you have multiple configurations.\n    It takes priority over CLAUDE_CONFIG_DIR / GEMINI_CONFIG_DIR / CODEX_HOME / COPILOT_CONFIG_DIR / ANTIGRAVITY_CONFIG_DIR / CURSOR_CONFIG_DIR / WINDSURF_CONFIG_DIR environment variables.\n`);
   process.exit(0);
 }
 
@@ -4834,6 +5192,17 @@ if (process.env.THRUNT_TEST_MODE) {
     convertClaudeCommandToWindsurfSkill,
     convertClaudeAgentToWindsurfAgent,
     copyCommandsAsWindsurfSkills,
+    OBSIDIAN_PLUGIN_ID,
+    OBSIDIAN_INSTALL_ASSETS,
+    OBSIDIAN_ASSET_FILES,
+    getObsidianStageDir,
+    getObsidianConfigPath,
+    discoverObsidianVaults,
+    getObsidianPluginDir,
+    linkObsidianBundleIntoVault,
+    buildObsidianBundle,
+    stageObsidianBundle,
+    installObsidian,
     writeManifest,
     reportLocalPatches,
     validateHookFields,
@@ -4841,7 +5210,17 @@ if (process.env.THRUNT_TEST_MODE) {
 } else {
 
 // Main logic
-if (hasGlobal && hasLocal) {
+if (hasObsidian) {
+  const obsidianConflictFlags = getObsidianConflictFlags();
+  if (obsidianConflictFlags.length > 0) {
+    console.error(`  ${yellow}--obsidian must be run as a standalone mode. Remove ${obsidianConflictFlags.join(', ')} and try again.${reset}`);
+    process.exit(1);
+  }
+  const obsidianResult = installObsidian();
+  if (obsidianResult.status === 'failure') {
+    process.exit(1);
+  }
+} else if (hasGlobal && hasLocal) {
   console.error(`  ${yellow}Cannot specify both --global and --local${reset}`);
   process.exit(1);
 } else if (explicitConfigDir && hasLocal) {

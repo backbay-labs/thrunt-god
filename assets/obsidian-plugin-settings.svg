@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760" fill="none">
+  <rect width="1280" height="760" rx="32" fill="#F8FAFC"/>
+  <rect x="28" y="28" width="1224" height="704" rx="24" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <rect x="64" y="64" width="256" height="632" rx="18" fill="#F1F5F9" stroke="#CBD5E1"/>
+  <text x="104" y="118" fill="#0F172A" font-family="Arial, sans-serif" font-size="26" font-weight="700">Settings</text>
+  <rect x="100" y="156" width="184" height="40" rx="14" fill="#DBEAFE" stroke="#60A5FA"/>
+  <text x="122" y="182" fill="#1D4ED8" font-family="Arial, sans-serif" font-size="18" font-weight="700">THRUNT God</text>
+  <rect x="100" y="220" width="160" height="12" rx="6" fill="#CBD5E1"/>
+  <rect x="100" y="252" width="132" height="12" rx="6" fill="#CBD5E1"/>
+  <rect x="352" y="64" width="864" height="632" rx="18" fill="#F8FAFC" stroke="#CBD5E1"/>
+  <text x="400" y="118" fill="#0F172A" font-family="Arial, sans-serif" font-size="34" font-weight="700">Plugin configuration</text>
+  <text x="400" y="154" fill="#475569" font-family="Arial, sans-serif" font-size="18">Keep the planning directory aligned with the THRUNT workspace inside the vault.</text>
+  <rect x="400" y="210" width="768" height="236" rx="22" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="440" y="264" fill="#0F172A" font-family="Arial, sans-serif" font-size="24" font-weight="700">Planning directory</text>
+  <text x="440" y="304" fill="#475569" font-family="Arial, sans-serif" font-size="18">Vault-relative THRUNT artifact directory, such as .planning or .hunt.</text>
+  <rect x="440" y="336" width="688" height="58" rx="16" fill="#F8FAFC" stroke="#94A3B8"/>
+  <text x="470" y="373" fill="#0F172A" font-family="Arial, sans-serif" font-size="24">.planning</text>
+  <rect x="440" y="486" width="328" height="158" rx="18" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="474" y="532" fill="#0F172A" font-family="Arial, sans-serif" font-size="22" font-weight="700">Install paths</text>
+  <text x="474" y="568" fill="#475569" font-family="Arial, sans-serif" font-size="18">Community Plugins when approved, GitHub release assets today, or CLI via --obsidian.</text>
+  <rect x="800" y="486" width="328" height="158" rx="18" fill="#FFFFFF" stroke="#CBD5E1"/>
+  <text x="834" y="532" fill="#0F172A" font-family="Arial, sans-serif" font-size="22" font-weight="700">Release contract</text>
+  <text x="834" y="568" fill="#475569" font-family="Arial, sans-serif" font-size="18">manifest.json, main.js, styles.css, and versions.json stay aligned through the release flow.</text>
+</svg>

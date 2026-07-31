@@ -1,0 +1,11 @@
+{
+  "id": "thrunt-god",
+  "name": "THRUNT God",
+  "version": "0.3.6",
+  "minAppVersion": "1.6.0",
+  "description": "Vault-native THRUNT workspace companion for opening and scaffolding core hunt artifacts inside Obsidian.",
+  "author": "BackBay Labs",
+  "authorUrl": "https://github.com/backbay-labs/thrunt-god",
+  "isDesktopOnly": false
+}
+

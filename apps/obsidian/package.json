@@ -1,0 +1,28 @@
+{
+  "name": "@thrunt-god/obsidian",
+  "version": "0.3.6",
+  "description": "Obsidian plugin scaffold for THRUNT God workspaces",
+  "private": true,
+  "main": "main.js",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc --noEmit --skipLibCheck && node esbuild.config.mjs production",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "test": "vitest run",
+    "version": "node version-bump.mjs && git add manifest.json versions.json"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.17.57",
+    "esbuild": "^0.25.5",
+    "obsidian": "^1.6.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
+

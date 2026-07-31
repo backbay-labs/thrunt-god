@@ -27,6 +27,7 @@
 
 <p align="center">
   <a href="#installation">Install</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
+  <a href="#obsidian-plugin">Obsidian</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#the-five-phases">Phases</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#hunt-commands">Commands</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
   <a href="#common-flows">Flows</a>&nbsp;&nbsp;&middot;&nbsp;&nbsp;
@@ -34,6 +35,42 @@
 </p>
 
 ---
+
+## Obsidian Plugin
+
+THRUNT God for Obsidian turns a vault into a THRUNT workspace companion. It gives analysts a dedicated workspace view for core hunt artifacts, quick open/create actions for the standard files, lightweight hunt-state visibility, and a configurable planning-directory path.
+
+<p align="center">
+  <img src="assets/obsidian-plugin-overview.svg" alt="THRUNT God workspace view in Obsidian" width="1200" />
+</p>
+
+### Install options
+
+1. **Community Plugins**  
+   When the directory entry is live, open `Settings -> Community plugins -> Browse`, search for `THRUNT God`, and install it directly from Obsidian.
+2. **GitHub release assets**  
+   Download `manifest.json`, `main.js`, `styles.css`, and `versions.json` from the latest GitHub release and place them in `VaultFolder/.obsidian/plugins/thrunt-god/`.
+3. **THRUNT CLI**
+
+```bash
+npx thrunt-god@latest --obsidian
+```
+
+The CLI path builds the production bundle, stages it under `~/.thrunt/obsidian`, and links the plugin into detected macOS vaults.
+
+### What you get
+
+- A workspace view that surfaces mission, hypotheses, state, findings, and phase-directory health.
+- Quick open/create actions for the core THRUNT artifact files inside a vault.
+- A settings panel for choosing the planning directory when your vault uses `.planning`, `.hunt`, or another THRUNT path.
+
+<p align="center">
+  <img src="assets/obsidian-plugin-settings.svg" alt="THRUNT God settings panel in Obsidian" width="1200" />
+</p>
+
+### Configure
+
+The main plugin setting is **Planning directory**. Point it at the vault-relative folder that contains your THRUNT artifacts, such as `.planning` or `.hunt`. The workspace view and commands read from that path.
 
 ## Installation
 

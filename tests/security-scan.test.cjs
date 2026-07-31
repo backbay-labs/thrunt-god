@@ -213,11 +213,13 @@ describe('prompt-injection-scan.sh', { skip: IS_WINDOWS }, () => {
     }
   });
 
-  test('uses file-scoped MCP data allowlist entries instead of broad directory exemptions', () => {
+  test('uses file-scoped data allowlist entries instead of broad directory exemptions', () => {
     const content = fs.readFileSync(SCRIPTS.injection, 'utf-8');
+    assert.ok(content.includes("'apps/obsidian/data/mitre-attack-enterprise.json'"));
     assert.ok(content.includes("'apps/mcp/data/mitre-attack-enterprise.json'"));
     assert.ok(content.includes("'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_renamed_binary_highly_relevant.yml'"));
     assert.ok(content.includes("'apps/mcp/data/sigma-core/rules/windows/process_creation/proc_creation_win_w32tm.yml'"));
+    assert.ok(!content.includes("'apps/obsidian/data/'"), 'apps/obsidian/data/ should not be broadly allowlisted');
     assert.ok(!content.includes("'apps/mcp/data/'"), 'apps/mcp/data/ should not be broadly allowlisted');
   });
 
