@@ -1,0 +1,21 @@
+{
+  "name": "@thrunt-surfaces/aws-console-companion",
+  "version": "0.1.0",
+  "description": "Companion integration for AWS — CloudTrail query helpers and IAM context enrichment",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@thrunt-surfaces/contracts": "workspace:*",
+    "@thrunt-surfaces/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

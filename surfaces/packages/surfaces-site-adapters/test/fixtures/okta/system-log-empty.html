@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Okta Admin Console | System Log</title>
+  </head>
+  <body>
+    <header id="admin-header">
+      <nav data-se="admin-nav">
+        <span data-se="org-label">acme</span>
+      </nav>
+    </header>
+
+    <main class="admin-syslog">
+      <section>
+        <h1 data-se="page-title">System Log</h1>
+        <div class="okta-syslog-empty">
+          No events matched the current filter.
+        </div>
+      </section>
+
+      <section class="syslog-filters" data-se="filter-bar">
+        <label for="filter-expression">Filter</label>
+        <input
+          id="filter-expression"
+          data-se="system-log-filter"
+          type="text"
+          value="eventType eq &quot;policy.lifecycle.update&quot; and outcome.result eq &quot;FAILURE&quot;"
+        />
+      </section>
+    </main>
+  </body>
+</html>

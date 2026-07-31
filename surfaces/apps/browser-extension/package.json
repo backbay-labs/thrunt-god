@@ -1,0 +1,23 @@
+{
+  "name": "@thrunt-surfaces/browser-extension",
+  "version": "0.1.0",
+  "description": "Universal browser extension for THRUNT threat hunting — operates across SIEM and cloud consoles",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run build --watch",
+    "build": "bun run scripts/build.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@thrunt-surfaces/contracts": "workspace:*",
+    "@thrunt-surfaces/site-adapters": "workspace:*",
+    "@thrunt-surfaces/sdk": "workspace:*",
+    "@thrunt-surfaces/mocks": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/chrome": "^0.0.280",
+    "typescript": "^5.7.0"
+  }
+}

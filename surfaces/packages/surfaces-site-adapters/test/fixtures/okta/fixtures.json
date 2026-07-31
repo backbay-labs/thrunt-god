@@ -1,0 +1,58 @@
+{
+  "vendorId": "okta",
+  "fixtures": [
+    {
+      "file": "system-log-rich.html",
+      "url": "https://acme-admin.okta.com/report/system_log_2",
+      "expected": {
+        "detect": true,
+        "pageType": "log_viewer",
+        "confidence": "high",
+        "completeness": "complete",
+        "supported": true,
+        "tableRows": 3,
+        "queryLanguage": "okta-filter",
+        "entityValues": [
+          "sarah.chen@acme.corp",
+          "svc-analytics@acme.corp",
+          "198.51.100.24",
+          "203.0.113.44"
+        ]
+      }
+    },
+    {
+      "file": "system-log-empty.html",
+      "url": "https://acme-admin.okta.com/report/system_log_2?filter=outcome.result+eq+%22FAILURE%22",
+      "expected": {
+        "detect": true,
+        "pageType": "log_viewer",
+        "confidence": "medium",
+        "completeness": "partial",
+        "supported": true,
+        "tableRows": 0,
+        "queryLanguage": "okta-filter",
+        "entityValues": [],
+        "failureReasons": [
+          "No result table detected for the current Okta page"
+        ]
+      }
+    },
+    {
+      "file": "settings-unsupported.html",
+      "url": "https://acme-admin.okta.com/admin/settings/customization",
+      "expected": {
+        "detect": true,
+        "pageType": "settings",
+        "confidence": "low",
+        "completeness": "unsupported",
+        "supported": false,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": [],
+        "failureReasons": [
+          "This Okta page type is not supported for structured extraction"
+        ]
+      }
+    }
+  ]
+}

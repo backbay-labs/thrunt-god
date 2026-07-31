@@ -1517,6 +1517,7 @@ case_roster: []
     assert.ok(fs.existsSync(path.join(caseDir, 'STATE.md')), 'STATE.md should exist');
     assert.ok(fs.existsSync(path.join(caseDir, 'QUERIES')), 'QUERIES/ should exist');
     assert.ok(fs.existsSync(path.join(caseDir, 'RECEIPTS')), 'RECEIPTS/ should exist');
+    assert.ok(fs.existsSync(path.join(caseDir, 'EVIDENCE')), 'EVIDENCE/ should exist');
   });
 
   test('case new adds entry to program STATE.md case_roster', () => {

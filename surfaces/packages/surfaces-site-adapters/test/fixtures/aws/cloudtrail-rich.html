@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AWS Console | CloudTrail Event History</title>
+  </head>
+  <body>
+    <div id="awsui-app-layout">
+      <header data-testid="awsc-nav-header">
+        <button data-testid="awsc-nav-account-menu-button">acme-security (123456789012)</button>
+        <button data-testid="awsc-nav-regions-menu-button">us-east-1</button>
+      </header>
+
+      <main>
+        <section>
+          <h1>CloudTrail Event History</h1>
+          <p>Track sign-in activity, policy changes, and unusual API access.</p>
+        </section>
+
+        <section class="awsui-table" aria-label="CloudTrail Events">
+          <table>
+            <thead>
+              <tr>
+                <th>Event time</th>
+                <th>Event name</th>
+                <th>User name</th>
+                <th>Source IP address</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026-04-10T10:15:00Z</td>
+                <td>ConsoleLogin</td>
+                <td>sarah.chen</td>
+                <td>198.51.100.24</td>
+              </tr>
+              <tr>
+                <td>2026-04-10T10:16:00Z</td>
+                <td>CreateAccessKey</td>
+                <td>svc-analytics</td>
+                <td>203.0.113.44</td>
+              </tr>
+              <tr>
+                <td>2026-04-10T10:17:00Z</td>
+                <td>AttachRolePolicy</td>
+                <td>admin-breakglass</td>
+                <td>198.51.100.24</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="detail-panel">
+          <dl class="awsui_key-value-pair">
+            <dt class="label">User ARN</dt>
+            <dd class="value">arn:aws:iam::123456789012:user/sarah.chen</dd>
+          </dl>
+          <dl class="awsui_key-value-pair">
+            <dt class="label">Source IP address</dt>
+            <dd class="value">198.51.100.24</dd>
+          </dl>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

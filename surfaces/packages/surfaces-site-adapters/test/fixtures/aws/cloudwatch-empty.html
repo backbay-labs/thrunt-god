@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AWS Console | CloudWatch Logs Insights</title>
+  </head>
+  <body>
+    <div id="awsui-app-layout">
+      <header data-testid="awsc-nav-header">
+        <button data-testid="awsc-nav-account-menu-button">acme-security (123456789012)</button>
+        <button data-testid="awsc-nav-regions-menu-button">us-east-1</button>
+      </header>
+
+      <main>
+        <section class="logs-insights">
+          <h1>Logs Insights</h1>
+          <textarea>
+fields @timestamp, @message
+| filter userIdentity.userName = "sarah.chen"
+| sort @timestamp desc
+          </textarea>
+        </section>
+
+        <section class="empty-state">
+          No matching log events for the selected time range.
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

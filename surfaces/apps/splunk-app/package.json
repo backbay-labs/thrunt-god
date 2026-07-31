@@ -1,0 +1,10 @@
+{
+  "name": "@thrunt-surfaces/splunk-app",
+  "version": "0.1.0",
+  "description": "THRUNT Surfaces app for Splunk Enterprise / Splunk Cloud",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Splunk apps are packaged as .tar.gz — use: tar czf thrunt-surfaces.tar.gz -C .. splunk-app'",
+    "test": "echo 'Splunk app smoke test: validate app.conf exists' && test -f default/app.conf"
+  }
+}

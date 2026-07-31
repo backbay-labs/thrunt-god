@@ -115,6 +115,9 @@
  *   audit-evidence                      Scan all phases for unresolved evidence review and findings items
  *   evidence render-checkpoint --file <path> Render the current evidence checkpoint block
  *
+ * Findings:
+ *   findings promote --format <sigma|splunk|kql> [--phase <N>]  Generate detection rules from FINDINGS.md
+ *
  * Scaffolding:
  *   scaffold context --phase <N>       Create CONTEXT.md template
  *   scaffold evidence-review --phase <N> Create EVIDENCE_REVIEW.md template
@@ -242,6 +245,25 @@ function parseMultiwordArg(args, flag) {
     tokens.push(args[i]);
   }
   return tokens.length > 0 ? tokens.join(' ') : null;
+}
+
+function parseCaseNewArgs(args) {
+  const nameTokens = [];
+  for (let i = 2; i < args.length; i++) {
+    if (args[i].startsWith('--')) break;
+    nameTokens.push(args[i]);
+  }
+
+  const named = parseNamedArgs(args, ['signal', 'owner', 'working-theory'], ['bootstrap-program']);
+  return {
+    name: nameTokens.join(' ').trim(),
+    options: {
+      signal: named.signal || null,
+      owner: named.owner || null,
+      workingTheory: named['working-theory'] || null,
+      bootstrapProgram: named['bootstrap-program'],
+    },
+  };
 }
 
 function parseCaseSearchArgs(args) {
@@ -503,6 +525,7 @@ function shouldResolvePlanningWorktree(command, args) {
     case 'evidence':
     case 'bundle':
     case 'detection':
+    case 'findings':
     case 'metrics':
     case 'score':
     case 'feedback':
@@ -1287,7 +1310,8 @@ async function runCommand(command, args, cwd, raw) {
     case 'case': {
       const subcommand = args[1];
       if (subcommand === 'new') {
-        commands.cmdCaseNew(cwd, args.slice(2).join(' '), {}, raw);
+        const parsed = parseCaseNewArgs(args);
+        commands.cmdCaseNew(cwd, parsed.name, parsed.options, raw);
       } else if (subcommand === 'list') {
         commands.cmdCaseList(cwd, raw);
       } else if (subcommand === 'close') {
@@ -1321,6 +1345,28 @@ async function runCommand(command, args, cwd, raw) {
         ? (path.isAbsolute(program) ? program : path.resolve(cwd, program))
         : null;
       commands.cmdCaseSearch(resolvedProgram || cwd, query, { limit, technique, program: resolvedProgram }, raw);
+      break;
+    }
+
+    case 'findings': {
+      const subcommand = args[1];
+      const detection = require('./lib/detection.cjs');
+      if (subcommand === 'promote') {
+        const options = parseNamedArgs(args, ['format', 'phase'], []);
+        if (!options.format) {
+          error('--format required. Available: sigma, splunk, kql');
+        }
+        // Normalize format aliases
+        const formatMap = { sigma: 'sigma', splunk: 'splunk', spl: 'splunk', kql: 'kql', sentinel: 'kql' };
+        const normalizedFormat = formatMap[options.format.toLowerCase()];
+        if (!normalizedFormat) {
+          error(`Unknown format: ${options.format}. Available: sigma, splunk, kql`);
+        }
+        options.format = normalizedFormat;
+        detection.cmdFindingsPromote(cwd, options, raw);
+      } else {
+        error('Unknown findings subcommand. Available: promote');
+      }
       break;
     }
 

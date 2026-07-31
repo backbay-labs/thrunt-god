@@ -1,0 +1,47 @@
+{
+  "vendorId": "elastic",
+  "fixtures": [
+    {
+      "file": "discover-kql-rich.html",
+      "url": "https://cloud.elastic.co/app/discover#/",
+      "expected": {
+        "detect": true,
+        "pageType": "search",
+        "confidence": "high",
+        "completeness": "complete",
+        "supported": true,
+        "tableRows": 3,
+        "queryLanguage": "kql",
+        "entityValues": ["10.0.1.45", "203.0.113.50", "jsmith@acme.corp"]
+      }
+    },
+    {
+      "file": "security-alerts.html",
+      "url": "https://cloud.elastic.co/app/security/alerts",
+      "expected": {
+        "detect": true,
+        "pageType": "alert_detail",
+        "confidence": "medium",
+        "completeness": "partial",
+        "supported": true,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": ["10.0.1.45", "evil.example.com", "d41d8cd98f00b204e9800998ecf8427e"]
+      }
+    },
+    {
+      "file": "dashboard-unsupported.html",
+      "url": "https://cloud.elastic.co/app/dashboards#/view/my-dashboard",
+      "expected": {
+        "detect": false,
+        "pageType": "unknown",
+        "confidence": "low",
+        "completeness": "unsupported",
+        "supported": false,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": []
+      }
+    }
+  ]
+}

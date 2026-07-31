@@ -1,0 +1,293 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "thrunt-surfaces",
+      "devDependencies": {
+        "@biomejs/biome": "^2.4.10",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/aws-console-companion": {
+      "name": "@thrunt-surfaces/aws-console-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/browser-extension": {
+      "name": "@thrunt-surfaces/browser-extension",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/mocks": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+        "@thrunt-surfaces/site-adapters": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/chrome": "^0.0.280",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/crowdstrike-falcon-companion": {
+      "name": "@thrunt-surfaces/crowdstrike-falcon-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/elastic-kibana-plugin": {
+      "name": "@thrunt-surfaces/elastic-kibana-plugin",
+      "version": "0.1.0",
+    },
+    "apps/gcp-console-companion": {
+      "name": "@thrunt-surfaces/gcp-console-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/m365-defender-companion": {
+      "name": "@thrunt-surfaces/m365-defender-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/okta-companion": {
+      "name": "@thrunt-surfaces/okta-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/sentinel-companion": {
+      "name": "@thrunt-surfaces/sentinel-companion",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "apps/splunk-app": {
+      "name": "@thrunt-surfaces/splunk-app",
+      "version": "0.1.0",
+    },
+    "apps/surface-bridge": {
+      "name": "@thrunt-surfaces/bridge",
+      "version": "0.1.0",
+      "bin": {
+        "thrunt-bridge": "./src/cli.ts",
+      },
+      "dependencies": {
+        "@thrunt-surfaces/artifacts": "workspace:*",
+        "@thrunt-surfaces/contracts": "workspace:*",
+        "@thrunt-surfaces/mocks": "workspace:*",
+        "@thrunt-surfaces/site-adapters": "workspace:*",
+        "@thrunt-surfaces/state": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-artifacts": {
+      "name": "@thrunt-surfaces/artifacts",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-auth": {
+      "name": "@thrunt-surfaces/auth",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-contracts": {
+      "name": "@thrunt-surfaces/contracts",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-mocks": {
+      "name": "@thrunt-surfaces/mocks",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-sdk": {
+      "name": "@thrunt-surfaces/sdk",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-site-adapters": {
+      "name": "@thrunt-surfaces/site-adapters",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "playwright": "^1.54.2",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-state": {
+      "name": "@thrunt-surfaces/state",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@thrunt-surfaces/mocks": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+    "packages/surfaces-ui": {
+      "name": "@thrunt-surfaces/ui",
+      "version": "0.1.0",
+      "dependencies": {
+        "@thrunt-surfaces/contracts": "workspace:*",
+      },
+      "devDependencies": {
+        "@thrunt-surfaces/mocks": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^5.7.0",
+      },
+    },
+  },
+  "packages": {
+    "@biomejs/biome": ["@biomejs/biome@2.4.11", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "2.4.11", "@biomejs/cli-darwin-x64": "2.4.11", "@biomejs/cli-linux-arm64": "2.4.11", "@biomejs/cli-linux-arm64-musl": "2.4.11", "@biomejs/cli-linux-x64": "2.4.11", "@biomejs/cli-linux-x64-musl": "2.4.11", "@biomejs/cli-win32-arm64": "2.4.11", "@biomejs/cli-win32-x64": "2.4.11" }, "bin": { "biome": "bin/biome" } }, "sha512-nWxHX8tf3Opb/qRgZpBbsTOqOodkbrkJ7S+JxJAruxOReaDPPmPuLBAGQ8vigyUgo0QBB+oQltNEAvalLcjggA=="],
+
+    "@biomejs/cli-darwin-arm64": ["@biomejs/cli-darwin-arm64@2.4.11", "", { "os": "darwin", "cpu": "arm64" }, "sha512-wOt+ed+L2dgZanWyL6i29qlXMc088N11optzpo10peayObBaAshbTcxKUchzEMp9QSY8rh5h6VfAFE3WTS1rqg=="],
+
+    "@biomejs/cli-darwin-x64": ["@biomejs/cli-darwin-x64@2.4.11", "", { "os": "darwin", "cpu": "x64" }, "sha512-gZ6zR8XmZlExfi/Pz/PffmdpWOQ8Qhy7oBztgkR8/ylSRyLwfRPSadmiVCV8WQ8PoJ2MWUy2fgID9zmtgUUJmw=="],
+
+    "@biomejs/cli-linux-arm64": ["@biomejs/cli-linux-arm64@2.4.11", "", { "os": "linux", "cpu": "arm64" }, "sha512-avdJaEElXrKceK0va9FkJ4P5ci3N01TGkc6ni3P8l3BElqbOz42Wg2IyX3gbh0ZLEd4HVKEIrmuVu/AMuSeFFA=="],
+
+    "@biomejs/cli-linux-arm64-musl": ["@biomejs/cli-linux-arm64-musl@2.4.11", "", { "os": "linux", "cpu": "arm64" }, "sha512-+Sbo1OAmlegtdwqFE8iOxFIWLh1B3OEgsuZfBpyyN/kWuqZ8dx9ZEes6zVnDMo+zRHF2wLynRVhoQmV7ohxl2Q=="],
+
+    "@biomejs/cli-linux-x64": ["@biomejs/cli-linux-x64@2.4.11", "", { "os": "linux", "cpu": "x64" }, "sha512-TagWV0iomp5LnEnxWFg4nQO+e52Fow349vaX0Q/PIcX6Zhk4GGBgp3qqZ8PVkpC+cuehRctMf3+6+FgQ8jCEFQ=="],
+
+    "@biomejs/cli-linux-x64-musl": ["@biomejs/cli-linux-x64-musl@2.4.11", "", { "os": "linux", "cpu": "x64" }, "sha512-bexd2IklK7ZgPhrz6jXzpIL6dEAH9MlJU1xGTrypx+FICxrXUp4CqtwfiuoDKse+UlgAlWtzML3jrMqeEAHEhA=="],
+
+    "@biomejs/cli-win32-arm64": ["@biomejs/cli-win32-arm64@2.4.11", "", { "os": "win32", "cpu": "arm64" }, "sha512-RJhaTnY8byzxDt4bDVb7AFPHkPcjOPK3xBip4ZRTrN3TEfyhjLRm3r3mqknqydgVTB74XG8l4jMLwEACEeihVg=="],
+
+    "@biomejs/cli-win32-x64": ["@biomejs/cli-win32-x64@2.4.11", "", { "os": "win32", "cpu": "x64" }, "sha512-A8D3JM/00C2KQgUV3oj8Ba15EHEYwebAGCy5Sf9GAjr5Y3+kJIYOiESoqRDeuRZueuMdCsbLZIUqmPhpYXJE9A=="],
+
+    "@thrunt-surfaces/artifacts": ["@thrunt-surfaces/artifacts@workspace:packages/surfaces-artifacts"],
+
+    "@thrunt-surfaces/auth": ["@thrunt-surfaces/auth@workspace:packages/surfaces-auth"],
+
+    "@thrunt-surfaces/aws-console-companion": ["@thrunt-surfaces/aws-console-companion@workspace:apps/aws-console-companion"],
+
+    "@thrunt-surfaces/bridge": ["@thrunt-surfaces/bridge@workspace:apps/surface-bridge"],
+
+    "@thrunt-surfaces/browser-extension": ["@thrunt-surfaces/browser-extension@workspace:apps/browser-extension"],
+
+    "@thrunt-surfaces/contracts": ["@thrunt-surfaces/contracts@workspace:packages/surfaces-contracts"],
+
+    "@thrunt-surfaces/crowdstrike-falcon-companion": ["@thrunt-surfaces/crowdstrike-falcon-companion@workspace:apps/crowdstrike-falcon-companion"],
+
+    "@thrunt-surfaces/elastic-kibana-plugin": ["@thrunt-surfaces/elastic-kibana-plugin@workspace:apps/elastic-kibana-plugin"],
+
+    "@thrunt-surfaces/gcp-console-companion": ["@thrunt-surfaces/gcp-console-companion@workspace:apps/gcp-console-companion"],
+
+    "@thrunt-surfaces/m365-defender-companion": ["@thrunt-surfaces/m365-defender-companion@workspace:apps/m365-defender-companion"],
+
+    "@thrunt-surfaces/mocks": ["@thrunt-surfaces/mocks@workspace:packages/surfaces-mocks"],
+
+    "@thrunt-surfaces/okta-companion": ["@thrunt-surfaces/okta-companion@workspace:apps/okta-companion"],
+
+    "@thrunt-surfaces/sdk": ["@thrunt-surfaces/sdk@workspace:packages/surfaces-sdk"],
+
+    "@thrunt-surfaces/sentinel-companion": ["@thrunt-surfaces/sentinel-companion@workspace:apps/sentinel-companion"],
+
+    "@thrunt-surfaces/site-adapters": ["@thrunt-surfaces/site-adapters@workspace:packages/surfaces-site-adapters"],
+
+    "@thrunt-surfaces/splunk-app": ["@thrunt-surfaces/splunk-app@workspace:apps/splunk-app"],
+
+    "@thrunt-surfaces/state": ["@thrunt-surfaces/state@workspace:packages/surfaces-state"],
+
+    "@thrunt-surfaces/ui": ["@thrunt-surfaces/ui@workspace:packages/surfaces-ui"],
+
+    "@types/bun": ["@types/bun@1.3.12", "", { "dependencies": { "bun-types": "1.3.12" } }, "sha512-DBv81elK+/VSwXHDlnH3Qduw+KxkTIWi7TXkAeh24zpi5l0B2kUg9Ga3tb4nJaPcOFswflgi/yAvMVBPrxMB+A=="],
+
+    "@types/chrome": ["@types/chrome@0.0.280", "", { "dependencies": { "@types/filesystem": "*", "@types/har-format": "*" } }, "sha512-AotSmZrL9bcZDDmSI1D9dE7PGbhOur5L0cKxXd7IqbVizQWCY4gcvupPUVsQ4FfDj3V2tt/iOpomT9EY0s+w1g=="],
+
+    "@types/filesystem": ["@types/filesystem@0.0.36", "", { "dependencies": { "@types/filewriter": "*" } }, "sha512-vPDXOZuannb9FZdxgHnqSwAG/jvdGM8Wq+6N4D/d80z+D4HWH+bItqsZaVRQykAn6WEVeEkLm2oQigyHtgb0RA=="],
+
+    "@types/filewriter": ["@types/filewriter@0.0.33", "", {}, "sha512-xFU8ZXTw4gd358lb2jw25nxY9QAgqn2+bKKjKOYfNCzN4DKCFetK7sPtrlpg66Ywe3vWY9FNxprZawAh9wfJ3g=="],
+
+    "@types/har-format": ["@types/har-format@1.2.16", "", {}, "sha512-fluxdy7ryD3MV6h8pTfTYpy/xQzCFC7m89nOH9y94cNqJ1mDIDPut7MnRHI3F6qRmh/cT2fUjG1MLdCNb4hE9A=="],
+
+    "@types/node": ["@types/node@25.6.0", "", { "dependencies": { "undici-types": "~7.19.0" } }, "sha512-+qIYRKdNYJwY3vRCZMdJbPLJAtGjQBudzZzdzwQYkEPQd+PJGixUL5QfvCLDaULoLv+RhT3LDkwEfKaAkgSmNQ=="],
+
+    "bun-types": ["bun-types@1.3.12", "", { "dependencies": { "@types/node": "*" } }, "sha512-HqOLj5PoFajAQciOMRiIZGNoKxDJSr6qigAttOX40vJuSp6DN/CxWp9s3C1Xwm4oH7ybueITwiaOcWXoYVoRkA=="],
+
+    "fsevents": ["fsevents@2.3.2", "", { "os": "darwin" }, "sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA=="],
+
+    "playwright": ["playwright@1.59.1", "", { "dependencies": { "playwright-core": "1.59.1" }, "optionalDependencies": { "fsevents": "2.3.2" }, "bin": { "playwright": "cli.js" } }, "sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw=="],
+
+    "playwright-core": ["playwright-core@1.59.1", "", { "bin": { "playwright-core": "cli.js" } }, "sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg=="],
+
+    "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "undici-types": ["undici-types@7.19.2", "", {}, "sha512-qYVnV5OEm2AW8cJMCpdV20CDyaN3g0AjDlOGf1OW4iaDEx8MwdtChUp4zu4H0VP3nDRF/8RKWH+IPp9uW0YGZg=="],
+  }
+}

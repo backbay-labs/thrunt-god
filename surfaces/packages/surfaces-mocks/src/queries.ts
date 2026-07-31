@@ -1,0 +1,43 @@
+import type { QueryLogSummary } from '@thrunt-surfaces/contracts';
+
+export const mockQueries: QueryLogSummary[] = [
+  {
+    queryId: 'QRY-20260410-A1B2C3D4',
+    connectorId: 'okta',
+    dataset: 'identity',
+    executedAt: '2026-04-10T10:15:00Z',
+    title: 'Okta token refresh events for suspicious service accounts',
+    intent: 'Identify service accounts with anomalous refresh patterns',
+    eventCount: 1542,
+    entityCount: 23,
+    templateCount: 8,
+    relatedHypotheses: ['HYP-01'],
+    relatedReceipts: ['RCT-20260410-A1B2C3D4'],
+  },
+  {
+    queryId: 'QRY-20260410-E5F6G7H8',
+    connectorId: 'sentinel',
+    dataset: 'identity',
+    executedAt: '2026-04-10T11:30:00Z',
+    title: 'Azure AD sign-in logs correlated with Okta anomalies',
+    intent: 'Cross-reference Okta anomalies with Azure AD sign-in behavior',
+    eventCount: 892,
+    entityCount: 15,
+    templateCount: 5,
+    relatedHypotheses: ['HYP-01', 'HYP-02'],
+    relatedReceipts: ['RCT-20260410-E5F6G7H8'],
+  },
+  {
+    queryId: 'QRY-20260411-I9J0K1L2',
+    connectorId: 'aws',
+    dataset: 'cloud',
+    executedAt: '2026-04-11T09:00:00Z',
+    title: 'CloudTrail API calls from suspicious IP ranges',
+    intent: 'Determine if compromised tokens accessed AWS resources',
+    eventCount: 347,
+    entityCount: 8,
+    templateCount: 12,
+    relatedHypotheses: ['HYP-03'],
+    relatedReceipts: ['RCT-20260411-I9J0K1L2'],
+  },
+];

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Advanced hunting - Microsoft Defender</title>
+  </head>
+  <body>
+    <div class="o365cs-base">
+      <div class="AdvancedHunting-container">
+        <nav class="ms-nav-header">
+          <a href="/v2/advanced-hunting">Advanced Hunting</a>
+          <a href="/incidents">Incidents</a>
+        </nav>
+
+        <div class="monaco-editor">
+          <textarea value="DeviceProcessEvents | where ProcessCommandLine contains &quot;mimikatz&quot; | project Timestamp, DeviceName, AccountName, ProcessCommandLine | limit 50"></textarea>
+          <div class="view-lines">DeviceProcessEvents | where ProcessCommandLine contains "mimikatz" | project Timestamp, DeviceName, AccountName, ProcessCommandLine | limit 50</div>
+        </div>
+
+        <div data-testid="time-range-picker">Last 30 days</div>
+
+        <div data-testid="results-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>DeviceName</th>
+                <th>AccountName</th>
+                <th>ProcessCommandLine</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>2026-04-10T09:00:00Z</td>
+                <td>WORKSTATION-03</td>
+                <td>jsmith</td>
+                <td>cmd.exe /c mimikatz.exe</td>
+              </tr>
+              <tr>
+                <td>2026-04-10T09:01:00Z</td>
+                <td>SERVER-DC01</td>
+                <td>admin-svc</td>
+                <td>powershell -enc base64...</td>
+              </tr>
+              <tr>
+                <td>2026-04-10T09:02:00Z</td>
+                <td>LAPTOP-07</td>
+                <td>sarah.chen</td>
+                <td>mimikatz.exe sekurlsa::logonpasswords</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <aside>
+          <div data-testid="entity-card-host">WORKSTATION-03</div>
+          <div data-testid="entity-card-user">jsmith@acme.corp</div>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>

@@ -2329,9 +2329,32 @@ describe('cmdCaseClose indexing + cmdCaseNew auto-search', () => {
     assert.ok(content.includes('title: First Investigation'));
     assert.ok(content.includes('## Current Position'));
     assert.ok(content.includes('**Active signal:** First Investigation opened for investigation'));
-    assert.ok(content.includes('Phase: 1 of 1'));
-    assert.ok(content.includes('Plan: 1 of 1'));
+    assert.ok(content.includes('Phase: 1 of 1 (Initial Triage and Evidence Collection)'));
+    assert.ok(content.includes('Plan: 1 of 2 in current phase'));
     assert.ok(content.includes('Status: Active'));
+  });
+
+  test('cmdCaseNew can bootstrap a minimal program root when requested', () => {
+    const bareDir = fs.mkdtempSync(path.join(require('os').tmpdir(), 'thrunt-case-bootstrap-'));
+    try {
+      const result = runThruntTools([
+        'case',
+        'new',
+        'Bridge Opened Investigation',
+        '--signal',
+        'Browser console signal',
+        '--bootstrap-program',
+      ], bareDir);
+      assert.ok(result.success, `New case failed: ${result.error}`);
+      const output = JSON.parse(result.output);
+      assert.strictEqual(output.success, true);
+      assert.strictEqual(output.bootstrapped_program, true);
+      assert.ok(fs.existsSync(path.join(bareDir, '.planning', 'STATE.md')), 'program STATE.md should exist');
+      assert.ok(fs.existsSync(path.join(bareDir, '.planning', 'MISSION.md')), 'program MISSION.md should exist');
+      assert.ok(fs.existsSync(path.join(bareDir, '.planning', 'cases', 'bridge-opened-investigation', 'MISSION.md')), 'case MISSION.md should exist');
+    } finally {
+      cleanup(bareDir);
+    }
   });
 
   test('cmdCaseNew returns matches after past case indexed', () => {

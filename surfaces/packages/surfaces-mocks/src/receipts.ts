@@ -1,0 +1,40 @@
+import type { ReceiptSummary } from '@thrunt-surfaces/contracts';
+
+export const mockReceipts: ReceiptSummary[] = [
+  {
+    receiptId: 'RCT-20260410-A1B2C3D4',
+    connectorId: 'okta',
+    dataset: 'identity',
+    createdAt: '2026-04-10T10:20:00Z',
+    resultStatus: 'ok',
+    claimStatus: 'supports',
+    claim: '23 service accounts showing 2-minute refresh intervals from 4 previously unseen IP ranges. Pattern consistent with automated token refresh from adversary infrastructure.',
+    relatedHypotheses: ['HYP-01'],
+    relatedQueries: ['QRY-20260410-A1B2C3D4'],
+    confidence: 'High — 98% of flagged accounts had no prior activity from these IP ranges in 90-day baseline.',
+  },
+  {
+    receiptId: 'RCT-20260410-E5F6G7H8',
+    connectorId: 'sentinel',
+    dataset: 'identity',
+    createdAt: '2026-04-10T11:35:00Z',
+    resultStatus: 'ok',
+    claimStatus: 'inconclusive',
+    claim: 'Azure AD sign-in logs show 12 of 23 flagged accounts also have sign-ins from the same IP ranges, but some may be legitimate VPN usage.',
+    relatedHypotheses: ['HYP-01', 'HYP-02'],
+    relatedQueries: ['QRY-20260410-E5F6G7H8'],
+    confidence: 'Medium — overlap is significant but VPN attribution not yet confirmed.',
+  },
+  {
+    receiptId: 'RCT-20260411-I9J0K1L2',
+    connectorId: 'aws',
+    dataset: 'cloud',
+    createdAt: '2026-04-11T09:05:00Z',
+    resultStatus: 'ok',
+    claimStatus: 'context',
+    claim: 'CloudTrail shows 347 API calls from suspicious IPs, primarily S3 ListBuckets and IAM GetUser. No destructive operations observed yet.',
+    relatedHypotheses: ['HYP-03'],
+    relatedQueries: ['QRY-20260411-I9J0K1L2'],
+    confidence: 'Medium — reconnaissance pattern but no confirmed data exfiltration.',
+  },
+];

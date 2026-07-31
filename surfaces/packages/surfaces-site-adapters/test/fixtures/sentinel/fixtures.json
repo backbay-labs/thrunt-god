@@ -1,0 +1,58 @@
+{
+  "vendorId": "sentinel",
+  "fixtures": [
+    {
+      "file": "logs-rich.html",
+      "url": "https://portal.azure.com/#view/Microsoft_Azure_Security_Insights/LogsBlade",
+      "expected": {
+        "detect": true,
+        "pageType": "search",
+        "confidence": "high",
+        "completeness": "complete",
+        "supported": true,
+        "tableRows": 3,
+        "queryLanguage": "kql",
+        "entityValues": [
+          "sarah.chen@acme.corp",
+          "198.51.100.24",
+          "MFADenied",
+          "acme-law-01"
+        ]
+      }
+    },
+    {
+      "file": "incident-partial.html",
+      "url": "https://portal.azure.com/#view/Microsoft_Azure_Security_Insights/IncidentBlade/id/INC-24011",
+      "expected": {
+        "detect": true,
+        "pageType": "incident",
+        "confidence": "medium",
+        "completeness": "partial",
+        "supported": true,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": [
+          "sarah.chen@acme.corp",
+          "198.51.100.24"
+        ],
+        "failureReasons": [
+          "No query editor detected for the current Sentinel page"
+        ]
+      }
+    },
+    {
+      "file": "portal-home-unsupported.html",
+      "url": "https://portal.azure.com/#home",
+      "expected": {
+        "detect": false,
+        "pageType": "unknown",
+        "confidence": "low",
+        "completeness": "unsupported",
+        "supported": false,
+        "tableRows": 0,
+        "queryLanguage": null,
+        "entityValues": []
+      }
+    }
+  ]
+}

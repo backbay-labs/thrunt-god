@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Detection Detail - CrowdStrike Falcon</title>
+  </head>
+  <body>
+    <div id="falcon-app">
+      <div data-testid="falcon-shell">
+        <nav aria-label="Falcon navigation">
+          <a href="/investigate/events">Event Search</a>
+          <a href="/detects">Detections</a>
+        </nav>
+
+        <section class="detection-detail">
+          <h1>Detection ABC123 - Credential Dumping</h1>
+          <p>Severity: Critical</p>
+        </section>
+
+        <aside class="detection-entities">
+          <span data-testid="host-name">WORKSTATION-05</span>
+          <span data-testid="user-name">lateral-admin</span>
+          <span data-testid="hash-sha256">deadbeef01234567890abcdef01234567890abcdef01234567890abcdef012345</span>
+          <span data-testid="ip-address-external">203.0.113.99</span>
+        </aside>
+      </div>
+    </div>
+  </body>
+</html>
