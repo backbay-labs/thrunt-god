@@ -617,7 +617,9 @@ function updateHuntmapAfterPhaseRemoval(huntmapPath, targetPhase, isDecimal, rem
 
   if (!isDecimal) {
     const MAX_PHASE = 99;
-    for (let oldNum = MAX_PHASE; oldNum > removedInt; oldNum--) {
+    // Iterate low -> high: each pass lowers N to N-1, so a descending loop would
+    // re-match the number it just produced and collapse every later phase.
+    for (let oldNum = removedInt + 1; oldNum <= MAX_PHASE; oldNum++) {
       const newNum = oldNum - 1;
       const oldStr = String(oldNum), newStr = String(newNum);
       const oldPad = oldStr.padStart(2, '0'), newPad = newStr.padStart(2, '0');

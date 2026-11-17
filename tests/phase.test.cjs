@@ -1024,6 +1024,63 @@ describe('phase remove command', () => {
     assert.ok(!huntmap.includes('Phase 1: Signal Intake'), 'removed phase should be deleted from huntmap');
     assert.ok(huntmap.includes('Phase 1: Tenant Correlation'), 'later phase should be renumbered inside huntmap');
   });
+
+  test('renumbers every later phase exactly once when removing a middle phase', () => {
+    fs.writeFileSync(
+      path.join(tmpDir, '.planning', 'HUNTMAP.md'),
+      `# Huntmap
+
+- [ ] Phase 1: Alpha
+- [ ] Phase 2: Bravo
+- [ ] Phase 3: Charlie
+- [ ] Phase 4: Delta
+
+### Phase 1: Alpha
+**Goal:** a
+**Depends on:** Nothing
+
+### Phase 2: Bravo
+**Goal:** b
+**Depends on:** Phase 1
+
+### Phase 3: Charlie
+**Goal:** c
+**Depends on:** Phase 1
+Plans:
+- [ ] 03-01-PLAN.md
+
+### Phase 4: Delta
+**Goal:** d
+**Depends on:** Phase 3
+Plans:
+- [ ] 04-01-PLAN.md
+`
+    );
+
+    for (const dir of ['01-alpha', '02-bravo', '03-charlie', '04-delta']) {
+      fs.mkdirSync(path.join(tmpDir, '.planning', 'phases', dir), { recursive: true });
+    }
+
+    const result = runThruntTools('phase remove 2', tmpDir);
+    assert.ok(result.success, `Command failed: ${result.error}`);
+
+    const huntmap = fs.readFileSync(path.join(tmpDir, '.planning', 'HUNTMAP.md'), 'utf-8');
+    const headings = huntmap.match(/^### Phase .*$/gm);
+    assert.deepStrictEqual(headings, [
+      '### Phase 1: Alpha',
+      '### Phase 2: Charlie',
+      '### Phase 3: Delta',
+    ]);
+    assert.ok(huntmap.includes('- [ ] Phase 2: Charlie'), 'checklist entry for Charlie should be Phase 2');
+    assert.ok(huntmap.includes('- [ ] Phase 3: Delta'), 'checklist entry for Delta should be Phase 3');
+    assert.ok(huntmap.includes('- [ ] 02-01-PLAN.md'), 'Charlie plan reference should be 02-01');
+    assert.ok(huntmap.includes('- [ ] 03-01-PLAN.md'), 'Delta plan reference should be 03-01');
+    assert.match(huntmap, /### Phase 3: Delta\n\*\*Goal:\*\* d\n\*\*Depends on:\*\* Phase 2\n/);
+
+    // On-disk directories and HUNTMAP.md must agree
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'phases', '02-charlie')));
+    assert.ok(fs.existsSync(path.join(tmpDir, '.planning', 'phases', '03-delta')));
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
