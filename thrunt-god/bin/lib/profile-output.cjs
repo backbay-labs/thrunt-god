@@ -485,14 +485,17 @@ function cmdWriteProfile(cwd, options, raw) {
     return result;
   }
 
+  // The profiler agent emits `evidence_quotes`; the questionnaire path emits
+  // `evidence`. The renderer below reads either, so redact both.
   for (const dimKey of Object.keys(analysis.dimensions)) {
     const dim = analysis.dimensions[dimKey];
-    if (dim.evidence && Array.isArray(dim.evidence)) {
-      for (let i = 0; i < dim.evidence.length; i++) {
-        const ev = dim.evidence[i];
+    for (const evidenceArr of [dim.evidence_quotes, dim.evidence]) {
+      if (!Array.isArray(evidenceArr)) continue;
+      for (const ev of evidenceArr) {
         if (ev.quote) ev.quote = redactSensitive(ev.quote);
         if (ev.example) ev.example = redactSensitive(ev.example);
         if (ev.signal) ev.signal = redactSensitive(ev.signal);
+        if (ev.pattern) ev.pattern = redactSensitive(ev.pattern);
       }
     }
   }
