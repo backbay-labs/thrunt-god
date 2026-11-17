@@ -118,6 +118,49 @@ describe('write-profile command', () => {
     assert.ok(!result.success, 'should fail without --input');
     assert.ok(result.error.includes('--input'), 'should mention --input');
   });
+
+  test('redacts secrets in evidence_quotes (profiler agent schema) before writing', () => {
+    const analysis = {
+      profile_version: '1.0',
+      dimensions: {
+        communication_style: {
+          rating: 'terse-direct',
+          confidence: 'HIGH',
+          evidence_quotes: [{
+            signal: 'direct request',
+            quote: 'deploy with key sk-ABCDEFGHIJKLMNOPQRSTUVWX123 from /Users/victim/creds',
+            project: 'acme',
+          }],
+        },
+        decision_speed: {
+          rating: 'fast-intuitive',
+          confidence: 'MEDIUM',
+          evidence_quotes: [{
+            pattern: 'shares tokens inline: token=abc123',
+            example: 'curl -H "Authorization: Bearer abc.def-ghi"',
+            project: 'acme',
+          }],
+        },
+      },
+    };
+
+    const analysisPath = path.join(tmpDir, 'analysis.json');
+    const profilePath = path.join(tmpDir, 'USER-PROFILE.md');
+    fs.writeFileSync(analysisPath, JSON.stringify(analysis));
+
+    const result = runThruntTools(['write-profile', '--input', analysisPath, '--output', profilePath, '--raw'], tmpDir);
+    assert.ok(result.success, `Failed: ${result.error}`);
+    const out = JSON.parse(result.output);
+    assert.ok(out.sensitive_redacted >= 4, `expected redactions, got ${out.sensitive_redacted}`);
+
+    const profile = fs.readFileSync(profilePath, 'utf-8');
+    assert.ok(!profile.includes('sk-ABCDEFGHIJKLMNOPQRSTUVWX123'), 'API key must not be written');
+    assert.ok(!profile.includes('/Users/victim/'), 'home path must not be written');
+    assert.ok(!profile.includes('token=abc123'), 'token in pattern must not be written');
+    assert.ok(!profile.includes('Bearer abc.def-ghi'), 'bearer token in example must not be written');
+    assert.ok(profile.includes('[REDACTED]'), 'redaction marker should be present');
+    assert.ok(!profile.includes('None detected'), 'profile must not claim nothing sensitive was found');
+  });
 });
 
 // ─── generate-claude-md command ───────────────────────────────────────────────
